@@ -6,6 +6,7 @@ import {
   UserButton
 } from '@clerk/nextjs'
 import './globals.css'
+
 export default function RootLayout({
   children,
 }: {
@@ -15,12 +16,14 @@ export default function RootLayout({
     <ClerkProvider>
       <html lang="en">
         <body>
-          <SignedOut>
-            <SignInButton />
-          </SignedOut>
-          <SignedIn>
-            <UserButton />
-          </SignedIn>
+          <header className="p-4 flex justify-end items-center border-b">
+            <SignedOut>
+              <SignInButton />
+            </SignedOut>
+            <SignedIn>
+              <UserButton afterSignOutUrl="/"/>
+            </SignedIn>
+          </header>
           {children}
         </body>
       </html>
