@@ -17,7 +17,8 @@ export default function OntologyPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
     setError(null)
     try {
       setIsSubmitting(true)
@@ -27,30 +28,23 @@ export default function OntologyPage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          userId: user?.id,
-          ontologyText,
+          text: ontologyText
         }),
       })
 
-      const data: OntologyResponse = await response.json()
-
-      if (!response.ok || data.status === 'error') {
-        throw new Error(data.error || 'Failed to process ontology')
+      if (!response.ok) {
+        throw new Error('Failed to submit ontology')
       }
 
-      if (!data.id) {
-        throw new Error('Invalid ontology: Missing ontology ID in response')
-      }
-
-      // Store ontology data and ID for persistence
-      localStorage.setItem('ontologyData', ontologyText)
-      localStorage.setItem('ontologyId', data.id)
+      const data = await response.json()
       
-      // Navigate to next page
-      router.push('/transform')
-    } catch (error) {
-      console.error('Error processing ontology:', error)
-      setError(error instanceof Error ? error.message : 'Failed to process ontology')
+      if (data.session_id) {
+        router.push(`/transform?session_id=${data.session_id}`)
+      } else {
+        setError('Failed to create session')
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred')
     } finally {
       setIsSubmitting(false)
     }

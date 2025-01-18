@@ -3,7 +3,7 @@
 import { useState, useCallback, useEffect } from 'react'
 import { useDropzone } from 'react-dropzone'
 import { Loader2, X, Upload, FileText, ChevronLeft, ChevronRight, GitMerge } from 'lucide-react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Progress } from '@/components/ui/progress'
@@ -32,6 +32,8 @@ const ACCEPTED_FILE_TYPES = {
 
 export default function TransformPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const sessionId = searchParams.get('session_id')
   const [file, setFile] = useState<FileWithPreview | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [isProcessing, setIsProcessing] = useState(false)
@@ -40,15 +42,12 @@ export default function TransformPage() {
   const [isUploadPanelExpanded, setIsUploadPanelExpanded] = useState(true)
   const [showMergeConfirm, setShowMergeConfirm] = useState(false)
 
-  // Get ontology ID from localStorage
-  const ontologyId = typeof window !== 'undefined' ? localStorage.getItem('ontologyId') : null
-
   useEffect(() => {
-    // Redirect if no ontology ID is found
-    if (!ontologyId) {
+    // Redirect back to ontology if no session_id is present
+    if (!sessionId) {
       router.push('/ontology')
     }
-  }, [ontologyId, router])
+  }, [sessionId, router])
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     setError(null)
@@ -81,7 +80,7 @@ export default function TransformPage() {
   }
 
   const handleExtract = async () => {
-    if (!file || !ontologyId) return
+    if (!file || !sessionId) return
 
     setIsProcessing(true)
     setError(null)
@@ -89,7 +88,7 @@ export default function TransformPage() {
     try {
       const formData = new FormData()
       formData.append('file', file)
-      formData.append('ontologyId', ontologyId)
+      formData.append('session_id', sessionId)
 
       // Use MockWebSocket in development
       const WebSocketClass = process.env.NODE_ENV === 'development' 
