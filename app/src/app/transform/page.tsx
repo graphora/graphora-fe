@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect } from 'react'
 import { useDropzone } from 'react-dropzone'
-import { Loader2, X, Upload, FileText, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Loader2, X, Upload, FileText, ChevronLeft, ChevronRight, GitMerge } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -11,6 +11,17 @@ import { GraphVisualization } from '@/components/graph-visualization'
 import type { FileWithPreview, GraphData, TransformResponse } from '@/types/graph'
 import { MockWebSocket } from '@/lib/mock-websocket'
 import { auth } from '@clerk/nextjs'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import { WorkflowLayout } from '@/components/workflow-layout'
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB
 const ACCEPTED_FILE_TYPES = {
@@ -27,6 +38,7 @@ export default function TransformPage() {
   const [progress, setProgress] = useState(0)
   const [graphData, setGraphData] = useState<GraphData | null>(null)
   const [isUploadPanelExpanded, setIsUploadPanelExpanded] = useState(true)
+  const [showMergeConfirm, setShowMergeConfirm] = useState(false)
 
   // Get ontology ID from localStorage
   const ontologyId = typeof window !== 'undefined' ? localStorage.getItem('ontologyId') : null
@@ -121,120 +133,159 @@ export default function TransformPage() {
     }
   }
 
-  return (
-    <main className="container mx-auto p-4 max-w-6xl h-screen flex flex-col">
-      <div className="flex flex-1 gap-4 overflow-hidden">
-        <div 
-          className={`transition-all duration-300 ease-in-out flex ${
-            isUploadPanelExpanded ? 'w-1/3' : 'w-12'
-          }`}
-        >
-          <div className={`
-            flex-1 
-            ${isUploadPanelExpanded ? 'opacity-100' : 'opacity-0 overflow-hidden w-0'}
-            transition-opacity duration-300
-          `}>
-            <div className="space-y-4">
-              <h1 className="text-2xl font-bold">Transform Document</h1>
-              
-              {error && (
-                <Alert variant="destructive">
-                  <AlertDescription>{error}</AlertDescription>
-                </Alert>
-              )}
+  const handleMergeConfirm = () => {
+    setShowMergeConfirm(false)
+    router.push('/merge')
+  }
 
-              <div
-                {...getRootProps()}
-                className={`
-                  border-2 border-dashed rounded-lg p-8 text-center cursor-pointer
-                  transition-colors duration-200
-                  ${isDragActive ? 'border-primary bg-primary/5' : 'border-gray-300'}
-                  ${file ? 'bg-gray-50' : ''}
-                `}
-              >
-                <input {...getInputProps()} />
+  return (
+    <WorkflowLayout progress={progress} currentStep={isProcessing ? 'Processing Document...' : undefined}>
+      <div className="container mx-auto p-4 max-w-6xl flex-1 flex flex-col">
+        <div className="flex flex-1 gap-4 overflow-hidden">
+          <div 
+            className={`transition-all duration-300 ease-in-out flex ${
+              isUploadPanelExpanded ? 'w-1/3' : 'w-12'
+            }`}
+          >
+            <div className={`
+              flex-1 
+              ${isUploadPanelExpanded ? 'opacity-100' : 'opacity-0 overflow-hidden w-0'}
+              transition-opacity duration-300
+            `}>
+              <div className="space-y-4">
+                <h1 className="text-2xl font-bold">Transform Document</h1>
                 
-                {file ? (
-                  <div className="space-y-2">
-                    <FileText className="mx-auto h-8 w-8 text-gray-400" />
-                    <p className="text-sm font-medium">{file.name}</p>
-                    <p className="text-xs text-gray-500">
-                      {(file.size / 1024 / 1024).toFixed(2)} MB
-                    </p>
+                {error && (
+                  <Alert variant="destructive">
+                    <AlertDescription>{error}</AlertDescription>
+                  </Alert>
+                )}
+
+                <div
+                  {...getRootProps()}
+                  className={`
+                    border-2 border-dashed rounded-lg p-8 text-center cursor-pointer
+                    transition-colors duration-200
+                    ${isDragActive ? 'border-primary bg-primary/5' : 'border-gray-300'}
+                    ${file ? 'bg-gray-50' : ''}
+                  `}
+                >
+                  <input {...getInputProps()} />
+                  
+                  {file ? (
+                    <div className="space-y-2">
+                      <FileText className="mx-auto h-8 w-8 text-gray-400" />
+                      <p className="text-sm font-medium">{file.name}</p>
+                      <p className="text-xs text-gray-500">
+                        {(file.size / 1024 / 1024).toFixed(2)} MB
+                      </p>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleRemoveFile()
+                        }}
+                      >
+                        <X className="mr-2 h-4 w-4" />
+                        Remove
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <Upload className="mx-auto h-8 w-8 text-gray-400" />
+                      <p className="text-sm font-medium">
+                        {isDragActive ? 'Drop the file here' : 'Drag & drop a file here'}
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        Supported formats: PDF, TXT, DOCX (max 10MB)
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                {file && (
+                  <div className="space-y-4">
+                    {isProcessing && (
+                      <Progress value={progress} className="w-full" />
+                    )}
+                    
                     <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        handleRemoveFile()
-                      }}
+                      onClick={handleExtract}
+                      disabled={isProcessing || !file}
+                      className="w-full"
                     >
-                      <X className="mr-2 h-4 w-4" />
-                      Remove
+                      {isProcessing ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Processing...
+                        </>
+                      ) : (
+                        'Extract Graph'
+                      )}
                     </Button>
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    <Upload className="mx-auto h-8 w-8 text-gray-400" />
-                    <p className="text-sm font-medium">
-                      {isDragActive ? 'Drop the file here' : 'Drag & drop a file here'}
-                    </p>
-                    <p className="text-xs text-gray-500">
-                      Supported formats: PDF, TXT, DOCX (max 10MB)
-                    </p>
                   </div>
                 )}
               </div>
+            </div>
+            
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-full rounded-none border-l"
+              onClick={() => setIsUploadPanelExpanded(!isUploadPanelExpanded)}
+            >
+              {isUploadPanelExpanded ? (
+                <ChevronLeft className="h-4 w-4" />
+              ) : (
+                <ChevronRight className="h-4 w-4" />
+              )}
+            </Button>
+          </div>
 
-              {file && (
-                <div className="space-y-4">
-                  {isProcessing && (
-                    <Progress value={progress} className="w-full" />
-                  )}
-                  
+          <div className="flex-1 h-full border rounded-lg bg-gray-50 overflow-hidden relative">
+            {graphData ? (
+              <>
+                <div className="absolute top-4 right-4 z-10 flex gap-4">
                   <Button
-                    onClick={handleExtract}
-                    disabled={isProcessing || !file}
-                    className="w-full"
+                    onClick={() => setShowMergeConfirm(true)}
+                    className="gap-2"
+                    variant="outline"
                   >
-                    {isProcessing ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Processing...
-                      </>
-                    ) : (
-                      'Extract Graph'
-                    )}
+                    <GitMerge className="h-4 w-4" />
+                    Merge to Prod DB
                   </Button>
                 </div>
-              )}
-            </div>
-          </div>
-          
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-full rounded-none border-l"
-            onClick={() => setIsUploadPanelExpanded(!isUploadPanelExpanded)}
-          >
-            {isUploadPanelExpanded ? (
-              <ChevronLeft className="h-4 w-4" />
+                <div className="h-full pt-16">
+                  <GraphVisualization graphData={graphData} />
+                </div>
+              </>
             ) : (
-              <ChevronRight className="h-4 w-4" />
+              <div className="h-full flex items-center justify-center text-gray-400">
+                Graph visualization will appear here
+              </div>
             )}
-          </Button>
+          </div>
         </div>
 
-        <div className="flex-1 h-full border rounded-lg bg-gray-50 overflow-hidden">
-          {graphData ? (
-            <GraphVisualization graphData={graphData} />
-          ) : (
-            <div className="h-full flex items-center justify-center text-gray-400">
-              Graph visualization will appear here
-            </div>
-          )}
-        </div>
+        <AlertDialog open={showMergeConfirm} onOpenChange={setShowMergeConfirm}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Merge to Production Database</AlertDialogTitle>
+              <AlertDialogDescription>
+                This will start the process of merging your local graph changes into the production database.
+                The merge process will be interactive, allowing you to review and resolve any conflicts.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={handleMergeConfirm}>
+                Continue to Merge
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
-    </main>
+    </WorkflowLayout>
   )
 }

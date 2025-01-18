@@ -3,9 +3,11 @@
 import { useState } from 'react'
 import { useUser } from '@clerk/nextjs'
 import { useRouter } from 'next/navigation'
+import { Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { WorkflowLayout } from '@/components/workflow-layout'
+import { Textarea } from '@/components/ui/textarea'
 import type { OntologyResponse } from '@/types/api'
 
 export default function OntologyPage() {
@@ -55,32 +57,48 @@ export default function OntologyPage() {
   }
 
   return (
-    <main className="container mx-auto p-4 max-w-4xl">
-      <h1 className="text-2xl font-bold mb-4">Enter Ontology (YAML format)</h1>
-      
-      {error && (
-        <Alert variant="default" className="mb-4 border-red-500 text-red-500 bg-red-50 dark:bg-red-950 dark:border-red-500">
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
+    <WorkflowLayout>
+      <div className="container mx-auto p-4 max-w-4xl flex-1">
+        <div className="space-y-6">
+          <div>
+            <h1 className="text-2xl font-bold">Enter Ontology (YAML format)</h1>
+            <p className="text-gray-500 mt-2">
+              Define your ontology schema in YAML format. This will be used to structure your graph data.
+            </p>
+          </div>
 
-      <textarea
-        value={ontologyText}
-        onChange={(e) => setOntologyText(e.target.value)}
-        className="w-full h-[60vh] p-4 border rounded-lg font-mono"
-        placeholder="Enter your YAML ontology here..."
-        disabled={isSubmitting}
-      />
-      
-      <div className="mt-4 flex justify-end gap-4">
-        <Button 
-          onClick={handleSubmit} 
-          disabled={isSubmitting || !ontologyText.trim()}
-          className="min-w-[120px]"
-        >
-          {isSubmitting ? 'Processing...' : 'Next'}
-        </Button>
+          {error && (
+            <Alert variant="destructive">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+
+          <Textarea
+            value={ontologyText}
+            onChange={(e) => setOntologyText(e.target.value)}
+            className="min-h-[60vh] font-mono"
+            placeholder="Enter your YAML ontology here..."
+            disabled={isSubmitting}
+          />
+          
+          <div className="flex justify-end">
+            <Button 
+              onClick={handleSubmit} 
+              disabled={isSubmitting || !ontologyText.trim()}
+              className="min-w-[120px]"
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Processing...
+                </>
+              ) : (
+                'Next'
+              )}
+            </Button>
+          </div>
+        </div>
       </div>
-    </main>
+    </WorkflowLayout>
   )
 }
