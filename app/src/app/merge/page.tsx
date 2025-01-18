@@ -24,6 +24,7 @@ export default function MergePage() {
   const [error, setError] = useState<string | null>(null)
   const [graphData, setGraphData] = useState<any>(null)
   const [canSubmit, setCanSubmit] = useState(false)
+  const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>({})
   const wsRef = useRef<MockMergeWebSocket | null>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
 
@@ -129,27 +130,33 @@ export default function MergePage() {
     setMessages(prev => [...prev, message])
   }
 
-  const handleOptionSelect = (questionId: string, option: { label: string, value: any }) => {
-    // Send response to server
-    if (wsRef.current) {
-      wsRef.current.send(JSON.stringify({
-        type: 'RESPONSE',
-        payload: {
+  const handleOptionSelect = async (questionId: string, option: { label: string; value: string }) => {
+    // Update selected option for this question
+    setSelectedOptions(prev => ({
+      ...prev,
+      [questionId]: option.value
+    }))
+
+    // Send the selection to the API
+    try {
+      const response = await fetch('/api/merge/answer', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
           questionId,
-          response: option.value
-        }
-      }))
+          answer: option.value
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to submit answer');
+      }
+    } catch (error) {
+      console.error('Error submitting answer:', error);
+      setError('Failed to submit answer. Please try again.');
     }
-
-    // Add user response to chat
-    addMessage({
-      id: `msg_${Date.now()}`,
-      role: 'user',
-      content: `Selected: ${option.label}`,
-      timestamp: new Date().toISOString()
-    })
-
-    setStatus('IN_PROGRESS')
   }
 
   const handleSubmit = () => {
@@ -241,16 +248,24 @@ export default function MergePage() {
                           <p className="whitespace-pre-wrap">{message.content}</p>
                           {message.requiresAction && message.options && (
                             <div className="mt-4 space-y-2">
-                              {message.options.map(option => (
-                                <Button
-                                  key={option.value}
-                                  variant="outline"
-                                  className="w-full justify-start"
-                                  onClick={() => handleOptionSelect(message.questionId!, option)}
-                                >
-                                  {option.label}
-                                </Button>
-                              ))}
+                              {message.options.map(option => {
+                                const isSelected = selectedOptions[message.questionId!] === option.value;
+                                return (
+                                  <Button
+                                    key={option.value}
+                                    variant="outline"
+                                    className={cn(
+                                      "w-full justify-between",
+                                      isSelected && "border-green-500 bg-green-50 text-green-700"
+                                    )}
+                                    onClick={() => handleOptionSelect(message.questionId!, option)}
+                                    disabled={selectedOptions[message.questionId!] !== undefined}
+                                  >
+                                    <span>{option.label}</span>
+                                    {isSelected && <CheckCircle2 className="h-4 w-4 ml-2" />}
+                                  </Button>
+                                );
+                              })}
                             </div>
                           )}
                         </CardContent>
