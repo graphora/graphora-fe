@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect } from 'react'
 import { useDropzone } from 'react-dropzone'
-import { Loader2, X, Upload, FileText } from 'lucide-react'
+import { Loader2, X, Upload, FileText, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -26,6 +26,7 @@ export default function TransformPage() {
   const [isProcessing, setIsProcessing] = useState(false)
   const [progress, setProgress] = useState(0)
   const [graphData, setGraphData] = useState<GraphData | null>(null)
+  const [isUploadPanelExpanded, setIsUploadPanelExpanded] = useState(true)
 
   // Get ontology ID from localStorage
   const ontologyId = typeof window !== 'undefined' ? localStorage.getItem('ontologyId') : null
@@ -109,6 +110,8 @@ export default function TransformPage() {
       }
 
       setGraphData(result.data || null)
+      // Auto-collapse the upload panel after successful upload
+      setIsUploadPanelExpanded(false)
     } catch (error) {
       console.error('Error transforming document:', error)
       setError(error instanceof Error ? error.message : 'Failed to transform document')
@@ -119,85 +122,110 @@ export default function TransformPage() {
   }
 
   return (
-    <main className="container mx-auto p-4 max-w-6xl">
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <div className="space-y-4">
-          <h1 className="text-2xl font-bold">Transform Document</h1>
-          
-          {error && (
-            <Alert variant="destructive">
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
-
-          <div
-            {...getRootProps()}
-            className={`
-              border-2 border-dashed rounded-lg p-8 text-center cursor-pointer
-              transition-colors duration-200
-              ${isDragActive ? 'border-primary bg-primary/5' : 'border-gray-300'}
-              ${file ? 'bg-gray-50' : ''}
-            `}
-          >
-            <input {...getInputProps()} />
-            
-            {file ? (
-              <div className="space-y-2">
-                <FileText className="mx-auto h-8 w-8 text-gray-400" />
-                <p className="text-sm font-medium">{file.name}</p>
-                <p className="text-xs text-gray-500">
-                  {(file.size / 1024 / 1024).toFixed(2)} MB
-                </p>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    handleRemoveFile()
-                  }}
-                >
-                  <X className="mr-2 h-4 w-4" />
-                  Remove
-                </Button>
-              </div>
-            ) : (
-              <div className="space-y-2">
-                <Upload className="mx-auto h-8 w-8 text-gray-400" />
-                <p className="text-sm font-medium">
-                  {isDragActive ? 'Drop the file here' : 'Drag & drop a file here'}
-                </p>
-                <p className="text-xs text-gray-500">
-                  Supported formats: PDF, TXT, DOCX (max 10MB)
-                </p>
-              </div>
-            )}
-          </div>
-
-          {file && (
+    <main className="container mx-auto p-4 max-w-6xl h-screen flex flex-col">
+      <div className="flex flex-1 gap-4 overflow-hidden">
+        <div 
+          className={`transition-all duration-300 ease-in-out flex ${
+            isUploadPanelExpanded ? 'w-1/3' : 'w-12'
+          }`}
+        >
+          <div className={`
+            flex-1 
+            ${isUploadPanelExpanded ? 'opacity-100' : 'opacity-0 overflow-hidden w-0'}
+            transition-opacity duration-300
+          `}>
             <div className="space-y-4">
-              {isProcessing && (
-                <Progress value={progress} className="w-full" />
-              )}
+              <h1 className="text-2xl font-bold">Transform Document</h1>
               
-              <Button
-                onClick={handleExtract}
-                disabled={isProcessing || !file}
-                className="w-full"
+              {error && (
+                <Alert variant="destructive">
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
+              )}
+
+              <div
+                {...getRootProps()}
+                className={`
+                  border-2 border-dashed rounded-lg p-8 text-center cursor-pointer
+                  transition-colors duration-200
+                  ${isDragActive ? 'border-primary bg-primary/5' : 'border-gray-300'}
+                  ${file ? 'bg-gray-50' : ''}
+                `}
               >
-                {isProcessing ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Processing...
-                  </>
+                <input {...getInputProps()} />
+                
+                {file ? (
+                  <div className="space-y-2">
+                    <FileText className="mx-auto h-8 w-8 text-gray-400" />
+                    <p className="text-sm font-medium">{file.name}</p>
+                    <p className="text-xs text-gray-500">
+                      {(file.size / 1024 / 1024).toFixed(2)} MB
+                    </p>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleRemoveFile()
+                      }}
+                    >
+                      <X className="mr-2 h-4 w-4" />
+                      Remove
+                    </Button>
+                  </div>
                 ) : (
-                  'Extract Graph'
+                  <div className="space-y-2">
+                    <Upload className="mx-auto h-8 w-8 text-gray-400" />
+                    <p className="text-sm font-medium">
+                      {isDragActive ? 'Drop the file here' : 'Drag & drop a file here'}
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      Supported formats: PDF, TXT, DOCX (max 10MB)
+                    </p>
+                  </div>
                 )}
-              </Button>
+              </div>
+
+              {file && (
+                <div className="space-y-4">
+                  {isProcessing && (
+                    <Progress value={progress} className="w-full" />
+                  )}
+                  
+                  <Button
+                    onClick={handleExtract}
+                    disabled={isProcessing || !file}
+                    className="w-full"
+                  >
+                    {isProcessing ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Processing...
+                      </>
+                    ) : (
+                      'Extract Graph'
+                    )}
+                  </Button>
+                </div>
+              )}
             </div>
-          )}
+          </div>
+          
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-full rounded-none border-l"
+            onClick={() => setIsUploadPanelExpanded(!isUploadPanelExpanded)}
+          >
+            {isUploadPanelExpanded ? (
+              <ChevronLeft className="h-4 w-4" />
+            ) : (
+              <ChevronRight className="h-4 w-4" />
+            )}
+          </Button>
         </div>
 
-        <div className="h-[600px] border rounded-lg bg-gray-50">
+        <div className="flex-1 h-full border rounded-lg bg-gray-50 overflow-hidden">
           {graphData ? (
             <GraphVisualization graphData={graphData} />
           ) : (
