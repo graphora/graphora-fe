@@ -17,8 +17,8 @@ export function WorkflowLayout({ children, progress, currentStep }: WorkflowLayo
     {
       id: 'ontology',
       label: 'Ontology Entry',
-      path: '/',
-      status: pathname === '/' ? 'current' : 
+      path: '/ontology',
+      status: pathname === '/ontology' ? 'current' : 
              pathname === '/transform' || pathname === '/merge' ? 'completed' : 'upcoming'
     },
     {
@@ -27,15 +27,14 @@ export function WorkflowLayout({ children, progress, currentStep }: WorkflowLayo
       path: '/transform',
       status: pathname === '/transform' && !progress ? 'current' : 
              pathname === '/merge' ? 'completed' : 
-             pathname === '/' ? 'upcoming' : 'completed'
+             pathname === '/ontology' ? 'upcoming' : 'completed'
     },
     {
       id: 'edit',
       label: 'Graph Editing',
       path: '/transform',
       status: pathname === '/transform' && progress ? 'current' : 
-             pathname === '/merge' ? 'completed' : 
-             pathname === '/' || (pathname === '/transform' && !progress) ? 'upcoming' : 'completed'
+             pathname === '/merge' ? 'completed' : 'upcoming'
     },
     {
       id: 'merge',
