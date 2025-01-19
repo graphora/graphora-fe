@@ -84,49 +84,44 @@ export default function TransformPage() {
 
     setIsProcessing(true)
     setError(null)
-    
+    setProgress(0)
+
     try {
       const formData = new FormData()
-      formData.append('file', file)
-      formData.append('session_id', sessionId)
+      formData.append('files', file)
 
-      // Use MockWebSocket in development
-      const WebSocketClass = process.env.NODE_ENV === 'development' 
-        ? MockWebSocket 
-        : WebSocket
+      // Show initial progress
+      setProgress(20)
 
-      const ws = new WebSocketClass(`${process.env.NEXT_PUBLIC_WS_URL}/transform`) as WebSocket
-      
-      ws.onmessage = (event) => {
-        const data = JSON.parse(event.data) as TransformResponse
-        if (data.progress) {
-          setProgress(data.progress)
-        }
-      }
-
-      const response = await fetch('/api/transform', {
+      const response = await fetch(`/api/transform?session_id=${sessionId}`, {
         method: 'POST',
-        body: formData,
-        headers: {
-          // The auth headers will be automatically added by Next.js
-        },
-        // Add this to ensure credentials are included
-        credentials: 'include'
+        body: formData
       })
 
-      const result: TransformResponse = await response.json()
-
-      if (!response.ok || result.status === 'error') {
-        throw new Error(result.error || 'Failed to transform document')
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to process file')
       }
 
-      setGraphData(result.data || null)
-      // Auto-collapse the upload panel after successful upload
+      const data = await response.json()
+      
+      if (data.status === 'error') {
+        throw new Error(data.message || 'Failed to process file')
+      }
+
+      // Show completion
+      setProgress(100)
+      setIsProcessing(false)
       setIsUploadPanelExpanded(false)
-    } catch (error) {
-      console.error('Error transforming document:', error)
-      setError(error instanceof Error ? error.message : 'Failed to transform document')
-    } finally {
+
+      // Optional: Add a small delay before hiding progress
+      setTimeout(() => {
+        setProgress(0)
+      }, 500)
+
+    } catch (err) {
+      console.error('Error processing file:', err)
+      setError(err instanceof Error ? err.message : 'Failed to process file')
       setIsProcessing(false)
       setProgress(0)
     }
