@@ -56,7 +56,6 @@ export async function POST(req: NextRequest) {
         'X-User-ID': userId,
       },
     })
-    console.log(backendResponse)
     if (!backendResponse.ok) {
       const error = await backendResponse.text()
       throw new Error(error)
