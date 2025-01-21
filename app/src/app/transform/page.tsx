@@ -143,6 +143,14 @@ export default function TransformPage() {
 
       try {
         const response = await fetch(`/api/transform/status/${transformId}`)
+        
+        if (!response.ok) {
+          if (response.status === 404) {
+            return
+          }
+          throw new Error('Failed to fetch status')
+        }
+        
         const data = await response.json()
 
         if (data.status === 'completed') {
@@ -170,7 +178,7 @@ export default function TransformPage() {
     }
 
     if (transformId && isProcessing) {
-      statusInterval = setInterval(checkStatus, 2000)
+      statusInterval = setInterval(checkStatus, 10000)
     }
 
     return () => {

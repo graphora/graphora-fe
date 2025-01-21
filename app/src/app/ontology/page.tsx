@@ -38,8 +38,8 @@ export default function OntologyPage() {
 
       const data = await response.json()
       
-      if (data.uuid) {
-        router.push(`/transform?session_id=${data.uuid}`)
+      if (data.id) {
+        router.push(`/transform?session_id=${data.id}`)
       } else {
         setError('Failed to create session')
       }
