@@ -15,7 +15,6 @@ export async function POST(request: Request) {
         text: body.text
       }),
     })
-    console.log(body, response)
     if (!response.ok) {
       throw new Error('Failed to submit ontology')
     }

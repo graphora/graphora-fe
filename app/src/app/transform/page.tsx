@@ -22,6 +22,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { WorkflowLayout } from '@/components/workflow-layout'
+import { clsx as cn } from 'clsx'
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB
 const ACCEPTED_FILE_TYPES = {
@@ -41,6 +42,7 @@ export default function TransformPage() {
   const [graphData, setGraphData] = useState<GraphData | null>(null)
   const [isUploadPanelExpanded, setIsUploadPanelExpanded] = useState(true)
   const [showMergeConfirm, setShowMergeConfirm] = useState(false)
+  const [transformId, setTransformId] = useState<string | null>(null)
 
   useEffect(() => {
     // Redirect back to ontology if no session_id is present
@@ -85,13 +87,11 @@ export default function TransformPage() {
     setIsProcessing(true)
     setError(null)
     setProgress(0)
+    setTransformId(null)
 
     try {
       const formData = new FormData()
       formData.append('files', file)
-
-      // Show initial progress
-      setProgress(20)
 
       const response = await fetch(`/api/transform?session_id=${sessionId}`, {
         method: 'POST',
@@ -109,15 +109,9 @@ export default function TransformPage() {
         throw new Error(data.message || 'Failed to process file')
       }
 
-      // Show completion
-      setProgress(100)
-      setIsProcessing(false)
-      setIsUploadPanelExpanded(false)
-
-      // Optional: Add a small delay before hiding progress
-      setTimeout(() => {
-        setProgress(0)
-      }, 500)
+      // Store transform ID and start status checking
+      setTransformId(data.id)
+      setProgress(10)
 
     } catch (err) {
       console.error('Error processing file:', err)
@@ -126,6 +120,65 @@ export default function TransformPage() {
       setProgress(0)
     }
   }
+
+  const loadGraphData = async (id: string) => {
+    try {
+      const response = await fetch(`/api/transform/graph/${id}`)
+      if (!response.ok) {
+        throw new Error('Failed to load graph data')
+      }
+      const data = await response.json()
+      setGraphData(data)
+    } catch (err) {
+      console.error('Error loading graph:', err)
+      setError(err instanceof Error ? err.message : 'Failed to load graph')
+    }
+  }
+
+  useEffect(() => {
+    let statusInterval: NodeJS.Timeout | null = null
+
+    const checkStatus = async () => {
+      if (!transformId) return
+
+      try {
+        const response = await fetch(`/api/transform/status/${transformId}`)
+        const data = await response.json()
+
+        if (data.status === 'completed') {
+          setProgress(100)
+          setIsProcessing(false)
+          setIsUploadPanelExpanded(false)
+          // Load graph data
+          loadGraphData(transformId)
+          if (statusInterval) {
+            clearInterval(statusInterval)
+          }
+        } else if (data.status === 'failed') {
+          throw new Error(data.message || 'Processing failed')
+        } else {
+          setProgress(data.progress || progress)
+        }
+      } catch (err) {
+        console.error('Error checking status:', err)
+        setError(err instanceof Error ? err.message : 'Failed to check status')
+        setIsProcessing(false)
+        if (statusInterval) {
+          clearInterval(statusInterval)
+        }
+      }
+    }
+
+    if (transformId && isProcessing) {
+      statusInterval = setInterval(checkStatus, 2000)
+    }
+
+    return () => {
+      if (statusInterval) {
+        clearInterval(statusInterval)
+      }
+    }
+  }, [transformId, isProcessing])
 
   const handleMergeConfirm = () => {
     setShowMergeConfirm(false)
@@ -156,70 +209,86 @@ export default function TransformPage() {
                 )}
 
                 <div
-                  {...getRootProps()}
-                  className={`
-                    border-2 border-dashed rounded-lg p-8 text-center cursor-pointer
-                    transition-colors duration-200
-                    ${isDragActive ? 'border-primary bg-primary/5' : 'border-gray-300'}
-                    ${file ? 'bg-gray-50' : ''}
-                  `}
+                  className="flex-1 min-h-0"
                 >
-                  <input {...getInputProps()} />
-                  
-                  {file ? (
-                    <div className="space-y-2">
-                      <FileText className="mx-auto h-8 w-8 text-gray-400" />
-                      <p className="text-sm font-medium">{file.name}</p>
-                      <p className="text-xs text-gray-500">
-                        {(file.size / 1024 / 1024).toFixed(2)} MB
-                      </p>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          handleRemoveFile()
-                        }}
-                      >
-                        <X className="mr-2 h-4 w-4" />
-                        Remove
-                      </Button>
+                  <div className={cn("p-4 space-y-4", !isUploadPanelExpanded && "hidden")}>
+                    <div className="flex flex-col items-center justify-center p-8 border-2 border-dashed rounded-lg hover:border-primary/50 transition-colors">
+                      <div {...getRootProps()} className="w-full text-center cursor-pointer">
+                        <input {...getInputProps()} />
+                        {file ? (
+                          <div className="space-y-4">
+                            <FileText className="w-12 h-12 mx-auto text-gray-400" />
+                            <div>
+                              <p className="text-sm font-medium">{file.name}</p>
+                              <p className="text-xs text-gray-500">
+                                {(file.size / 1024 / 1024).toFixed(2)} MB
+                              </p>
+                            </div>
+                            {isProcessing ? (
+                              <div className="space-y-2">
+                                <div className="flex items-center justify-center gap-2">
+                                  <Loader2 className="w-4 h-4 animate-spin" />
+                                  <span className="text-sm text-gray-500">Processing document...</span>
+                                </div>
+                                <div className="w-full max-w-xs mx-auto">
+                                  <Progress value={progress} className="h-1" />
+                                  <p className="mt-1 text-xs text-center text-gray-500">{progress}%</p>
+                                </div>
+                              </div>
+                            ) : (
+                              <Button
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  handleExtract()
+                                }}
+                                disabled={isProcessing}
+                              >
+                                Process Document
+                              </Button>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="space-y-4">
+                            <Upload className="w-12 h-12 mx-auto text-gray-400" />
+                            <div>
+                              <p className="text-sm font-medium">Drop your document here or click to upload</p>
+                              <p className="text-xs text-gray-500">
+                                Supports TXT files
+                              </p>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                      {file && !isProcessing && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setFile(null)
+                            setError(null)
+                          }}
+                          className="mt-2"
+                        >
+                          <X className="w-4 h-4 mr-2" />
+                          Remove
+                        </Button>
+                      )}
                     </div>
-                  ) : (
-                    <div className="space-y-2">
-                      <Upload className="mx-auto h-8 w-8 text-gray-400" />
-                      <p className="text-sm font-medium">
-                        {isDragActive ? 'Drop the file here' : 'Drag & drop a file here'}
-                      </p>
-                      <p className="text-xs text-gray-500">
-                        Supported formats: PDF, TXT, DOCX (max 10MB)
-                      </p>
+
+                    {error && (
+                      <Alert variant="destructive">
+                        <AlertDescription>{error}</AlertDescription>
+                      </Alert>
+                    )}
+                  </div>
+
+                  {graphData && (
+                    <div className="flex-1 min-h-0">
+                      <GraphVisualization data={graphData} />
                     </div>
                   )}
                 </div>
-
-                {file && (
-                  <div className="space-y-4">
-                    {isProcessing && (
-                      <Progress value={progress} className="w-full" />
-                    )}
-                    
-                    <Button
-                      onClick={handleExtract}
-                      disabled={isProcessing || !file}
-                      className="w-full"
-                    >
-                      {isProcessing ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Processing...
-                        </>
-                      ) : (
-                        'Extract Graph'
-                      )}
-                    </Button>
-                  </div>
-                )}
               </div>
             </div>
             

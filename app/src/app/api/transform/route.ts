@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
-import { mockGraphData } from '@/lib/mock-data'
 
 export async function POST(req: NextRequest) {
   try {
@@ -15,46 +14,21 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // Get the auth session
-    const { userId } = await auth()
-    
-    // If there's no session, return unauthorized
-    if (!userId) {
-      return NextResponse.json(
-        { status: 'error', error: 'Unauthorized' },
-        { status: 401 }
-      )
-    }
-
     const formData = await req.formData()
     const files = formData.getAll('files') as File[]
 
     if (!files || files.length === 0) {
       return NextResponse.json(
-        { status: 'error', error: 'Missing Files' },
+        { error: 'Missing Files' },
         { status: 400 }
       )
     }
-
-    // Use mock data in development
-    // if (process.env.NODE_ENV === 'development') {
-    //   // Simulate processing delay
-    //   await new Promise(resolve => setTimeout(resolve, 2000))
-
-    //   return NextResponse.json({
-    //     status: 'success',
-    //     data: mockGraphData
-    //   })
-    // }
 
     // Forward the request to the backend
     const backendUrl = `${process.env.BACKEND_API_URL}/api/v1/transform/${sessionId}/upload`
     const backendResponse = await fetch(backendUrl, {
       method: 'POST',
       body: formData,
-      headers: {
-        'X-User-ID': userId,
-      },
     })
     if (!backendResponse.ok) {
       const error = await backendResponse.text()
