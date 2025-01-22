@@ -2,13 +2,13 @@
 
 import { useState, useEffect, useRef, useMemo } from 'react'
 import dynamic from 'next/dynamic'
-import { Plus, Undo2, Redo2 } from 'lucide-react'
 import type { GraphData, NodeType, EdgeType } from '@/types/graph'
 import { useGraphState } from '@/hooks/useGraphState'
 import { NODE_TYPES, EDGE_TYPES } from '@/types/graph'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } from '@/components/ui/context-menu'
+import { GraphControls } from '@/components/graph-controls'
 
 const LoadingGraph = () => (
   <div className="w-full h-full min-h-[600px] flex items-center justify-center text-gray-400">
@@ -45,6 +45,7 @@ function getNodeColor(type: string): string {
 
 interface GraphVisualizationProps {
   graphData: GraphData | null
+  onGraphReset?: () => Promise<void>
 }
 
 interface NodeFormData {
@@ -89,7 +90,7 @@ interface SelectedElement {
   data: ProcessedNode | ProcessedLink
 }
 
-export function GraphVisualization({ graphData: initialData }: GraphVisualizationProps) {
+export function GraphVisualization({ graphData: initialData, onGraphReset }: GraphVisualizationProps) {
   const {
     graphData,
     history,
@@ -102,7 +103,9 @@ export function GraphVisualization({ graphData: initialData }: GraphVisualizatio
     updateEdge,
     deleteEdge,
     undo,
-    redo
+    redo,
+    saveGraph,
+    resetGraph
   } = useGraphState(initialData)
 
   const [selectedElement, setSelectedElement] = useState<SelectedElement | null>(null)
@@ -135,16 +138,29 @@ export function GraphVisualization({ graphData: initialData }: GraphVisualizatio
   return (
     <div className="w-full h-full relative">
       {/* Graph Controls */}
-      <div className="absolute top-4 left-4 z-10 flex gap-2">
-        <Button variant="outline" size="icon" onClick={undo} disabled={!canUndo}>
-          <Undo2 className="h-4 w-4" />
-        </Button>
-        <Button variant="outline" size="icon" onClick={redo} disabled={!canRedo}>
-          <Redo2 className="h-4 w-4" />
-        </Button>
-        <Button variant="outline" size="icon" onClick={() => setShowNodeForm(true)}>
-          <Plus className="h-4 w-4" />
-        </Button>
+      <div className="absolute top-4 left-4 z-10">
+        <GraphControls
+          onReset={async () => {
+            try {
+              // First call the parent's reset if provided
+              if (onGraphReset) {
+                await onGraphReset()
+              }
+              // Then reset the local graph state
+              await resetGraph()
+            } catch (error) {
+              console.error('Error resetting graph:', error)
+            }
+          }}
+          onSave={saveGraph}
+          onUndo={undo}
+          onRedo={redo}
+          onAddNode={() => setShowNodeForm(true)}
+          hasChanges={history.length > 0}
+          isLoading={false}
+          canUndo={canUndo}
+          canRedo={canRedo}
+        />
       </div>
 
       {/* Graph Visualization */}

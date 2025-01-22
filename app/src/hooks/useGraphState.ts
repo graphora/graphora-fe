@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import type { GraphData, GraphOperation, GraphState, Node, Edge, NodeType, EdgeType } from '@/types/graph'
 
 let historyIdCounter = 0
@@ -7,257 +7,206 @@ function generateHistoryId(): string {
 }
 
 export function useGraphState(initialData: GraphData) {
-  const [state, setState] = useState<GraphState>({
-    data: initialData,
-    history: [],
-    undoStack: [],
-    redoStack: []
-  })
-
-  const addNode = useCallback(async (type: NodeType, properties: Record<string, any>) => {
-    try {
-      const response = await fetch('/api/graph/nodes', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type, properties })
-      })
-
-      if (!response.ok) throw new Error('Failed to create node')
-      
-      const node = await response.json()
-      const operation: GraphOperation = { type: 'CREATE_NODE', payload: { type, properties } }
-      
-      setState(prev => ({
-        ...prev,
-        data: {
-          ...prev.data,
-          nodes: [...prev.data.nodes, node]
-        },
-        history: [...prev.history, {
-          id: generateHistoryId(),
-          operation,
-          timestamp: new Date().toISOString(),
-          user: 'current-user' // Replace with actual user info
-        }],
-        undoStack: [...prev.undoStack, operation],
-        redoStack: []
-      }))
-
-      return node
-    } catch (error) {
-      console.error('Error adding node:', error)
-      throw error
-    }
-  }, [])
-
-  const updateNode = useCallback(async (nodeId: string, properties: Record<string, any>) => {
-    try {
-      const response = await fetch(`/api/graph/nodes?nodeId=${nodeId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ properties })
-      })
-
-      if (!response.ok) throw new Error('Failed to update node')
-      
-      const updatedNode = await response.json()
-      const operation: GraphOperation = { type: 'UPDATE_NODE', payload: { id: nodeId, properties } }
-      
-      setState(prev => ({
-        ...prev,
-        data: {
-          ...prev.data,
-          nodes: prev.data.nodes.map(node => 
-            node.id === nodeId ? updatedNode : node
-          )
-        },
-        history: [...prev.history, {
-          id: generateHistoryId(),
-          operation,
-          timestamp: new Date().toISOString(),
-          user: 'current-user'
-        }],
-        undoStack: [...prev.undoStack, operation],
-        redoStack: []
-      }))
-
-      return updatedNode
-    } catch (error) {
-      console.error('Error updating node:', error)
-      throw error
-    }
-  }, [])
-
-  const deleteNode = useCallback(async (nodeId: string) => {
-    try {
-      const response = await fetch(`/api/graph/nodes?nodeId=${nodeId}`, {
-        method: 'DELETE'
-      })
-
-      if (!response.ok) throw new Error('Failed to delete node')
-      
-      const operation: GraphOperation = { type: 'DELETE_NODE', payload: { id: nodeId } }
-      
-      setState(prev => ({
-        ...prev,
-        data: {
-          nodes: prev.data.nodes.filter(node => node.id !== nodeId),
-          edges: prev.data.edges.filter(edge => 
-            edge.source !== nodeId && edge.target !== nodeId
-          )
-        },
-        history: [...prev.history, {
-          id: generateHistoryId(),
-          operation,
-          timestamp: new Date().toISOString(),
-          user: 'current-user'
-        }],
-        undoStack: [...prev.undoStack, operation],
-        redoStack: []
-      }))
-    } catch (error) {
-      console.error('Error deleting node:', error)
-      throw error
-    }
-  }, [])
-
-  const addEdge = useCallback(async (sourceId: string, targetId: string, type: EdgeType, properties: Record<string, any> = {}) => {
-    try {
-      const response = await fetch('/api/graph/edges', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sourceId, targetId, type, properties })
-      })
-
-      if (!response.ok) throw new Error('Failed to create edge')
-      
-      const edge = await response.json()
-      const operation: GraphOperation = { 
-        type: 'CREATE_EDGE', 
-        payload: { 
-          source: sourceId, 
-          target: targetId, 
-          label: type, 
-          properties,
-          id: `${sourceId}_${targetId}` // Store the edge ID for recreation
-        } 
+  // Load initial state from local storage if available
+  const loadInitialState = (): GraphState => {
+    if (typeof window === 'undefined') return { data: initialData, history: [], undoStack: [], redoStack: [] }
+    
+    const savedState = localStorage.getItem(`graph_state_${initialData.id}`)
+    if (savedState) {
+      try {
+        return JSON.parse(savedState)
+      } catch (error) {
+        console.error('Error loading state from local storage:', error)
       }
-      
-      const newEdge = {
-        id: edge.id,
-        source: sourceId,
-        target: targetId,
-        type: type,
-        label: type,
-        properties: properties
-      }
-      
-      setState(prev => ({
-        ...prev,
-        data: {
-          ...prev.data,
-          edges: [...prev.data.edges, newEdge]
-        },
-        history: [...prev.history, {
-          id: generateHistoryId(),
-          operation,
-          timestamp: new Date().toISOString(),
-          user: 'current-user'
-        }],
-        undoStack: [...prev.undoStack, operation],
-        redoStack: []
-      }))
-
-      return newEdge
-    } catch (error) {
-      console.error('Error adding edge:', error)
-      throw error
     }
-  }, [])
+    return { data: initialData, history: [], undoStack: [], redoStack: [] }
+  }
 
-  const updateEdge = useCallback(async (edgeId: string, properties: Record<string, any>) => {
-    try {
-      const response = await fetch(`/api/graph/edges?edgeId=${edgeId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ properties })
-      })
+  const [state, setState] = useState<GraphState>(loadInitialState)
+  const { data: graphData, history, undoStack, redoStack } = state
 
-      if (!response.ok) throw new Error('Failed to update edge')
-      
-      const updatedEdge = await response.json()
-      const operation: GraphOperation = { type: 'UPDATE_EDGE', payload: { id: edgeId, properties } }
-      
-      setState(prev => ({
-        ...prev,
-        data: {
-          ...prev.data,
-          edges: prev.data.edges.map(edge => 
-            edge.id === edgeId ? updatedEdge : edge
-          )
-        },
-        history: [...prev.history, {
-          id: generateHistoryId(),
-          operation,
-          timestamp: new Date().toISOString(),
-          user: 'current-user'
-        }],
-        undoStack: [...prev.undoStack, operation],
-        redoStack: []
-      }))
-
-      return updatedEdge
-    } catch (error) {
-      console.error('Error updating edge:', error)
-      throw error
+  // Save state to local storage whenever it changes
+  useEffect(() => {
+    if (typeof window !== 'undefined' && initialData.id) {
+      localStorage.setItem(`graph_state_${initialData.id}`, JSON.stringify(state))
     }
-  }, [])
+  }, [state, initialData.id])
 
-  const deleteEdge = useCallback(async (edgeId: string) => {
-    try {
-      const response = await fetch(`/api/graph/edges?edgeId=${edgeId}`, {
-        method: 'DELETE'
-      })
+  // Helper to update state and save to local storage
+  const updateState = (newState: GraphState) => {
+    setState(newState)
+  }
 
-      if (!response.ok) throw new Error('Failed to delete edge')
-      
-      setState(prev => {
-        // Find the edge before deleting it
-        const edgeToDelete = prev.data.edges.find(edge => edge.id === edgeId)
-        if (!edgeToDelete) return prev
-
-        const operation: GraphOperation = { 
-          type: 'DELETE_EDGE', 
-          payload: { 
-            id: edgeId,
-            edge: edgeToDelete // Store complete edge information
-          } 
-        }
-        
-        return {
-          ...prev,
-          data: {
-            ...prev.data,
-            edges: prev.data.edges.filter(edge => edge.id !== edgeId)
-          },
-          history: [...prev.history, {
-            id: generateHistoryId(),
-            operation,
-            timestamp: new Date().toISOString(),
-            user: 'current-user'
-          }],
-          undoStack: [...prev.undoStack, operation],
-          redoStack: []
-        }
-      })
-    } catch (error) {
-      console.error('Error deleting edge:', error)
-      throw error
+  const addNode = useCallback((type: NodeType, properties: Record<string, any>) => {
+    const node = {
+      id: `node_${Date.now()}`,
+      type,
+      properties,
+      label: properties.name || type
     }
-  }, [])
+    
+    const operation: GraphOperation = { type: 'CREATE_NODE', payload: { type, properties } }
+    
+    updateState({
+      ...state,
+      data: {
+        ...state.data,
+        nodes: [...state.data.nodes, node]
+      },
+      history: [...state.history, {
+        id: generateHistoryId(),
+        operation,
+        timestamp: new Date().toISOString(),
+        user: 'current-user'
+      }],
+      undoStack: [...state.undoStack, operation],
+      redoStack: []
+    })
+
+    return node
+  }, [state])
+
+  const updateNode = useCallback((nodeId: string, properties: Record<string, any>) => {
+    const updatedNode = {
+      ...state.data.nodes.find(n => n.id === nodeId)!,
+      properties: { ...properties }
+    }
+    
+    const operation: GraphOperation = { type: 'UPDATE_NODE', payload: { id: nodeId, properties } }
+    
+    updateState({
+      ...state,
+      data: {
+        ...state.data,
+        nodes: state.data.nodes.map(node => 
+          node.id === nodeId ? updatedNode : node
+        )
+      },
+      history: [...state.history, {
+        id: generateHistoryId(),
+        operation,
+        timestamp: new Date().toISOString(),
+        user: 'current-user'
+      }],
+      undoStack: [...state.undoStack, operation],
+      redoStack: []
+    })
+
+    return updatedNode
+  }, [state])
+
+  const deleteNode = useCallback((nodeId: string) => {
+    const operation: GraphOperation = { type: 'DELETE_NODE', payload: { id: nodeId } }
+    
+    updateState({
+      ...state,
+      data: {
+        nodes: state.data.nodes.filter(node => node.id !== nodeId),
+        edges: state.data.edges.filter(edge => 
+          edge.source !== nodeId && edge.target !== nodeId
+        )
+      },
+      history: [...state.history, {
+        id: generateHistoryId(),
+        operation,
+        timestamp: new Date().toISOString(),
+        user: 'current-user'
+      }],
+      undoStack: [...state.undoStack, operation],
+      redoStack: []
+    })
+  }, [state])
+
+  const addEdge = useCallback((sourceId: string, targetId: string, type: EdgeType, properties: Record<string, any> = {}) => {
+    const edge = {
+      id: `${sourceId}_${targetId}_${Date.now()}`,
+      source: sourceId,
+      target: targetId,
+      type,
+      label: type,
+      properties
+    }
+    
+    const operation: GraphOperation = { 
+      type: 'CREATE_EDGE', 
+      payload: { 
+        source: sourceId, 
+        target: targetId, 
+        label: type, 
+        properties
+      } 
+    }
+    
+    updateState({
+      ...state,
+      data: {
+        ...state.data,
+        edges: [...state.data.edges, edge]
+      },
+      history: [...state.history, {
+        id: generateHistoryId(),
+        operation,
+        timestamp: new Date().toISOString(),
+        user: 'current-user'
+      }],
+      undoStack: [...state.undoStack, operation],
+      redoStack: []
+    })
+
+    return edge
+  }, [state])
+
+  const updateEdge = useCallback((edgeId: string, properties: Record<string, any>) => {
+    const updatedEdge = {
+      ...state.data.edges.find(e => e.id === edgeId)!,
+      properties: { ...properties }
+    }
+    
+    const operation: GraphOperation = { type: 'UPDATE_EDGE', payload: { id: edgeId, properties } }
+    
+    updateState({
+      ...state,
+      data: {
+        ...state.data,
+        edges: state.data.edges.map(edge => 
+          edge.id === edgeId ? updatedEdge : edge
+        )
+      },
+      history: [...state.history, {
+        id: generateHistoryId(),
+        operation,
+        timestamp: new Date().toISOString(),
+        user: 'current-user'
+      }],
+      undoStack: [...state.undoStack, operation],
+      redoStack: []
+    })
+
+    return updatedEdge
+  }, [state])
+
+  const deleteEdge = useCallback((edgeId: string) => {
+    const operation: GraphOperation = { type: 'DELETE_EDGE', payload: { id: edgeId } }
+    
+    updateState({
+      ...state,
+      data: {
+        ...state.data,
+        edges: state.data.edges.filter(edge => edge.id !== edgeId)
+      },
+      history: [...state.history, {
+        id: generateHistoryId(),
+        operation,
+        timestamp: new Date().toISOString(),
+        user: 'current-user'
+      }],
+      undoStack: [...state.undoStack, operation],
+      redoStack: []
+    })
+  }, [state])
 
   const undo = useCallback(() => {
-    setState(prev => {
+    updateState(prev => {
       const operation = prev.undoStack[prev.undoStack.length - 1]
       if (!operation) return prev
 
@@ -337,7 +286,7 @@ export function useGraphState(initialData: GraphData) {
   }, [])
 
   const redo = useCallback(() => {
-    setState(prev => {
+    updateState(prev => {
       const operation = prev.redoStack[prev.redoStack.length - 1]
       if (!operation) return prev
 
@@ -445,11 +394,72 @@ export function useGraphState(initialData: GraphData) {
     })
   }, [])
 
+  const resetGraph = useCallback(async () => {
+    try {
+      // Fetch fresh data from the API
+      const response = await fetch(`/api/graph/${initialData.id}`)
+      if (!response.ok) throw new Error('Failed to reset graph')
+      const freshData = await response.json()
+      
+      // Clear local storage
+      if (typeof window !== 'undefined' && initialData.id) {
+        localStorage.removeItem(`graph_state_${initialData.id}`)
+      }
+      
+      // Reset to initial state with fresh data
+      updateState({
+        data: {
+          ...freshData,
+          id: initialData.id,
+          _reset: Date.now()
+        },
+        history: [],
+        undoStack: [],
+        redoStack: []
+      })
+    } catch (error) {
+      console.error('Error resetting graph:', error)
+      throw error
+    }
+  }, [initialData])
+
+  const saveGraph = useCallback(async () => {
+    try {
+      const response = await fetch(`/api/graph/${initialData.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(graphData)
+      })
+      if (!response.ok) throw new Error('Failed to save graph')
+      
+      const savedData = await response.json()
+      
+      // Clear local storage after successful save
+      if (typeof window !== 'undefined' && initialData.id) {
+        localStorage.removeItem(`graph_state_${initialData.id}`)
+      }
+      
+      // Reset state with saved data
+      updateState({
+        data: {
+          ...savedData,
+          id: initialData.id
+        },
+        history: [],
+        undoStack: [],
+        redoStack: []
+      })
+    } catch (error) {
+      console.error('Error saving graph:', error)
+      throw error
+    }
+  }, [graphData, initialData])
+
   return {
-    graphData: state.data,
-    history: state.history,
-    canUndo: state.undoStack.length > 0,
-    canRedo: state.redoStack.length > 0,
+    graphData,
+    history,
+    canUndo: undoStack.length > 0,
+    canRedo: redoStack.length > 0,
     addNode,
     updateNode,
     deleteNode,
@@ -457,6 +467,8 @@ export function useGraphState(initialData: GraphData) {
     updateEdge,
     deleteEdge,
     undo,
-    redo
+    redo,
+    resetGraph,
+    saveGraph
   }
-} 
+}

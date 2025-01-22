@@ -51,6 +51,24 @@ export default function TransformPage() {
     }
   }, [sessionId, router])
 
+  useEffect(() => {
+    // If we have a transformId, fetch the graph data
+    if (transformId) {
+      const fetchGraphData = async () => {
+        try {
+          const response = await fetch(`/api/graph/${transformId}`)
+          if (!response.ok) throw new Error('Failed to fetch graph data')
+          const data = await response.json()
+          setGraphData(data)
+        } catch (error) {
+          console.error('Error fetching graph data:', error)
+          setError('Failed to load graph data')
+        }
+      }
+      fetchGraphData()
+    }
+  }, [transformId])
+
   const onDrop = useCallback((acceptedFiles: File[]) => {
     setError(null)
     const file = acceptedFiles[0]
@@ -152,6 +170,31 @@ export default function TransformPage() {
       console.error('Error loading graph data:', err)
       setError(err instanceof Error ? err.message : 'Failed to load graph data')
       setIsProcessing(false)
+    }
+  }
+
+  const handleGraphReset = async () => {
+    if (transformId) {
+      try {
+        // Fetch fresh data from API
+        const response = await fetch(`/api/graph/${transformId}`)
+        if (!response.ok) throw new Error('Failed to reset graph')
+        const data = await response.json()
+        
+        // Clear local storage and reset state
+        localStorage.removeItem(`graph_state_${transformId}`)
+        
+        // Set fresh data and force a re-render
+        setGraphData({
+          ...data,
+          id: transformId,
+          // Add timestamp to force graph to re-render with fresh data
+          _reset: Date.now()
+        })
+      } catch (error) {
+        console.error('Error resetting graph:', error)
+        setError('Failed to reset graph')
+      }
     }
   }
 
@@ -317,14 +360,14 @@ export default function TransformPage() {
             </Button>
           </div>
 
-          {/* Graph Area */}
-          <div className="flex-1 bg-background border rounded-lg overflow-hidden">
-            {graphData ? (
-              <GraphVisualization graphData={graphData} />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center text-muted-foreground">
-                No graph data available
-              </div>
+          {/* Graph Section */}
+          <div className="flex-1 min-h-0">
+            {graphData && (
+              <GraphVisualization 
+                key={graphData._reset} // Force re-mount on reset
+                graphData={graphData} 
+                onGraphReset={handleGraphReset}
+              />
             )}
           </div>
         </div>
