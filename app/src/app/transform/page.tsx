@@ -121,17 +121,37 @@ export default function TransformPage() {
     }
   }
 
-  const loadGraphData = async (id: string) => {
+  const loadGraphData = async (transformId: string) => {
     try {
-      const response = await fetch(`/api/transform/graph/${id}`)
+      const response = await fetch(`/api/graph/${transformId}`)
+      
       if (!response.ok) {
+        if (response.status === 404) {
+          setError('Graph data not found')
+          return
+        }
         throw new Error('Failed to load graph data')
       }
+      
       const data = await response.json()
-      setGraphData(data)
+      setGraphData({
+        nodes: data.nodes.map((node: any) => ({
+          ...node,
+          // Ensure required properties exist
+          label: node.label || node.type,
+          properties: node.properties || {}
+        })),
+        edges: data.edges.map((edge: any) => ({
+          ...edge,
+          // Ensure required properties exist
+          label: edge.type,
+          properties: edge.properties || {}
+        }))
+      })
     } catch (err) {
-      console.error('Error loading graph:', err)
-      setError(err instanceof Error ? err.message : 'Failed to load graph')
+      console.error('Error loading graph data:', err)
+      setError(err instanceof Error ? err.message : 'Failed to load graph data')
+      setIsProcessing(false)
     }
   }
 
