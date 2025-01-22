@@ -186,16 +186,36 @@ export default function MergePage() {
   }
 
   return (
-    <WorkflowLayout progress={progress} currentStep={currentStep}>
-      <div className="flex flex-col h-[calc(100vh-8rem)]">
-        <div className="mb-4 flex items-center justify-between">
-          <h1 className="text-2xl font-bold">Graph Merge Process</h1>
+    <WorkflowLayout steps={workflowSteps}>
+      <div className="flex flex-col h-[calc(100vh-4rem)]">
+        {/* Header */}
+        <div className="flex items-center justify-between p-4 border-b bg-background sticky top-0 z-50">
+          <div className="flex items-center gap-4">
+            <h1 className="text-2xl font-bold">Graph Merge Process</h1>
+            {status === 'IN_PROGRESS' && (
+              <div className="flex items-center gap-2">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span className="text-sm text-muted-foreground">
+                  {currentStep} ({progress}%)
+                </span>
+              </div>
+            )}
+          </div>
+
           <div className="flex items-center gap-4">
             <Button
-              variant="ghost"
+              variant="outline"
               size="icon"
-              onClick={togglePause}
-              disabled={status === 'COMPLETED' || status === 'FAILED'}
+              onClick={() => {
+                setIsPaused(!isPaused)
+                if (wsRef.current) {
+                  if (isPaused) {
+                    wsRef.current.resume()
+                  } else {
+                    wsRef.current.pause()
+                  }
+                }
+              }}
             >
               {isPaused ? (
                 <PlayCircle className="h-5 w-5" />
@@ -210,28 +230,28 @@ export default function MergePage() {
                 onClick={handleSubmit}
               >
                 <CheckCircle2 className="h-4 w-4" />
-                Save to DB
+                Merge to Prod DB
               </Button>
             )}
           </div>
         </div>
 
         {error && (
-          <Alert variant="destructive" className="mb-4">
+          <Alert variant="destructive" className="m-4">
             <AlertDescription>{error}</AlertDescription>
           </Alert>
         )}
 
-        <div className="flex-1 min-h-0"> 
+        <div className="flex-1 p-4 min-h-0">
           <ResizablePanelGroup
             direction="horizontal"
-            className="h-full rounded-lg border bg-background"
+            className="min-h-[500px] h-full rounded-lg border bg-background"
           >
             {/* Chat Panel */}
             <ResizablePanel defaultSize={40} minSize={30}>
-              <div className="h-full flex flex-col">
+              <div className="flex flex-col h-full">
                 <div className="p-2 border-b font-medium">Agent Chat</div>
-                <div className="flex-1 overflow-y-auto min-h-0"> 
+                <ScrollArea className="flex-1">
                   <div className="p-4 space-y-4" ref={scrollRef}>
                     {messages.map((message) => (
                       <Card key={message.id} className={cn(
@@ -288,17 +308,17 @@ export default function MergePage() {
                       </Alert>
                     )}
                   </div>
-                </div>
+                </ScrollArea>
               </div>
             </ResizablePanel>
 
-            <ResizableHandle />
+            <ResizableHandle className="w-2 bg-muted hover:bg-muted/90 transition-colors" />
 
             {/* Graph Panel */}
             <ResizablePanel defaultSize={60} minSize={30}>
-              <div className="h-full flex flex-col">
+              <div className="flex flex-col h-full">
                 <div className="p-2 border-b font-medium">Graph Preview</div>
-                <div className="flex-1 min-h-0"> 
+                <div className="flex-1 min-h-0">
                   <GraphVisualization graphData={graphData} />
                 </div>
               </div>

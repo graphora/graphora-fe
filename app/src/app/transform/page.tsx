@@ -330,11 +330,10 @@ export default function TransformPage() {
         </div>
 
         {/* Merge Button */}
-        <div className="flex justify-end mt-4">
+        <div className="flex justify-end">
           <Button
             onClick={() => setShowMergeConfirm(true)}
             disabled={!graphData}
-            className="gap-2"
           >
             <GitMerge className="w-4 h-4" />
             Merge to Prod DB

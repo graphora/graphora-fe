@@ -76,6 +76,7 @@ interface ProcessedLink {
   target: ProcessedNode | { id: string }
   name: string
   properties: Record<string, any>
+  id: string
 }
 
 interface ProcessedGraphData {
@@ -118,19 +119,21 @@ export function GraphVisualization({ graphData: initialData }: GraphVisualizatio
       nodes: graphData.nodes.map(node => ({
         ...node,
         name: node.label,
-        color: getNodeColor(node.type)
+        color: getNodeColor(node.type),
+        id: node.id
       })),
       links: graphData.edges.map(edge => ({
         ...edge,
         name: edge.label,
         source: edge.source,
-        target: edge.target
+        target: edge.target,
+        id: `${edge.source}_${edge.target}`
       }))
     }
   }, [graphData])
 
   return (
-    <div className="relative w-full h-full min-h-[600px] bg-background">
+    <div className="w-full h-full relative">
       {/* Graph Controls */}
       <div className="absolute top-4 left-4 z-10 flex gap-2">
         <Button variant="outline" size="icon" onClick={undo} disabled={!canUndo}>
@@ -145,109 +148,217 @@ export function GraphVisualization({ graphData: initialData }: GraphVisualizatio
       </div>
 
       {/* Graph Visualization */}
-      <ContextMenu>
-        <ContextMenuTrigger>
-          <ForceGraph2D
-            ref={graphRef}
-            graphData={processedData}
-            nodeLabel="name"
-            nodeColor="color"
-            nodeRelSize={6}
-            linkDirectionalArrowLength={6}
-            linkDirectionalArrowRelPos={1}
-            linkLabel="name"
-            onNodeClick={(node: ProcessedNode) => {
-              setSelectedElement({ type: 'node', data: node })
-            }}
-            onLinkClick={(link: ProcessedLink) => {
-              setSelectedElement({ type: 'link', data: link })
-            }}
-            nodeCanvasObject={(node: ProcessedNode, ctx: CanvasRenderingContext2D, globalScale: number) => {
-              const label = node.properties?.name || node.id
-              const fontSize = 12/globalScale
-              ctx.font = `${fontSize}px Sans-Serif`
-              ctx.textAlign = 'center'
-              ctx.textBaseline = 'middle'
-              
-              // Draw node
-              ctx.beginPath()
-              ctx.arc(node.x!, node.y!, 4, 0, 2 * Math.PI)
-              ctx.fillStyle = node.color
-              ctx.fill()
-              
-              // Draw text below node with background
-              const textWidth = ctx.measureText(label).width
-              const bckgDimensions = [textWidth, fontSize].map(n => n + fontSize * 0.5)
-              const textY = node.y! + 10 // Position text below node
-              
-              ctx.fillStyle = 'rgba(255, 255, 255, 0.8)'
-              ctx.fillRect(
-                node.x! - bckgDimensions[0] / 2,
-                textY - bckgDimensions[1] / 2,
-                bckgDimensions[0],
-                bckgDimensions[1]
-              )
-              
-              ctx.fillStyle = '#000'
-              ctx.fillText(label, node.x!, textY)
-            }}
-            width={window.innerWidth - 48} // Adjust width to prevent cutoff
-            height={window.innerHeight - 200} // Adjust height to fit screen
-          />
-        </ContextMenuTrigger>
-        <ContextMenuContent>
-          <ContextMenuItem onClick={() => setShowNodeForm(true)}>
-            Add Node
-          </ContextMenuItem>
-        </ContextMenuContent>
-      </ContextMenu>
+      <div className="w-full h-full">
+        <ContextMenu>
+          <ContextMenuTrigger>
+            <ForceGraph2D
+              ref={graphRef}
+              graphData={processedData}
+              nodeLabel="name"
+              nodeColor="color"
+              nodeRelSize={6}
+              linkDirectionalArrowLength={6}
+              linkDirectionalArrowRelPos={1}
+              linkLabel="name"
+              onNodeClick={(node: ProcessedNode) => {
+                setSelectedElement({ type: 'node', data: node })
+              }}
+              onLinkClick={(link: ProcessedLink) => {
+                setSelectedElement({ type: 'link', data: link })
+              }}
+              nodeCanvasObject={(node: ProcessedNode, ctx: CanvasRenderingContext2D, globalScale: number) => {
+                const label = node.properties?.name || node.id || node.type
+                const fontSize = 12/globalScale
+                ctx.font = `${fontSize}px Sans-Serif`
+                ctx.textAlign = 'center'
+                ctx.textBaseline = 'middle'
+                
+                // Draw node
+                ctx.beginPath()
+                ctx.arc(node.x!, node.y!, 4, 0, 2 * Math.PI)
+                ctx.fillStyle = node.color
+                ctx.fill()
+                
+                // Draw text below node with background
+                const textWidth = ctx.measureText(label).width
+                const bckgDimensions = [textWidth, fontSize].map(n => n + fontSize * 0.5)
+                const textY = node.y! + 10
+                
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.8)'
+                ctx.fillRect(
+                  node.x! - bckgDimensions[0] / 2,
+                  textY - bckgDimensions[1] / 2,
+                  bckgDimensions[0],
+                  bckgDimensions[1]
+                )
+                
+                ctx.fillStyle = '#000'
+                ctx.fillText(label, node.x!, textY)
+              }}
+              width={window.innerWidth - 48}
+              height={window.innerHeight - 200}
+            />
+          </ContextMenuTrigger>
+          <ContextMenuContent>
+            <ContextMenuItem onClick={() => setShowNodeForm(true)}>
+              Add Node
+            </ContextMenuItem>
+          </ContextMenuContent>
+        </ContextMenu>
 
-      {/* Node/Edge Details Dialog - Position it away from the top-left */}
-      {selectedElement && (
-        <Dialog open={!!selectedElement} onOpenChange={() => setSelectedElement(null)}>
-          <DialogContent className="sm:max-w-[425px] bg-white dark:bg-gray-900">
-            <DialogHeader>
-              <DialogTitle>
-                {selectedElement.type === 'node' ? 'Node Details' : 'Edge Details'}
-              </DialogTitle>
-            </DialogHeader>
-            {selectedElement.type === 'node' && (
-              <div className="space-y-2">
-                <div className="flex justify-between">
-                  <span className="font-medium">Type:</span>
-                  <span>{(selectedElement.data as ProcessedNode).type}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="font-medium">Name:</span>
-                  <input
-                    value={(selectedElement.data as ProcessedNode).name || ''}
-                    onChange={e => setSelectedElement(prev => prev ? {
-                      ...prev,
-                      data: { ...prev.data, name: e.target.value }
-                    } : null)}
-                    className="border rounded px-2 py-1"
-                  />
-                </div>
-                <div className="mt-4">
-                  <div className="flex justify-between items-center mb-2">
-                    <h4 className="font-medium">Properties:</h4>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        const key = prompt('Enter property name:')
-                        if (key) setSelectedElement(prev => prev ? {
-                          ...prev,
-                          data: { ...prev.data, properties: { ...prev.data.properties, [key]: '' } }
-                        } : null)
-                      }}
-                    >
-                      Add Property
-                    </Button>
+        {/* Node/Edge Details Dialog - Position it away from the top-left */}
+        {selectedElement && (
+          <Dialog open={!!selectedElement} onOpenChange={() => setSelectedElement(null)}>
+            <DialogContent className="sm:max-w-[425px] bg-white dark:bg-gray-900">
+              <DialogHeader>
+                <DialogTitle>
+                  {selectedElement.type === 'node' ? 'Node Details' : 'Edge Details'}
+                </DialogTitle>
+              </DialogHeader>
+              {selectedElement.type === 'node' && (
+                <div className="space-y-4">
+                  <div className="flex justify-between">
+                    <span className="font-medium">Type:</span>
+                    <span>{(selectedElement.data as ProcessedNode).type}</span>
                   </div>
-                  {Object.entries((selectedElement.data as ProcessedNode).properties)
-                    .filter(([key]) => key !== 'name')
-                    .map(([key, value]) => (
+                  <div className="flex justify-between">
+                    <span className="font-medium">Name:</span>
+                    <input
+                      value={(selectedElement.data as ProcessedNode).name || ''}
+                      onChange={e => setSelectedElement(prev => prev ? {
+                        ...prev,
+                        data: { ...prev.data, name: e.target.value }
+                      } : null)}
+                      className="border rounded px-2 py-1"
+                    />
+                  </div>
+                  <div className="mt-4">
+                    <div className="flex justify-between items-center mb-2">
+                      <h4 className="font-medium">Properties:</h4>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          const key = prompt('Enter property name:')
+                          if (key) setSelectedElement(prev => prev ? {
+                            ...prev,
+                            data: { ...prev.data, properties: { ...prev.data.properties, [key]: '' } }
+                          } : null)
+                        }}
+                      >
+                        Add Property
+                      </Button>
+                    </div>
+                    {Object.entries((selectedElement.data as ProcessedNode).properties)
+                      .filter(([key]) => key !== 'name')
+                      .map(([key, value]) => (
+                        <div key={key} className="flex justify-between py-1 border-b">
+                          <span>{key}:</span>
+                          <div className="flex gap-2">
+                            <input
+                              value={value as string}
+                              onChange={e => setSelectedElement(prev => prev ? {
+                                ...prev,
+                                data: { ...prev.data, properties: { ...prev.data.properties, [key]: e.target.value } }
+                              } : null)}
+                              className="border rounded px-2 py-1"
+                            />
+                            <button
+                              onClick={() => {
+                                const newProps = { ...(selectedElement.data as ProcessedNode).properties }
+                                delete newProps[key]
+                                setSelectedElement(prev => prev ? {
+                                  ...prev,
+                                  data: { ...prev.data, properties: newProps }
+                                } : null)
+                              }}
+                              className="text-red-500 hover:text-red-700"
+                            >
+                              ×
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                  <div className="border-t pt-4 mt-4">
+                    <h4 className="font-medium mb-2">Create Edge</h4>
+                    <div className="space-y-2">
+                      <div className="grid grid-cols-4 items-center gap-2">
+                        <label className="text-sm">Type:</label>
+                        <select
+                          className="col-span-3 border rounded px-2 py-1"
+                          value={edgeFormData.type}
+                          onChange={e => setEdgeFormData(prev => ({ ...prev, type: e.target.value as EdgeType }))}
+                        >
+                          {EDGE_TYPES.map(type => (
+                            <option key={type} value={type}>{type}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="grid grid-cols-4 items-center gap-2">
+                        <label className="text-sm">Target:</label>
+                        <select
+                          className="col-span-3 border rounded px-2 py-1"
+                          value={edgeFormData.targetId}
+                          onChange={e => setEdgeFormData(prev => ({ ...prev, targetId: e.target.value }))}
+                        >
+                          <option value="">Select target node</option>
+                          {graphData?.nodes
+                            .filter(node => node.id !== (selectedElement.data as ProcessedNode).id)
+                            .map(node => (
+                              <option key={node.id} value={node.id}>
+                                {node.properties?.name || node.id}
+                              </option>
+                          ))}
+                        </select>
+                      </div>
+                      <Button
+                        className="w-full mt-2"
+                        disabled={!edgeFormData.targetId}
+                        onClick={() => {
+                          const sourceNode = (selectedElement.data as ProcessedNode).id
+                          const targetNode = edgeFormData.targetId
+                          if (sourceNode && targetNode) {
+                            addEdge(
+                              sourceNode,
+                              targetNode,
+                              edgeFormData.type,
+                              {}
+                            )
+                            setSelectedElement(null)
+                          }
+                        }}
+                      >
+                        Create Edge
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
+              {selectedElement.type === 'link' && (
+                <div className="space-y-4">
+                  <div className="flex justify-between">
+                    <span className="font-medium">Type:</span>
+                    <span>{(selectedElement.data as ProcessedLink).name}</span>
+                  </div>
+                  <div className="mt-4">
+                    <div className="flex justify-between items-center mb-2">
+                      <h4 className="font-medium">Properties:</h4>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          const key = prompt('Enter property name:')
+                          if (key) setSelectedElement(prev => prev ? {
+                            ...prev,
+                            data: { ...prev.data, properties: { ...prev.data.properties, [key]: '' } }
+                          } : null)
+                        }}
+                      >
+                        Add Property
+                      </Button>
+                    </div>
+                    {Object.entries((selectedElement.data as ProcessedLink).properties || {}).map(([key, value]) => (
                       <div key={key} className="flex justify-between py-1 border-b">
                         <span>{key}:</span>
                         <div className="flex gap-2">
@@ -261,7 +372,7 @@ export function GraphVisualization({ graphData: initialData }: GraphVisualizatio
                           />
                           <button
                             onClick={() => {
-                              const newProps = { ...(selectedElement.data as ProcessedNode).properties }
+                              const newProps = { ...(selectedElement.data as ProcessedLink).properties }
                               delete newProps[key]
                               setSelectedElement(prev => prev ? {
                                 ...prev,
@@ -275,176 +386,131 @@ export function GraphVisualization({ graphData: initialData }: GraphVisualizatio
                         </div>
                       </div>
                     ))}
-                </div>
-              </div>
-            )}
-            {selectedElement.type === 'link' && (
-              <div className="space-y-2">
-                <div className="flex justify-between">
-                  <span className="font-medium">Type:</span>
-                  <span>{(selectedElement.data as ProcessedLink).name}</span>
-                </div>
-                <div className="mt-4">
-                  <div className="flex justify-between items-center mb-2">
-                    <h4 className="font-medium">Properties:</h4>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        const key = prompt('Enter property name:')
-                        if (key) setSelectedElement(prev => prev ? {
-                          ...prev,
-                          data: { ...prev.data, properties: { ...prev.data.properties, [key]: '' } }
-                        } : null)
-                      }}
-                    >
-                      Add Property
-                    </Button>
                   </div>
-                  {Object.entries((selectedElement.data as ProcessedLink).properties || {}).map(([key, value]) => (
-                    <div key={key} className="flex justify-between py-1 border-b">
-                      <span>{key}:</span>
-                      <div className="flex gap-2">
-                        <input
-                          value={value as string}
-                          onChange={e => setSelectedElement(prev => prev ? {
-                            ...prev,
-                            data: { ...prev.data, properties: { ...prev.data.properties, [key]: e.target.value } }
-                          } : null)}
-                          className="border rounded px-2 py-1"
-                        />
-                        <button
-                          onClick={() => {
-                            const newProps = { ...(selectedElement.data as ProcessedLink).properties }
-                            delete newProps[key]
-                            setSelectedElement(prev => prev ? {
-                              ...prev,
-                              data: { ...prev.data, properties: newProps }
-                            } : null)
-                          }}
-                          className="text-red-500 hover:text-red-700"
-                        >
-                          ×
-                        </button>
-                      </div>
-                    </div>
-                  ))}
                 </div>
-              </div>
-            )}
-            <div className="flex justify-end space-x-2 mt-4">
-              {selectedElement.type === 'node' && (
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    // TODO: Implement edge creation
-                  }}
-                >
-                  Create Edge
-                </Button>
               )}
-              <Button variant="destructive" onClick={() => {
-                if (selectedElement.type === 'node') {
-                  deleteNode((selectedElement.data as ProcessedNode).id)
-                } else {
-                  const sourceId = typeof (selectedElement.data as ProcessedLink).source === 'string' ? (selectedElement.data as ProcessedLink).source : (selectedElement.data as ProcessedLink).source.id
-                  const targetId = typeof (selectedElement.data as ProcessedLink).target === 'string' ? (selectedElement.data as ProcessedLink).target : (selectedElement.data as ProcessedLink).target.id
-                  deleteEdge(`${sourceId}_${targetId}`)
-                }
-                setSelectedElement(null)
-              }}>
-                Delete
-              </Button>
-              <Button onClick={() => {
-                if (selectedElement.type === 'node') {
-                  updateNode((selectedElement.data as ProcessedNode).id, (selectedElement.data as ProcessedNode).properties)
-                } else {
-                  const sourceId = typeof (selectedElement.data as ProcessedLink).source === 'string' ? (selectedElement.data as ProcessedLink).source : (selectedElement.data as ProcessedLink).source.id
-                  const targetId = typeof (selectedElement.data as ProcessedLink).target === 'string' ? (selectedElement.data as ProcessedLink).target : (selectedElement.data as ProcessedLink).target.id
-                  updateEdge(`${sourceId}_${targetId}`, (selectedElement.data as ProcessedLink).properties)
-                }
-                setSelectedElement(null)
-              }}>
-                Save Changes
-              </Button>
+              <div className="flex justify-end space-x-2 mt-4">
+                <Button variant="destructive" onClick={() => {
+                  if (selectedElement.type === 'node') {
+                    deleteNode((selectedElement.data as ProcessedNode).id)
+                  } else {
+                    const sourceId = typeof (selectedElement.data as ProcessedLink).source === 'string' ? (selectedElement.data as ProcessedLink).source : (selectedElement.data as ProcessedLink).source.id
+                    const targetId = typeof (selectedElement.data as ProcessedLink).target === 'string' ? (selectedElement.data as ProcessedLink).target : (selectedElement.data as ProcessedLink).target.id
+                    deleteEdge(`${sourceId}_${targetId}`)
+                  }
+                  setSelectedElement(null)
+                }}>
+                  Delete
+                </Button>
+                <Button onClick={() => {
+                  if (selectedElement.type === 'node') {
+                    updateNode((selectedElement.data as ProcessedNode).id, (selectedElement.data as ProcessedNode).properties)
+                  } else {
+                    const sourceId = typeof (selectedElement.data as ProcessedLink).source === 'string' ? (selectedElement.data as ProcessedLink).source : (selectedElement.data as ProcessedLink).source.id
+                    const targetId = typeof (selectedElement.data as ProcessedLink).target === 'string' ? (selectedElement.data as ProcessedLink).target : (selectedElement.data as ProcessedLink).target.id
+                    updateEdge(`${sourceId}_${targetId}`, (selectedElement.data as ProcessedLink).properties)
+                  }
+                  setSelectedElement(null)
+                }}>
+                  Save Changes
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+        )}
+        {/* Node Creation Dialog */}
+        <Dialog open={showNodeForm} onOpenChange={setShowNodeForm}>
+          <DialogContent className="bg-white dark:bg-gray-800">
+            <DialogHeader>
+              <DialogTitle>Create New Node</DialogTitle>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <div className="grid grid-cols-4 items-center gap-4">
+                <label className="text-right">Type</label>
+                <select
+                  className="col-span-3 bg-white dark:bg-gray-700"
+                  value={nodeFormData.type}
+                  onChange={e => setNodeFormData(prev => ({ ...prev, type: e.target.value as NodeType }))}
+                >
+                  {NODE_TYPES.map(type => (
+                    <option key={type} value={type}>{type}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <label className="text-right">Name</label>
+                <input
+                  className="col-span-3 bg-white dark:bg-gray-700"
+                  value={nodeFormData.properties.name || ''}
+                  onChange={e => setNodeFormData(prev => ({
+                    ...prev,
+                    properties: { ...prev.properties, name: e.target.value }
+                  }))}
+                />
+              </div>
             </div>
+            <DialogFooter>
+              <Button onClick={() => {
+                addNode(nodeFormData.type, nodeFormData.properties)
+                setShowNodeForm(false)
+                setNodeFormData({ type: NODE_TYPES[0], properties: {} })
+              }}>
+                Create
+              </Button>
+            </DialogFooter>
           </DialogContent>
         </Dialog>
-      )}
-      {/* Node Creation Dialog */}
-      <Dialog open={showNodeForm} onOpenChange={setShowNodeForm}>
-        <DialogContent className="bg-white dark:bg-gray-800">
-          <DialogHeader>
-            <DialogTitle>Create New Node</DialogTitle>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <label className="text-right">Type</label>
-              <select
-                className="col-span-3 bg-white dark:bg-gray-700"
-                value={nodeFormData.type}
-                onChange={e => setNodeFormData(prev => ({ ...prev, type: e.target.value as NodeType }))}
-              >
-                {NODE_TYPES.map(type => (
-                  <option key={type} value={type}>{type}</option>
-                ))}
-              </select>
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <label className="text-right">Name</label>
-              <input
-                className="col-span-3 bg-white dark:bg-gray-700"
-                value={nodeFormData.properties.name || ''}
-                onChange={e => setNodeFormData(prev => ({
-                  ...prev,
-                  properties: { ...prev.properties, name: e.target.value }
-                }))}
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button onClick={() => {
-              addNode(nodeFormData.type, nodeFormData.properties)
-              setShowNodeForm(false)
-              setNodeFormData({ type: NODE_TYPES[0], properties: {} })
-            }}>
-              Create
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
-      {/* Edge Creation Dialog */}
-      <Dialog open={showEdgeForm} onOpenChange={setShowEdgeForm}>
-        <DialogContent className="bg-white dark:bg-gray-800">
-          <DialogHeader>
-            <DialogTitle>Create New Relationship</DialogTitle>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <label className="text-right">Type</label>
-              <select
-                className="col-span-3 bg-white dark:bg-gray-700"
-                value={edgeFormData.type}
-                onChange={e => setEdgeFormData(prev => ({ ...prev, type: e.target.value as EdgeType }))}
-              >
-                {EDGE_TYPES.map(type => (
-                  <option key={type} value={type}>{type}</option>
-                ))}
-              </select>
+        {/* Edge Creation Dialog */}
+        <Dialog open={showEdgeForm} onOpenChange={setShowEdgeForm}>
+          <DialogContent className="bg-white dark:bg-gray-800">
+            <DialogHeader>
+              <DialogTitle>Create New Relationship</DialogTitle>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <div className="grid grid-cols-4 items-center gap-4">
+                <label className="text-right">Type</label>
+                <select
+                  className="col-span-3 bg-white dark:bg-gray-700"
+                  value={edgeFormData.type}
+                  onChange={e => setEdgeFormData(prev => ({ ...prev, type: e.target.value as EdgeType }))}
+                >
+                  {EDGE_TYPES.map(type => (
+                    <option key={type} value={type}>{type}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <label className="text-right">Target Node</label>
+                <select
+                  className="col-span-3 bg-white dark:bg-gray-700"
+                  value={edgeFormData.targetId}
+                  onChange={e => setEdgeFormData(prev => ({ ...prev, targetId: e.target.value }))}
+                >
+                  {graphData?.nodes.map(node => (
+                    <option key={node.id} value={node.id}>{node.label}</option>
+                  ))}
+                </select>
+              </div>
             </div>
-          </div>
-          <DialogFooter>
-            <Button onClick={() => {
-              // TODO: Implement edge creation
-              setShowEdgeForm(false)
-              setEdgeFormData({ type: EDGE_TYPES[0], properties: {} })
-            }}>
-              Create
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+            <DialogFooter>
+              <Button onClick={() => {
+                addEdge(edgeFormData.type, edgeFormData.sourceId!, edgeFormData.targetId!, edgeFormData.properties)
+                setShowEdgeForm(false)
+                setEdgeFormData({ type: EDGE_TYPES[0], properties: {} })
+              }}>
+                Create
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
+      {/* Bottom Actions */}
+      <div className="flex justify-end p-4 bg-background border-t">
+        <Button onClick={() => router.push('/merge')}>
+          Merge
+        </Button>
+      </div>
     </div>
   )
 } 
