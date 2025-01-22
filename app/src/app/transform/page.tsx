@@ -216,17 +216,18 @@ export default function TransformPage() {
   return (
     <WorkflowLayout progress={progress} currentStep={isProcessing ? 'Processing Document...' : undefined}>
       <div className="container mx-auto p-4 max-w-6xl flex-1 flex flex-col">
-        <div className="flex flex-1 gap-4 overflow-hidden">
+        <div className="flex flex-1 gap-4 min-h-[600px] overflow-hidden">
+          {/* Upload Panel */}
           <div 
-            className={`transition-all duration-300 ease-in-out flex ${
-              isUploadPanelExpanded ? 'w-1/3' : 'w-12'
-            }`}
+            className={cn(
+              "transition-all duration-300 ease-in-out flex flex-col bg-background border rounded-lg",
+              isUploadPanelExpanded ? "w-1/3" : "w-12"
+            )}
           >
-            <div className={`
-              flex-1 
-              ${isUploadPanelExpanded ? 'opacity-100' : 'opacity-0 overflow-hidden w-0'}
-              transition-opacity duration-300
-            `}>
+            <div className={cn(
+              "flex-1 p-4",
+              isUploadPanelExpanded ? "opacity-100" : "opacity-0 overflow-hidden w-0"
+            )}>
               <div className="space-y-4">
                 <h1 className="text-2xl font-bold">Transform Document</h1>
                 
@@ -236,94 +237,76 @@ export default function TransformPage() {
                   </Alert>
                 )}
 
-                <div
-                  className="flex-1 min-h-0"
-                >
-                  <div className={cn("p-4 space-y-4", !isUploadPanelExpanded && "hidden")}>
-                    <div className="flex flex-col items-center justify-center p-8 border-2 border-dashed rounded-lg hover:border-primary/50 transition-colors">
-                      <div {...getRootProps()} className="w-full text-center cursor-pointer">
-                        <input {...getInputProps()} />
-                        {file ? (
-                          <div className="space-y-4">
-                            <FileText className="w-12 h-12 mx-auto text-gray-400" />
-                            <div>
-                              <p className="text-sm font-medium">{file.name}</p>
-                              <p className="text-xs text-gray-500">
-                                {(file.size / 1024 / 1024).toFixed(2)} MB
-                              </p>
+                <div className="flex flex-col items-center justify-center p-8 border-2 border-dashed rounded-lg hover:border-primary/50 transition-colors">
+                  <div {...getRootProps()} className="w-full text-center cursor-pointer">
+                    <input {...getInputProps()} />
+                    {file ? (
+                      <div className="space-y-4">
+                        <FileText className="w-12 h-12 mx-auto text-gray-400" />
+                        <div>
+                          <p className="text-sm font-medium">{file.name}</p>
+                          <p className="text-xs text-gray-500">
+                            {(file.size / 1024 / 1024).toFixed(2)} MB
+                          </p>
+                        </div>
+                        {isProcessing ? (
+                          <div className="space-y-2">
+                            <div className="flex items-center justify-center gap-2">
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                              <span className="text-sm text-gray-500">Processing document...</span>
                             </div>
-                            {isProcessing ? (
-                              <div className="space-y-2">
-                                <div className="flex items-center justify-center gap-2">
-                                  <Loader2 className="w-4 h-4 animate-spin" />
-                                  <span className="text-sm text-gray-500">Processing document...</span>
-                                </div>
-                                <div className="w-full max-w-xs mx-auto">
-                                  <Progress value={progress} className="h-1" />
-                                  <p className="mt-1 text-xs text-center text-gray-500">{progress}%</p>
-                                </div>
-                              </div>
-                            ) : (
-                              <Button
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  handleExtract()
-                                }}
-                                disabled={isProcessing}
-                              >
-                                Process Document
-                              </Button>
-                            )}
+                            <div className="w-full max-w-xs mx-auto">
+                              <Progress value={progress} className="h-1" />
+                              <p className="mt-1 text-xs text-center text-gray-500">{progress}%</p>
+                            </div>
                           </div>
                         ) : (
-                          <div className="space-y-4">
-                            <Upload className="w-12 h-12 mx-auto text-gray-400" />
-                            <div>
-                              <p className="text-sm font-medium">Drop your document here or click to upload</p>
-                              <p className="text-xs text-gray-500">
-                                Supports TXT files
-                              </p>
-                            </div>
-                          </div>
+                          <Button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleExtract()
+                            }}
+                            disabled={isProcessing}
+                          >
+                            Process Document
+                          </Button>
                         )}
                       </div>
-                      {file && !isProcessing && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            setFile(null)
-                            setError(null)
-                          }}
-                          className="mt-2"
-                        >
-                          <X className="w-4 h-4 mr-2" />
-                          Remove
-                        </Button>
-                      )}
-                    </div>
-
-                    {error && (
-                      <Alert variant="destructive">
-                        <AlertDescription>{error}</AlertDescription>
-                      </Alert>
+                    ) : (
+                      <div className="space-y-4">
+                        <Upload className="w-12 h-12 mx-auto text-gray-400" />
+                        <div>
+                          <p className="text-sm font-medium">Drop your document here or click to upload</p>
+                          <p className="text-xs text-gray-500">
+                            Supports TXT files
+                          </p>
+                        </div>
+                      </div>
                     )}
                   </div>
-
-                  {graphData && (
-                    <div className="flex-1 min-h-0">
-                      <GraphVisualization data={graphData} />
-                    </div>
+                  {file && !isProcessing && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setFile(null)
+                        setError(null)
+                      }}
+                      className="mt-2"
+                    >
+                      Remove File
+                    </Button>
                   )}
                 </div>
               </div>
             </div>
             
+            {/* Expand/Collapse Button */}
             <Button
               variant="ghost"
               size="icon"
-              className="h-full rounded-none border-l"
+              className="h-12 w-12 shrink-0"
               onClick={() => setIsUploadPanelExpanded(!isUploadPanelExpanded)}
             >
               {isUploadPanelExpanded ? (
@@ -334,31 +317,31 @@ export default function TransformPage() {
             </Button>
           </div>
 
-          <div className="flex-1 h-full border rounded-lg bg-gray-50 overflow-hidden relative">
+          {/* Graph Area */}
+          <div className="flex-1 bg-background border rounded-lg overflow-hidden">
             {graphData ? (
-              <>
-                <div className="absolute top-4 right-4 z-10 flex gap-4">
-                  <Button
-                    onClick={() => setShowMergeConfirm(true)}
-                    className="gap-2"
-                    variant="outline"
-                  >
-                    <GitMerge className="h-4 w-4" />
-                    Merge to Prod DB
-                  </Button>
-                </div>
-                <div className="h-full pt-16">
-                  <GraphVisualization graphData={graphData} />
-                </div>
-              </>
+              <GraphVisualization graphData={graphData} />
             ) : (
-              <div className="h-full flex items-center justify-center text-gray-400">
-                Graph visualization will appear here
+              <div className="w-full h-full flex items-center justify-center text-muted-foreground">
+                No graph data available
               </div>
             )}
           </div>
         </div>
 
+        {/* Merge Button */}
+        <div className="flex justify-end mt-4">
+          <Button
+            onClick={() => setShowMergeConfirm(true)}
+            disabled={!graphData}
+            className="gap-2"
+          >
+            <GitMerge className="w-4 h-4" />
+            Merge to Prod DB
+          </Button>
+        </div>
+
+        {/* Merge Confirmation Dialog */}
         <AlertDialog open={showMergeConfirm} onOpenChange={setShowMergeConfirm}>
           <AlertDialogContent>
             <AlertDialogHeader>
