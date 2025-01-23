@@ -183,7 +183,7 @@ export function GraphVisualization({ graphData: initialData, onGraphReset }: Gra
                 setSelectedElement({ type: 'link', data: link })
               }}
               nodeCanvasObject={(node: ProcessedNode, ctx: CanvasRenderingContext2D, globalScale: number) => {
-                const label = node.properties?.name || node.id || node.type
+                const label = node.properties?.name || node.type
                 const fontSize = 12/globalScale
                 ctx.font = `${fontSize}px Sans-Serif`
                 ctx.textAlign = 'center'
@@ -240,7 +240,7 @@ export function GraphVisualization({ graphData: initialData, onGraphReset }: Gra
                   <div className="flex justify-between">
                     <span className="font-medium">Name:</span>
                     <input
-                      value={(selectedElement.data as ProcessedNode).name || ''}
+                      value={(selectedElement.data as ProcessedNode).properties?.name || ''}
                       onChange={e => setSelectedElement(prev => prev ? {
                         ...prev,
                         data: { ...prev.data, name: e.target.value }
@@ -267,47 +267,54 @@ export function GraphVisualization({ graphData: initialData, onGraphReset }: Gra
                     </div>
                     {Object.entries((selectedElement.data as ProcessedNode).properties)
                       .filter(([key]) => key !== 'name')
-                      .map(([key, value]) => (
-                        <div key={key} className="flex justify-between py-1 border-b">
-                          <span>{key}:</span>
-                          <div className="flex gap-2">
-                            <input
-                              className="flex-1 bg-transparent"
-                              value={selectedElement.data.properties[key] ?? ''}
-                              onChange={e => {
-                                const newProps = { ...(selectedElement.data as ProcessedNode).properties }
-                                if (e.target.value === '') {
-                                  newProps[key] = null
-                                } else {
-                                  newProps[key] = e.target.value
-                                }
-                                setSelectedElement(prev => prev ? {
-                                  ...prev,
-                                  data: { ...prev.data, properties: newProps }
-                                } : null)
-                                updateNode((selectedElement.data as ProcessedNode).id, newProps)
-                              }}
-                            />
-                            <button
-                              onClick={() => {
-                                const newProps = { ...(selectedElement.data as ProcessedNode).properties }
-                                newProps[key] = null
-                                setSelectedElement(prev => prev ? {
-                                  ...prev,
-                                  data: { ...prev.data, properties: { 
-                                    ...newProps,
-                                    [key]: '' // Use empty string for display
+                      .map(([key, value]) => {
+                        const isSystemProperty = key.startsWith('_')
+                        return (
+                          <div key={key} className="flex justify-between py-1 border-b">
+                            <span>{key}:</span>
+                            <div className="flex gap-2">
+                              <input
+                                className={`flex-1 bg-transparent ${isSystemProperty ? 'text-gray-500 cursor-not-allowed' : ''}`}
+                                value={selectedElement.data.properties[key] ?? ''}
+                                onChange={e => {
+                                  if (isSystemProperty) return
+                                  const newProps = { ...(selectedElement.data as ProcessedNode).properties }
+                                  if (e.target.value === '') {
+                                    newProps[key] = null
+                                  } else {
+                                    newProps[key] = e.target.value
+                                  }
+                                  setSelectedElement(prev => prev ? {
+                                    ...prev,
+                                    data: { ...prev.data, properties: newProps }
+                                  } : null)
+                                  updateNode((selectedElement.data as ProcessedNode).id, newProps)
+                                }}
+                                readOnly={isSystemProperty}
+                              />
+                              {!isSystemProperty && (
+                                <button
+                                  onClick={() => {
+                                    const newProps = { ...(selectedElement.data as ProcessedNode).properties }
+                                    newProps[key] = null
+                                    setSelectedElement(prev => prev ? {
+                                      ...prev,
+                                      data: { ...prev.data, properties: {
+                                        ...newProps,
+                                        [key]: '' // Use empty string for display
+                                      }}
+                                    } : null)
+                                    updateNode((selectedElement.data as ProcessedNode).id, newProps)
                                   }}
-                                } : null)
-                                updateNode((selectedElement.data as ProcessedNode).id, newProps)
-                              }}
-                              className="text-red-500 hover:text-red-700"
-                            >
-                              ×
-                            </button>
+                                  className="text-red-500 hover:text-red-700"
+                                >
+                                  ×
+                                </button>
+                              )}
+                            </div>
                           </div>
-                        </div>
-                      ))}
+                        )
+                      })}
                   </div>
                   <div className="border-t pt-4 mt-4">
                     <h4 className="font-medium mb-2">Create Edge</h4>
@@ -387,47 +394,54 @@ export function GraphVisualization({ graphData: initialData, onGraphReset }: Gra
                         Add Property
                       </Button>
                     </div>
-                    {Object.entries((selectedElement.data as ProcessedLink).properties || {}).map(([key, value]) => (
-                      <div key={key} className="flex justify-between py-1 border-b">
-                        <span>{key}:</span>
-                        <div className="flex gap-2">
-                          <input
-                            className="flex-1 bg-transparent"
-                            value={selectedElement.data.properties[key] ?? ''}
-                            onChange={e => {
-                              const newProps = { ...(selectedElement.data as ProcessedLink).properties }
-                              if (e.target.value === '') {
-                                newProps[key] = null
-                              } else {
-                                newProps[key] = e.target.value
-                              }
-                              setSelectedElement(prev => prev ? {
-                                ...prev,
-                                data: { ...prev.data, properties: newProps }
-                              } : null)
-                              updateEdge((selectedElement.data as ProcessedLink).id, newProps)
-                            }}
-                          />
-                          <button
-                            onClick={() => {
-                              const newProps = { ...(selectedElement.data as ProcessedLink).properties }
-                              newProps[key] = null
-                              setSelectedElement(prev => prev ? {
-                                ...prev,
-                                data: { ...prev.data, properties: {
-                                  ...newProps,
-                                  [key]: '' // Use empty string for display
+                    {Object.entries((selectedElement.data as ProcessedLink).properties || {}).map(([key, value]) => {
+                      const isSystemProperty = key.startsWith('_')
+                      return (
+                        <div key={key} className="flex justify-between py-1 border-b">
+                          <span>{key}:</span>
+                          <div className="flex gap-2">
+                            <input
+                              className={`flex-1 bg-transparent ${isSystemProperty ? 'text-gray-500 cursor-not-allowed' : ''}`}
+                              value={selectedElement.data.properties[key] ?? ''}
+                              onChange={e => {
+                                if (isSystemProperty) return
+                                const newProps = { ...(selectedElement.data as ProcessedLink).properties }
+                                if (e.target.value === '') {
+                                  newProps[key] = null
+                                } else {
+                                  newProps[key] = e.target.value
+                                }
+                                setSelectedElement(prev => prev ? {
+                                  ...prev,
+                                  data: { ...prev.data, properties: newProps }
+                                } : null)
+                                updateEdge((selectedElement.data as ProcessedLink).id, newProps)
+                              }}
+                              readOnly={isSystemProperty}
+                            />
+                            {!isSystemProperty && (
+                              <button
+                                onClick={() => {
+                                  const newProps = { ...(selectedElement.data as ProcessedLink).properties }
+                                  newProps[key] = null
+                                  setSelectedElement(prev => prev ? {
+                                    ...prev,
+                                    data: { ...prev.data, properties: {
+                                      ...newProps,
+                                      [key]: '' // Use empty string for display
+                                    }}
+                                  } : null)
+                                  updateEdge((selectedElement.data as ProcessedLink).id, newProps)
                                 }}
-                              } : null)
-                              updateEdge((selectedElement.data as ProcessedLink).id, newProps)
-                            }}
-                            className="text-red-500 hover:text-red-700"
-                          >
-                            ×
-                          </button>
+                                className="text-red-500 hover:text-red-700"
+                              >
+                                ×
+                              </button>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      )
+                    })}
                   </div>
                 </div>
               )}
