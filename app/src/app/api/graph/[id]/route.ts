@@ -1,13 +1,45 @@
 import { NextResponse } from 'next/server'
 
+interface SaveGraphRequest {
+  nodes: {
+    created: Array<{
+      id: string;
+      type: string;
+      label: string;
+      properties: Record<string, any>;
+    }>;
+    updated: Array<{
+      id: string;
+      properties: Record<string, any>;
+    }>;
+    deleted: Array<string>;
+  };
+  edges: {
+    created: Array<{
+      id: string;
+      source: string;
+      target: string;
+      type: string;
+      label: string;
+      properties: Record<string, any>;
+    }>;
+    updated: Array<{
+      id: string;
+      properties: Record<string, any>;
+    }>;
+    deleted: Array<string>;
+  };
+  version: string;
+}
+
 export async function GET(
   request: Request,
   { params }: { params: { id: string } }
 ) {
   try {
-    const id = await params.id
+    const id = params.id
     const apiUrl = `${process.env.BACKEND_API_URL}/api/v1/graph/${id}`
-    
+
     const response = await fetch(apiUrl, {
       method: 'GET',
       headers: {
@@ -16,14 +48,14 @@ export async function GET(
     })
 
     if (!response.ok) {
-      throw new Error(`Failed to fetch graph: ${response.statusText}`)
+      throw new Error('Failed to fetch graph data')
     }
 
     const data = await response.json()
     return NextResponse.json(data)
   } catch (error) {
-    console.error('Error fetching graph:', error)
-    return new NextResponse('Internal Server Error', { status: 500 })
+    console.error('Error fetching graph data:', error)
+    return NextResponse.json({ error: 'Failed to fetch graph data' }, { status: 500 })
   }
 }
 
@@ -32,10 +64,13 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
-    const id = await params.id
+    const id = params.id
     const apiUrl = `${process.env.BACKEND_API_URL}/api/v1/graph/${id}`
-    const body = await request.json()
     
+    // Parse and validate request body
+    const body: SaveGraphRequest = await request.json()
+    
+    // Forward the request to backend API
     const response = await fetch(apiUrl, {
       method: 'PUT',
       headers: {
@@ -45,13 +80,17 @@ export async function PUT(
     })
 
     if (!response.ok) {
-      throw new Error(`Failed to save graph: ${response.statusText}`)
+      const errorData = await response.json().catch(() => null)
+      throw new Error(errorData?.error || 'Failed to save graph')
     }
 
     const data = await response.json()
     return NextResponse.json(data)
   } catch (error) {
     console.error('Error saving graph:', error)
-    return new NextResponse('Internal Server Error', { status: 500 })
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'Failed to save graph' },
+      { status: 500 }
+    )
   }
 }

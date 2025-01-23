@@ -6,6 +6,11 @@ function generateHistoryId(): string {
   return `hist_${Date.now()}_${++historyIdCounter}`
 }
 
+// Helper function to generate stable IDs
+const generateStableId = (prefix: string) => {
+  return `${prefix}_${Math.random().toString(36).slice(2, 11)}`
+}
+
 export function useGraphState(initialData: GraphData) {
   // Load initial state from local storage if available
   const loadInitialState = (): GraphState => {
@@ -25,6 +30,31 @@ export function useGraphState(initialData: GraphData) {
   const [state, setState] = useState<GraphState>(loadInitialState)
   const { data: graphData, history, undoStack, redoStack } = state
 
+  // Track changes for nodes and edges
+  const [changes, setChanges] = useState<{
+    nodes: {
+      created: Set<string>;
+      updated: Set<string>;
+      deleted: Set<string>;
+    };
+    edges: {
+      created: Set<string>;
+      updated: Set<string>;
+      deleted: Set<string>;
+    };
+  }>({
+    nodes: {
+      created: new Set(),
+      updated: new Set(),
+      deleted: new Set()
+    },
+    edges: {
+      created: new Set(),
+      updated: new Set(),
+      deleted: new Set()
+    }
+  })
+
   // Save state to local storage whenever it changes
   useEffect(() => {
     if (typeof window !== 'undefined' && initialData.id) {
@@ -37,15 +67,30 @@ export function useGraphState(initialData: GraphData) {
     setState(newState)
   }
 
+  // Client-side only timestamp for history entries
+  const [timestamp, setTimestamp] = useState<string>('')
+  useEffect(() => {
+    setTimestamp(new Date().toISOString())
+  }, [])
+
   const addNode = useCallback((type: NodeType, properties: Record<string, any>) => {
     const node = {
-      id: `node_${Date.now()}`,
+      id: generateStableId('node'),
       type,
       properties,
       label: properties.name || type
     }
     
     const operation: GraphOperation = { type: 'CREATE_NODE', payload: { type, properties } }
+    
+    // Track created node
+    setChanges(prev => ({
+      ...prev,
+      nodes: {
+        ...prev.nodes,
+        created: new Set([...prev.nodes.created, node.id])
+      }
+    }))
     
     updateState({
       ...state,
@@ -56,7 +101,7 @@ export function useGraphState(initialData: GraphData) {
       history: [...state.history, {
         id: generateHistoryId(),
         operation,
-        timestamp: new Date().toISOString(),
+        timestamp: timestamp || new Date().toISOString(),
         user: 'current-user'
       }],
       undoStack: [...state.undoStack, operation],
@@ -64,28 +109,58 @@ export function useGraphState(initialData: GraphData) {
     })
 
     return node
-  }, [state])
+  }, [state, timestamp])
 
   const updateNode = useCallback((nodeId: string, properties: Record<string, any>) => {
+    const existingNode = state.data.nodes.find(n => n.id === nodeId)!
+    const updatedProperties: Record<string, any> = { ...existingNode.properties }
+    
+    // Handle each property update
+    Object.entries(properties).forEach(([key, value]) => {
+      if (value === null) {
+        // For null values, remove from local state but keep in API payload
+        delete updatedProperties[key]
+      } else if (value !== '') {
+        // Only update non-empty values
+        updatedProperties[key] = value
+      }
+    })
+
     const updatedNode = {
-      ...state.data.nodes.find(n => n.id === nodeId)!,
-      properties: { ...properties }
+      ...existingNode,
+      properties: updatedProperties
     }
-    
-    const operation: GraphOperation = { type: 'UPDATE_NODE', payload: { id: nodeId, properties } }
-    
+
+    // For API, maintain null values
+    const apiProperties = { ...properties }
+
+    const operation: GraphOperation = { 
+      type: 'UPDATE_NODE', 
+      payload: { 
+        id: nodeId, 
+        properties: apiProperties // Send original properties with null values to API
+      } 
+    }
+
+    // Track updated node
+    setChanges(prev => ({
+      ...prev,
+      nodes: {
+        ...prev.nodes,
+        updated: new Set([...prev.nodes.updated, nodeId])
+      }
+    }))
+
     updateState({
       ...state,
       data: {
         ...state.data,
-        nodes: state.data.nodes.map(node => 
-          node.id === nodeId ? updatedNode : node
-        )
+        nodes: state.data.nodes.map(n => n.id === nodeId ? updatedNode : n)
       },
       history: [...state.history, {
         id: generateHistoryId(),
         operation,
-        timestamp: new Date().toISOString(),
+        timestamp: timestamp || new Date().toISOString(),
         user: 'current-user'
       }],
       undoStack: [...state.undoStack, operation],
@@ -93,10 +168,24 @@ export function useGraphState(initialData: GraphData) {
     })
 
     return updatedNode
-  }, [state])
+  }, [state, timestamp])
 
   const deleteNode = useCallback((nodeId: string) => {
     const operation: GraphOperation = { type: 'DELETE_NODE', payload: { id: nodeId } }
+    
+    // Track deleted node
+    setChanges(prev => {
+      const newChanges = { ...prev }
+      if (newChanges.nodes.created.has(nodeId)) {
+        newChanges.nodes.created.delete(nodeId)
+      } else {
+        newChanges.nodes.deleted.add(nodeId)
+      }
+      if (newChanges.nodes.updated.has(nodeId)) {
+        newChanges.nodes.updated.delete(nodeId)
+      }
+      return newChanges
+    })
     
     updateState({
       ...state,
@@ -119,7 +208,7 @@ export function useGraphState(initialData: GraphData) {
 
   const addEdge = useCallback((sourceId: string, targetId: string, type: EdgeType, properties: Record<string, any> = {}) => {
     const edge = {
-      id: `${sourceId}_${targetId}_${Date.now()}`,
+      id: generateStableId('edge'),
       source: sourceId,
       target: targetId,
       type,
@@ -137,6 +226,15 @@ export function useGraphState(initialData: GraphData) {
       } 
     }
     
+    // Track created edge
+    setChanges(prev => ({
+      ...prev,
+      edges: {
+        ...prev.edges,
+        created: new Set([...prev.edges.created, edge.id])
+      }
+    }))
+    
     updateState({
       ...state,
       data: {
@@ -146,7 +244,7 @@ export function useGraphState(initialData: GraphData) {
       history: [...state.history, {
         id: generateHistoryId(),
         operation,
-        timestamp: new Date().toISOString(),
+        timestamp: timestamp || new Date().toISOString(),
         user: 'current-user'
       }],
       undoStack: [...state.undoStack, operation],
@@ -154,28 +252,58 @@ export function useGraphState(initialData: GraphData) {
     })
 
     return edge
-  }, [state])
+  }, [state, timestamp])
 
   const updateEdge = useCallback((edgeId: string, properties: Record<string, any>) => {
+    const existingEdge = state.data.edges.find(e => e.id === edgeId)!
+    const updatedProperties: Record<string, any> = { ...existingEdge.properties }
+    
+    // Handle each property update
+    Object.entries(properties).forEach(([key, value]) => {
+      if (value === null) {
+        // For null values, remove from local state but keep in API payload
+        delete updatedProperties[key]
+      } else if (value !== '') {
+        // Only update non-empty values
+        updatedProperties[key] = value
+      }
+    })
+
     const updatedEdge = {
-      ...state.data.edges.find(e => e.id === edgeId)!,
-      properties: { ...properties }
+      ...existingEdge,
+      properties: updatedProperties
     }
-    
-    const operation: GraphOperation = { type: 'UPDATE_EDGE', payload: { id: edgeId, properties } }
-    
+
+    // For API, maintain null values
+    const apiProperties = { ...properties }
+
+    const operation: GraphOperation = { 
+      type: 'UPDATE_EDGE', 
+      payload: { 
+        id: edgeId, 
+        properties: apiProperties // Send original properties with null values to API
+      } 
+    }
+
+    // Track updated edge
+    setChanges(prev => ({
+      ...prev,
+      edges: {
+        ...prev.edges,
+        updated: new Set([...prev.edges.updated, edgeId])
+      }
+    }))
+
     updateState({
       ...state,
       data: {
         ...state.data,
-        edges: state.data.edges.map(edge => 
-          edge.id === edgeId ? updatedEdge : edge
-        )
+        edges: state.data.edges.map(e => e.id === edgeId ? updatedEdge : e)
       },
       history: [...state.history, {
         id: generateHistoryId(),
         operation,
-        timestamp: new Date().toISOString(),
+        timestamp: timestamp || new Date().toISOString(),
         user: 'current-user'
       }],
       undoStack: [...state.undoStack, operation],
@@ -183,10 +311,21 @@ export function useGraphState(initialData: GraphData) {
     })
 
     return updatedEdge
-  }, [state])
+  }, [state, timestamp])
 
   const deleteEdge = useCallback((edgeId: string) => {
     const operation: GraphOperation = { type: 'DELETE_EDGE', payload: { id: edgeId } }
+    
+    // Track deleted edge
+    setChanges(prev => ({
+      ...prev,
+      edges: {
+        ...prev.edges,
+        created: new Set([...prev.edges.created].filter(id => id !== edgeId)),
+        updated: new Set([...prev.edges.updated].filter(id => id !== edgeId)),
+        deleted: new Set([...prev.edges.deleted, edgeId])
+      }
+    }))
     
     updateState({
       ...state,
@@ -197,13 +336,13 @@ export function useGraphState(initialData: GraphData) {
       history: [...state.history, {
         id: generateHistoryId(),
         operation,
-        timestamp: new Date().toISOString(),
+        timestamp: timestamp || new Date().toISOString(),
         user: 'current-user'
       }],
       undoStack: [...state.undoStack, operation],
       redoStack: []
     })
-  }, [state])
+  }, [state, timestamp])
 
   const undo = useCallback(() => {
     updateState(prev => {
@@ -425,19 +564,81 @@ export function useGraphState(initialData: GraphData) {
 
   const saveGraph = useCallback(async () => {
     try {
+      // Ensure we're on the client side
+      if (typeof window === 'undefined') {
+        throw new Error('Cannot save graph on server side')
+      }
+
+      // Prepare the changes in the required format
+      const payload = {
+        nodes: {
+          created: state.data.nodes
+            .filter(node => changes.nodes.created.has(node.id))
+            .map(node => ({
+              id: node.id,
+              type: node.type,
+              label: node.label,
+              properties: node.properties
+            })),
+          updated: state.data.nodes
+            .filter(node => changes.nodes.updated.has(node.id))
+            .map(node => ({
+              id: node.id,
+              properties: node.properties
+            })),
+          deleted: Array.from(changes.nodes.deleted)
+        },
+        edges: {
+          created: state.data.edges
+            .filter(edge => changes.edges.created.has(edge.id))
+            .map(edge => ({
+              id: edge.id,
+              source: edge.source,
+              target: edge.target,
+              type: edge.type,
+              label: edge.label,
+              properties: edge.properties
+            })),
+          updated: state.data.edges
+            .filter(edge => changes.edges.updated.has(edge.id))
+            .map(edge => ({
+              id: edge.id,
+              properties: edge.properties
+            })),
+          deleted: Array.from(changes.edges.deleted)
+        },
+        version: timestamp || new Date().toISOString()
+      }
+
       const response = await fetch(`/api/graph/${initialData.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(graphData)
+        body: JSON.stringify(payload)
       })
+      
       if (!response.ok) throw new Error('Failed to save graph')
       
-      const savedData = await response.json()
+      const responseData = await response.json()
+      const savedData = responseData.data // Extract the data from the response
       
-      // Clear local storage after successful save
+      // Clear local storage and changes after successful save
       if (typeof window !== 'undefined' && initialData.id) {
         localStorage.removeItem(`graph_state_${initialData.id}`)
       }
+      
+      // Reset changes
+      setChanges({
+        nodes: {
+          created: new Set(),
+          updated: new Set(),
+          deleted: new Set()
+        },
+        edges: {
+          created: new Set(),
+          updated: new Set(),
+          deleted: new Set()
+        }
+      })
       
       // Reset state with saved data
       updateState({
@@ -453,7 +654,7 @@ export function useGraphState(initialData: GraphData) {
       console.error('Error saving graph:', error)
       throw error
     }
-  }, [graphData, initialData])
+  }, [state, changes, initialData, timestamp])
 
   return {
     graphData,

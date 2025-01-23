@@ -116,21 +116,21 @@ export function GraphVisualization({ graphData: initialData, onGraphReset }: Gra
   const graphRef = useRef<any>(null)
 
   const processedData = useMemo(() => {
-    if (!graphData) return { nodes: [], links: [] }
+    if (!graphData?.nodes || !graphData?.edges) return { nodes: [], links: [] }
 
     return {
       nodes: graphData.nodes.map(node => ({
         ...node,
-        name: node.label,
+        name: node.label || node.type,
         color: getNodeColor(node.type),
-        id: node.id
+        id: node.id.toString() // Ensure ID is a string
       })),
       links: graphData.edges.map(edge => ({
         ...edge,
-        name: edge.label,
-        source: edge.source,
-        target: edge.target,
-        id: `${edge.source}_${edge.target}`
+        name: edge.type,
+        source: edge.source.toString(), // Ensure source is a string
+        target: edge.target.toString(), // Ensure target is a string
+        id: edge.id.toString() // Ensure ID is a string
       }))
     }
   }, [graphData])
@@ -272,21 +272,34 @@ export function GraphVisualization({ graphData: initialData, onGraphReset }: Gra
                           <span>{key}:</span>
                           <div className="flex gap-2">
                             <input
-                              value={value as string}
-                              onChange={e => setSelectedElement(prev => prev ? {
-                                ...prev,
-                                data: { ...prev.data, properties: { ...prev.data.properties, [key]: e.target.value } }
-                              } : null)}
-                              className="border rounded px-2 py-1"
-                            />
-                            <button
-                              onClick={() => {
+                              className="flex-1 bg-transparent"
+                              value={selectedElement.data.properties[key] ?? ''}
+                              onChange={e => {
                                 const newProps = { ...(selectedElement.data as ProcessedNode).properties }
-                                delete newProps[key]
+                                if (e.target.value === '') {
+                                  newProps[key] = null
+                                } else {
+                                  newProps[key] = e.target.value
+                                }
                                 setSelectedElement(prev => prev ? {
                                   ...prev,
                                   data: { ...prev.data, properties: newProps }
                                 } : null)
+                                updateNode((selectedElement.data as ProcessedNode).id, newProps)
+                              }}
+                            />
+                            <button
+                              onClick={() => {
+                                const newProps = { ...(selectedElement.data as ProcessedNode).properties }
+                                newProps[key] = null
+                                setSelectedElement(prev => prev ? {
+                                  ...prev,
+                                  data: { ...prev.data, properties: { 
+                                    ...newProps,
+                                    [key]: '' // Use empty string for display
+                                  }}
+                                } : null)
+                                updateNode((selectedElement.data as ProcessedNode).id, newProps)
                               }}
                               className="text-red-500 hover:text-red-700"
                             >
@@ -379,21 +392,34 @@ export function GraphVisualization({ graphData: initialData, onGraphReset }: Gra
                         <span>{key}:</span>
                         <div className="flex gap-2">
                           <input
-                            value={value as string}
-                            onChange={e => setSelectedElement(prev => prev ? {
-                              ...prev,
-                              data: { ...prev.data, properties: { ...prev.data.properties, [key]: e.target.value } }
-                            } : null)}
-                            className="border rounded px-2 py-1"
-                          />
-                          <button
-                            onClick={() => {
+                            className="flex-1 bg-transparent"
+                            value={selectedElement.data.properties[key] ?? ''}
+                            onChange={e => {
                               const newProps = { ...(selectedElement.data as ProcessedLink).properties }
-                              delete newProps[key]
+                              if (e.target.value === '') {
+                                newProps[key] = null
+                              } else {
+                                newProps[key] = e.target.value
+                              }
                               setSelectedElement(prev => prev ? {
                                 ...prev,
                                 data: { ...prev.data, properties: newProps }
                               } : null)
+                              updateEdge((selectedElement.data as ProcessedLink).id, newProps)
+                            }}
+                          />
+                          <button
+                            onClick={() => {
+                              const newProps = { ...(selectedElement.data as ProcessedLink).properties }
+                              newProps[key] = null
+                              setSelectedElement(prev => prev ? {
+                                ...prev,
+                                data: { ...prev.data, properties: {
+                                  ...newProps,
+                                  [key]: '' // Use empty string for display
+                                }}
+                              } : null)
+                              updateEdge((selectedElement.data as ProcessedLink).id, newProps)
                             }}
                             className="text-red-500 hover:text-red-700"
                           >
@@ -410,9 +436,7 @@ export function GraphVisualization({ graphData: initialData, onGraphReset }: Gra
                   if (selectedElement.type === 'node') {
                     deleteNode((selectedElement.data as ProcessedNode).id)
                   } else {
-                    const sourceId = typeof (selectedElement.data as ProcessedLink).source === 'string' ? (selectedElement.data as ProcessedLink).source : (selectedElement.data as ProcessedLink).source.id
-                    const targetId = typeof (selectedElement.data as ProcessedLink).target === 'string' ? (selectedElement.data as ProcessedLink).target : (selectedElement.data as ProcessedLink).target.id
-                    deleteEdge(`${sourceId}_${targetId}`)
+                    deleteEdge((selectedElement.data as ProcessedLink).id)
                   }
                   setSelectedElement(null)
                 }}>
@@ -422,9 +446,7 @@ export function GraphVisualization({ graphData: initialData, onGraphReset }: Gra
                   if (selectedElement.type === 'node') {
                     updateNode((selectedElement.data as ProcessedNode).id, (selectedElement.data as ProcessedNode).properties)
                   } else {
-                    const sourceId = typeof (selectedElement.data as ProcessedLink).source === 'string' ? (selectedElement.data as ProcessedLink).source : (selectedElement.data as ProcessedLink).source.id
-                    const targetId = typeof (selectedElement.data as ProcessedLink).target === 'string' ? (selectedElement.data as ProcessedLink).target : (selectedElement.data as ProcessedLink).target.id
-                    updateEdge(`${sourceId}_${targetId}`, (selectedElement.data as ProcessedLink).properties)
+                    updateEdge((selectedElement.data as ProcessedLink).id, (selectedElement.data as ProcessedLink).properties)
                   }
                   setSelectedElement(null)
                 }}>
