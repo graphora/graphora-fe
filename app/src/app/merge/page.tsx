@@ -1,21 +1,24 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
-import { useRouter } from 'next/navigation'
-import { Loader2, PauseCircle, PlayCircle, AlertCircle, CheckCircle2 } from 'lucide-react'
+import { useState, useEffect, useRef, useCallback } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { Loader2, PauseCircle, PlayCircle, AlertCircle, CheckCircle2, RefreshCcw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { GraphVisualization } from '@/components/graph-visualization'
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Card, CardContent } from '@/components/ui/card'
-import { MockMergeWebSocket } from '@/lib/mock-merge-websocket'
+import { MergeWebSocket } from '@/lib/merge-websocket'
 import { WorkflowLayout } from '@/components/workflow-layout'
 import { cn } from '@/lib/utils'
 import type { ChatMessage, MergeEvent, MergeStatus } from '@/types/merge'
 
 export default function MergePage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const sessionId = searchParams.get('session_id')
+  const transformId = searchParams.get('transform_id')
   const [isPaused, setIsPaused] = useState(false)
   const [status, setStatus] = useState<MergeStatus>('IN_PROGRESS')
   const [progress, setProgress] = useState(0)
@@ -25,7 +28,8 @@ export default function MergePage() {
   const [graphData, setGraphData] = useState<any>(null)
   const [canSubmit, setCanSubmit] = useState(false)
   const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>({})
-  const wsRef = useRef<MockMergeWebSocket | null>(null)
+  const [isRetrying, setIsRetrying] = useState(false)
+  const wsRef = useRef<MergeWebSocket | null>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
 
   const workflowSteps: WorkflowStep[] = [
@@ -50,16 +54,64 @@ export default function MergePage() {
   ]
 
   useEffect(() => {
-    // Initialize WebSocket connection
-    const ws = new MockMergeWebSocket(`${process.env.NEXT_PUBLIC_WS_URL}/merge`)
-    wsRef.current = ws
+    if (!transformId || !sessionId) {
+      setError('Missing required parameters');
+      return;
+    }
 
-    ws.addEventListener('message', handleWebSocketMessage)
+    const startMerge = async () => {
+      try {
+        setError(null);
+        
+        // First call the start merge endpoint
+        const response = await fetch(`/api/merge/${sessionId}/start`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            transform_id: transformId,
+          }),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Failed to start merge process');
+        }
+
+        // Then establish WebSocket connection
+        const ws = new MergeWebSocket(
+          `${process.env.NEXT_PUBLIC_WS_URL}/api/v1/merge/ws/${sessionId}`
+        );
+        wsRef.current = ws;
+
+        ws.addEventListener('message', handleWebSocketMessage);
+        ws.addEventListener('error', (error) => {
+          console.error('WebSocket error:', error);
+          setError('Failed to connect to merge service');
+        });
+
+        ws.addEventListener('open', () => {
+          console.log('WebSocket connection established');
+        });
+
+        ws.addEventListener('close', () => {
+          console.log('WebSocket connection closed');
+        });
+      } catch (error) {
+        console.error('Error starting merge:', error);
+        setError(error instanceof Error ? error.message : 'Failed to start merge process');
+      }
+    };
+
+    startMerge();
 
     return () => {
-      ws.close()
-    }
-  }, [])
+      if (wsRef.current) {
+        wsRef.current.close();
+      }
+    };
+  }, [transformId, sessionId]);
 
   useEffect(() => {
     // Auto-scroll to bottom when messages change
@@ -130,55 +182,74 @@ export default function MergePage() {
     setMessages(prev => [...prev, message])
   }
 
-  const handleOptionSelect = async (questionId: string, option: { label: string; value: string }) => {
-    // Update selected option for this question
-    setSelectedOptions(prev => ({
-      ...prev,
-      [questionId]: option.value
-    }))
-
-    // Send the selection to the API
+  const handleAnswer = async (questionId: string, answer: string) => {
     try {
-      const response = await fetch('/api/merge/answer', {
+      setError(null);
+      
+      // Send answer through WebSocket
+      wsRef.current?.sendMessage('ANSWER', {
+        question_id: questionId,
+        answer: answer,
+      });
+
+      setSelectedOptions((prev) => ({
+        ...prev,
+        [questionId]: answer,
+      }));
+    } catch (error) {
+      console.error('Error submitting answer:', error);
+      setError('Failed to submit answer. Please try again.');
+    }
+  };
+
+  const handleCancel = async () => {
+    try {
+      const response = await fetch(`/api/merge/${sessionId}/cancel`, {
+        method: 'POST',
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to cancel merge process');
+      }
+
+      if (wsRef.current) {
+        wsRef.current.close();
+      }
+      
+      router.push('/transform');
+    } catch (error) {
+      console.error('Error canceling merge:', error);
+      setError('Failed to cancel merge process');
+    }
+  };
+
+  const handleSubmit = useCallback(async () => {
+    try {
+      setIsRetrying(false)
+      setError(null)
+      const response = await fetch('/api/merge/submit', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          questionId,
-          answer: option.value
+          transform_id: transformId,
+          session_id: sessionId
         }),
-      });
+      })
 
       if (!response.ok) {
-        throw new Error('Failed to submit answer');
+        throw new Error('Failed to submit merge')
       }
+
+      const data = await response.json()
+      setStatus('COMPLETED')
+      router.push('/transform')
     } catch (error) {
-      console.error('Error submitting answer:', error);
-      setError('Failed to submit answer. Please try again.');
+      console.error('Error submitting merge:', error)
+      setError('Failed to submit merge. Please try again.')
     }
-  }
-
-  const handleSubmit = () => {
-    if (wsRef.current) {
-      wsRef.current.send(JSON.stringify({
-        type: 'SUBMIT',
-        payload: {
-          timestamp: new Date().toISOString()
-        }
-      }))
-    }
-    
-    addMessage({
-      id: `msg_${Date.now()}`,
-      role: 'agent',
-      content: 'Changes have been successfully persisted to the production database.',
-      timestamp: new Date().toISOString()
-    })
-
-    // Disable submit button after successful submission
-    setCanSubmit(false)
-  }
+  }, [transformId, sessionId, router])
 
   const togglePause = () => {
     setIsPaused(!isPaused)
@@ -228,9 +299,14 @@ export default function MergePage() {
                 variant="default"
                 className="bg-green-600 hover:bg-green-700 gap-2"
                 onClick={handleSubmit}
+                disabled={isRetrying}
               >
-                <CheckCircle2 className="h-4 w-4" />
-                Merge to Prod DB
+                {isRetrying ? (
+                  <RefreshCcw className="h-4 w-4 animate-spin" />
+                ) : (
+                  <CheckCircle2 className="h-4 w-4" />
+                )}
+                {isRetrying ? 'Retrying...' : 'Merge to Prod DB'}
               </Button>
             )}
           </div>
@@ -238,7 +314,20 @@ export default function MergePage() {
 
         {error && (
           <Alert variant="destructive" className="m-4">
-            <AlertDescription>{error}</AlertDescription>
+            <AlertDescription className="flex items-center justify-between">
+              <span>{error}</span>
+              {isRetrying && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleSubmit}
+                  className="ml-4"
+                >
+                  <RefreshCcw className="h-4 w-4 mr-2" />
+                  Retry
+                </Button>
+              )}
+            </AlertDescription>
           </Alert>
         )}
 
@@ -278,7 +367,7 @@ export default function MergePage() {
                                       "w-full justify-between",
                                       isSelected && "border-green-500 bg-green-50 text-green-700"
                                     )}
-                                    onClick={() => handleOptionSelect(message.questionId!, option)}
+                                    onClick={() => handleAnswer(message.questionId!, option.value)}
                                     disabled={selectedOptions[message.questionId!] !== undefined}
                                   >
                                     <span>{option.label}</span>

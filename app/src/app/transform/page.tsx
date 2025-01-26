@@ -253,7 +253,7 @@ export default function TransformPage() {
 
   const handleMergeConfirm = () => {
     setShowMergeConfirm(false)
-    router.push('/merge')
+    router.push(`/merge?session_id=${sessionId}&transform_id=${transformId}`)
   }
 
   return (

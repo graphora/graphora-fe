@@ -114,6 +114,22 @@ export function GraphVisualization({ graphData: initialData, onGraphReset }: Gra
   const [nodeFormData, setNodeFormData] = useState<NodeFormData>({ type: NODE_TYPES[0], properties: {} })
   const [edgeFormData, setEdgeFormData] = useState<EdgeFormData>({ type: EDGE_TYPES[0], properties: {} })
   const graphRef = useRef<any>(null)
+  const [dimensions, setDimensions] = useState({ width: 800, height: 600 });
+
+  useEffect(() => {
+    // Update dimensions on mount and window resize
+    function updateDimensions() {
+      setDimensions({
+        width: window.innerWidth - 48,
+        height: window.innerHeight - 200
+      });
+    }
+
+    updateDimensions();
+    window.addEventListener('resize', updateDimensions);
+
+    return () => window.removeEventListener('resize', updateDimensions);
+  }, []);
 
   const processedData = useMemo(() => {
     if (!graphData?.nodes || !graphData?.edges) return { nodes: [], links: [] }
@@ -211,8 +227,8 @@ export function GraphVisualization({ graphData: initialData, onGraphReset }: Gra
                 ctx.fillStyle = '#000'
                 ctx.fillText(label, node.x!, textY)
               }}
-              width={window.innerWidth - 48}
-              height={window.innerHeight - 200}
+              width={dimensions.width}
+              height={dimensions.height}
             />
           </ContextMenuTrigger>
           <ContextMenuContent>
