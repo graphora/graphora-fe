@@ -1,27 +1,157 @@
-import type { MergeEvent } from '@/types/merge';
+import type { MergeEvent, MergeStatus } from '@/types/merge';
 
-export class MergeWebSocket extends WebSocket {
-  constructor(url: string) {
-    super(url);
+interface WebSocketMessage {
+  type: string;
+  payload: any;
+  timestamp?: string;
+}
 
-    // Set up error handling
-    this.onerror = (error) => {
-      console.error('WebSocket error:', error);
-    };
+interface QuestionPayload {
+  question_id: string;
+  text: string;
+  options?: string[];
+}
 
-    this.onclose = (event) => {
-      if (!event.wasClean) {
-        console.error(`WebSocket connection closed unexpectedly. Code: ${event.code}`);
-      }
-    };
+interface StatusPayload {
+  status: MergeStatus;
+  progress: number;
+  current_step?: string;
+}
+
+interface ErrorPayload {
+  message: string;
+}
+
+interface AnswerPayload {
+  question_id: string;
+  answer: string;
+  timestamp: string;
+}
+
+type MessageHandler = (payload: any) => void;
+
+export class MergeWebSocket {
+  private ws: WebSocket | null = null;
+  private sessionId: string;
+  private messageHandlers: Map<string, MessageHandler[]> = new Map();
+  private reconnectAttempts = 0;
+  private maxReconnectAttempts = 3;
+  private reconnectDelay = 500; // 0.5 seconds
+  private url: string;
+
+  constructor(baseUrl: string, sessionId: string) {
+    this.sessionId = sessionId;
+    // Construct WebSocket URL using the Next.js proxy
+    const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const host = window.location.host;
+    this.url = `${wsProtocol}//${host}${baseUrl}/merge/ws/${sessionId}`;
+    this.setupMessageHandlers();
   }
 
-  // Helper method to send messages
-  sendMessage(type: string, payload: any) {
-    this.send(JSON.stringify({
+  private setupMessageHandlers() {
+    this.messageHandlers.set('QUESTION', []);
+    this.messageHandlers.set('STATUS', []);
+    this.messageHandlers.set('ERROR', []);
+  }
+
+  public async connect(): Promise<void> {
+    return new Promise((resolve, reject) => {
+      try {
+        this.ws = new WebSocket(this.url);
+
+        this.ws.onopen = () => {
+          console.log('WebSocket connected');
+          this.reconnectAttempts = 0;
+          resolve();
+        };
+
+        this.ws.onmessage = (event) => {
+          try {
+            const message: WebSocketMessage = JSON.parse(event.data);
+            this.handleMessage(message);
+          } catch (error) {
+            console.error('Error parsing WebSocket message:', error);
+          }
+        };
+
+        this.ws.onerror = (error) => {
+          console.error('WebSocket error:', error);
+          this.attemptReconnect();
+          reject(new Error('WebSocket connection failed'));
+        };
+
+        this.ws.onclose = (event) => {
+          if (!event.wasClean) {
+            console.error(`WebSocket connection closed unexpectedly. Code: ${event.code}`);
+            this.attemptReconnect();
+          }
+        };
+      } catch (error) {
+        console.error('Error creating WebSocket:', error);
+        reject(error);
+      }
+    });
+  }
+
+  private async attemptReconnect() {
+    if (this.reconnectAttempts >= this.maxReconnectAttempts) {
+      console.error('Max reconnection attempts reached');
+      return;
+    }
+
+    this.reconnectAttempts++;
+    console.log(`Attempting to reconnect (${this.reconnectAttempts}/${this.maxReconnectAttempts})...`);
+
+    await new Promise(resolve => setTimeout(resolve, this.reconnectDelay));
+    await this.connect();
+  }
+
+  private handleMessage(message: WebSocketMessage) {
+    const handlers = this.messageHandlers.get(message.type);
+    if (handlers) {
+      handlers.forEach(handler => handler(message.payload));
+    }
+  }
+
+  public on(type: string, handler: MessageHandler) {
+    const handlers = this.messageHandlers.get(type) || [];
+    handlers.push(handler);
+    this.messageHandlers.set(type, handlers);
+  }
+
+  public sendAnswer(questionId: string, answer: string) {
+    const payload: AnswerPayload = {
+      question_id: questionId,
+      answer,
+      timestamp: new Date().toISOString()
+    };
+
+    this.sendMessage('ANSWER', payload);
+  }
+
+  private sendMessage(type: string, payload: any) {
+    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
+      throw new Error('WebSocket is not connected');
+    }
+
+    const message: WebSocketMessage = {
       type,
       payload,
       timestamp: new Date().toISOString()
-    }));
+    };
+
+    this.ws.send(JSON.stringify(message));
+  }
+
+  public disconnect() {
+    if (this.ws) {
+      this.ws.close();
+      this.ws = null;
+    }
+    this.messageHandlers.clear();
+  }
+
+  public isConnected(): boolean {
+    return this.ws !== null && this.ws.readyState === WebSocket.OPEN;
   }
 }

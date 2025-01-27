@@ -1,10 +1,16 @@
 import { NextResponse } from 'next/server';
+import { auth } from '@clerk/nextjs/server';
 
 export async function POST(
   request: Request,
   { params }: { params: { session_id: string } }
 ) {
   try {
+    const { userId } = await auth();
+    if (!userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const { transform_id } = await request.json();
     const { session_id } = await params;
 
@@ -27,7 +33,7 @@ export async function POST(
 
     if (!response.ok) {
       const error = await response.json();
-      console.log(error)
+      console.error('Backend error:', error);
       return NextResponse.json(
         { error: error.message || 'Failed to start merge' },
         { status: response.status }

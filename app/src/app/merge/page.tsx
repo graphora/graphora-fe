@@ -9,16 +9,17 @@ import { GraphVisualization } from '@/components/graph-visualization'
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Card, CardContent } from '@/components/ui/card'
-import { MergeWebSocket } from '@/lib/merge-websocket'
 import { WorkflowLayout } from '@/components/workflow-layout'
 import { cn } from '@/lib/utils'
 import type { ChatMessage, MergeEvent, MergeStatus } from '@/types/merge'
+import { useUser } from '@clerk/nextjs'
+import { MergeWebSocket } from '@/lib/merge-websocket'
 
 export default function MergePage() {
   const router = useRouter()
+  const { user, isLoaded } = useUser()
   const searchParams = useSearchParams()
-  const sessionId = searchParams.get('session_id')
-  const transformId = searchParams.get('transform_id')
+
   const [isPaused, setIsPaused] = useState(false)
   const [status, setStatus] = useState<MergeStatus>('IN_PROGRESS')
   const [progress, setProgress] = useState(0)
@@ -31,6 +32,183 @@ export default function MergePage() {
   const [isRetrying, setIsRetrying] = useState(false)
   const wsRef = useRef<MergeWebSocket | null>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
+
+  const sessionId = searchParams.get('session_id')
+  const transformId = searchParams.get('transform_id')
+
+  useEffect(() => {
+    if (isLoaded && !user) {
+      router.push('/sign-in')
+    }
+  }, [isLoaded, user, router])
+
+  const startMergeProcess = async () => {
+    if (!sessionId || !transformId) {
+      setError('Missing required parameters')
+      return
+    }
+
+    try {
+      setError(null)
+
+      // Ensure WebSocket is connected
+      if (!wsRef.current?.isConnected()) {
+        throw new Error('WebSocket connection not established')
+      }
+
+      // Wait an additional 500ms to ensure backend registers the connection
+      await new Promise(resolve => setTimeout(resolve, 500))
+
+      const response = await fetch(`/api/merge/${sessionId}/start`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          transform_id: transformId
+        })
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || `HTTP error! status: ${response.status}`)
+      }
+
+      const data = await response.json()
+      console.log('Merge process started successfully:', data)
+    } catch (error) {
+      console.error('Error starting merge process:', error)
+      setError(error instanceof Error ? error.message : 'Failed to start merge process')
+      throw error
+    }
+  }
+
+  useEffect(() => {
+    if (!sessionId || !transformId) {
+      setError('Missing required parameters')
+      return
+    }
+
+    const initializeWebSocket = async () => {
+      try {
+        // Create WebSocket instance using Next.js proxy
+        const ws = new MergeWebSocket('/api/v1', sessionId)
+        wsRef.current = ws
+
+        // Set up event handlers before connecting
+        ws.on('QUESTION', (payload: any) => {
+          setMessages(prev => [...prev, {
+            type: 'question',
+            role: 'agent',
+            content: payload.content,
+            questionId: payload.questionId,
+            options: payload.options,
+            requiresAction: true,
+            timestamp: new Date().toISOString()
+          }])
+          setCanSubmit(true)
+        })
+
+        ws.on('PROGRESS', (payload: any) => {
+          setProgress(payload.progress)
+          if (payload.currentStep) {
+            setCurrentStep(payload.currentStep)
+          }
+        })
+
+        ws.on('STATUS', (payload: any) => {
+          setStatus(payload.status)
+        })
+
+        ws.on('ERROR', (payload: any) => {
+          console.error('Received error from WebSocket:', payload.message)
+          setError(payload.message)
+        })
+
+        // Connect to WebSocket first
+        console.log('Connecting to WebSocket...')
+        await ws.connect()
+        console.log('WebSocket connected successfully')
+
+        // Then start the merge process
+        await startMergeProcess()
+      } catch (error) {
+        console.error('Error in WebSocket setup:', error)
+        setError(error instanceof Error ? error.message : 'Failed to initialize WebSocket connection')
+      }
+    }
+
+    initializeWebSocket()
+
+    return () => {
+      if (wsRef.current) {
+        wsRef.current.disconnect()
+        wsRef.current = null
+      }
+    }
+  }, [sessionId, transformId])
+
+  const handleAnswerSubmit = async (answer: string, questionId: string) => {
+    if (!wsRef.current || !wsRef.current.isConnected()) {
+      setError('WebSocket connection lost')
+      return
+    }
+
+    try {
+      wsRef.current.sendAnswer(questionId, answer)
+      setMessages(prev => [...prev, {
+        type: 'answer',
+        content: answer,
+        questionId
+      }])
+      setCanSubmit(false)
+    } catch (error) {
+      console.error('Error sending answer:', error)
+      setError('Failed to send answer')
+    }
+  }
+
+  const handleRetry = async () => {
+    setIsRetrying(true)
+    setError(null)
+    
+    try {
+      if (wsRef.current) {
+        wsRef.current.disconnect()
+      }
+      
+      const ws = new MergeWebSocket('/api/v1', sessionId)
+      wsRef.current = ws
+      await ws.connect()
+      await startMergeProcess()
+      
+      setIsRetrying(false)
+    } catch (error) {
+      console.error('Error retrying connection:', error)
+      setError(error instanceof Error ? error.message : 'Failed to retry connection')
+      setIsRetrying(false)
+    }
+  }
+
+  useEffect(() => {
+    // Auto-scroll to bottom when messages change
+    if (scrollRef.current) {
+      const scrollElement = scrollRef.current
+      scrollElement.scrollTop = scrollElement.scrollHeight
+    }
+  }, [messages])
+
+  if (!isLoaded) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    )
+  }
+
+  if (!user) {
+    return null
+  }
 
   const workflowSteps: WorkflowStep[] = [
     {
@@ -53,209 +231,6 @@ export default function MergePage() {
     }
   ]
 
-  useEffect(() => {
-    if (!transformId || !sessionId) {
-      setError('Missing required parameters');
-      return;
-    }
-
-    const startMerge = async () => {
-      try {
-        setError(null);
-        
-        // First call the start merge endpoint
-        const response = await fetch(`/api/merge/${sessionId}/start`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            transform_id: transformId,
-          }),
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.error || 'Failed to start merge process');
-        }
-
-        // Then establish WebSocket connection
-        const ws = new MergeWebSocket(
-          `${process.env.NEXT_PUBLIC_WS_URL}/api/v1/merge/ws/${sessionId}`
-        );
-        wsRef.current = ws;
-
-        ws.addEventListener('message', handleWebSocketMessage);
-        ws.addEventListener('error', (error) => {
-          console.error('WebSocket error:', error);
-          setError('Failed to connect to merge service');
-        });
-
-        ws.addEventListener('open', () => {
-          console.log('WebSocket connection established');
-        });
-
-        ws.addEventListener('close', () => {
-          console.log('WebSocket connection closed');
-        });
-      } catch (error) {
-        console.error('Error starting merge:', error);
-        setError(error instanceof Error ? error.message : 'Failed to start merge process');
-      }
-    };
-
-    startMerge();
-
-    return () => {
-      if (wsRef.current) {
-        wsRef.current.close();
-      }
-    };
-  }, [transformId, sessionId]);
-
-  useEffect(() => {
-    // Auto-scroll to bottom when messages change
-    if (scrollRef.current) {
-      const scrollElement = scrollRef.current;
-      scrollElement.scrollTop = scrollElement.scrollHeight;
-    }
-  }, [messages]);
-
-  const handleWebSocketMessage = (event: MessageEvent) => {
-    const wsEvent: MergeEvent = JSON.parse(event.data)
-
-    switch (wsEvent.type) {
-      case 'PROGRESS':
-        setProgress(wsEvent.payload.data.progress)
-        setCurrentStep(wsEvent.payload.data.currentStep)
-        // Update graph data if available
-        if (wsEvent.payload.data.graphData) {
-          setGraphData(wsEvent.payload.data.graphData)
-        }
-        break
-
-      case 'QUESTION':
-        setStatus('WAITING_INPUT')
-        setCanSubmit(false)
-        addMessage({
-          id: `msg_${Date.now()}`,
-          role: 'agent',
-          content: wsEvent.payload.data.content,
-          timestamp: wsEvent.payload.timestamp,
-          requiresAction: true,
-          questionId: wsEvent.payload.data.questionId,
-          options: wsEvent.payload.data.options
-        })
-        // Show preview of changes in graph
-        if (wsEvent.payload.data.previewGraphData) {
-          setGraphData(wsEvent.payload.data.previewGraphData)
-        }
-        break
-
-      case 'ERROR':
-        setError(wsEvent.payload.data.message)
-        setStatus('FAILED')
-        setCanSubmit(false)
-        break
-
-      case 'COMPLETE':
-        setStatus('COMPLETED')
-        setCanSubmit(true)
-        addMessage({
-          id: `msg_${Date.now()}`,
-          role: 'agent',
-          content: 'Merge completed successfully! Here are the statistics:\n' +
-            `- Nodes Processed: ${wsEvent.payload.data.stats.nodesProcessed}\n` +
-            `- Edges Processed: ${wsEvent.payload.data.stats.edgesProcessed}\n` +
-            `- Conflicts Resolved: ${wsEvent.payload.data.stats.conflictsResolved}`,
-          timestamp: wsEvent.payload.timestamp
-        })
-        // Update final graph data
-        if (wsEvent.payload.data.finalGraphData) {
-          setGraphData(wsEvent.payload.data.finalGraphData)
-        }
-        break
-    }
-  }
-
-  const addMessage = (message: ChatMessage) => {
-    setMessages(prev => [...prev, message])
-  }
-
-  const handleAnswer = async (questionId: string, answer: string) => {
-    try {
-      setError(null);
-      
-      // Send answer through WebSocket
-      wsRef.current?.sendMessage('ANSWER', {
-        question_id: questionId,
-        answer: answer,
-      });
-
-      setSelectedOptions((prev) => ({
-        ...prev,
-        [questionId]: answer,
-      }));
-    } catch (error) {
-      console.error('Error submitting answer:', error);
-      setError('Failed to submit answer. Please try again.');
-    }
-  };
-
-  const handleCancel = async () => {
-    try {
-      const response = await fetch(`/api/merge/${sessionId}/cancel`, {
-        method: 'POST',
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to cancel merge process');
-      }
-
-      if (wsRef.current) {
-        wsRef.current.close();
-      }
-      
-      router.push('/transform');
-    } catch (error) {
-      console.error('Error canceling merge:', error);
-      setError('Failed to cancel merge process');
-    }
-  };
-
-  const handleSubmit = useCallback(async () => {
-    try {
-      setIsRetrying(false)
-      setError(null)
-      const response = await fetch('/api/merge/submit', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          transform_id: transformId,
-          session_id: sessionId
-        }),
-      })
-
-      if (!response.ok) {
-        throw new Error('Failed to submit merge')
-      }
-
-      const data = await response.json()
-      setStatus('COMPLETED')
-      router.push('/transform')
-    } catch (error) {
-      console.error('Error submitting merge:', error)
-      setError('Failed to submit merge. Please try again.')
-    }
-  }, [transformId, sessionId, router])
-
-  const togglePause = () => {
-    setIsPaused(!isPaused)
-    // In a real implementation, we would send a pause/resume command to the server
-  }
-
   return (
     <WorkflowLayout steps={workflowSteps}>
       <div className="flex flex-col h-[calc(100vh-4rem)]">
@@ -263,7 +238,7 @@ export default function MergePage() {
         <div className="flex items-center justify-between p-4 border-b bg-background sticky top-0 z-50">
           <div className="flex items-center gap-4">
             <h1 className="text-2xl font-bold">Graph Merge Process</h1>
-            {status === 'IN_PROGRESS' && (
+            {(status === 'IN_PROGRESS' || progress > 0) && (
               <div className="flex items-center gap-2">
                 <Loader2 className="h-4 w-4 animate-spin" />
                 <span className="text-sm text-muted-foreground">
@@ -281,9 +256,9 @@ export default function MergePage() {
                 setIsPaused(!isPaused)
                 if (wsRef.current) {
                   if (isPaused) {
-                    wsRef.current.resume()
+                    wsRef.current.sendResume()
                   } else {
-                    wsRef.current.pause()
+                    wsRef.current.sendPause()
                   }
                 }
               }}
@@ -298,7 +273,7 @@ export default function MergePage() {
               <Button
                 variant="default"
                 className="bg-green-600 hover:bg-green-700 gap-2"
-                onClick={handleSubmit}
+                onClick={handleRetry}
                 disabled={isRetrying}
               >
                 {isRetrying ? (
@@ -320,7 +295,7 @@ export default function MergePage() {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={handleSubmit}
+                  onClick={handleRetry}
                   className="ml-4"
                 >
                   <RefreshCcw className="h-4 w-4 mr-2" />
@@ -343,13 +318,18 @@ export default function MergePage() {
                 <ScrollArea className="flex-1">
                   <div className="p-4 space-y-4" ref={scrollRef}>
                     {messages.map((message) => (
-                      <Card key={message.id} className={cn(
-                        "w-full",
-                        message.role === 'agent' ? 'bg-gray-50' : ''
-                      )}>
+                      <Card
+                        key={`${message.questionId || ''}-${message.timestamp}`}
+                        className={cn(
+                          'w-full',
+                          message.role === 'agent' ? 'bg-gray-50' : ''
+                        )}
+                      >
                         <CardContent className="p-4">
                           <div className="flex items-center justify-between mb-2">
-                            <span className="font-medium capitalize">{message.role}</span>
+                            <span className="font-medium capitalize">
+                              {message.role}
+                            </span>
                             <span className="text-xs text-gray-500">
                               {new Date(message.timestamp).toLocaleTimeString()}
                             </span>
@@ -357,23 +337,36 @@ export default function MergePage() {
                           <p className="whitespace-pre-wrap">{message.content}</p>
                           {message.requiresAction && message.options && (
                             <div className="mt-4 space-y-2">
-                              {message.options.map(option => {
-                                const isSelected = selectedOptions[message.questionId!] === option.value;
+                              {message.options.map((option) => {
+                                const isSelected =
+                                  selectedOptions[message.questionId!] ===
+                                  option.id
                                 return (
                                   <Button
-                                    key={option.value}
+                                    key={option.id}
                                     variant="outline"
                                     className={cn(
-                                      "w-full justify-between",
-                                      isSelected && "border-green-500 bg-green-50 text-green-700"
+                                      'w-full justify-between',
+                                      isSelected &&
+                                        'border-green-500 bg-green-50 text-green-700'
                                     )}
-                                    onClick={() => handleAnswer(message.questionId!, option.value)}
-                                    disabled={selectedOptions[message.questionId!] !== undefined}
+                                    onClick={() =>
+                                      handleAnswerSubmit(
+                                        option.id,
+                                        message.questionId!
+                                      )
+                                    }
+                                    disabled={
+                                      selectedOptions[message.questionId!] !==
+                                      undefined
+                                    }
                                   >
                                     <span>{option.label}</span>
-                                    {isSelected && <CheckCircle2 className="h-4 w-4 ml-2" />}
+                                    {isSelected && (
+                                      <CheckCircle2 className="h-4 w-4 ml-2" />
+                                    )}
                                   </Button>
-                                );
+                                )
                               })}
                             </div>
                           )}
