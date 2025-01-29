@@ -21,6 +21,32 @@ export interface MergeResponse {
   context: Record<string, any>;
 }
 
+export type MergeStatus = 'IN_PROGRESS' | 'COMPLETED' | 'FAILED'
+
+export interface Option {
+  id: string
+  label: string
+}
+
+export interface PropertyDiff {
+  staging: string
+  prod: string
+}
+
+export interface Suggestion {
+  suggestion_type: string
+  description: string
+  confidence: number
+  affected_properties: string[]
+}
+
+export interface ConflictMessage {
+  conflict_type: string
+  description: string
+  properties_affected: Record<string, PropertyDiff>
+  suggestions: Suggestion[]
+}
+
 export interface ChatMessage {
   id: string;
   role: 'agent' | 'user';
@@ -32,6 +58,8 @@ export interface ChatMessage {
     label: string;
     value: any;
   }>;
+  type?: 'question' | 'answer' | 'conflict';
+  conflict?: ConflictMessage;
 }
 
 export interface MergeEvent {
@@ -41,4 +69,45 @@ export interface MergeEvent {
     timestamp: string;
     data: any;
   };
+}
+
+export type NodeStatus = 'staging' | 'prod' | 'both'
+
+export interface MergeVisualizationNode {
+  id: string
+  labels: string[]
+  properties: Record<string, any>
+  status: NodeStatus
+  conflicts?: string[]
+}
+
+export interface MergeVisualizationEdge {
+  id: string
+  source: string
+  target: string
+  type: string
+  properties: Record<string, any>
+  status: NodeStatus
+}
+
+export interface MergeVisualizationSummary {
+  total_nodes: number
+  new_nodes: number
+  updated_nodes: number
+  conflicts: number
+  status: {
+    new: number
+    resolved: number
+    needs_review: number
+  }
+}
+
+export interface MergeVisualizationResponse {
+  status: string
+  data: {
+    nodes: MergeVisualizationNode[]
+    edges: MergeVisualizationEdge[]
+    conflicts: Record<string, any>[]
+    summary: MergeVisualizationSummary
+  }
 }

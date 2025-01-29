@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Loader2, PauseCircle, PlayCircle, AlertCircle, CheckCircle2, RefreshCcw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -14,6 +14,8 @@ import { cn } from '@/lib/utils'
 import type { ChatMessage, MergeEvent, MergeStatus } from '@/types/merge'
 import { useUser } from '@clerk/nextjs'
 import { MergeWebSocket } from '@/lib/merge-websocket'
+import { ConflictDisplay } from '@/components/conflict-display'
+import { useMergeVisualization } from '@/hooks/useMergeVisualization'
 
 export default function MergePage() {
   const router = useRouter()
@@ -26,15 +28,43 @@ export default function MergePage() {
   const [currentStep, setCurrentStep] = useState('')
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [error, setError] = useState<string | null>(null)
-  const [graphData, setGraphData] = useState<any>(null)
   const [canSubmit, setCanSubmit] = useState(false)
   const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>({})
   const [isRetrying, setIsRetrying] = useState(false)
+  const [currentConflict, setCurrentConflict] = useState<any>(null)
   const wsRef = useRef<MergeWebSocket | null>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
 
   const sessionId = searchParams.get('session_id')
   const transformId = searchParams.get('transform_id')
+
+  const { data: mergeVisualization, loading: visualizationLoading, error: visualizationError, refresh: refreshVisualization } = useMergeVisualization(sessionId || '')
+
+  const graphData = useMemo(() => {
+    if (!mergeVisualization?.data) return null
+
+    return {
+      nodes: mergeVisualization.data.nodes.map(node => ({
+        id: node.id,
+        labels: node.labels,
+        properties: {
+          ...node.properties,
+          __status: node.status,
+          __conflicts: node.conflicts
+        }
+      })),
+      edges: mergeVisualization.data.edges.map(edge => ({
+        id: edge.id,
+        source: edge.source,
+        target: edge.target,
+        type: edge.type,
+        properties: {
+          ...edge.properties,
+          __status: edge.status
+        }
+      }))
+    }
+  }, [mergeVisualization])
 
   useEffect(() => {
     if (isLoaded && !user) {
@@ -97,15 +127,30 @@ export default function MergePage() {
 
         // Set up event handlers before connecting
         ws.on('QUESTION', (payload: any) => {
-          setMessages(prev => [...prev, {
-            type: 'question',
-            role: 'agent',
-            content: payload.content,
-            questionId: payload.questionId,
-            options: payload.options,
-            requiresAction: true,
-            timestamp: new Date().toISOString()
-          }])
+          // Handle conflict type questions
+          if (payload.conflict_type) {
+            setCurrentConflict(payload)
+            setMessages(prev => [...prev, {
+              type: 'conflict',
+              role: 'agent',
+              content: 'Conflict detected. Please review the changes below.',
+              questionId: payload.questionId,
+              requiresAction: true,
+              timestamp: new Date().toISOString(),
+              conflict: payload
+            }])
+          } else {
+            // Handle regular questions
+            setMessages(prev => [...prev, {
+              type: 'question',
+              role: 'agent',
+              content: payload.content,
+              questionId: payload.questionId,
+              options: payload.options,
+              requiresAction: true,
+              timestamp: new Date().toISOString()
+            }])
+          }
           setCanSubmit(true)
         })
 
@@ -335,7 +380,23 @@ export default function MergePage() {
                             </span>
                           </div>
                           <p className="whitespace-pre-wrap">{message.content}</p>
-                          {message.requiresAction && message.options && (
+                          {message.type === 'conflict' && message.conflict && (
+                            <div className="mt-4">
+                              <ConflictDisplay
+                                {...message.conflict}
+                                onSuggestionSelect={(suggestion) => {
+                                  handleAnswerSubmit(
+                                    JSON.stringify({
+                                      suggestion_type: suggestion.suggestion_type,
+                                      affected_properties: suggestion.affected_properties
+                                    }),
+                                    message.questionId!
+                                  )
+                                }}
+                              />
+                            </div>
+                          )}
+                          {message.type === 'question' && message.options && message.requiresAction && (
                             <div className="mt-4 space-y-2">
                               {message.options.map((option) => {
                                 const isSelected =
@@ -399,9 +460,21 @@ export default function MergePage() {
             {/* Graph Panel */}
             <ResizablePanel defaultSize={60} minSize={30}>
               <div className="flex flex-col h-full">
-                <div className="p-2 border-b font-medium">Graph Preview</div>
+                <div className="p-2 border-b font-medium flex justify-between items-center">
+                  <span>Graph Preview</span>
+                  {visualizationLoading ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <button onClick={refreshVisualization} className="p-1 hover:bg-gray-100 rounded">
+                      <RefreshCcw className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
                 <div className="flex-1 min-h-0">
-                  <GraphVisualization graphData={graphData} />
+                  <GraphVisualization 
+                    graphData={graphData} 
+                    onGraphReset={refreshVisualization}
+                  />
                 </div>
               </div>
             </ResizablePanel>
