@@ -38,6 +38,7 @@ export class MergeWebSocket {
   private maxReconnectAttempts = 3;
   private reconnectDelay = 500; // 0.5 seconds
   private url: string;
+  private connecting: boolean = false;
 
   constructor(baseUrl: string, sessionId: string) {
     this.sessionId = sessionId;
@@ -52,22 +53,33 @@ export class MergeWebSocket {
     this.messageHandlers.set('QUESTION', []);
     this.messageHandlers.set('STATUS', []);
     this.messageHandlers.set('ERROR', []);
+    this.messageHandlers.set('PROGRESS', []);
   }
 
   public async connect(): Promise<void> {
+    // Prevent multiple simultaneous connection attempts
+    if (this.connecting) {
+      console.log('Connection attempt already in progress');
+      return;
+    }
+    this.connecting = true;
+
     return new Promise((resolve, reject) => {
       try {
+        console.log('Connecting to WebSocket:', this.url);
         this.ws = new WebSocket(this.url);
 
         this.ws.onopen = () => {
-          console.log('WebSocket connected');
+          console.log('WebSocket connected successfully');
           this.reconnectAttempts = 0;
+          this.connecting = false;
           resolve();
         };
 
         this.ws.onmessage = (event) => {
           try {
             const message: WebSocketMessage = JSON.parse(event.data);
+            console.log('WebSocket message received:', message);
             this.handleMessage(message);
           } catch (error) {
             console.error('Error parsing WebSocket message:', error);
@@ -76,17 +88,22 @@ export class MergeWebSocket {
 
         this.ws.onerror = (error) => {
           console.error('WebSocket error:', error);
+          this.connecting = false;
           this.attemptReconnect();
           reject(new Error('WebSocket connection failed'));
         };
 
         this.ws.onclose = (event) => {
+          this.connecting = false;
           if (!event.wasClean) {
             console.error(`WebSocket connection closed unexpectedly. Code: ${event.code}`);
             this.attemptReconnect();
+          } else {
+            console.log('WebSocket connection closed cleanly');
           }
         };
       } catch (error) {
+        this.connecting = false;
         console.error('Error creating WebSocket:', error);
         reject(error);
       }
@@ -110,6 +127,8 @@ export class MergeWebSocket {
     const handlers = this.messageHandlers.get(message.type);
     if (handlers) {
       handlers.forEach(handler => handler(message.payload));
+    } else {
+      console.warn('No handlers found for message type:', message.type);
     }
   }
 
@@ -149,6 +168,7 @@ export class MergeWebSocket {
       this.ws = null;
     }
     this.messageHandlers.clear();
+    this.connecting = false;
   }
 
   public isConnected(): boolean {

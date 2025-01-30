@@ -1,17 +1,17 @@
 'use client'
 
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { Loader2, PauseCircle, PlayCircle, AlertCircle, CheckCircle2, RefreshCcw } from 'lucide-react'
+import { Loader2, PauseCircle, PlayCircle, AlertCircle, CheckCircle2, RefreshCcw, ChevronLeft, ChevronRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { GraphVisualization } from '@/components/graph-visualization'
+import { MergeGraphVisualization } from '@/components/merge-graph-visualization'
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Card, CardContent } from '@/components/ui/card'
 import { WorkflowLayout } from '@/components/workflow-layout'
 import { cn } from '@/lib/utils'
-import type { ChatMessage, MergeEvent, MergeStatus } from '@/types/merge'
+import type { ChatMessage, MergeStatus } from '@/types/merge'
 import { useUser } from '@clerk/nextjs'
 import { MergeWebSocket } from '@/lib/merge-websocket'
 import { ConflictDisplay } from '@/components/conflict-display'
@@ -38,9 +38,26 @@ export default function MergePage() {
   const sessionId = searchParams.get('session_id')
   const transformId = searchParams.get('transform_id')
 
-  const { data: mergeVisualization, loading: visualizationLoading, error: visualizationError, refresh: refreshVisualization } = useMergeVisualization(sessionId || '')
+  const { 
+    data: mergeVisualization, 
+    loading: visualizationLoading, 
+    error: visualizationError, 
+    fetchData: refreshVisualization,
+    graphData,
+    addNode,
+    updateNode,
+    deleteNode,
+    addEdge,
+    updateEdge,
+    deleteEdge,
+    undo,
+    redo,
+    canUndo,
+    canRedo,
+    getChanges
+  } = useMergeVisualization(sessionId || '', wsRef.current)
 
-  const graphData = useMemo(() => {
+  const graphDataMemo = useMemo(() => {
     if (!mergeVisualization?.data) return null
 
     return {
@@ -74,21 +91,33 @@ export default function MergePage() {
 
   const startMergeProcess = async () => {
     if (!sessionId || !transformId) {
-      setError('Missing required parameters')
+      const error = 'Missing required parameters: sessionId or transformId'
+      console.error(error)
+      setError(error)
       return
     }
 
     try {
       setError(null)
 
-      // Ensure WebSocket is connected
-      if (!wsRef.current?.isConnected()) {
-        throw new Error('WebSocket connection not established')
+      // Double check WebSocket connection
+      if (!wsRef.current) {
+        throw new Error('WebSocket instance not initialized')
       }
 
-      // Wait an additional 500ms to ensure backend registers the connection
-      await new Promise(resolve => setTimeout(resolve, 500))
+      // Ensure WebSocket is connected and retry if needed
+      let retries = 0
+      while (!wsRef.current.isConnected() && retries < 3) {
+        console.log(`Waiting for WebSocket connection... Attempt ${retries + 1}/3`)
+        await new Promise(resolve => setTimeout(resolve, 1000))
+        retries++
+      }
 
+      if (!wsRef.current.isConnected()) {
+        throw new Error('WebSocket connection not established after retries')
+      }
+
+      console.log('Starting merge process...')
       const response = await fetch(`/api/merge/${sessionId}/start`, {
         method: 'POST',
         headers: {
@@ -108,7 +137,8 @@ export default function MergePage() {
       console.log('Merge process started successfully:', data)
     } catch (error) {
       console.error('Error starting merge process:', error)
-      setError(error instanceof Error ? error.message : 'Failed to start merge process')
+      const errorMessage = error instanceof Error ? error.message : 'Failed to start merge process'
+      setError(errorMessage)
       throw error
     }
   }
@@ -119,7 +149,7 @@ export default function MergePage() {
       return
     }
 
-    const initializeWebSocket = async () => {
+    const setupWebSocket = async () => {
       try {
         // Create WebSocket instance using Next.js proxy
         const ws = new MergeWebSocket('/api/v1', sessionId)
@@ -152,6 +182,14 @@ export default function MergePage() {
             }])
           }
           setCanSubmit(true)
+          // Refresh visualization after question
+          refreshVisualization()
+        })
+
+        ws.on('STATUS', (payload: any) => {
+          setStatus(payload.status)
+          // Refresh visualization after status update
+          refreshVisualization()
         })
 
         ws.on('PROGRESS', (payload: any) => {
@@ -159,10 +197,8 @@ export default function MergePage() {
           if (payload.currentStep) {
             setCurrentStep(payload.currentStep)
           }
-        })
-
-        ws.on('STATUS', (payload: any) => {
-          setStatus(payload.status)
+          // Refresh visualization after progress update
+          refreshVisualization()
         })
 
         ws.on('ERROR', (payload: any) => {
@@ -175,6 +211,9 @@ export default function MergePage() {
         await ws.connect()
         console.log('WebSocket connected successfully')
 
+        // Wait for a short time to ensure all handlers are properly registered
+        await new Promise(resolve => setTimeout(resolve, 1000))
+
         // Then start the merge process
         await startMergeProcess()
       } catch (error) {
@@ -183,7 +222,7 @@ export default function MergePage() {
       }
     }
 
-    initializeWebSocket()
+    setupWebSocket()
 
     return () => {
       if (wsRef.current) {
@@ -334,7 +373,8 @@ export default function MergePage() {
 
         {error && (
           <Alert variant="destructive" className="m-4">
-            <AlertDescription className="flex items-center justify-between">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription className="flex items-center justify-between ml-2">
               <span>{error}</span>
               {isRetrying && (
                 <Button
@@ -437,7 +477,7 @@ export default function MergePage() {
                     {status === 'FAILED' && (
                       <Alert variant="destructive">
                         <AlertCircle className="h-4 w-4" />
-                        <AlertDescription>
+                        <AlertDescription className="ml-2">
                           Merge process failed. Please try again.
                         </AlertDescription>
                       </Alert>
@@ -445,7 +485,7 @@ export default function MergePage() {
                     {status === 'COMPLETED' && (
                       <Alert className="bg-green-50 border-green-200">
                         <CheckCircle2 className="h-4 w-4 text-green-600" />
-                        <AlertDescription className="text-green-600">
+                        <AlertDescription className="ml-2 text-green-600">
                           Merge process completed successfully!
                         </AlertDescription>
                       </Alert>
@@ -462,19 +502,49 @@ export default function MergePage() {
               <div className="flex flex-col h-full">
                 <div className="p-2 border-b font-medium flex justify-between items-center">
                   <span>Graph Preview</span>
-                  {visualizationLoading ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <button onClick={refreshVisualization} className="p-1 hover:bg-gray-100 rounded">
-                      <RefreshCcw className="w-4 h-4" />
-                    </button>
-                  )}
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={undo}
+                      disabled={!canUndo || visualizationLoading}
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={redo}
+                      disabled={!canRedo || visualizationLoading}
+                    >
+                      <ChevronRight className="w-4 h-4" />
+                    </Button>
+                    {visualizationLoading ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={refreshVisualization}
+                        className="p-1 hover:bg-gray-100 rounded"
+                      >
+                        <RefreshCcw className="w-4 h-4" />
+                      </Button>
+                    )}
+                  </div>
                 </div>
                 <div className="flex-1 min-h-0">
-                  <GraphVisualization 
-                    graphData={graphData} 
-                    onGraphReset={refreshVisualization}
-                  />
+                  {visualizationLoading ? (
+                    <div className="flex items-center justify-center h-full">
+                      <Loader2 className="h-8 w-8 animate-spin" />
+                    </div>
+                  ) : (
+                    <MergeGraphVisualization 
+                      sessionId={sessionId} 
+                      wsInstance={wsRef.current}
+                      graphData={graphData} 
+                    />
+                  )}
                 </div>
               </div>
             </ResizablePanel>
