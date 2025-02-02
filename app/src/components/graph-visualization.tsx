@@ -91,6 +91,28 @@ interface SelectedElement {
 }
 
 export function GraphVisualization({ graphData: initialData, onGraphReset }: GraphVisualizationProps) {
+  console.log('GraphVisualization received initialData:', initialData)
+  
+  // Ensure initialData has the required structure
+  const validInitialData = useMemo(() => {
+    if (!initialData) {
+      return { nodes: [], edges: [], total_nodes: 0, total_edges: 0 }
+    }
+    return {
+      ...initialData,
+      nodes: initialData.nodes?.map(node => ({
+        ...node,
+        label: node.label || node.type,
+        properties: node.properties || {}
+      })) || [],
+      edges: initialData.edges?.map(edge => ({
+        ...edge,
+        label: edge.type,
+        properties: edge.properties || {}
+      })) || []
+    }
+  }, [initialData])
+  
   const {
     graphData,
     history,
@@ -106,8 +128,9 @@ export function GraphVisualization({ graphData: initialData, onGraphReset }: Gra
     redo,
     saveGraph,
     resetGraph
-  } = useGraphState(initialData)
+  } = useGraphState(validInitialData)
 
+  console.log('GraphVisualization processed graphData:', graphData)
   const [selectedElement, setSelectedElement] = useState<SelectedElement | null>(null)
   const [showNodeForm, setShowNodeForm] = useState(false)
   const [showEdgeForm, setShowEdgeForm] = useState(false)

@@ -16,6 +16,29 @@ export function useGraphState(initialData: GraphData) {
   const loadInitialState = (): GraphState => {
     if (typeof window === 'undefined') return { data: initialData, history: [], undoStack: [], redoStack: [] }
     
+    // If initialData has nodes/edges but no saved state, use it directly
+    if (initialData?.nodes?.length > 0 || initialData?.edges?.length > 0) {
+      const savedState = localStorage.getItem(`graph_state_${initialData.id}`)
+      if (!savedState) {
+        console.log('Using initial data directly:', initialData)
+        return { data: initialData, history: [], undoStack: [], redoStack: [] }
+      }
+      
+      try {
+        const parsedState = JSON.parse(savedState)
+        // If saved state has no data but initialData does, use initialData
+        if (!parsedState.data?.nodes?.length && !parsedState.data?.edges?.length) {
+          console.log('Saved state empty, using initial data:', initialData)
+          return { data: initialData, history: [], undoStack: [], redoStack: [] }
+        }
+        return parsedState
+      } catch (error) {
+        console.error('Error loading state from local storage:', error)
+        return { data: initialData, history: [], undoStack: [], redoStack: [] }
+      }
+    }
+    
+    // No initial data, try loading from localStorage
     const savedState = localStorage.getItem(`graph_state_${initialData.id}`)
     if (savedState) {
       try {
@@ -24,6 +47,8 @@ export function useGraphState(initialData: GraphData) {
         console.error('Error loading state from local storage:', error)
       }
     }
+    
+    // Default to empty state
     return { data: initialData, history: [], undoStack: [], redoStack: [] }
   }
 

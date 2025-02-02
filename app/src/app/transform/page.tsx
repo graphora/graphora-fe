@@ -141,6 +141,7 @@ export default function TransformPage() {
 
   const loadGraphData = async (transformId: string) => {
     try {
+      console.log('Loading graph data for transform:', transformId)
       const response = await fetch(`/api/graph/${transformId}`)
       
       if (!response.ok) {
@@ -152,20 +153,30 @@ export default function TransformPage() {
       }
       
       const data = await response.json()
-      setGraphData({
+      console.log('Received graph data:', data)
+      
+      if (!data.nodes || !data.edges) {
+        throw new Error('Invalid graph data received')
+      }
+      
+      const processedData = {
+        ...data,
+        id: transformId,
         nodes: data.nodes.map((node: any) => ({
           ...node,
-          // Ensure required properties exist
           label: node.label || node.type,
           properties: node.properties || {}
         })),
         edges: data.edges.map((edge: any) => ({
           ...edge,
-          // Ensure required properties exist
           label: edge.type,
           properties: edge.properties || {}
-        }))
-      })
+        })),
+        total_nodes: data.nodes.length,
+        total_edges: data.edges.length
+      }
+      console.log('Setting processed graph data:', processedData)
+      setGraphData(processedData)
     } catch (err) {
       console.error('Error loading graph data:', err)
       setError(err instanceof Error ? err.message : 'Failed to load graph data')
@@ -174,37 +185,42 @@ export default function TransformPage() {
   }
 
   const handleGraphReset = async () => {
-    if (transformId) {
-      try {
-        // Fetch fresh data from API
-        const response = await fetch(`/api/graph/${transformId}`)
-        if (!response.ok) throw new Error('Failed to reset graph')
-        const data = await response.json()
-        
-        // Clear local storage and reset state
-        localStorage.removeItem(`graph_state_${transformId}`)
-        
-        // Set fresh data and force a re-render
-        setGraphData({
-          ...data,
-          id: transformId,
-          // Add timestamp to force graph to re-render with fresh data
-          _reset: Date.now()
-        })
-      } catch (error) {
-        console.error('Error resetting graph:', error)
-        setError('Failed to reset graph')
-      }
+    if (!transformId) {
+      setError('No transform ID available')
+      return
+    }
+
+    try {
+      // Fetch fresh data from API
+      const response = await fetch(`/api/graph/${transformId}`)
+      if (!response.ok) throw new Error('Failed to reset graph')
+      const data = await response.json()
+      
+      // Clear local storage and reset state
+      localStorage.removeItem(`graph_state_${transformId}`)
+      
+      // Set fresh data and force a re-render
+      setGraphData({
+        ...data,
+        id: transformId,
+        _reset: Date.now() // Force re-mount on reset
+      })
+    } catch (error) {
+      console.error('Error resetting graph:', error)
+      setError('Failed to reset graph')
     }
   }
 
   useEffect(() => {
     let statusInterval: NodeJS.Timeout | null = null
+    let retryCount = 0
+    const MAX_RETRIES = 3
 
     const checkStatus = async () => {
       if (!transformId) return
 
       try {
+        console.log('Checking transform status:', transformId)
         const response = await fetch(`/api/transform/status/${transformId}`)
         
         if (!response.ok) {
@@ -215,13 +231,44 @@ export default function TransformPage() {
         }
         
         const data = await response.json()
+        console.log('Transform status:', data)
 
         if (data.status === 'completed') {
           setProgress(100)
           setIsProcessing(false)
           setIsUploadPanelExpanded(false)
-          // Load graph data
-          loadGraphData(transformId)
+          console.log('Transform completed, loading graph data')
+          
+          // Wait a moment before loading graph data
+          setTimeout(async () => {
+            try {
+              const graphResponse = await fetch(`/api/graph/${transformId}`)
+              if (!graphResponse.ok) {
+                throw new Error('Failed to load graph data')
+              }
+              const graphData = await graphResponse.json()
+              console.log('Received graph data:', graphData)
+              
+              if (!graphData.nodes || !graphData.edges) {
+                if (retryCount < MAX_RETRIES) {
+                  retryCount++
+                  console.log(`Retrying graph data load (${retryCount}/${MAX_RETRIES})`)
+                  setTimeout(checkStatus, 2000)
+                  return
+                }
+                throw new Error('Invalid graph data received')
+              }
+
+              setGraphData({
+                ...graphData,
+                id: transformId
+              })
+            } catch (err) {
+              console.error('Error loading graph data:', err)
+              setError(err instanceof Error ? err.message : 'Failed to load graph data')
+            }
+          }, 1000)
+
           if (statusInterval) {
             clearInterval(statusInterval)
           }
@@ -241,7 +288,10 @@ export default function TransformPage() {
     }
 
     if (transformId && isProcessing) {
-      statusInterval = setInterval(checkStatus, 10000)
+      console.log('Starting status check interval for transform:', transformId)
+      statusInterval = setInterval(checkStatus, 5000)
+      // Also check immediately
+      checkStatus()
     }
 
     return () => {

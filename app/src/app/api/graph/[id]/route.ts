@@ -37,25 +37,38 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const { id } = await params
+    const { id } = params
     const apiUrl = `${process.env.BACKEND_API_URL}/api/v1/graph/${id}`
+    console.log('Fetching graph data from:', apiUrl)
 
     const response = await fetch(apiUrl, {
       method: 'GET',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
       }
     })
 
     if (!response.ok) {
+      console.error('API error:', response.status, response.statusText)
       throw new Error('Failed to fetch graph data')
     }
 
     const data = await response.json()
+    console.log('API response:', data)
+
+    if (!data || !data.nodes || !data.edges) {
+      console.error('Invalid data received:', data)
+      throw new Error('Invalid graph data received from API')
+    }
+
     return NextResponse.json(data)
   } catch (error) {
     console.error('Error fetching graph data:', error)
-    return NextResponse.json({ error: 'Failed to fetch graph data' }, { status: 500 })
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'Failed to fetch graph data' }, 
+      { status: 500 }
+    )
   }
 }
 
