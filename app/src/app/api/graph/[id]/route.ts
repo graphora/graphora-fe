@@ -37,7 +37,7 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const id = params.id
+    const { id } = await params
     const apiUrl = `${process.env.BACKEND_API_URL}/api/v1/graph/${id}`
 
     const response = await fetch(apiUrl, {
