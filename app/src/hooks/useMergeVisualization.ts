@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { MergeVisualizationResponse } from '@/types/merge'
 import { useGraphState } from '@/hooks/useGraphState'
 import type { GraphData, GraphOperation } from '@/types/graph'
@@ -10,28 +10,31 @@ export function useMergeVisualization(sessionId: string, wsInstance: MergeWebSoc
   const [wsConnected, setWsConnected] = useState(false)
   const [data, setData] = useState<MergeVisualizationResponse | null>(null)
   const [graphData, setGraphData] = useState<GraphData>({ nodes: [], edges: [] })
+  const prevDataRef = useRef<string>('')
 
-  const transformGraphData = useCallback((data: any): GraphData => {
-    if (!data || !data.nodes) return { nodes: [], edges: [] }
+  const transformGraphData = useCallback((responseData: any): GraphData => {
+    console.log('Raw response data:', responseData)
+    if (!responseData) return { nodes: [], edges: [] }
+
+    // Extract nodes and edges from the correct level
+    const nodes = responseData.nodes || []
+    const edges = responseData.edges || []
+    
+    console.log('Processing nodes:', nodes.length, 'edges:', edges.length)
 
     return {
-      nodes: data.nodes.map((node: any) => ({
+      nodes: nodes.map((node: any) => ({
         id: node.id,
         labels: node.labels || [],
         properties: {
           ...node.properties,
           __status: node.status,
-          __conflicts: node.conflicts,
           __type: node.type,
-          __modified: node.status === 'both' && Object.keys(node.properties || {}).some(key => 
-            typeof node.properties[key] === 'object' && 
-            node.properties[key]?.hasOwnProperty('staging') && 
-            node.properties[key]?.hasOwnProperty('prod')
-          )
+          __conflicts: node.conflicts || []
         }
       })),
-      edges: data.edges.map((edge: any) => ({
-        id: edge.source + '-' + edge.target,
+      edges: edges.map((edge: any) => ({
+        id: `${edge.source}-${edge.target}`,
         source: edge.source,
         target: edge.target,
         type: edge.type,
@@ -42,6 +45,19 @@ export function useMergeVisualization(sessionId: string, wsInstance: MergeWebSoc
       }))
     }
   }, [])
+
+  useEffect(() => {
+    if (data) {
+      console.log('Data from hook:', data)
+      const newGraphData = transformGraphData(data)
+      console.log('Transformed graph data:', newGraphData)
+      const newDataStr = JSON.stringify(newGraphData)
+      if (newDataStr !== prevDataRef.current) {
+        setGraphData(newGraphData)
+        prevDataRef.current = newDataStr
+      }
+    }
+  }, [data, transformGraphData])
 
   // Fetch data from the API
   const fetchData = useCallback(async () => {
@@ -54,11 +70,8 @@ export function useMergeVisualization(sessionId: string, wsInstance: MergeWebSoc
         throw new Error(`HTTP error! status: ${response.status}`)
       }
       const responseData: MergeVisualizationResponse = await response.json()
-      setData(responseData)
       
-      // Transform and update graph data
-      const transformedData = transformGraphData(responseData.graph)
-      setGraphData(transformedData)
+      setData(responseData)
       
       setLoading(false)
       return responseData
@@ -68,7 +81,7 @@ export function useMergeVisualization(sessionId: string, wsInstance: MergeWebSoc
       setLoading(false)
       return null
     }
-  }, [sessionId, transformGraphData])
+  }, [sessionId])
 
   const handleNodeOperation = useCallback(async (operation: GraphOperation) => {
     try {
@@ -117,11 +130,23 @@ export function useMergeVisualization(sessionId: string, wsInstance: MergeWebSoc
   // Update connection status when websocket instance changes
   useEffect(() => {
     if (wsInstance) {
-      setWsConnected(wsInstance.isConnected())
+      const isConnected = wsInstance.isConnected()
+      setWsConnected(isConnected)
+      if (isConnected) {
+        // Fetch initial data when WebSocket connects
+        fetchData()
+      }
     } else {
       setWsConnected(false)
     }
-  }, [wsInstance])
+  }, [wsInstance, fetchData])
+
+  // Initial data fetch
+  useEffect(() => {
+    if (sessionId) {
+      fetchData()
+    }
+  }, [sessionId, fetchData])
 
   return {
     data,

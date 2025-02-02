@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useMemo } from 'react'
+import { useState, useCallback, useMemo, useEffect, useRef } from 'react'
 import dynamic from 'next/dynamic'
 import { Alert } from '@/components/ui/alert'
 import { AlertCircle, Loader2 } from 'lucide-react'
@@ -25,7 +25,8 @@ const COLOR_SCHEME = {
   new: '#22c55e',      // Green
   deleted: '#ef4444',  // Red
   unchanged: '#64748b', // Slate
-  modified: '#f59e0b'  // Amber
+  modified: '#f59e0b',  // Amber
+  conflict: '#7a0bc0'  // Purple
 }
 
 const LoadingGraph = () => (
@@ -63,92 +64,108 @@ export const MergeGraphVisualization = ({ sessionId, wsInstance, graphData }: Me
     showUnchanged: true
   })
 
+  const fgRef = useRef<any>()
+  const containerRef = useRef<HTMLDivElement>(null)
+  
+  const [dimensions, setDimensions] = useState({ width: 800, height: 600 })
+  const [highlightNodes, setHighlightNodes] = useState(new Set())
+  const [highlightLinks, setHighlightLinks] = useState(new Set())
+  const [hoverNode, setHoverNode] = useState<any>(null)
+
+  const graphDataMemo = useMemo(() => {
+    if (!graphData?.nodes?.length) return { nodes: [], edges: [] }
+    return graphData
+  }, [graphData])
+
+  useEffect(() => {
+    if (containerRef.current) {
+      const { width, height } = containerRef.current.getBoundingClientRect()
+      setDimensions({ width, height })
+    }
+  }, [])
+
+  useEffect(() => {
+    if (fgRef.current && graphDataMemo.nodes.length > 0) {
+      fgRef.current.d3Force('link').distance(100)
+      fgRef.current.d3Force('charge').strength(-200)
+      fgRef.current.zoom(2)
+      fgRef.current.centerAt(0, 0)
+    }
+  }, [graphDataMemo])
+
   // Process graph data with merge status
   const processedGraphData = useMemo(() => {
     if (!graphData) return { nodes: [], links: [] }
+    console.log('Raw graph data in visualization:', graphData)
 
-    const nodes = graphData.nodes
+    const nodesMap = new Map()
+    
+    // First pass: Create all nodes
+    const nodes = (graphData.nodes || [])
       .filter(node => {
-        const status = node.properties?.__status
-        const hasConflicts = node.properties?.__conflicts?.length > 0
-        
-        if (!filters.showUnchanged && status === 'both' && !hasConflicts) return false
-        if (!filters.showNew && status === 'staging') return false
-        if (!filters.showDeleted && status === 'prod') return false
-        if (!filters.showModified && status === 'both' && node.properties?.__modified) return false
-        if (!filters.showConflicts && hasConflicts) return false
-        
+        if (!node || !node.properties) return false
+        const status = node.status
+        const type = node.type
+
+        // Filter based on status and type
+        if (!filters.showNew && status === 'new' && type === 'staging') return false
+        if (!filters.showDeleted && status === 'deleted') return false
+        if (!filters.showModified && status === 'needs_review') return false
+        if (!filters.showUnchanged && status === 'existing') return false
+
         if (searchQuery) {
-          const searchLower = searchQuery.toLowerCase()
-          return (
-            node.id.toLowerCase().includes(searchLower) ||
-            node.labels.some(label => label.toLowerCase().includes(searchLower)) ||
-            Object.entries(node.properties || {}).some(
-              ([key, value]) => 
-                !key.startsWith('__') && 
-                String(value).toLowerCase().includes(searchLower)
-            )
-          )
+          const nodeStr = JSON.stringify(node).toLowerCase()
+          return nodeStr.includes(searchQuery.toLowerCase())
         }
-        
         return true
       })
       .map(node => {
-        const status = node.properties?.__status
-        const hasConflicts = node.properties?.__conflicts?.length > 0
-        const isModified = status === 'both' && node.properties?.__modified
-        
+        const status = node.status
+        const type = node.type
         let color = COLOR_SCHEME.unchanged
         let indicator = ''
-        
-        if (hasConflicts) {
-          color = COLOR_SCHEME.conflict
-          indicator = '⚠️'
-        } else if (status === 'staging') {
+
+        if (type === 'staging' && status === 'new') {
           color = COLOR_SCHEME.new
-          indicator = '+'
-        } else if (status === 'prod') {
+          indicator = '(New)'
+        } else if (status === 'deleted') {
           color = COLOR_SCHEME.deleted
-          indicator = '-'
-        } else if (isModified) {
-          color = COLOR_SCHEME.modified
-          indicator = '✎'
+          indicator = '(Deleted)'
+        } else if (status === 'needs_review') {
+          if (node.conflicts?.length > 0) {
+            color = COLOR_SCHEME.conflict
+            indicator = '(Conflict)'
+          } else {
+            color = COLOR_SCHEME.modified
+            indicator = '(Modified)'
+          }
         }
-        
-        return {
+
+        const processedNode = {
           ...node,
           color,
           indicator
         }
+        nodesMap.set(node.id, processedNode)
+        return processedNode
       })
 
-    const links = graphData.edges
+    console.log('Processed nodes:', nodes.length, nodesMap)
+
+    // Second pass: Create links ensuring nodes exist
+    const links = (graphData.edges || [])
       .filter(edge => {
-        const status = edge.properties?.__status
-        if (!filters.showUnchanged && status === 'both') return false
-        if (!filters.showNew && status === 'staging') return false
-        if (!filters.showDeleted && status === 'prod') return false
-        return true
+        return nodesMap.has(edge.source) && nodesMap.has(edge.target)
       })
-      .map(edge => {
-        const status = edge.properties?.__status
-        let color = COLOR_SCHEME.unchanged
-        
-        if (status === 'staging') {
-          color = COLOR_SCHEME.new
-        } else if (status === 'prod') {
-          color = COLOR_SCHEME.deleted
-        }
-        
-        return {
-          source: edge.source,
-          target: edge.target,
-          id: edge.id,
-          color,
-          properties: edge.properties
-        }
-      })
+      .map(edge => ({
+        id: `${edge.source}-${edge.target}`,
+        source: edge.source,
+        target: edge.target,
+        color: edge.confidence < 0.7 ? COLOR_SCHEME.conflict : COLOR_SCHEME.unchanged,
+        type: edge.type
+      }))
 
+    console.log('Processed links:', links.length)
     return { nodes, links }
   }, [graphData, filters, searchQuery])
 
@@ -258,36 +275,62 @@ export const MergeGraphVisualization = ({ sessionId, wsInstance, graphData }: Me
       <div className="flex-1">
         <ResizablePanelGroup direction="horizontal">
           <ResizablePanel defaultSize={70}>
-            <div className="h-full">
-              <ForceGraph2D
-                graphData={processedGraphData}
-                nodeLabel={(node: any) => `${node.labels.join(', ')}\n${node.indicator || ''}`}
-                nodeColor={(node: any) => node.color}
-                linkColor={(link: any) => link.color}
-                linkDirectionalParticles={2}
-                linkDirectionalParticleWidth={2}
-                onNodeClick={handleNodeClick}
-                nodeCanvasObject={(node: any, ctx, globalScale) => {
-                  const label = node.labels[0] || ''
-                  const fontSize = 12/globalScale
-                  ctx.font = `${fontSize}px Sans-Serif`
-                  ctx.fillStyle = node.color
-                  ctx.beginPath()
-                  ctx.arc(node.x, node.y, 5, 0, 2 * Math.PI)
-                  ctx.fill()
-                  
-                  // Draw indicator
-                  if (node.indicator) {
-                    ctx.fillStyle = '#fff'
-                    ctx.fillText(node.indicator, node.x + 8, node.y - 8)
-                  }
-                  
-                  // Draw label
-                  ctx.fillStyle = node.color
-                  ctx.textAlign = 'center'
-                  ctx.fillText(label, node.x, node.y + 15)
-                }}
-              />
+            <div ref={containerRef} className="h-full w-full relative" style={{ minHeight: '600px' }}>
+              {dimensions.width > 0 && dimensions.height > 0 && (
+                <ForceGraph2D
+                  ref={fgRef}
+                  width={dimensions.width}
+                  height={dimensions.height}
+                  graphData={processedGraphData}
+                  nodeLabel={(node: any) => `${node.labels.join(', ')}\n${node.indicator || ''}`}
+                  nodeColor={(node: any) => node.color}
+                  nodeVal={5}
+                  linkWidth={2}
+                  linkColor={(link: any) => link.color || '#999'}
+                  d3AlphaDecay={0.02}
+                  d3VelocityDecay={0.3}
+                  cooldownTime={3000}
+                  onEngineStop={() => {
+                    if (fgRef.current) {
+                      fgRef.current.zoomToFit(400, 50)
+                    }
+                  }}
+                  onNodeDragEnd={node => {
+                    node.fx = node.x
+                    node.fy = node.y
+                  }}
+                  onNodeClick={handleNodeClick}
+                  enableNodeDrag={true}
+                  enableZoomInteraction={true}
+                  enablePanInteraction={true}
+                  nodeCanvasObject={(node: any, ctx, globalScale) => {
+                    const label = node.labels[0] || ''
+                    const fontSize = Math.max(12, 16/globalScale)
+                    const size = 5 * Math.max(1, 1/globalScale)
+                    
+                    // Draw node circle
+                    ctx.fillStyle = node.color
+                    ctx.beginPath()
+                    ctx.arc(node.x, node.y, size, 0, 2 * Math.PI)
+                    ctx.fill()
+                    
+                    // Draw indicator with better positioning
+                    if (node.indicator) {
+                      ctx.fillStyle = '#fff'
+                      ctx.font = `${fontSize}px Sans-Serif`
+                      ctx.textAlign = 'center'
+                      ctx.fillText(node.indicator, node.x, node.y - size - 4)
+                    }
+                    
+                    // Draw label with better visibility
+                    ctx.fillStyle = node.color
+                    ctx.font = `${fontSize}px Sans-Serif`
+                    ctx.textAlign = 'center'
+                    ctx.fillText(label, node.x, node.y + size + fontSize)
+                  }}
+                  linkCurvature={0.25}
+                />
+              )}
             </div>
           </ResizablePanel>
 

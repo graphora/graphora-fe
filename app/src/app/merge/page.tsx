@@ -59,29 +59,8 @@ export default function MergePage() {
 
   const graphDataMemo = useMemo(() => {
     if (!mergeVisualization?.data) return null
-
-    return {
-      nodes: mergeVisualization.data.nodes.map(node => ({
-        id: node.id,
-        labels: node.labels,
-        properties: {
-          ...node.properties,
-          __status: node.status,
-          __conflicts: node.conflicts
-        }
-      })),
-      edges: mergeVisualization.data.edges.map(edge => ({
-        id: edge.id,
-        source: edge.source,
-        target: edge.target,
-        type: edge.type,
-        properties: {
-          ...edge.properties,
-          __status: edge.status
-        }
-      }))
-    }
-  }, [mergeVisualization])
+    return mergeVisualization.data
+  }, [mergeVisualization?.data])
 
   useEffect(() => {
     if (isLoaded && !user) {
@@ -542,7 +521,7 @@ export default function MergePage() {
                     <MergeGraphVisualization 
                       sessionId={sessionId} 
                       wsInstance={wsRef.current}
-                      graphData={graphData} 
+                      graphData={graphDataMemo || { nodes: [], edges: [] }} 
                     />
                   )}
                 </div>
