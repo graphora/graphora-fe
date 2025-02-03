@@ -28,7 +28,7 @@ const COLOR_SCHEME = {
   conflict: '#fbbf24', // amber-400
   unchanged: '#9ca3af', // gray-400
   unknown: '#a78bfa', // violet-400
-  reference: '#22d3ee', // cyan-400
+  // reference: '#22d3ee', // cyan-400
   needs_review: '#fb923c', // orange-400
 } as const
 
@@ -261,8 +261,8 @@ export const MergeGraphVisualization = ({ sessionId, wsInstance, graphData }: Me
           {dimensions.width > 0 && dimensions.height > 0 && (
             <ForceGraph2D
               ref={fgRef}
-              width={dimensions.width}
-              height={dimensions.height}
+              width={dimensions.width + 200}
+              height={dimensions.height + 200}
               graphData={processedGraphData}
               nodeLabel={(node: any) => node.displayName}
               linkLabel={(link: any) => link.displayName}
