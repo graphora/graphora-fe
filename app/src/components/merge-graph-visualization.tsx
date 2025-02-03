@@ -25,9 +25,9 @@ const COLOR_SCHEME = {
   new: '#4ade80', // green-400
   deleted: '#f87171', // red-400
   modified: '#60a5fa', // blue-400
-  conflict: '#fbbf24', // amber-400
+  // conflict: '#fbbf24', // amber-400
   unchanged: '#9ca3af', // gray-400
-  unknown: '#a78bfa', // violet-400
+  // unknown: '#a78bfa', // violet-400
   // reference: '#22d3ee', // cyan-400
   needs_review: '#fb923c', // orange-400
 } as const
