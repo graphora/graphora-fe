@@ -2,10 +2,10 @@ import { NextResponse } from 'next/server';
 
 export async function POST(
   request: Request,
-  { params }: { params: { session_id: string } }
+  {params}: any
 ) {
   try {
-    const sessionId = params.session_id;
+    const {sessionId} = await params;
 
     if (!sessionId) {
       return NextResponse.json(

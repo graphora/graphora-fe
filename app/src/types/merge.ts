@@ -1,3 +1,5 @@
+import { Node, Edge } from "./graph";
+
 export type MergeStrategy = 'SAFE' | 'FORCE' | 'INTERACTIVE';
 
 export type MergeStatus = 'IN_PROGRESS' | 'WAITING_INPUT' | 'COMPLETED' | 'FAILED';
@@ -20,8 +22,6 @@ export interface MergeResponse {
   response: any;
   context: Record<string, any>;
 }
-
-export type MergeStatus = 'IN_PROGRESS' | 'COMPLETED' | 'FAILED'
 
 export interface Option {
   id: string
@@ -48,13 +48,14 @@ export interface ConflictMessage {
 }
 
 export interface ChatMessage {
-  id: string;
-  role: 'agent' | 'user';
+  id?: string;
+  role?: 'agent' | 'user';
   content: string;
   timestamp: string;
   requiresAction?: boolean;
   questionId?: string;
   options?: Array<{
+    id: string;
     label: string;
     value: any;
   }>;
@@ -73,7 +74,7 @@ export interface MergeEvent {
 
 export type NodeStatus = 'staging' | 'prod' | 'both'
 
-export interface MergeVisualizationNode {
+export interface MergeVisualizationNode extends Node{
   id: string
   labels: string[]
   properties: Record<string, any>
@@ -81,7 +82,7 @@ export interface MergeVisualizationNode {
   conflicts?: string[]
 }
 
-export interface MergeVisualizationEdge {
+export interface MergeVisualizationEdge extends Edge{
   id: string
   source: string
   target: string
@@ -102,12 +103,14 @@ export interface MergeVisualizationSummary {
   }
 }
 
+export interface MergeVisualizationGraph {
+  nodes: MergeVisualizationNode[]
+  edges: MergeVisualizationEdge[]
+  conflicts?: Record<string, any>[]
+  summary?: MergeVisualizationSummary
+}
+
 export interface MergeVisualizationResponse {
   status: string
-  data: {
-    nodes: MergeVisualizationNode[]
-    edges: MergeVisualizationEdge[]
-    conflicts: Record<string, any>[]
-    summary: MergeVisualizationSummary
-  }
+  data: MergeVisualizationGraph
 }

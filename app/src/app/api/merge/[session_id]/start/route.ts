@@ -3,7 +3,7 @@ import { auth } from '@clerk/nextjs/server';
 
 export async function POST(
   request: Request,
-  { params }: { params: { session_id: string } }
+  {params}: any
 ) {
   try {
     const { userId } = await auth();

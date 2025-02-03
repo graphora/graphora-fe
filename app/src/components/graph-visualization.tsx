@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, useMemo } from 'react'
+import { useRouter } from 'next/navigation'
 import dynamic from 'next/dynamic'
 import type { GraphData, NodeType, EdgeType } from '@/types/graph'
 import { useGraphState } from '@/hooks/useGraphState'
@@ -92,6 +93,7 @@ interface SelectedElement {
 
 export function GraphVisualization({ graphData: initialData, onGraphReset }: GraphVisualizationProps) {
   console.log('GraphVisualization received initialData:', initialData)
+  const router = useRouter()
   
   // Ensure initialData has the required structure
   const validInitialData = useMemo(() => {
@@ -169,7 +171,7 @@ export function GraphVisualization({ graphData: initialData, onGraphReset }: Gra
         name: edge.type,
         source: edge.source.toString(), // Ensure source is a string
         target: edge.target.toString(), // Ensure target is a string
-        id: edge.id.toString() // Ensure ID is a string
+        // id: edge.id.toString() // Ensure ID is a string
       }))
     }
   }, [graphData])
@@ -586,7 +588,9 @@ export function GraphVisualization({ graphData: initialData, onGraphReset }: Gra
             </div>
             <DialogFooter>
               <Button onClick={() => {
-                addEdge(edgeFormData.type, edgeFormData.sourceId!, edgeFormData.targetId!, edgeFormData.properties)
+                addEdge(edgeFormData.sourceId!, edgeFormData.targetId!, 
+                   edgeFormData.type,
+                   edgeFormData.properties)
                 setShowEdgeForm(false)
                 setEdgeFormData({ type: EDGE_TYPES[0], properties: {} })
               }}>

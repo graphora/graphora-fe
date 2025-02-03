@@ -88,8 +88,8 @@ export function useGraphState(initialData: GraphData) {
   }, [state, initialData.id])
 
   // Helper to update state and save to local storage
-  const updateState = (newState: GraphState) => {
-    setState(newState)
+  const updateState = (newState: GraphState | ((prev: GraphState) => GraphState)) => {
+    setState(typeof newState === 'function' ? newState : () => newState)
   }
 
   // Client-side only timestamp for history entries
@@ -106,7 +106,7 @@ export function useGraphState(initialData: GraphData) {
       label: properties.name || type
     }
     
-    const operation: GraphOperation = { type: 'CREATE_NODE', payload: { type, properties } }
+    const operation: GraphOperation = { type: 'CREATE_NODE', payload: { type, properties, label: properties.name || type } }
     
     // Track created node
     setChanges(prev => ({
@@ -370,7 +370,7 @@ export function useGraphState(initialData: GraphData) {
   }, [state, timestamp])
 
   const undo = useCallback(() => {
-    updateState(prev => {
+    updateState((prev: GraphState) => {
       const operation = prev.undoStack[prev.undoStack.length - 1]
       if (!operation) return prev
 
@@ -404,7 +404,7 @@ export function useGraphState(initialData: GraphData) {
           break
         }
         case 'DELETE_EDGE': {
-          const deletedEdge = operation.payload.edge
+          const deletedEdge = newState.data.edges.find(e => e.id === operation.payload.id)
           if (deletedEdge) {
             newState.data = {
               ...newState.data,
@@ -414,7 +414,7 @@ export function useGraphState(initialData: GraphData) {
           break
         }
         case 'UPDATE_NODE': {
-          const nodeIndex = newState.data.nodes.findIndex(n => n.id === operation.payload.id)
+          const nodeIndex = newState.data.nodes.findIndex((n: Node) => n.id === operation.payload.id)
           if (nodeIndex !== -1) {
             const prevNode = prev.data.nodes[nodeIndex]
             newState.data = {
@@ -429,7 +429,7 @@ export function useGraphState(initialData: GraphData) {
           break
         }
         case 'UPDATE_EDGE': {
-          const edgeIndex = newState.data.edges.findIndex(e => e.id === operation.payload.id)
+          const edgeIndex = newState.data.edges.findIndex((e: Edge) => e.id === operation.payload.id)
           if (edgeIndex !== -1) {
             const prevEdge = prev.data.edges[edgeIndex]
             newState.data = {
@@ -476,21 +476,21 @@ export function useGraphState(initialData: GraphData) {
         }
         case 'CREATE_EDGE': {
           // Get the edge details from the operation payload
-          const { source, target, label, properties, id } = operation.payload
+          const { source, target, label, properties } = operation.payload
           
           // Check if both source and target nodes exist
-          const sourceNode = newState.data.nodes.find(n => n.id === source)
-          const targetNode = newState.data.nodes.find(n => n.id === target)
+          const sourceNode = newState.data.nodes.find((n: Node) => n.id === source)
+          const targetNode = newState.data.nodes.find((n: Node) => n.id === target)
           
           if (sourceNode && targetNode) {
             // Check if edge already exists to avoid duplicates
-            const edgeExists = newState.data.edges.some(e => 
+            const edgeExists = newState.data.edges.some((e: Edge) => 
               e.source === source && e.target === target && e.type === label
             )
             
             if (!edgeExists) {
               const edge = {
-                id: id || `${source}_${target}`,
+                id: `${source}_${target}`,
                 source,
                 target,
                 type: label,
@@ -509,23 +509,23 @@ export function useGraphState(initialData: GraphData) {
         case 'DELETE_NODE':
           newState.data = {
             ...newState.data,
-            nodes: newState.data.nodes.filter(n => n.id !== operation.payload.id),
-            edges: newState.data.edges.filter(e => 
+            nodes: newState.data.nodes.filter((n: Node) => n.id !== operation.payload.id),
+            edges: newState.data.edges.filter((e: Edge) => 
               e.source !== operation.payload.id && e.target !== operation.payload.id
             )
           }
           break
         case 'DELETE_EDGE':
           // Check if the edge exists before trying to delete it
-          if (newState.data.edges.some(e => e.id === operation.payload.id)) {
+          if (newState.data.edges.some((e:Edge) => e.id === operation.payload.id)) {
             newState.data = {
               ...newState.data,
-              edges: newState.data.edges.filter(e => e.id !== operation.payload.id)
+              edges: newState.data.edges.filter((e: Edge) => e.id !== operation.payload.id)
             }
           }
           break
         case 'UPDATE_NODE': {
-          const nodeIndex = newState.data.nodes.findIndex(n => n.id === operation.payload.id)
+          const nodeIndex = newState.data.nodes.findIndex((n: Node) => n.id === operation.payload.id)
           if (nodeIndex !== -1) {
             newState.data = {
               ...newState.data,
@@ -539,7 +539,7 @@ export function useGraphState(initialData: GraphData) {
           break
         }
         case 'UPDATE_EDGE': {
-          const edgeIndex = newState.data.edges.findIndex(e => e.id === operation.payload.id)
+          const edgeIndex = newState.data.edges.findIndex((e: Edge) => e.id === operation.payload.id)
           if (edgeIndex !== -1) {
             newState.data = {
               ...newState.data,
@@ -615,7 +615,7 @@ export function useGraphState(initialData: GraphData) {
         },
         edges: {
           created: state.data.edges
-            .filter(edge => changes.edges.created.has(edge.id))
+            .filter(edge => changes.edges.created.has(edge.id || ''))
             .map(edge => ({
               id: edge.id,
               source: edge.source,
@@ -625,7 +625,7 @@ export function useGraphState(initialData: GraphData) {
               properties: edge.properties
             })),
           updated: state.data.edges
-            .filter(edge => changes.edges.updated.has(edge.id))
+            .filter(edge => changes.edges.updated.has(edge.id || ''))
             .map(edge => ({
               id: edge.id,
               properties: edge.properties

@@ -34,10 +34,10 @@ interface SaveGraphRequest {
 
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  {params}: any
 ) {
   try {
-    const { id } = params
+    const { id } = await params
     const apiUrl = `${process.env.BACKEND_API_URL}/api/v1/graph/${id}`
     console.log('Fetching graph data from:', apiUrl)
 
@@ -74,10 +74,10 @@ export async function GET(
 
 export async function PUT(
   request: Request,
-  { params }: { params: { id: string } }
+  {params}: any
 ) {
   try {
-    const id = params.id
+    const {id} = await params
     const apiUrl = `${process.env.BACKEND_API_URL}/api/v1/graph/${id}`
     
     // Parse and validate request body

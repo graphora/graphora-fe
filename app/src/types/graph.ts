@@ -3,6 +3,7 @@ import type { Node as NvlNode, Relationship as NvlRelationship } from '@neo4j-nv
 export interface Node extends Omit<NvlNode, 'id'> {
   id: string;
   label: string;
+  labels?: string[];
   type: string;
   properties: Record<string, any>;
 }
@@ -10,13 +11,19 @@ export interface Node extends Omit<NvlNode, 'id'> {
 export interface Edge extends Omit<NvlRelationship, 'id' | 'from' | 'to'> {
   source: string;
   target: string;
-  label: string;
+  label?: string;
+  labels?: string[];
   properties?: Record<string, any>;
+  id?: string;
 }
 
 export interface GraphData {
   nodes: Node[];
   edges: Edge[];
+  _reset?: number;
+  id?: string;
+  total_nodes?: number;
+  total_edges?: number;
 }
 
 export interface FileWithPreview extends File {

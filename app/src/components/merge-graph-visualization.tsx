@@ -61,7 +61,10 @@ export const MergeGraphVisualization = ({ sessionId, wsInstance, graphData }: Me
 
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedNode, setSelectedNode] = useState<any>(null)
-  const [filters, setFilters] = useState({
+  const FILTER_KEYS = ['New', 'Deleted', 'Modified', 'Conflicts', 'Unchanged', 'Unknown', 'Reference', 'NeedsReview'] as const;
+  type FilterKey = typeof FILTER_KEYS[number];
+  type Filters = { [K in `show${FilterKey}`]: boolean };
+  const [filters, setFilters] = useState<Filters>({
     showNew: true,
     showDeleted: true,
     showModified: true,
@@ -69,12 +72,12 @@ export const MergeGraphVisualization = ({ sessionId, wsInstance, graphData }: Me
     showUnchanged: true,
     showUnknown: true,
     showReference: true,
-    showNeedsReview: true
+    showNeedsReview: true,
   })
 
   const [showPropertiesModal, setShowPropertiesModal] = useState(false)
 
-  const fgRef = useRef<any>()
+  const fgRef = useRef<any>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   
   const [dimensions, setDimensions] = useState({ width: 800, height: 600 })
@@ -120,7 +123,7 @@ export const MergeGraphVisualization = ({ sessionId, wsInstance, graphData }: Me
     const nodes = (graphData.nodes || [])
       .filter(node => {
         if (!node || !node.properties) return false
-        const status = node.properties.__status || node.status || 'unknown'
+        const status = node.properties.__status || 'unknown'
 
         // Filter based on status
         if (!filters.showNew && status === 'new') return false
@@ -139,8 +142,8 @@ export const MergeGraphVisualization = ({ sessionId, wsInstance, graphData }: Me
         return true
       })
       .map(node => {
-        const status = (node.properties.__status || node.status || 'unknown') as Status
-        const color = COLOR_SCHEME[status] || COLOR_SCHEME.unknown
+        const status = (node.properties.__status || 'unknown') as Status
+        const color = COLOR_SCHEME[status] || COLOR_SCHEME.needs_review
 
         const processedNode = {
           ...node,
@@ -163,8 +166,8 @@ export const MergeGraphVisualization = ({ sessionId, wsInstance, graphData }: Me
         const sourceNode = nodesMap.get(edge.source)
         const targetNode = nodesMap.get(edge.target)
         
-        const status = (edge.properties?.__status || edge.status || 'unknown') as Status
-        const color = COLOR_SCHEME[status] || COLOR_SCHEME.unknown
+        const status = (edge.properties?.__status  || 'unknown') as Status
+        const color = COLOR_SCHEME[status] || COLOR_SCHEME.needs_review
         
         return {
           id: `${edge.source}-${edge.target}`,
@@ -233,15 +236,15 @@ export const MergeGraphVisualization = ({ sessionId, wsInstance, graphData }: Me
             {Object.entries(COLOR_SCHEME).map(([status, color]) => (
               <div key={status} className="flex items-center">
                 <Switch
-                  checked={filters[`show${status.charAt(0).toUpperCase() + status.slice(1)}`]}
+                  checked={filters[`show${status.charAt(0).toUpperCase() + status.slice(1)}` as keyof Filters]}
                   onCheckedChange={(checked) => 
                     setFilters(prev => ({ 
                       ...prev, 
-                      [`show${status.charAt(0).toUpperCase() + status.slice(1)}`]: checked 
+                      [`show${status.charAt(0).toUpperCase() + status.slice(1)}` as keyof Filters]: checked 
                     }))
                   }
                   style={{ 
-                    backgroundColor: filters[`show${status.charAt(0).toUpperCase() + status.slice(1)}`] ? color : '#e5e7eb'
+                    backgroundColor: filters[`show${status.charAt(0).toUpperCase() + status.slice(1)}` as keyof Filters] ? color : '#e5e7eb'
                   }}
                   className="mr-2"
                 />
@@ -273,9 +276,9 @@ export const MergeGraphVisualization = ({ sessionId, wsInstance, graphData }: Me
               d3AlphaDecay={0.01}
               d3VelocityDecay={0.4}
               cooldownTime={200}
-              d3Force="link"
-              linkDistance={200} // Increased distance between nodes
-              d3ForceStrength={-2000} // Much stronger repulsion
+              // d3Force="link"
+              // linkDistance={200} // Increased distance between nodes
+              // d3ForceStrength={-2000} // Much stronger repulsion
               onEngineStop={() => {
                 // Remove auto-zoom after engine stop to prevent zoom changes after drag
                 // if (fgRef.current) {

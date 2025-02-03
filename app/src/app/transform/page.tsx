@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, Suspense } from 'react'
 import { useDropzone } from 'react-dropzone'
 import { Loader2, X, Upload, FileText, ChevronLeft, ChevronRight, GitMerge } from 'lucide-react'
 import { useRouter, useSearchParams } from 'next/navigation'
@@ -9,8 +9,6 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Progress } from '@/components/ui/progress'
 import { GraphVisualization } from '@/components/graph-visualization'
 import type { FileWithPreview, GraphData, TransformResponse } from '@/types/graph'
-import { MockWebSocket } from '@/lib/mock-websocket'
-import { auth } from '@clerk/nextjs'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -31,7 +29,7 @@ const ACCEPTED_FILE_TYPES = {
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx']
 }
 
-export default function TransformPage() {
+function TransformPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const sessionId = searchParams.get('session_id')
@@ -106,6 +104,7 @@ export default function TransformPage() {
     setError(null)
     setProgress(0)
     setTransformId(null)
+    setGraphData(null)  // Reset graph data when starting new transform
 
     try {
       const formData = new FormData()
@@ -128,6 +127,10 @@ export default function TransformPage() {
       }
 
       // Store transform ID and start status checking
+      if (!data.id) {
+        throw new Error('No transform ID received from server')
+      }
+      
       setTransformId(data.id)
       setProgress(10)
 
@@ -139,14 +142,98 @@ export default function TransformPage() {
     }
   }
 
+  useEffect(() => {
+    let statusInterval: NodeJS.Timeout | null = null
+    const STATUS_CHECK_INTERVAL = 30000 // 30 seconds
+
+    const checkStatus = async () => {
+      if (!transformId || !isProcessing) return
+
+      try {
+        console.log('Checking transform status:', transformId)
+        const response = await fetch(`/api/transform/status/${transformId}`)
+        
+        if (!response.ok) {
+          if (response.status === 404) {
+            console.log('Transform not found, continuing processing')
+            return
+          }
+          // Don't throw error, just log it and continue
+          console.error('Failed to fetch status:', response.status)
+          return
+        }
+        
+        const data = await response.json()
+        console.log('Transform status:', data)
+
+        if (data.status === 'completed') {
+          setProgress(100)
+          setIsProcessing(false)
+          setIsUploadPanelExpanded(false)
+          console.log('Transform completed, loading graph data')
+          
+          // Wait a moment before loading graph data
+          setTimeout(async () => {
+            try {
+              await loadGraphData(transformId)
+            } catch (err) {
+              console.error('Error loading graph data:', err)
+              // Don't show graph data load errors in UI while transform is still processing
+              if (!isProcessing) {
+                setError(err instanceof Error ? err.message : 'Failed to load graph data')
+              }
+            }
+          }, 1000)
+
+          if (statusInterval) {
+            clearInterval(statusInterval)
+          }
+        } else if (data.status === 'failed') {
+          setIsProcessing(false)
+          setError(data.message || 'Processing failed')
+          if (statusInterval) {
+            clearInterval(statusInterval)
+          }
+        } else {
+          // Update progress only if we have a valid number
+          if (typeof data.progress === 'number') {
+            setProgress(Math.max(10, data.progress))
+          }
+        }
+      } catch (err) {
+        console.error('Error checking status:', err)
+        // Don't show status check errors in UI while transform is still processing
+      }
+    }
+
+    if (transformId && isProcessing) {
+      console.log('Starting status check interval for transform:', transformId)
+      // Check immediately
+      checkStatus()
+      // Then check every 30 seconds
+      statusInterval = setInterval(checkStatus, STATUS_CHECK_INTERVAL)
+    }
+
+    return () => {
+      if (statusInterval) {
+        clearInterval(statusInterval)
+      }
+    }
+  }, [transformId, isProcessing])
+
   const loadGraphData = async (transformId: string) => {
+    if (!transformId) {
+      console.error('No transform ID provided to loadGraphData')
+      return
+    }
+
     try {
       console.log('Loading graph data for transform:', transformId)
       const response = await fetch(`/api/graph/${transformId}`)
       
       if (!response.ok) {
         if (response.status === 404) {
-          setError('Graph data not found')
+          console.log('Graph data not found, will retry')
           return
         }
         throw new Error('Failed to load graph data')
@@ -156,7 +243,8 @@ export default function TransformPage() {
       console.log('Received graph data:', data)
       
       if (!data.nodes || !data.edges) {
-        throw new Error('Invalid graph data received')
+        console.log('Invalid graph data received, will retry')
+        return
       }
       
       const processedData = {
@@ -179,8 +267,10 @@ export default function TransformPage() {
       setGraphData(processedData)
     } catch (err) {
       console.error('Error loading graph data:', err)
-      setError(err instanceof Error ? err.message : 'Failed to load graph data')
-      setIsProcessing(false)
+      // Only show error if we're not still processing
+      if (!isProcessing) {
+        setError(err instanceof Error ? err.message : 'Failed to load graph data')
+      }
     }
   }
 
@@ -210,96 +300,6 @@ export default function TransformPage() {
       setError('Failed to reset graph')
     }
   }
-
-  useEffect(() => {
-    let statusInterval: NodeJS.Timeout | null = null
-    let retryCount = 0
-    const MAX_RETRIES = 3
-
-    const checkStatus = async () => {
-      if (!transformId) return
-
-      try {
-        console.log('Checking transform status:', transformId)
-        const response = await fetch(`/api/transform/status/${transformId}`)
-        
-        if (!response.ok) {
-          if (response.status === 404) {
-            return
-          }
-          throw new Error('Failed to fetch status')
-        }
-        
-        const data = await response.json()
-        console.log('Transform status:', data)
-
-        if (data.status === 'completed') {
-          setProgress(100)
-          setIsProcessing(false)
-          setIsUploadPanelExpanded(false)
-          console.log('Transform completed, loading graph data')
-          
-          // Wait a moment before loading graph data
-          setTimeout(async () => {
-            try {
-              const graphResponse = await fetch(`/api/graph/${transformId}`)
-              if (!graphResponse.ok) {
-                throw new Error('Failed to load graph data')
-              }
-              const graphData = await graphResponse.json()
-              console.log('Received graph data:', graphData)
-              
-              if (!graphData.nodes || !graphData.edges) {
-                if (retryCount < MAX_RETRIES) {
-                  retryCount++
-                  console.log(`Retrying graph data load (${retryCount}/${MAX_RETRIES})`)
-                  setTimeout(checkStatus, 2000)
-                  return
-                }
-                throw new Error('Invalid graph data received')
-              }
-
-              setGraphData({
-                ...graphData,
-                id: transformId
-              })
-            } catch (err) {
-              console.error('Error loading graph data:', err)
-              setError(err instanceof Error ? err.message : 'Failed to load graph data')
-            }
-          }, 1000)
-
-          if (statusInterval) {
-            clearInterval(statusInterval)
-          }
-        } else if (data.status === 'failed') {
-          throw new Error(data.message || 'Processing failed')
-        } else {
-          setProgress(data.progress || progress)
-        }
-      } catch (err) {
-        console.error('Error checking status:', err)
-        setError(err instanceof Error ? err.message : 'Failed to check status')
-        setIsProcessing(false)
-        if (statusInterval) {
-          clearInterval(statusInterval)
-        }
-      }
-    }
-
-    if (transformId && isProcessing) {
-      console.log('Starting status check interval for transform:', transformId)
-      statusInterval = setInterval(checkStatus, 5000)
-      // Also check immediately
-      checkStatus()
-    }
-
-    return () => {
-      if (statusInterval) {
-        clearInterval(statusInterval)
-      }
-    }
-  }, [transformId, isProcessing])
 
   const handleMergeConfirm = () => {
     setShowMergeConfirm(false)
@@ -453,5 +453,17 @@ export default function TransformPage() {
         </AlertDialog>
       </div>
     </WorkflowLayout>
+  )
+}
+
+export default function TransformPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    }>
+      <TransformPageContent />
+    </Suspense>
   )
 }

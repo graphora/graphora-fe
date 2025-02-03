@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { MergeVisualizationResponse } from '@/types/merge'
-import { useGraphState } from '@/hooks/useGraphState'
-import type { GraphData, GraphOperation } from '@/types/graph'
+import type { GraphData, GraphOperation, Node, Edge } from '@/types/graph'
 import { MergeWebSocket } from '@/lib/merge-websocket'
 
 export function useMergeVisualization(sessionId: string, wsInstance: MergeWebSocket | null) {
@@ -155,11 +154,11 @@ export function useMergeVisualization(sessionId: string, wsInstance: MergeWebSoc
     wsConnected,
     graphData,
     fetchData,
-    addNode: (node: any) => handleNodeOperation({ type: 'ADD_NODE', node }),
-    updateNode: (nodeId: string, updates: any) => handleNodeOperation({ type: 'UPDATE_NODE', nodeId, updates }),
-    deleteNode: (nodeId: string) => handleNodeOperation({ type: 'DELETE_NODE', nodeId }),
-    addEdge: (edge: any) => handleEdgeOperation({ type: 'ADD_EDGE', edge }),
-    updateEdge: (edgeId: string, updates: any) => handleEdgeOperation({ type: 'UPDATE_EDGE', edgeId, updates }),
-    deleteEdge: (edgeId: string) => handleEdgeOperation({ type: 'DELETE_EDGE', edgeId })
+    addNode: (node: Omit<Node, 'id'>) => handleNodeOperation({ type: 'CREATE_NODE', payload: node }),
+    updateNode: (nodeId: string, updates: Record<string, any>) => handleNodeOperation({ type: 'UPDATE_NODE', payload: { id: nodeId, properties: updates } }),
+    deleteNode: (nodeId: string) => handleNodeOperation({ type: 'DELETE_NODE', payload: { id: nodeId } }),
+    addEdge: (edge: Omit<Edge, 'id'>) => handleEdgeOperation({ type: 'CREATE_EDGE', payload: edge }),
+    updateEdge: (edgeId: string, updates: Record<string, any>) => handleEdgeOperation({ type: 'UPDATE_EDGE', payload: { id: edgeId, properties: updates } }),
+    deleteEdge: (edgeId: string) => handleEdgeOperation({ type: 'DELETE_EDGE', payload: { id: edgeId } })
   }
 }

@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useEffect, useRef, useMemo } from 'react'
+import { useState, useEffect, useRef, useMemo, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { Loader2, PauseCircle, PlayCircle, AlertCircle, CheckCircle2, RefreshCcw, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Loader2, PauseCircle, PlayCircle, AlertCircle, CheckCircle2, RefreshCcw} from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { MergeGraphVisualization } from '@/components/merge-graph-visualization'
@@ -17,7 +17,7 @@ import { MergeWebSocket } from '@/lib/merge-websocket'
 import { ConflictDisplay } from '@/components/conflict-display'
 import { useMergeVisualization } from '@/hooks/useMergeVisualization'
 
-export default function MergePage() {
+function MergePageContent() {
   const router = useRouter()
   const { user, isLoaded } = useUser()
   const searchParams = useSearchParams()
@@ -35,7 +35,7 @@ export default function MergePage() {
   const wsRef = useRef<MergeWebSocket | null>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
 
-  const sessionId = searchParams.get('session_id')
+  const sessionId = searchParams.get('session_id') || ''
   const transformId = searchParams.get('transform_id')
 
   const { 
@@ -49,12 +49,7 @@ export default function MergePage() {
     deleteNode,
     addEdge,
     updateEdge,
-    deleteEdge,
-    undo,
-    redo,
-    canUndo,
-    canRedo,
-    getChanges
+    deleteEdge
   } = useMergeVisualization(sessionId || '', wsRef.current)
 
   const graphDataMemo = useMemo(() => {
@@ -222,7 +217,8 @@ export default function MergePage() {
       setMessages(prev => [...prev, {
         type: 'answer',
         content: answer,
-        questionId
+        questionId,
+        timestamp: new Date().toISOString()
       }])
       setCanSubmit(false)
     } catch (error) {
@@ -273,29 +269,8 @@ export default function MergePage() {
     return null
   }
 
-  const workflowSteps: WorkflowStep[] = [
-    {
-      id: 'transform',
-      label: 'Document Upload',
-      path: '/transform',
-      status: 'completed'
-    },
-    {
-      id: 'edit',
-      label: 'Graph Editing',
-      path: '/transform',
-      status: 'completed'
-    },
-    {
-      id: 'merge',
-      label: 'Merge Process',
-      path: '/merge',
-      status: 'current'
-    }
-  ]
-
   return (
-    <WorkflowLayout steps={workflowSteps}>
+    <WorkflowLayout>
       <div className="flex flex-col h-[calc(100vh-4rem)]">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b bg-background sticky top-0 z-50">
@@ -482,7 +457,7 @@ export default function MergePage() {
                 <div className="p-2 border-b font-medium flex justify-between items-center">
                   <span>Graph Preview</span>
                   <div className="flex items-center gap-2">
-                    <Button
+                    {/* <Button
                       variant="ghost"
                       size="icon"
                       onClick={undo}
@@ -497,7 +472,7 @@ export default function MergePage() {
                       disabled={!canRedo || visualizationLoading}
                     >
                       <ChevronRight className="w-4 h-4" />
-                    </Button>
+                    </Button> */}
                     {visualizationLoading ? (
                       <Loader2 className="w-4 h-4 animate-spin" />
                     ) : (
@@ -531,5 +506,17 @@ export default function MergePage() {
         </div>
       </div>
     </WorkflowLayout>
+  )
+}
+
+export default function MergePage() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    }>
+      <MergePageContent />
+    </Suspense>
   )
 }

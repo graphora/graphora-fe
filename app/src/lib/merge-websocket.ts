@@ -171,6 +171,18 @@ export class MergeWebSocket {
     this.connecting = false;
   }
 
+  public sendPause() {
+    this.sendMessage('PAUSE', {
+      timestamp: new Date().toISOString()
+    });
+  }
+
+  public sendResume() {
+    this.sendMessage('RESUME', {
+      timestamp: new Date().toISOString()
+    });
+  }
+
   public isConnected(): boolean {
     return this.ws !== null && this.ws.readyState === WebSocket.OPEN;
   }
