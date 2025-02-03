@@ -9,10 +9,10 @@ import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { Input } from '@/components/ui/input'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable'
 import { useMergeVisualization } from '@/hooks/useMergeVisualization'
 import { MergeWebSocket } from '@/lib/merge-websocket'
 import type { GraphData } from '@/types/graph'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 
 interface MergeGraphVisualizationProps {
   sessionId: string
@@ -22,12 +22,17 @@ interface MergeGraphVisualizationProps {
 
 // Color scheme for different states
 const COLOR_SCHEME = {
-  new: '#22c55e',      // Green
-  deleted: '#ef4444',  // Red
-  unchanged: '#64748b', // Slate
-  modified: '#f59e0b',  // Amber
-  conflict: '#7a0bc0'  // Purple
-}
+  new: '#4ade80', // green-400
+  deleted: '#f87171', // red-400
+  modified: '#60a5fa', // blue-400
+  conflict: '#fbbf24', // amber-400
+  unchanged: '#9ca3af', // gray-400
+  unknown: '#a78bfa', // violet-400
+  reference: '#22d3ee', // cyan-400
+  needs_review: '#fb923c', // orange-400
+} as const
+
+type Status = keyof typeof COLOR_SCHEME
 
 const LoadingGraph = () => (
   <div className="w-full h-full min-h-[600px] flex items-center justify-center text-gray-400">
@@ -61,8 +66,13 @@ export const MergeGraphVisualization = ({ sessionId, wsInstance, graphData }: Me
     showDeleted: true,
     showModified: true,
     showConflicts: true,
-    showUnchanged: true
+    showUnchanged: true,
+    showUnknown: true,
+    showReference: true,
+    showNeedsReview: true
   })
+
+  const [showPropertiesModal, setShowPropertiesModal] = useState(false)
 
   const fgRef = useRef<any>()
   const containerRef = useRef<HTMLDivElement>(null)
@@ -78,10 +88,16 @@ export const MergeGraphVisualization = ({ sessionId, wsInstance, graphData }: Me
   }, [graphData])
 
   useEffect(() => {
-    if (containerRef.current) {
-      const { width, height } = containerRef.current.getBoundingClientRect()
-      setDimensions({ width, height })
+    const updateDimensions = () => {
+      if (containerRef.current) {
+        const { width, height } = containerRef.current.getBoundingClientRect()
+        setDimensions({ width, height })
+      }
     }
+    
+    updateDimensions()
+    window.addEventListener('resize', updateDimensions)
+    return () => window.removeEventListener('resize', updateDimensions)
   }, [])
 
   useEffect(() => {
@@ -104,14 +120,17 @@ export const MergeGraphVisualization = ({ sessionId, wsInstance, graphData }: Me
     const nodes = (graphData.nodes || [])
       .filter(node => {
         if (!node || !node.properties) return false
-        const status = node.status
-        const type = node.type
+        const status = node.properties.__status || node.status || 'unknown'
 
-        // Filter based on status and type
-        if (!filters.showNew && status === 'new' && type === 'staging') return false
+        // Filter based on status
+        if (!filters.showNew && status === 'new') return false
         if (!filters.showDeleted && status === 'deleted') return false
-        if (!filters.showModified && status === 'needs_review') return false
-        if (!filters.showUnchanged && status === 'existing') return false
+        if (!filters.showModified && status === 'modified') return false
+        if (!filters.showConflicts && status === 'conflict') return false
+        if (!filters.showUnchanged && status === 'unchanged') return false
+        if (!filters.showUnknown && status === 'unknown') return false
+        if (!filters.showReference && status === 'reference') return false
+        if (!filters.showNeedsReview && status === 'needs_review') return false
 
         if (searchQuery) {
           const nodeStr = JSON.stringify(node).toLowerCase()
@@ -120,57 +139,50 @@ export const MergeGraphVisualization = ({ sessionId, wsInstance, graphData }: Me
         return true
       })
       .map(node => {
-        const status = node.status
-        const type = node.type
-        let color = COLOR_SCHEME.unchanged
-        let indicator = ''
-
-        if (type === 'staging' && status === 'new') {
-          color = COLOR_SCHEME.new
-          indicator = '(New)'
-        } else if (status === 'deleted') {
-          color = COLOR_SCHEME.deleted
-          indicator = '(Deleted)'
-        } else if (status === 'needs_review') {
-          if (node.conflicts?.length > 0) {
-            color = COLOR_SCHEME.conflict
-            indicator = '(Conflict)'
-          } else {
-            color = COLOR_SCHEME.modified
-            indicator = '(Modified)'
-          }
-        }
+        const status = (node.properties.__status || node.status || 'unknown') as Status
+        const color = COLOR_SCHEME[status] || COLOR_SCHEME.unknown
 
         const processedNode = {
           ...node,
           color,
-          indicator
+          displayName: node.properties?.name || node.labels?.[0] || 'Unnamed'
         }
         nodesMap.set(node.id, processedNode)
         return processedNode
       })
 
-    console.log('Processed nodes:', nodes.length, nodesMap)
-
-    // Second pass: Create links ensuring nodes exist
+    // Second pass: Create links from edges that have valid source and target nodes
     const links = (graphData.edges || [])
       .filter(edge => {
-        return nodesMap.has(edge.source) && nodesMap.has(edge.target)
+        // Only keep edges where both source and target are node IDs that exist in our nodes
+        const sourceExists = nodesMap.has(edge.source)
+        const targetExists = nodesMap.has(edge.target)
+        return sourceExists && targetExists
       })
-      .map(edge => ({
-        id: `${edge.source}-${edge.target}`,
-        source: edge.source,
-        target: edge.target,
-        color: edge.confidence < 0.7 ? COLOR_SCHEME.conflict : COLOR_SCHEME.unchanged,
-        type: edge.type
-      }))
+      .map(edge => {
+        const sourceNode = nodesMap.get(edge.source)
+        const targetNode = nodesMap.get(edge.target)
+        
+        const status = (edge.properties?.__status || edge.status || 'unknown') as Status
+        const color = COLOR_SCHEME[status] || COLOR_SCHEME.unknown
+        
+        return {
+          id: `${edge.source}-${edge.target}`,
+          source: sourceNode,
+          target: targetNode,
+          color,
+          type: edge.type,
+          displayName: edge.type?.replace(/_/g, ' ').toLowerCase() || 'related'
+        }
+      })
 
-    console.log('Processed links:', links.length)
+    console.log('Processed nodes:', nodes.length, 'links:', links.length)
     return { nodes, links }
   }, [graphData, filters, searchQuery])
 
   const handleNodeClick = useCallback((node: any) => {
     setSelectedNode(node)
+    setShowPropertiesModal(true)
   }, [])
 
   // Show loading state
@@ -201,9 +213,9 @@ export const MergeGraphVisualization = ({ sessionId, wsInstance, graphData }: Me
   }
 
   return (
-    <div className="flex h-full">
-      {/* Control Panel */}
-      <div className="w-64 border-r p-4 flex flex-col gap-4">
+    <div className="flex h-full w-full">
+      {/* Legend */}
+      <div className="w-48 p-4 bg-white border-r border-gray-200 shrink-0">
         <div>
           <h3 className="font-medium mb-2">Search</h3>
           <Input
@@ -211,185 +223,243 @@ export const MergeGraphVisualization = ({ sessionId, wsInstance, graphData }: Me
             placeholder="Search nodes..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full"
           />
         </div>
 
-        <div>
-          <h3 className="font-medium mb-2">Filters</h3>
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <Label htmlFor="show-new">
-                <Badge className="bg-green-500">New (+)</Badge>
-              </Label>
-              <Switch
-                id="show-new"
-                checked={filters.showNew}
-                onCheckedChange={(checked) => setFilters(f => ({ ...f, showNew: checked }))}
-              />
-            </div>
-            <div className="flex items-center justify-between">
-              <Label htmlFor="show-deleted">
-                <Badge className="bg-red-500">Deleted (-)</Badge>
-              </Label>
-              <Switch
-                id="show-deleted"
-                checked={filters.showDeleted}
-                onCheckedChange={(checked) => setFilters(f => ({ ...f, showDeleted: checked }))}
-              />
-            </div>
-            <div className="flex items-center justify-between">
-              <Label htmlFor="show-modified">
-                <Badge className="bg-orange-500">Modified (✎)</Badge>
-              </Label>
-              <Switch
-                id="show-modified"
-                checked={filters.showModified}
-                onCheckedChange={(checked) => setFilters(f => ({ ...f, showModified: checked }))}
-              />
-            </div>
-            <div className="flex items-center justify-between">
-              <Label htmlFor="show-conflicts">
-                <Badge className="bg-purple-500">Conflicts (⚠️)</Badge>
-              </Label>
-              <Switch
-                id="show-conflicts"
-                checked={filters.showConflicts}
-                onCheckedChange={(checked) => setFilters(f => ({ ...f, showConflicts: checked }))}
-              />
-            </div>
-            <div className="flex items-center justify-between">
-              <Label htmlFor="show-unchanged">
-                <Badge className="bg-slate-500">Unchanged</Badge>
-              </Label>
-              <Switch
-                id="show-unchanged"
-                checked={filters.showUnchanged}
-                onCheckedChange={(checked) => setFilters(f => ({ ...f, showUnchanged: checked }))}
-              />
-            </div>
+        <div className="mt-4">
+          <h3 className="font-medium mb-2">Status Filter</h3>
+          <div className="space-y-2">
+            {Object.entries(COLOR_SCHEME).map(([status, color]) => (
+              <div key={status} className="flex items-center">
+                <Switch
+                  checked={filters[`show${status.charAt(0).toUpperCase() + status.slice(1)}`]}
+                  onCheckedChange={(checked) => 
+                    setFilters(prev => ({ 
+                      ...prev, 
+                      [`show${status.charAt(0).toUpperCase() + status.slice(1)}`]: checked 
+                    }))
+                  }
+                  style={{ 
+                    backgroundColor: filters[`show${status.charAt(0).toUpperCase() + status.slice(1)}`] ? color : '#e5e7eb'
+                  }}
+                  className="mr-2"
+                />
+                <span className="flex items-center">
+                  <div className="w-3 h-3 rounded-full mr-2" style={{ backgroundColor: color }} />
+                  {status.charAt(0).toUpperCase() + status.slice(1).replace('_', ' ')}
+                </span>
+              </div>
+            ))}
           </div>
         </div>
       </div>
 
       {/* Graph Area */}
-      <div className="flex-1">
-        <ResizablePanelGroup direction="horizontal">
-          <ResizablePanel defaultSize={70}>
-            <div ref={containerRef} className="h-full w-full relative" style={{ minHeight: '600px' }}>
-              {dimensions.width > 0 && dimensions.height > 0 && (
-                <ForceGraph2D
-                  ref={fgRef}
-                  width={dimensions.width}
-                  height={dimensions.height}
-                  graphData={processedGraphData}
-                  nodeLabel={(node: any) => `${node.labels.join(', ')}\n${node.indicator || ''}`}
-                  nodeColor={(node: any) => node.color}
-                  nodeVal={5}
-                  linkWidth={2}
-                  linkColor={(link: any) => link.color || '#999'}
-                  d3AlphaDecay={0.02}
-                  d3VelocityDecay={0.3}
-                  cooldownTime={3000}
-                  onEngineStop={() => {
-                    if (fgRef.current) {
-                      fgRef.current.zoomToFit(400, 50)
-                    }
-                  }}
-                  onNodeDragEnd={node => {
-                    node.fx = node.x
-                    node.fy = node.y
-                  }}
-                  onNodeClick={handleNodeClick}
-                  enableNodeDrag={true}
-                  enableZoomInteraction={true}
-                  enablePanInteraction={true}
-                  nodeCanvasObject={(node: any, ctx, globalScale) => {
-                    const label = node.labels[0] || ''
-                    const fontSize = Math.max(12, 16/globalScale)
-                    const size = 5 * Math.max(1, 1/globalScale)
-                    
-                    // Draw node circle
-                    ctx.fillStyle = node.color
-                    ctx.beginPath()
-                    ctx.arc(node.x, node.y, size, 0, 2 * Math.PI)
-                    ctx.fill()
-                    
-                    // Draw indicator with better positioning
-                    if (node.indicator) {
-                      ctx.fillStyle = '#fff'
-                      ctx.font = `${fontSize}px Sans-Serif`
-                      ctx.textAlign = 'center'
-                      ctx.fillText(node.indicator, node.x, node.y - size - 4)
-                    }
-                    
-                    // Draw label with better visibility
-                    ctx.fillStyle = node.color
-                    ctx.font = `${fontSize}px Sans-Serif`
-                    ctx.textAlign = 'center'
-                    ctx.fillText(label, node.x, node.y + size + fontSize)
-                  }}
-                  linkCurvature={0.25}
-                />
-              )}
-            </div>
-          </ResizablePanel>
-
-          <ResizableHandle />
-
-          {/* Property Panel */}
-          <ResizablePanel defaultSize={30}>
-            <div className="h-full p-4">
-              {selectedNode ? (
-                <div className="space-y-4">
-                  <h3 className="font-medium">Node Details</h3>
-                  <div>
-                    <Label>ID</Label>
-                    <div className="text-sm">{selectedNode.id}</div>
-                  </div>
-                  <div>
-                    <Label>Labels</Label>
-                    <div className="flex gap-1 flex-wrap">
-                      {selectedNode.labels.map((label: string) => (
-                        <Badge key={label}>{label}</Badge>
-                      ))}
-                    </div>
-                  </div>
-                  <div>
-                    <Label>Properties</Label>
-                    <ScrollArea className="h-[400px] w-full rounded-md border p-4">
-                      {Object.entries(selectedNode.properties || {}).map(([key, value]) => {
-                        if (key.startsWith('__')) return null
-                        return (
-                          <div key={key} className="py-1">
-                            <Label>{key}</Label>
-                            <div className="text-sm">{String(value)}</div>
-                          </div>
-                        )
-                      })}
-                    </ScrollArea>
-                  </div>
-                  {selectedNode.properties?.__conflicts?.length > 0 && (
-                    <div>
-                      <Label className="text-purple-500">Conflicts</Label>
-                      <ScrollArea className="h-[200px] w-full rounded-md border p-4">
-                        {selectedNode.properties.__conflicts.map((conflict: string, i: number) => (
-                          <div key={i} className="py-1 text-sm text-purple-500">
-                            {conflict}
-                          </div>
-                        ))}
-                      </ScrollArea>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div className="text-gray-400 text-center mt-8">
-                  Select a node to view details
-                </div>
-              )}
-            </div>
-          </ResizablePanel>
-        </ResizablePanelGroup>
+      <div className="flex-1 relative">
+        <div ref={containerRef} className="absolute inset-0">
+          {dimensions.width > 0 && dimensions.height > 0 && (
+            <ForceGraph2D
+              ref={fgRef}
+              width={dimensions.width}
+              height={dimensions.height}
+              graphData={processedGraphData}
+              nodeLabel={(node: any) => node.displayName}
+              linkLabel={(link: any) => link.displayName}
+              nodeColor={(node: any) => node.color}
+              nodeVal={8} // Smaller base size
+              linkWidth={1} // Thinner links
+              linkColor={(link: any) => link.color || '#999'}
+              d3AlphaDecay={0.01}
+              d3VelocityDecay={0.4}
+              cooldownTime={200}
+              d3Force="link"
+              linkDistance={200} // Increased distance between nodes
+              d3ForceStrength={-2000} // Much stronger repulsion
+              onEngineStop={() => {
+                // Remove auto-zoom after engine stop to prevent zoom changes after drag
+                // if (fgRef.current) {
+                //   fgRef.current.zoomToFit(400, 50)
+                // }
+              }}
+              onNodeDragEnd={node => {
+                node.fx = node.x
+                node.fy = node.y
+              }}
+              onNodeClick={handleNodeClick}
+              enableNodeDrag={true}
+              enableZoomInteraction={true}
+              enablePanInteraction={true}
+              nodeCanvasObject={(node: any, ctx, globalScale) => {
+                const label = node.displayName
+                const fontSize = Math.min(14, 10/globalScale)
+                const size = Math.min(10, 12/globalScale)
+                
+                // Draw node circle
+                ctx.fillStyle = node.color
+                ctx.beginPath()
+                ctx.arc(node.x, node.y, size, 0, 2 * Math.PI)
+                ctx.fill()
+                
+                // Draw white border for better visibility
+                ctx.strokeStyle = '#ffffff'
+                ctx.lineWidth = Math.min(1.5, 1/globalScale)
+                ctx.stroke()
+                
+                // Only render labels if zoomed in enough
+                if (globalScale > 0.4) {
+                  ctx.font = `${fontSize}px Arial`
+                  ctx.textAlign = 'center'
+                  ctx.textBaseline = 'middle'
+                  
+                  ctx.strokeStyle = 'transparent'
+                  ctx.lineWidth = 2
+                  ctx.strokeText(label, node.x, node.y + size + 4)
+                  ctx.fillStyle = '#000000'
+                  ctx.fillText(label, node.x, node.y + size + 4)
+                }
+              }}
+              linkCanvasObject={(link: any, ctx, globalScale) => {
+                const start = link.source
+                const end = link.target
+                
+                const dx = end.x - start.x
+                const dy = end.y - start.y
+                const length = Math.sqrt(dx * dx + dy * dy)
+                
+                if (length === 0) return
+                
+                const unitDx = dx / length
+                const unitDy = dy / length
+                
+                // Get the radius of the target node for arrow placement
+                const nodeSize = Math.min(10, 12/globalScale)
+                
+                // Place arrow head just outside the node
+                const arrowLength = Math.min(4, length/8)
+                const arrowWidth = arrowLength * 0.3
+                
+                // Move arrow start point outside the node
+                const arrowX = end.x - unitDx * (nodeSize + arrowLength)
+                const arrowY = end.y - unitDy * (nodeSize + arrowLength)
+                
+                const perpX = -unitDy
+                const perpY = unitDx
+                
+                const leftX = arrowX - arrowWidth * perpX
+                const leftY = arrowY - arrowWidth * perpY
+                const rightX = arrowX + arrowWidth * perpX
+                const rightY = arrowY + arrowWidth * perpY
+                
+                // Draw line to the edge of the node
+                ctx.strokeStyle = link.color
+                ctx.lineWidth = Math.min(1.5, 1.3/globalScale)
+                ctx.beginPath()
+                ctx.moveTo(start.x, start.y)
+                ctx.lineTo(end.x - unitDx * nodeSize, end.y - unitDy * nodeSize)
+                ctx.stroke()
+                
+                // Draw arrow
+                ctx.fillStyle = link.color
+                ctx.beginPath()
+                ctx.moveTo(end.x - unitDx * nodeSize, end.y - unitDy * nodeSize)
+                ctx.lineTo(leftX, leftY)
+                ctx.lineTo(rightX, rightY)
+                ctx.closePath()
+                ctx.fill()
+                
+                // Only show labels when zoomed in
+                if (globalScale > 0.4) {
+                  const fontSize = Math.min(12, 8/globalScale)
+                  ctx.font = `${fontSize}px Arial`
+                  ctx.textAlign = 'center'
+                  ctx.textBaseline = 'middle'
+                  
+                  const midX = (start.x + end.x) / 2
+                  const midY = (start.y + end.y) / 2
+                  
+                  ctx.strokeStyle = '#ffffff'
+                  ctx.lineWidth = 2
+                  ctx.strokeText(link.displayName, midX, midY)
+                  ctx.fillStyle = '#000000'
+                  ctx.fillText(link.displayName, midX, midY)
+                }
+              }}
+            />
+          )}
+        </div>
       </div>
+
+      {/* Properties Modal */}
+      <Dialog open={showPropertiesModal} onOpenChange={setShowPropertiesModal}>
+        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto bg-white">
+          <DialogHeader>
+            <DialogTitle>Node Properties</DialogTitle>
+          </DialogHeader>
+          {selectedNode && (
+            <div className="space-y-4">
+              <div>
+                <Label>ID</Label>
+                <div className="text-sm font-mono bg-gray-100 p-2 rounded">{selectedNode.id}</div>
+              </div>
+              <div>
+                <Label>Labels</Label>
+                <div className="flex gap-1 flex-wrap">
+                  {selectedNode.labels.map((label: string) => (
+                    <Badge key={label} variant="outline">{label}</Badge>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <Label>Properties</Label>
+                <div className="space-y-2">
+                  {Object.entries(selectedNode.properties || {}).map(([key, value]) => {
+                    if (key.startsWith('__')) return null
+                    return (
+                      <div key={key} className="bg-gray-50 p-3 rounded">
+                        <Label>{key}</Label>
+                        <div className="text-sm mt-1 whitespace-pre-wrap font-mono">
+                          {typeof value === 'object' ? JSON.stringify(value, null, 2) : String(value)}
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+              {selectedNode.properties?.__conflicts?.length > 0 && (
+                <div>
+                  <Label className="text-purple-500">Conflicts</Label>
+                  <div className="space-y-2">
+                    {selectedNode.properties.__conflicts.map((conflict: any, i: number) => (
+                      <div key={i} className="bg-purple-50 p-3 rounded space-y-2">
+                        <div className="text-sm font-medium text-purple-700">
+                          {conflict.type}: {conflict.description}
+                        </div>
+                        {conflict.properties && (
+                          <div className="pl-2 space-y-2">
+                            {Object.entries(conflict.properties).map(([prop, values]: [string, any]) => (
+                              <div key={prop} className="bg-white p-2 rounded">
+                                <div className="font-medium text-sm">{prop}:</div>
+                                <div className="pl-2 mt-1 space-y-1">
+                                  {Object.entries(values).map(([env, val]: [string, any]) => (
+                                    <div key={env} className="text-sm">
+                                      <span className="font-mono">{env}:</span> {String(val)}
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
