@@ -1,32 +1,43 @@
-import { CheckCircle2, AlertCircle } from 'lucide-react'
 import { useOntologyStore } from '@/lib/store/ontology-store'
+import { Badge } from '@/components/ui/badge'
+import { ScrollArea } from '@/components/ui/scroll-area'
 
-export function StatusBar() {
-  const { entities, sections } = useOntologyStore()
-  
-  const relationshipCount = entities.reduce(
-    (count, entity) => count + Object.keys(entity.relationships || {}).length,
-    0
-  )
+interface StatusBarProps {
+  validation: any
+}
 
-  const isValid = sections.length > 0 && entities.length > 0
+export function StatusBar({ validation }: StatusBarProps) {
+  const { entities, relationships, getYamlContent } = useOntologyStore()
+  const sections = entities.filter(e => e.isSection)
+  const nonSectionEntities = entities.filter(e => !e.isSection)
 
   return (
-    <div className="h-8 border-t bg-gray-50 flex items-center px-3 text-sm text-gray-600 gap-4">
-      <div className="flex items-center gap-2">
-        {isValid ? (
-          <CheckCircle2 className="h-4 w-4 text-green-500" />
-        ) : (
-          <AlertCircle className="h-4 w-4 text-yellow-500" />
+    <div className="h-full flex flex-col">
+      <div className="p-2 border-b flex items-center gap-2">
+        <Badge variant="outline" className="h-6">
+          Sections: {sections.length}
+        </Badge>
+        <Badge variant="outline" className="h-6">
+          Entities: {nonSectionEntities.length}
+        </Badge>
+        <Badge variant="outline" className="h-6">
+          Relationships: {relationships.length}
+        </Badge>
+        {validation?.isValid && (
+          <Badge variant="outline" className="h-6 bg-green-500/10 text-green-500">
+            Valid Structure
+          </Badge>
         )}
-        <span>
-          {isValid ? 'Valid Structure' : 'Missing required elements'}
-        </span>
       </div>
-      <div className="h-4 w-px bg-gray-300" />
-      <div>Sections: {sections.length}</div>
-      <div>Entities: {entities.length}</div>
-      <div>Relationships: {relationshipCount}</div>
+      
+      <ScrollArea className="flex-1">
+        <div className="p-4">
+          <h3 className="text-sm font-medium mb-2">YAML Preview</h3>
+          <pre className="text-xs font-mono whitespace-pre-wrap bg-muted/30 p-2 rounded">
+            {getYamlContent()}
+          </pre>
+        </div>
+      </ScrollArea>
     </div>
   )
 }

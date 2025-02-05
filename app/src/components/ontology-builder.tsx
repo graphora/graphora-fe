@@ -1,62 +1,67 @@
-import { useEffect } from 'react'
-import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels'
-import { stringify } from 'yaml'
+import { useState, useEffect } from 'react'
 import { useOntologyStore } from '@/lib/store/ontology-store'
+import { useOntologyValidation } from '@/hooks/useOntologyValidation'
 import { OntologyToolbar } from './ontology/toolbar'
-import { SectionsPanel } from './ontology/sections-panel'
-import { OntologyTreeView } from './ontology/ontology-tree-view'
-import { LoadingOverlay } from './ui/loading-overlay'
 import { GraphView } from '@/components/ontology/graph-view'
 import { StatusBar } from '@/components/ontology/status-bar'
-import { validateOntologyYaml } from '@/lib/yaml-validator'
+import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable'
+import { EntityLibrary } from './ontology/entity-library'
+import { VisualEditor } from './ontology/visual-editor'
 
 interface OntologyBuilderProps {
   onValidYamlChange: (yaml: string) => void
 }
 
 export function OntologyBuilder({ onValidYamlChange }: OntologyBuilderProps) {
-  const { sections, entities, selectedView, isLoading, loadingMessage } = useOntologyStore()
+  const { validation, validateOntology } = useOntologyValidation({
+    onValidYamlChange,
+  })
+  const { entities, relationships } = useOntologyStore()
+  const [layout, setLayout] = useState([20, 60, 20])
+  const [currentView, setCurrentView] = useState<'tree' | 'graph'>('tree')
 
   useEffect(() => {
-    // Convert the current state to YAML
-    const yaml = stringify({
-      sections: sections.reduce((acc, section) => {
-        acc[section.name] = section.entities.map(
-          (entityId) => entities.find((e) => e.id === entityId)?.name
-        )
-        return acc
-      }, {} as Record<string, string[]>),
-      entities: entities.reduce((acc, entity) => {
-        acc[entity.name] = {
-          properties: entity.properties,
-          relationships: entity.relationships
-        }
-        return acc
-      }, {} as Record<string, any>)
+    validateOntology({
+      entities,
+      relationships,
     })
-
-    const validation = validateOntologyYaml(yaml)
-    if (validation.isValid) {
-      onValidYamlChange(yaml)
-    }
-  }, [sections, entities, onValidYamlChange])
+  }, [entities, relationships])
 
   return (
-    <div className="flex flex-col h-screen">
-      <OntologyToolbar />
+    <div className="h-full flex flex-col bg-background">
+      <OntologyToolbar onViewChange={setCurrentView} currentView={currentView} />
       
-      <div className="flex-1 flex overflow-hidden">
-        <SectionsPanel />
-        <div className="flex-1 flex flex-col overflow-hidden bg-white">
-          {selectedView === 'tree' ? <OntologyTreeView /> : <GraphView />}
-          <StatusBar />
-        </div>
-      </div>
+      <div className="flex-1 overflow-hidden">
+        <ResizablePanelGroup direction="horizontal">
+          <ResizablePanel defaultSize={layout[0]} minSize={15} maxSize={30}>
+            <div className="h-full border-r">
+              <EntityLibrary />
+            </div>
+          </ResizablePanel>
 
-      <LoadingOverlay 
-        isLoading={isLoading} 
-        message={loadingMessage} 
-      />
+          <ResizableHandle />
+
+          <ResizablePanel defaultSize={layout[1]} minSize={40}>
+            <div className="h-full">
+              {currentView === 'tree' ? (
+                <VisualEditor />
+              ) : (
+                <div className="h-full w-full">
+                  <GraphView />
+                </div>
+              )}
+            </div>
+          </ResizablePanel>
+
+          <ResizableHandle />
+
+          <ResizablePanel defaultSize={layout[2]} minSize={15} maxSize={30}>
+            <div className="h-full border-l">
+              <StatusBar validation={validation} />
+            </div>
+          </ResizablePanel>
+        </ResizablePanelGroup>
+      </div>
     </div>
   )
 }

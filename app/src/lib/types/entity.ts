@@ -6,23 +6,48 @@ export interface PropertyFlags {
   index: boolean;
 }
 
+export interface PropertyDefinition {
+  type: PropertyType;
+  description?: string;
+  unique?: boolean;
+  required?: boolean;
+  index?: boolean;
+}
+
+export interface RelationshipDefinition {
+  target: string;
+}
+
 export interface Property {
   id: string;
   name: string;
   type: string;
-  required: boolean;
   description?: string;
+  required?: boolean;
 }
 
 export interface Entity {
   id: string;
   name: string;
-  properties: Property[];
-  relationships: Relationship[];
-  metadata?: {
-    createdAt: Date;
-    lastModified: Date;
+  description?: string;
+  section: string;
+  isSection?: boolean;
+  subsections?: string[];  // IDs of entities that are sections within this section
+  properties: {
+    [key: string]: PropertyDefinition;
   };
+  relationships: {
+    [key: string]: RelationshipDefinition;
+  };
+  childSections?: string[];  // Used for sections to list their child sections
+  parentIds?: string[];  // Support multiple parent sections
+  position?: {
+    x: number;
+    y: number;
+  };
+  usageCount: number;
+  level?: number; // Nesting level for sections
+  entityIds?: string[]; // Entity IDs for sections
 }
 
 export interface Relationship {
@@ -30,16 +55,17 @@ export interface Relationship {
   sourceId: string;
   targetId: string;
   type: string;
-  direction: 'outgoing' | 'incoming';
-  metadata?: {
-    createdAt: Date;
-    lastModified: Date;
-  };
 }
 
 export interface EntityFormData {
   name: string;
-  properties: Property[];
+  isSection?: boolean;
+  properties: {
+    [key: string]: PropertyDefinition;
+  };
+  relationships: {
+    [key: string]: RelationshipDefinition;
+  };
 }
 
 export interface EntityValidation {

@@ -7,22 +7,25 @@ import {
   Info,
   ChevronsRight,
   AlertCircle,
-  CheckCircle2
+  CheckCircle2,
+  MoreVertical
 } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { SectionContextMenu } from './section-context-menu'
-import { useOntologyStore, type Section } from '@/lib/store/ontology-store'
+import { useOntologyStore } from '@/lib/store/ontology-store'
 import { cn } from '@/lib/utils'
 import { Tooltip } from '@/components/ui/tooltip'
+import { Entity } from '@/lib/types/entity'
+import { Button } from '@/components/ui/button'
 
 interface SectionItemProps {
-  section: Section
+  section: Entity
   level: number
   isExpanded: boolean
   onToggle: () => void
-  onDragStart: (e: React.DragEvent, section: Section) => void
+  onDragStart: (e: React.DragEvent, section: Entity) => void
   onDragOver: (e: React.DragEvent) => void
-  onDrop: (e: React.DragEvent, targetSection: Section, dropPosition: 'inside' | 'before' | 'after') => void
+  onDrop: (e: React.DragEvent, targetSection: Entity, dropPosition: 'inside' | 'before' | 'after') => void
 }
 
 export function SectionItem({ 
@@ -39,11 +42,15 @@ export function SectionItem({
   const [showDescription, setShowDescription] = useState(false)
   const [dropTarget, setDropTarget] = useState<'inside' | 'before' | 'after' | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
-  const { sections, entities, updateSection, validateSection } = useOntologyStore()
+  const { entities = [], updateEntity, addParentToEntity } = useOntologyStore()
 
-  const sectionEntities = entities.filter(e => e.section === section.id)
-  const childSections = sections.filter(s => s.parentId === section.id)
-    .sort((a, b) => a.order - b.order)
+  // Get all child entities (both sections and regular entities)
+  const childEntities = entities.filter(e => e.parentId === section.id)
+  
+  // Separate sections from regular entities
+  const childSections = childEntities
+    .filter(e => e.isSection)
+    .sort((a, b) => a.name.localeCompare(b.name))
 
   useEffect(() => {
     if (isEditing && inputRef.current) {
@@ -52,14 +59,8 @@ export function SectionItem({
     }
   }, [isEditing])
 
-  useEffect(() => {
-    validateSection(section.id)
-  }, [section.id, section.name, section.entities, section.parentId])
-
   const handleDoubleClick = () => {
-    if (!section.isLocked) {
-      setIsEditing(true)
-    }
+    setIsEditing(true)
   }
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -73,7 +74,7 @@ export function SectionItem({
 
   const handleSubmit = () => {
     if (editName.trim() && editName !== section.name) {
-      updateSection(section.id, { name: editName.trim() })
+      updateEntity(section.id, { name: editName.trim() })
     }
     setIsEditing(false)
   }
@@ -103,161 +104,134 @@ export function SectionItem({
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault()
     e.stopPropagation()
-    
+
     if (dropTarget) {
       onDrop(e, section, dropTarget)
     }
-    
+
     setDropTarget(null)
   }
 
-  const handleDragLeave = () => {
-    setDropTarget(null)
+  const handleDragStart = (e: React.DragEvent) => {
+    e.dataTransfer.setData('text/plain', section.id)
+    e.dataTransfer.effectAllowed = 'move'
+  }
+
+  const handleDragOverInner = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    e.dataTransfer.dropEffect = 'move'
+  }
+
+  const handleDropInner = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+
+    const draggedId = e.dataTransfer.getData('text/plain')
+    if (draggedId === section.id) return // Can't drop on itself
+
+    // Add this section as a parent of the dragged section
+    addParentToEntity(draggedId, section.id)
   }
 
   return (
-    <div>
-      <div 
+    <div
+      className={cn(
+        'group relative',
+        dropTarget === 'before' && 'before:absolute before:left-0 before:right-0 before:top-0 before:h-0.5 before:bg-primary',
+        dropTarget === 'after' && 'after:absolute after:left-0 after:right-0 after:bottom-0 after:h-0.5 after:bg-primary'
+      )}
+      onDragOver={handleDragOver}
+      onDrop={handleDrop}
+      onDragEnter={(e) => e.preventDefault()}
+    >
+      <div
         className={cn(
-          'group relative',
-          section.isLocked && 'bg-gray-50',
-          dropTarget === 'before' && 'border-t-2 border-blue-500',
-          dropTarget === 'after' && 'border-b-2 border-blue-500',
-          'my-1 first:mt-0 last:mb-0'
+          'flex items-center gap-1 px-2 py-1 rounded-lg hover:bg-accent/50 transition-colors',
+          dropTarget === 'inside' && 'bg-accent/50',
+          level > 0 && 'ml-4'
         )}
-        style={{ marginLeft: `${level * 24}px` }}
-        draggable={!section.isLocked}
-        onDragStart={(e) => onDragStart(e, section)}
-        onDragOver={handleDragOver}
-        onDrop={handleDrop}
-        onDragLeave={handleDragLeave}
+        onDoubleClick={handleDoubleClick}
       >
-        <div 
-          className={cn(
-            'flex items-center gap-2 p-2 rounded-md',
-            isEditing && 'bg-gray-100',
-            !isEditing && 'hover:bg-gray-50',
-            section.type === 'system' && 'border-l-4 border-blue-400',
-            section.type === 'mandatory' && 'border-l-4 border-purple-400',
-            dropTarget === 'inside' && 'ring-2 ring-blue-500',
-            !section.isValid && 'bg-red-50/50'
-          )}
+        <div
+          className="p-1 cursor-grab hover:bg-accent rounded"
+          draggable
+          onDragStart={(e) => onDragStart(e, section)}
         >
-          <div className="flex items-center gap-1">
-            {level > 0 && (
-              <ChevronsRight className="h-4 w-4 text-gray-300" />
-            )}
-            <button
-              className="p-1 hover:bg-gray-100 rounded"
-              onClick={onToggle}
-            >
-              {isExpanded ? (
-                <ChevronDown className="h-4 w-4 text-gray-500" />
-              ) : (
-                <ChevronRight className="h-4 w-4 text-gray-500" />
-              )}
-            </button>
-          </div>
-
-          <div className="flex-1 flex items-center gap-2">
-            {!section.isLocked && (
-              <GripVertical 
-                className="h-4 w-4 text-gray-400 invisible group-hover:visible cursor-grab active:cursor-grabbing" 
-              />
-            )}
-            
-            {isEditing ? (
-              <Input
-                ref={inputRef}
-                value={editName}
-                onChange={(e) => setEditName(e.target.value)}
-                onKeyDown={handleKeyDown}
-                onBlur={handleBlur}
-                className={cn(
-                  "h-7 py-0",
-                  !section.isValid && "border-red-300 focus-visible:ring-red-400"
-                )}
-              />
-            ) : (
-              <div
-                onDoubleClick={handleDoubleClick}
-                className="flex-1 flex items-center gap-2"
-              >
-                <span className="flex-1">{section.name}</span>
-                {section.description && (
-                  <button
-                    className="p-1 hover:bg-gray-100 rounded"
-                    onClick={() => setShowDescription(!showDescription)}
-                  >
-                    <Info className="h-4 w-4 text-gray-400" />
-                  </button>
-                )}
-                {section.isLocked && (
-                  <Lock className="h-3 w-3 text-gray-400" />
-                )}
-                <div className="flex items-center gap-2">
-                  {section.validationErrors && section.validationErrors.length > 0 ? (
-                    <Tooltip content={section.validationErrors[0].message}>
-                      <AlertCircle className="h-4 w-4 text-red-500" />
-                    </Tooltip>
-                  ) : section.isValid && (
-                    <CheckCircle2 className="h-4 w-4 text-green-500" />
-                  )}
-                  <div className="flex items-center gap-1 border-l pl-2">
-                    <span 
-                      className={cn(
-                        'text-xs px-2 py-0.5 rounded-full',
-                        section.type === 'mandatory' && 'bg-purple-100 text-purple-700',
-                        section.type === 'system' && 'bg-blue-100 text-blue-700',
-                        section.type === 'custom' && 'bg-gray-100 text-gray-700'
-                      )}
-                    >
-                      {sectionEntities.length}
-                    </span>
-                    {childSections.length > 0 && (
-                      <span className="text-xs text-gray-500">
-                        +{childSections.length}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-
-          <SectionContextMenu section={section} />
+          <GripVertical className="h-4 w-4 text-muted-foreground" />
         </div>
 
-        {showDescription && section.description && (
-          <div className="ml-11 mr-2 mt-1 mb-2 text-sm text-gray-600 bg-gray-50 p-2 rounded">
-            {section.description}
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-4 w-4"
+          onClick={onToggle}
+        >
+          {isExpanded ? (
+            <ChevronDown className="h-4 w-4 text-muted-foreground" />
+          ) : (
+            <ChevronRight
+              className={cn('h-3 w-3 transition-transform', {
+                'transform rotate-90': isExpanded
+              })}
+            />
+          )}
+        </Button>
+
+        {isEditing ? (
+          <Input
+            ref={inputRef}
+            value={editName}
+            onChange={(e) => setEditName(e.target.value)}
+            onKeyDown={handleKeyDown}
+            onBlur={handleBlur}
+            className="h-8"
+          />
+        ) : (
+          <div className="flex items-center gap-2 flex-1">
+            <span>{section.name}</span>
+            {section.description && (
+              <Tooltip content={section.description}>
+                <Info className="h-4 w-4 text-muted-foreground" />
+              </Tooltip>
+            )}
           </div>
         )}
 
-        {section.validationErrors && section.validationErrors.length > 0 && (
-          <div className="ml-11 mr-2 mt-1 mb-2 text-sm text-red-600 bg-red-50 p-2 rounded">
-            <ul className="list-disc list-inside space-y-1">
-              {section.validationErrors.map((error, index) => (
-                <li key={index}>{error.message}</li>
-              ))}
-            </ul>
-          </div>
-        )}
+        <SectionContextMenu section={section} />
       </div>
 
       {isExpanded && childSections.length > 0 && (
-        <div className="space-y-1 border-l border-gray-200 ml-[24px]">
-          {childSections.map((childSection) => (
-            <SectionItem
+        <div className="pl-4">
+          {childSections.map(childSection => (
+            <div
               key={childSection.id}
-              section={childSection}
-              level={level + 1}
-              isExpanded={false}
-              onToggle={onToggle}
-              onDragStart={onDragStart}
-              onDragOver={onDragOver}
-              onDrop={onDrop}
-            />
+              className={cn(
+                'group flex items-center gap-1 px-2 py-1 hover:bg-accent rounded-md cursor-pointer',
+                { 'ml-4': level > 0 }
+              )}
+              draggable
+              onDragStart={handleDragStart}
+              onDragOver={handleDragOverInner}
+              onDrop={handleDropInner}
+            >
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-4 w-4"
+                onClick={onToggle}
+              >
+                <ChevronRight
+                  className={cn('h-3 w-3 transition-transform', {
+                    'transform rotate-90': isExpanded
+                  })}
+                />
+              </Button>
+
+              <span className="flex-1">{childSection.name}</span>
+
+              <SectionContextMenu section={childSection} />
+            </div>
           ))}
         </div>
       )}

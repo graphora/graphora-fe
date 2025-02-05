@@ -1,88 +1,120 @@
-import { useCallback } from 'react'
+import { useCallback, useMemo } from 'react'
 import ReactFlow, {
   Background,
   Controls,
-  MiniMap,
   Node,
   Edge,
+  Position,
   useNodesState,
-  useEdgesState
+  useEdgesState,
 } from 'reactflow'
 import 'reactflow/dist/style.css'
 import { useOntologyStore } from '@/lib/store/ontology-store'
 
-const nodeWidth = 180
-const nodeHeight = 40
+const nodeTypes = {
+  section: ({ data }) => (
+    <div className="px-4 py-2 shadow-lg rounded-lg bg-background border-2 border-primary">
+      <div className="font-semibold">{data.label}</div>
+    </div>
+  ),
+  entity: ({ data }) => (
+    <div className="px-4 py-2 shadow-lg rounded-lg bg-card border">
+      <div className="font-medium">{data.label}</div>
+      {data.type && (
+        <div className="text-xs text-muted-foreground">{data.type}</div>
+      )}
+    </div>
+  ),
+}
 
 export function GraphView() {
-  const { entities, sections, selectedEntity, setSelectedEntity, updateEntityPosition } =
-    useOntologyStore()
+  const { entities, relationships } = useOntologyStore()
 
-  // Convert entities and relationships to nodes and edges
-  const initialNodes: Node[] = entities.map((entity) => ({
-    id: entity.id,
-    data: { label: entity.name },
-    position: entity.position || { 
-      x: Math.random() * 500, 
-      y: Math.random() * 500 
-    },
-    style: {
-      width: nodeWidth,
-      height: nodeHeight,
-      backgroundColor: selectedEntity === entity.id ? '#dbeafe' : '#ffffff',
-      border: '1px solid #e5e7eb',
-      borderRadius: '4px',
-      padding: '8px',
-    },
-  }))
+  const initialNodes: Node[] = useMemo(() => {
+    return entities.map((entity, index) => {
+      // Calculate grid-like positions
+      const column = index % 3
+      const row = Math.floor(index / 3)
+      return {
+        id: entity.id,
+        type: entity.isSection ? 'section' : 'entity',
+        position: entity.position || { 
+          x: 50 + column * 300, 
+          y: 50 + row * 200 
+        },
+        data: {
+          label: entity.name,
+          type: entity.type,
+        },
+        sourcePosition: Position.Right,
+        targetPosition: Position.Left,
+      }
+    })
+  }, [entities])
 
-  const initialEdges: Edge[] = entities.flatMap((entity) =>
-    Object.entries(entity.relationships || {}).map(([name, rel]) => ({
-      id: `${entity.id}-${rel.target}`,
-      source: entity.id,
-      target: rel.target,
-      label: name,
-      type: 'smoothstep',
-      animated: true,
-    }))
-  )
+  const initialEdges: Edge[] = useMemo(() => {
+    const edges: Edge[] = []
+    
+    // Add parent-child relationships
+    entities.forEach(entity => {
+      if (entity.parentIds) {
+        entity.parentIds.forEach(parentId => {
+          edges.push({
+            id: `${parentId}-${entity.id}`,
+            source: parentId,
+            target: entity.id,
+            type: 'smoothstep',
+            animated: false,
+            style: { stroke: 'hsl(var(--primary))' },
+          })
+        })
+      }
+    })
+
+    // Add custom relationships
+    relationships.forEach(rel => {
+      edges.push({
+        id: `${rel.sourceId}-${rel.targetId}-${rel.type}`,
+        source: rel.sourceId,
+        target: rel.targetId,
+        type: 'smoothstep',
+        animated: true,
+        label: rel.type,
+        labelStyle: { fill: 'hsl(var(--muted-foreground))', fontSize: 12 },
+        style: { stroke: 'hsl(var(--primary))' },
+      })
+    })
+
+    return edges
+  }, [entities, relationships])
 
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes)
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges)
 
-  const onNodeClick = useCallback(
-    (_: React.MouseEvent, node: Node) => {
-      setSelectedEntity(node.id)
-    },
-    [setSelectedEntity]
-  )
-
   const onNodeDragStop = useCallback(
-    (_: React.MouseEvent, node: Node) => {
-      updateEntityPosition(node.id, node.position)
+    (event: any, node: Node) => {
+      const entity = entities.find(e => e.id === node.id)
+      if (entity) {
+        entity.position = node.position
+      }
     },
-    [updateEntityPosition]
+    [entities]
   )
 
   return (
-    <div className="flex-1">
+    <div className="w-full h-full">
       <ReactFlow
         nodes={nodes}
         edges={edges}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
-        onNodeClick={onNodeClick}
         onNodeDragStop={onNodeDragStop}
+        nodeTypes={nodeTypes}
         fitView
+        className="bg-muted/20"
       >
         <Background />
         <Controls />
-        <MiniMap
-          nodeStrokeWidth={3}
-          zoomable
-          pannable
-          className="bg-white border rounded-lg"
-        />
       </ReactFlow>
     </div>
   )

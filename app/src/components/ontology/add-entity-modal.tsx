@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { 
   Dialog,
   DialogContent,
@@ -10,21 +10,20 @@ import {
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
-import { 
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from '@/components/ui/select'
+import { Label } from '@/components/ui/label'
 import { PropertiesTable } from './properties-table'
 import { useOntologyStore } from '@/lib/store/ontology-store'
-import { EntityFormData, EntityValidation, Property } from '@/lib/types/entity'
+import { EntityFormData, EntityValidation, Property, Entity } from '@/lib/types/entity'
+import { Switch } from '@/components/ui/switch'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
 interface AddEntityModalProps {
   isOpen: boolean
   onClose: () => void
-  initialSection?: string
+  editEntity?: Entity | null
+  defaultSection?: Entity | null
+  initialParentId?: string
+  initialIsSection?: boolean
 }
 
 const DEFAULT_PROPERTY: Property = {
@@ -40,181 +39,257 @@ const DEFAULT_PROPERTY: Property = {
 
 export function AddEntityModal({ 
   isOpen, 
-  onClose,
-  initialSection 
+  onClose, 
+  editEntity, 
+  defaultSection, 
+  initialParentId,
+  initialIsSection = false 
 }: AddEntityModalProps) {
-  const { sections, entities, addEntity } = useOntologyStore()
+  const { entities, addEntity, updateEntity } = useOntologyStore()
   const [formData, setFormData] = useState<EntityFormData>({
     name: '',
-    section: initialSection || '',
     description: '',
-    properties: [DEFAULT_PROPERTY]
+    isSection: initialIsSection,
+    properties: [],
+    relationships: []
   })
-  const [errors, setErrors] = useState<EntityValidation>({})
+  const [validation, setValidation] = useState<EntityValidation>({})
+  const [selectedSection, setSelectedSection] = useState<string | null>(null)
+  const [properties, setProperties] = useState<Property[]>([])
+
+  // Reset form when modal opens/closes or when editing different entity
+  useEffect(() => {
+    if (isOpen) {
+      if (editEntity) {
+        setFormData({
+          name: editEntity.name,
+          description: editEntity.description || '',
+          isSection: editEntity.isSection,
+          properties: editEntity.properties || [],
+          relationships: editEntity.relationships || []
+        })
+        setSelectedSection(editEntity.parentIds?.[0] || null)
+        setProperties(editEntity.properties || [])
+      } else {
+        setFormData({
+          name: '',
+          description: '',
+          isSection: initialIsSection,
+          properties: [],
+          relationships: []
+        })
+        setSelectedSection(defaultSection?.id || null)
+        setProperties([])
+      }
+    }
+  }, [isOpen, editEntity, defaultSection, initialParentId, initialIsSection])
+
+  const sections = entities.filter(e => e.isSection)
+  const entityTypes = [...new Set(entities.filter(e => !e.isSection).map(e => e.type).filter(Boolean))]
 
   const validateForm = (): boolean => {
-    const newErrors: EntityValidation = {}
+    const errors: EntityValidation = {}
 
-    // Validate name
-    if (!formData.name) {
-      newErrors.name = 'Name is required'
-    } else if (formData.name.length > 64) {
-      newErrors.name = 'Name must be less than 64 characters'
-    } else if (!/^[a-zA-Z][a-zA-Z0-9_]*$/.test(formData.name)) {
-      newErrors.name = 'Name must start with a letter and contain only letters, numbers, and underscores'
-    } else if (entities.some(e => 
-      e.section === formData.section && 
-      e.name.toLowerCase() === formData.name.toLowerCase()
-    )) {
-      newErrors.name = 'An entity with this name already exists in this section'
+    if (!formData.name.trim()) {
+      errors.name = 'Name is required'
     }
 
-    // Validate section
-    if (!formData.section) {
-      newErrors.name = 'Section is required'
+    const hasInvalidProperties = formData.properties.some(
+      prop => !prop.name.trim() || !prop.type
+    )
+    if (hasInvalidProperties) {
+      errors.properties = 'All properties must have a name and type'
     }
 
-    // Validate properties
-    const propertyErrors: Record<string, any> = {}
-    const propertyNames = new Set<string>()
-
-    formData.properties.forEach((prop, index) => {
-      const errors: Record<string, string> = {}
-
-      if (!prop.name) {
-        errors.name = 'Property name is required'
-      } else if (prop.name.length > 32) {
-        errors.name = 'Property name must be less than 32 characters'
-      } else if (!/^[a-zA-Z][a-zA-Z0-9_]*$/.test(prop.name)) {
-        errors.name = 'Property name must start with a letter and contain only letters, numbers, and underscores'
-      } else if (propertyNames.has(prop.name.toLowerCase())) {
-        errors.name = 'Property name must be unique'
-      }
-
-      propertyNames.add(prop.name.toLowerCase())
-
-      if (Object.keys(errors).length > 0) {
-        propertyErrors[prop.name || `property${index}`] = errors
-      }
-    })
-
-    if (Object.keys(propertyErrors).length > 0) {
-      newErrors.properties = propertyErrors
-    }
-
-    setErrors(newErrors)
-    return Object.keys(newErrors).length === 0
+    setValidation(errors)
+    return Object.keys(errors).length === 0
   }
 
-  const handleSubmit = () => {
-    if (validateForm()) {
-      const newEntity = {
-        id: crypto.randomUUID(),
-        name: formData.name,
-        section: formData.section,
-        description: formData.description,
-        properties: formData.properties,
-        relationships: []
-      }
-      
-      addEntity(newEntity)
-      clearForm()
-      onClose()
-    }
+  const handleAddProperty = () => {
+    setProperties([...properties, { name: '', type: '', description: '', flags: { unique: false, required: false, index: false } }])
   }
 
-  const clearForm = () => {
-    setFormData({
-      name: '',
-      section: initialSection || '',
-      description: '',
-      properties: [DEFAULT_PROPERTY]
-    })
-    setErrors({})
+  const handleUpdateProperty = (index: number, field: keyof Property, value: any) => {
+    const updatedProperties = [...properties]
+    updatedProperties[index] = { ...updatedProperties[index], [field]: value }
+    setProperties(updatedProperties)
+  }
+
+  const handleRemoveProperty = (index: number) => {
+    setProperties(properties.filter((_, i) => i !== index))
+  }
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    
+    if (!validateForm()) return
+
+    const entityData = {
+      name: formData.name,
+      description: formData.description,
+      isSection: formData.isSection,
+      parentIds: selectedSection ? [selectedSection] : [],
+      properties: properties,
+      relationships: formData.relationships
+    }
+
+    if (editEntity) {
+      updateEntity(editEntity.id, entityData)
+    } else {
+      addEntity(entityData)
+    }
+
+    onClose()
   }
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>New Entity</DialogTitle>
+          <DialogTitle>
+            {editEntity ? 'Edit Entity' : 'Add Entity'}
+          </DialogTitle>
           <DialogDescription>
-            Create a new entity with properties
+            Fill in the details below to create a new {formData.isSection ? 'section' : 'entity'}.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 py-4">
-          <div>
-            <Input
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              placeholder="Entity name"
-              maxLength={64}
-              error={errors.name}
-            />
-          </div>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Name</Label>
+              <Input
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                placeholder="Enter name"
+                error={validation.name}
+              />
+            </div>
 
-          <div>
-            <Select
-              value={formData.section}
-              onValueChange={(value) => setFormData({ ...formData, section: value })}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select section" />
-              </SelectTrigger>
-              <SelectContent>
-                {sections
-                  .filter(s => s.name !== 'Metadata')
-                  .map(s => (
-                    <SelectItem key={s.id} value={s.id}>
-                      {s.name}
+            <div className="space-y-2">
+              <Label>Description</Label>
+              <Textarea
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                placeholder="Enter description (optional)"
+              />
+            </div>
+
+            <div className="flex items-center space-x-2">
+              <Switch
+                checked={formData.isSection}
+                onCheckedChange={(checked) => setFormData({ ...formData, isSection: checked })}
+              />
+              <Label>This is a section</Label>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Type</Label>
+              <Select value={formData.properties[0]?.type || ''} onValueChange={(value) => {
+                setFormData({
+                  ...formData,
+                  properties: formData.properties.map((prop, index) => index === 0 ? { ...prop, type: value } : prop)
+                })
+              }}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select type" />
+                </SelectTrigger>
+                <SelectContent>
+                  {entityTypes.map(type => (
+                    <SelectItem key={type} value={type || 'unknown'}>
+                      {type || 'Unknown'}
                     </SelectItem>
-                  ))
-                }
-              </SelectContent>
-            </Select>
+                  ))}
+                  <SelectItem value="custom">Custom Type</SelectItem>
+                </SelectContent>
+              </Select>
+              {formData.properties[0]?.type === 'custom' && (
+                <Input
+                  value={formData.properties[0]?.type}
+                  onChange={(e) => setFormData({
+                    ...formData,
+                    properties: formData.properties.map((prop, index) => index === 0 ? { ...prop, type: e.target.value } : prop)
+                  })}
+                  placeholder="Enter custom type"
+                  className="mt-2"
+                />
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label>Section</Label>
+              <Select value={selectedSection || 'none'} onValueChange={setSelectedSection}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select section" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">No Section</SelectItem>
+                  {sections.map(section => (
+                    <SelectItem key={section.id} value={section.id}>
+                      {section.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex justify-between items-center">
+                <Label>Properties</Label>
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  size="sm"
+                  onClick={handleAddProperty}
+                >
+                  Add Property
+                </Button>
+              </div>
+              {properties.map((property, index) => (
+                <div key={index} className="flex gap-2 items-start">
+                  <Input
+                    value={property.name}
+                    onChange={(e) => handleUpdateProperty(index, 'name', e.target.value)}
+                    placeholder="Property name"
+                    className="flex-1"
+                  />
+                  <Input
+                    value={property.type}
+                    onChange={(e) => handleUpdateProperty(index, 'type', e.target.value)}
+                    placeholder="Property type"
+                    className="flex-1"
+                  />
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={property.flags.required}
+                      onChange={(e) => handleUpdateProperty(index, 'flags.required', e.target.checked)}
+                      className="h-4 w-4"
+                    />
+                    <Label>Required</Label>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleRemoveProperty(index)}
+                  >
+                    Remove
+                  </Button>
+                </div>
+              ))}
+            </div>
           </div>
 
-          <div>
-            <Textarea
-              value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              placeholder="Description (optional)"
-              maxLength={256}
-            />
-          </div>
-
-          <div>
-            <PropertiesTable
-              properties={formData.properties}
-              onChange={(properties) => setFormData({ ...formData, properties })}
-              errors={errors.properties}
-            />
-          </div>
-        </div>
-
-        <DialogFooter>
-          <Button
-            variant="ghost"
-            onClick={clearForm}
-          >
-            Clear Form
-          </Button>
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              onClick={onClose}
-            >
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={onClose}>
               Cancel
             </Button>
-            <Button
-              onClick={handleSubmit}
-              disabled={!formData.name || !formData.section}
-            >
-              Create Entity
+            <Button type="submit">
+              {editEntity ? 'Save Changes' : 'Create ' + (formData.isSection ? 'Section' : 'Entity')}
             </Button>
-          </div>
-        </DialogFooter>
+          </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   )
