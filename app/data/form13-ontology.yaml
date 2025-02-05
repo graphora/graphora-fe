@@ -11,13 +11,13 @@ entities:
     properties:
       name:
         type: str
-        description: Form10K_2023
+        description: Form13_2023
       type:
         type: str
         description: financial_report
       about:
         type: str
-        description: Form 10K Annual report containing company's financial statements and operations
+        description: Form 13 Annual report containing company's financial statements and operations
         index: true
       filingDate:
         type: str
