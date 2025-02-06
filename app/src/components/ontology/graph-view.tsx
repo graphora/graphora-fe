@@ -7,6 +7,7 @@ import ReactFlow, {
   Position,
   useNodesState,
   useEdgesState,
+  Handle
 } from 'reactflow'
 import 'reactflow/dist/style.css'
 import { useOntologyStore } from '@/lib/store/ontology-store'
@@ -14,15 +15,35 @@ import { useOntologyStore } from '@/lib/store/ontology-store'
 const nodeTypes = {
   section: ({ data }) => (
     <div className="px-4 py-2 shadow-lg rounded-lg bg-background border-2 border-primary">
+      <Handle 
+        type="target" 
+        position={Position.Left} 
+        className="!bg-primary" 
+      />
       <div className="font-semibold">{data.label}</div>
+      <Handle 
+        type="source" 
+        position={Position.Right} 
+        className="!bg-primary" 
+      />
     </div>
   ),
   entity: ({ data }) => (
     <div className="px-4 py-2 shadow-lg rounded-lg bg-card border">
+      <Handle 
+        type="target" 
+        position={Position.Left} 
+        className="!bg-primary" 
+      />
       <div className="font-medium">{data.label}</div>
       {data.type && (
         <div className="text-xs text-muted-foreground">{data.type}</div>
       )}
+      <Handle 
+        type="source" 
+        position={Position.Right} 
+        className="!bg-primary" 
+      />
     </div>
   ),
 }
@@ -46,8 +67,6 @@ export function GraphView() {
           label: entity.name,
           type: entity.type,
         },
-        sourcePosition: Position.Right,
-        targetPosition: Position.Left,
       }
     })
   }, [entities])
@@ -73,6 +92,8 @@ export function GraphView() {
 
     // Add custom relationships
     relationships.forEach(rel => {
+      if (!rel.sourceId || !rel.targetId) return // Skip invalid relationships
+      
       edges.push({
         id: `${rel.sourceId}-${rel.targetId}-${rel.type}`,
         source: rel.sourceId,

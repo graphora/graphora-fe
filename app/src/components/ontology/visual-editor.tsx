@@ -30,7 +30,7 @@ function SectionNode({ section, level, isExpanded, onToggle, onDrop }: SectionNo
   const [isAddEntityModalOpen, setIsAddEntityModalOpen] = useState(false)
   const { entities, updateEntity, deleteEntity } = useOntologyStore()
 
-  const childEntities = entities.filter(e => 
+  const childEntities: any[] = entities.filter(e => 
     !e.isSection && e.parentIds?.includes(section.id)
   )
 
@@ -194,11 +194,13 @@ function SectionNode({ section, level, isExpanded, onToggle, onDrop }: SectionNo
 }
 
 export function VisualEditor() {
-  const { entities, moveEntity } = useOntologyStore()
+  const { entities, moveEntity, deleteEntity } = useOntologyStore()
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set())
   const [isAddSectionOpen, setIsAddSectionOpen] = useState(false)
   const [isAddRelationshipOpen, setIsAddRelationshipOpen] = useState(false)
+  const [isAddEntityOpen, setIsAddEntityOpen] = useState(false)
   const [selectedSectionId, setSelectedSectionId] = useState<string | null>(null)
+  const [editingEntity, setEditingEntity] = useState<Entity | null>(null)
 
   const sections = entities.filter(e => e.isSection)
   const rootSections = sections.filter(s => !s.parentIds?.length)
@@ -240,6 +242,20 @@ export function VisualEditor() {
 
   const getChildSections = (parentId: string) => {
     return sections.filter(s => s.parentIds?.includes(parentId))
+  }
+
+  const handleDeleteSection = (sectionId: string) => {
+    const section = entities.find(e => e.id === sectionId)
+    if (!section) return
+
+    // Check if section has children
+    const hasChildren = entities.some(e => e.parentIds?.includes(sectionId))
+    if (hasChildren) {
+      alert('Cannot delete section with children. Please remove or move children first.')
+      return
+    }
+
+    deleteEntity(sectionId)
   }
 
   const renderSection = (section: Entity, level: number = 0) => {
@@ -290,6 +306,18 @@ export function VisualEditor() {
               }}>
                 Add Subsection
               </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => {
+                setEditingEntity(section)
+                setIsAddSectionOpen(true)
+              }}>
+                Edit Section
+              </DropdownMenuItem>
+              <DropdownMenuItem 
+                onClick={() => handleDeleteSection(section.id)}
+                className="text-red-600"
+              >
+                Delete Section
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
@@ -299,15 +327,45 @@ export function VisualEditor() {
             {childEntities.map(entity => (
               <div
                 key={entity.id}
-                className="flex items-center justify-between py-1 px-2 hover:bg-accent/50 rounded"
+                className="flex items-center justify-between py-1 px-2 hover:bg-accent/50 rounded group"
                 style={{ marginLeft: `${(level + 1) * 16}px` }}
               >
                 <span className="text-sm">{entity.name}</span>
-                {entity.type && (
-                  <span className="text-xs text-muted-foreground">
-                    {entity.type}
-                  </span>
-                )}
+                <div className="flex items-center gap-1">
+                  {entity.type && (
+                    <span className="text-xs text-muted-foreground">
+                      {entity.type}
+                    </span>
+                  )}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100"
+                      >
+                        <MoreVertical className="h-3 w-3" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => {
+                        setEditingEntity(entity)
+                        setIsAddEntityOpen(true)
+                      }}>
+                        Edit Entity
+                      </DropdownMenuItem>
+                      <DropdownMenuItem 
+                        onClick={() => deleteEntity(entity.id)}
+                        className="text-red-600"
+                      >
+                        Delete Entity
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => moveEntity(entity.id, null)}>
+                        Remove from Section
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
               </div>
             ))}
             {childSections.map(childSection => renderSection(childSection, level + 1))}
@@ -315,6 +373,21 @@ export function VisualEditor() {
         )}
       </div>
     )
+  }
+
+  const handleSectionModalClose = () => {
+    setIsAddSectionOpen(false)
+    setSelectedSectionId(null)
+    setEditingEntity(null)
+  }
+
+  const handleEntityModalClose = () => {
+    setIsAddEntityOpen(false)
+    setEditingEntity(null)
+  }
+
+  const handleRelationshipModalClose = () => {
+    setIsAddRelationshipOpen(false)
   }
 
   return (
@@ -325,8 +398,10 @@ export function VisualEditor() {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => {
+            onClick={(e) => {
+              e.stopPropagation()
               setSelectedSectionId(null)
+              setEditingEntity(null)
               setIsAddSectionOpen(true)
             }}
           >
@@ -335,7 +410,10 @@ export function VisualEditor() {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => setIsAddRelationshipOpen(true)}
+            onClick={(e) => {
+              e.stopPropagation()
+              setIsAddRelationshipOpen(true)
+            }}
           >
             Add Relationship
           </Button>
@@ -350,15 +428,19 @@ export function VisualEditor() {
 
       <AddSectionModal
         isOpen={isAddSectionOpen}
-        onClose={() => {
-          setIsAddSectionOpen(false)
-          setSelectedSectionId(null)
-        }}
+        onClose={handleSectionModalClose}
         parentSectionId={selectedSectionId}
+        editSection={editingEntity}
       />
       <AddRelationshipModal
         isOpen={isAddRelationshipOpen}
-        onClose={() => setIsAddRelationshipOpen(false)}
+        onClose={handleRelationshipModalClose}
+      />
+      <AddEntityModal
+        isOpen={isAddEntityOpen}
+        onClose={handleEntityModalClose}
+        editEntity={editingEntity}
+        defaultSection={selectedSectionId}
       />
     </div>
   )

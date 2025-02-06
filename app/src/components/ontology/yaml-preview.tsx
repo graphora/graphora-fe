@@ -3,90 +3,102 @@ import { useOntologyStore } from '@/lib/store/ontology-store'
 import { Entity } from '@/lib/types/entity'
 
 function buildYamlTree(entities: Entity[]) {
-  // First, separate sections and non-section entities
-  const sections = entities.filter(e => e.isSection)
-  const nonSectionEntities = entities.filter(e => !e.isSection)
+  const entityMap = new Map(entities.map(e => [e.id, e]))
 
-  // Build a map of section ID to its entities
-  const sectionToEntities = new Map<string, Entity[]>()
-  nonSectionEntities.forEach(entity => {
-    if (entity.parentIds) {
-      entity.parentIds.forEach(parentId => {
-        if (!sectionToEntities.has(parentId)) {
-          sectionToEntities.set(parentId, [])
-        }
-        sectionToEntities.get(parentId)!.push(entity)
-      })
-    }
-  })
-
-  // Build section hierarchy
-  const rootSections = sections.filter(s => !s.parentIds || s.parentIds.length === 0)
-  
-  function buildSectionYaml(section: Entity, indent: number = 0): string {
-    const spaces = ' '.repeat(indent)
-    let yaml = `${spaces}${section.name}:\n`
-    
-    // Add entities in this section
-    const sectionEntities = sectionToEntities.get(section.id) || []
-    if (sectionEntities.length > 0) {
-      yaml += `${spaces}  entities:\n`
-      sectionEntities.forEach(entity => {
-        yaml += buildEntityYaml(entity, indent + 4)
-      })
-    }
-    
-    // Add subsections
-    const childSections = sections.filter(s => s.parentIds?.includes(section.id))
-    if (childSections.length > 0) {
-      yaml += `${spaces}  sections:\n`
-      childSections.forEach(child => {
-        yaml += buildSectionYaml(child, indent + 4)
-      })
-    }
-    
-    return yaml
+  // Helper to get child sections
+  function getChildSections(parentId: string): Entity[] {
+    return entities.filter(e => 
+      e.isSection && e.parentIds?.includes(parentId)
+    )
   }
 
-  function buildEntityYaml(entity: Entity, indent: number = 0): string {
-    const spaces = ' '.repeat(indent)
-    let yaml = `${spaces}${entity.name}:\n`
-    yaml += `${spaces}  type: ${entity.type || 'unknown'}\n`
-    
-    if (entity.properties && entity.properties.length > 0) {
-      yaml += `${spaces}  properties:\n`
-      entity.properties.forEach(prop => {
-        yaml += `${spaces}    ${prop.name}:\n`
-        yaml += `${spaces}      type: ${prop.type}\n`
-        if (prop.description) {
-          yaml += `${spaces}      description: "${prop.description}"\n`
-        }
-        if (prop.flags) {
-          yaml += `${spaces}      flags:\n`
-          Object.entries(prop.flags).forEach(([flag, value]) => {
-            yaml += `${spaces}        ${flag}: ${value}\n`
-          })
-        }
-      })
-    }
-    
-    return yaml
+  // Helper to get child entities
+  function getChildEntities(sectionId: string): Entity[] {
+    return entities.filter(e => 
+      !e.isSection && e.parentIds?.includes(sectionId)
+    )
   }
 
-  // Generate the final YAML
-  let yaml = 'sections:\n'
-  rootSections.forEach(section => {
-    yaml += buildSectionYaml(section, 2)
-  })
+  // Build nested sections recursively
+  function buildSectionTree(section: Entity, indent: number = 2): string {
+    const spaces = ' '.repeat(indent)
+    let yaml = `${spaces}${section.name}:`
+    
+    const childEntities = getChildEntities(section.id)
+    const childSections = getChildSections(section.id)
+    
+    if (childEntities.length > 0) {
+      yaml += '\n'
+      childEntities.forEach(entity => {
+        yaml += `${spaces}  - ${entity.name}\n`
+      })
+    } else if (childSections.length > 0) {
+      yaml += '\n'
+    } else {
+      yaml += '\n'
+    }
 
-  // Add orphaned entities (not in any section)
-  const orphanedEntities = nonSectionEntities.filter(e => !e.parentIds || e.parentIds.length === 0)
-  if (orphanedEntities.length > 0) {
-    yaml += '\nentities:\n'
-    orphanedEntities.forEach(entity => {
-      yaml += buildEntityYaml(entity, 2)
+    // Add child sections
+    childSections.forEach(childSection => {
+      yaml += buildSectionTree(childSection, indent + 2)
     })
+
+    return yaml
   }
+
+  // Build entity definition
+  function buildEntityDefinition(entity: Entity): string {
+    let yaml = `  ${entity.name}:\n`
+    
+    // Add properties
+    if (entity.properties && Object.keys(entity.properties).length > 0) {
+      yaml += '    properties:\n'
+      Object.entries(entity.properties).forEach(([propName, prop]) => {
+        yaml += `      ${propName}:\n`
+        yaml += `        type: ${prop.type || 'str'}\n`
+        if (prop.description) {
+          yaml += `        description: ${prop.description}\n`
+        }
+        if (prop.required) {
+          yaml += `        required: true\n`
+        }
+        if (prop.index) {
+          yaml += `        index: true\n`
+        }
+        if (prop.unique) {
+          yaml += `        unique: true\n`
+        }
+      })
+    }
+
+    // Add relationships
+    if (entity.relationships && Object.keys(entity.relationships).length > 0) {
+      yaml += '    relationships:\n'
+      Object.entries(entity.relationships).forEach(([relName, rel]) => {
+        yaml += `      ${relName}:\n`
+        yaml += `        target: ${rel.target}\n`
+      })
+    }
+
+    return yaml
+  }
+
+  // Start building the YAML
+  let yaml = 'sections:\n'
+  
+  // Add root sections (sections without parents)
+  const rootSections = entities.filter(e => 
+    e.isSection && (!e.parentIds || e.parentIds.length === 0)
+  )
+  rootSections.forEach(section => {
+    yaml += buildSectionTree(section)
+  })
+
+  // Add all entities definitions (including sections) under entities
+  yaml += '\nentities:\n'
+  entities.forEach(entity => {
+    yaml += buildEntityDefinition(entity)
+  })
 
   return yaml
 }

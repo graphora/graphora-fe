@@ -21,7 +21,7 @@ interface AddEntityModalProps {
   isOpen: boolean
   onClose: () => void
   editEntity?: Entity | null
-  defaultSection?: Entity | null
+  defaultSection?: string | null
   initialParentId?: string
   initialIsSection?: boolean
 }
@@ -46,55 +46,40 @@ export function AddEntityModal({
   initialIsSection = false 
 }: AddEntityModalProps) {
   const { entities, addEntity, updateEntity } = useOntologyStore()
-  const [formData, setFormData] = useState<EntityFormData>({
-    name: '',
-    description: '',
-    isSection: initialIsSection,
-    properties: [],
-    relationships: []
-  })
-  const [validation, setValidation] = useState<EntityValidation>({})
+  const [name, setName] = useState('')
+  const [description, setDescription] = useState('')
+  const [isSection, setIsSection] = useState(initialIsSection)
   const [selectedSection, setSelectedSection] = useState<string | null>(null)
   const [properties, setProperties] = useState<Property[]>([])
+  const [validation, setValidation] = useState<EntityValidation>({})
 
-  // Reset form when modal opens/closes or when editing different entity
   useEffect(() => {
-    if (isOpen) {
-      if (editEntity) {
-        setFormData({
-          name: editEntity.name,
-          description: editEntity.description || '',
-          isSection: editEntity.isSection,
-          properties: editEntity.properties || [],
-          relationships: editEntity.relationships || []
-        })
-        setSelectedSection(editEntity.parentIds?.[0] || null)
-        setProperties(editEntity.properties || [])
-      } else {
-        setFormData({
-          name: '',
-          description: '',
-          isSection: initialIsSection,
-          properties: [],
-          relationships: []
-        })
-        setSelectedSection(defaultSection?.id || null)
-        setProperties([])
-      }
+    if (editEntity) {
+      setName(editEntity.name)
+      setDescription(editEntity.description || '')
+      setIsSection(editEntity.isSection)
+      setSelectedSection(editEntity.parentIds?.[0] || null)
+      setProperties(editEntity.properties || [])
+    } else if (!isOpen) {
+      setName('')
+      setDescription('')
+      setIsSection(initialIsSection)
+      setSelectedSection(defaultSection || null)
+      setProperties([])
+      setValidation({})
     }
-  }, [isOpen, editEntity, defaultSection, initialParentId, initialIsSection])
+  }, [editEntity, isOpen, defaultSection, initialParentId, initialIsSection])
 
   const sections = entities.filter(e => e.isSection)
-  const entityTypes = [...new Set(entities.filter(e => !e.isSection).map(e => e.type).filter(Boolean))]
 
   const validateForm = (): boolean => {
     const errors: EntityValidation = {}
 
-    if (!formData.name.trim()) {
+    if (!name.trim()) {
       errors.name = 'Name is required'
     }
 
-    const hasInvalidProperties = formData.properties.some(
+    const hasInvalidProperties = properties.some(
       prop => !prop.name.trim() || !prop.type
     )
     if (hasInvalidProperties) {
@@ -105,38 +90,28 @@ export function AddEntityModal({
     return Object.keys(errors).length === 0
   }
 
-  const handleAddProperty = () => {
-    setProperties([...properties, { name: '', type: '', description: '', flags: { unique: false, required: false, index: false } }])
-  }
-
-  const handleUpdateProperty = (index: number, field: keyof Property, value: any) => {
-    const updatedProperties = [...properties]
-    updatedProperties[index] = { ...updatedProperties[index], [field]: value }
-    setProperties(updatedProperties)
-  }
-
-  const handleRemoveProperty = (index: number) => {
-    setProperties(properties.filter((_, i) => i !== index))
+  const handleUpdateProperties = (newProperties: Property[]) => {
+    setProperties(newProperties)
   }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    
+    e.stopPropagation()
+
     if (!validateForm()) return
 
-    const entityData = {
-      name: formData.name,
-      description: formData.description,
-      isSection: formData.isSection,
+    const formData: EntityFormData = {
+      name: name.trim(),
+      description: description || undefined,
+      isSection,
       parentIds: selectedSection ? [selectedSection] : [],
-      properties: properties,
-      relationships: formData.relationships
+      properties: properties.length > 0 ? properties : undefined
     }
 
     if (editEntity) {
-      updateEntity(editEntity.id, entityData)
+      updateEntity(editEntity.id, formData)
     } else {
-      addEntity(entityData)
+      addEntity(formData)
     }
 
     onClose()
@@ -144,150 +119,127 @@ export function AddEntityModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent>
+      <DialogContent className="sm:max-w-[600px]" onClick={(e) => e.stopPropagation()}>
         <DialogHeader>
-          <DialogTitle>
-            {editEntity ? 'Edit Entity' : 'Add Entity'}
-          </DialogTitle>
+          <DialogTitle>{editEntity ? 'Edit Entity' : 'Add Entity'}</DialogTitle>
           <DialogDescription>
-            Fill in the details below to create a new {formData.isSection ? 'section' : 'entity'}.
+            {editEntity 
+              ? 'Update the entity details below.' 
+              : 'Fill in the entity details below. You can add properties to define its structure.'}
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-4">
-            <div className="space-y-2">
-              <Label>Name</Label>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="name" className="text-right">
+                Name
+              </Label>
               <Input
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                placeholder="Enter name"
-                error={validation.name}
+                id="name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="col-span-3"
               />
-            </div>
-
-            <div className="space-y-2">
-              <Label>Description</Label>
-              <Textarea
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                placeholder="Enter description (optional)"
-              />
-            </div>
-
-            <div className="flex items-center space-x-2">
-              <Switch
-                checked={formData.isSection}
-                onCheckedChange={(checked) => setFormData({ ...formData, isSection: checked })}
-              />
-              <Label>This is a section</Label>
-            </div>
-
-            <div className="space-y-2">
-              <Label>Type</Label>
-              <Select value={formData.properties[0]?.type || ''} onValueChange={(value) => {
-                setFormData({
-                  ...formData,
-                  properties: formData.properties.map((prop, index) => index === 0 ? { ...prop, type: value } : prop)
-                })
-              }}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select type" />
-                </SelectTrigger>
-                <SelectContent>
-                  {entityTypes.map(type => (
-                    <SelectItem key={type} value={type || 'unknown'}>
-                      {type || 'Unknown'}
-                    </SelectItem>
-                  ))}
-                  <SelectItem value="custom">Custom Type</SelectItem>
-                </SelectContent>
-              </Select>
-              {formData.properties[0]?.type === 'custom' && (
-                <Input
-                  value={formData.properties[0]?.type}
-                  onChange={(e) => setFormData({
-                    ...formData,
-                    properties: formData.properties.map((prop, index) => index === 0 ? { ...prop, type: e.target.value } : prop)
-                  })}
-                  placeholder="Enter custom type"
-                  className="mt-2"
-                />
+              {validation.name && (
+                <p className="col-start-2 col-span-3 text-sm text-destructive">
+                  {validation.name}
+                </p>
               )}
             </div>
 
-            <div className="space-y-2">
-              <Label>Section</Label>
-              <Select value={selectedSection || 'none'} onValueChange={setSelectedSection}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select section" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">No Section</SelectItem>
-                  {sections.map(section => (
-                    <SelectItem key={section.id} value={section.id}>
-                      {section.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="description" className="text-right">
+                Description
+              </Label>
+              <Textarea
+                id="description"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                className="col-span-3"
+              />
             </div>
 
-            <div className="space-y-2">
-              <div className="flex justify-between items-center">
-                <Label>Properties</Label>
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  size="sm"
-                  onClick={handleAddProperty}
-                >
-                  Add Property
-                </Button>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="isSection" className="text-right">
+                Is Section
+              </Label>
+              <div className="col-span-3">
+                <Switch
+                  id="isSection"
+                  checked={isSection}
+                  onCheckedChange={setIsSection}
+                />
               </div>
-              {properties.map((property, index) => (
-                <div key={index} className="flex gap-2 items-start">
-                  <Input
-                    value={property.name}
-                    onChange={(e) => handleUpdateProperty(index, 'name', e.target.value)}
-                    placeholder="Property name"
-                    className="flex-1"
-                  />
-                  <Input
-                    value={property.type}
-                    onChange={(e) => handleUpdateProperty(index, 'type', e.target.value)}
-                    placeholder="Property type"
-                    className="flex-1"
-                  />
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      checked={property.flags.required}
-                      onChange={(e) => handleUpdateProperty(index, 'flags.required', e.target.checked)}
-                      className="h-4 w-4"
-                    />
-                    <Label>Required</Label>
-                  </div>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleRemoveProperty(index)}
+            </div>
+
+            {!isSection && sections.length > 0 && (
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="section" className="text-right">
+                  Section
+                </Label>
+                <Select
+                  value={selectedSection || ''}
+                  onValueChange={(value) => setSelectedSection(value || null)}
+                >
+                  <SelectTrigger className="col-span-3">
+                    <SelectValue placeholder="Select a section" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {sections.map((section) => (
+                      <SelectItem key={section.id} value={section.id}>
+                        {section.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            {!isSection && (
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <Label>Properties</Label>
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setProperties([
+                        ...properties,
+                        {
+                          name: '',
+                          type: 'str',
+                          description: '',
+                          flags: {
+                            unique: false,
+                            required: false,
+                            index: false
+                          }
+                        }
+                      ])
+                    }}
                   >
-                    Remove
+                    Add Property
                   </Button>
                 </div>
-              ))}
-            </div>
+                <PropertiesTable
+                  properties={properties}
+                  onChange={handleUpdateProperties}
+                />
+                {validation.properties && (
+                  <p className="text-sm text-destructive">{validation.properties}</p>
+                )}
+              </div>
+            )}
           </div>
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={onClose}>
               Cancel
             </Button>
-            <Button type="submit">
-              {editEntity ? 'Save Changes' : 'Create ' + (formData.isSection ? 'Section' : 'Entity')}
-            </Button>
+            <Button type="submit">Save</Button>
           </DialogFooter>
         </form>
       </DialogContent>
