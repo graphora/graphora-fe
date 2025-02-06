@@ -1,16 +1,23 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { useUser } from '@clerk/nextjs'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
 import { VisualEditor } from '@/components/ontology/visual-editor'
 import { YAMLEditor } from '@/components/ontology/yaml-editor'
 import { useOntologyEditorStore } from '@/lib/store/ontology-editor-store'
-import { WorkflowLayout } from '@/components/workflow-layout'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Loader2 } from 'lucide-react'
+import { Toolbar } from '@/components/command-center/toolbar'
+import { ResizablePanel } from '@/components/command-center/resizable-panel'
+import { CommandPalette } from '@/components/command-center/command-palette'
+import { useKeyboardShortcuts } from '@/hooks/use-keyboard-shortcuts'
+import { type ViewMode } from '@/lib/types/command-center'
+import { 
+  Play, Save, Code2, Grid2x2, 
+  SplitSquareVertical, Settings,
+  Database, GitBranch
+} from 'lucide-react'
 
 const SAMPLE_YAML = `sections:
   Metadata:
@@ -198,9 +205,11 @@ export default function OntologyPage() {
   const router = useRouter()
   const { user } = useUser()
   const { yaml, updateFromYaml } = useOntologyEditorStore()
-  const [activeTab, setActiveTab] = useState('visual')
+  const [activeView, setActiveView] = useState<ViewMode>('split')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [sidebarWidth, setSidebarWidth] = useState(320)
+  const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false)
 
   const handleSubmit = async () => {
     if (!yaml.trim()) {
@@ -212,81 +221,177 @@ export default function OntologyPage() {
     setError(null)
 
     try {
-      // TODO: Submit ontology
-      router.push('/upload')
+      // Call ontology API to create session
+      const response = await fetch('/api/ontology', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          text: yaml
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to create ontology session')
+      }
+
+      const { id } = await response.json()
+      
+      // Redirect to transform page with session_id
+      router.push(`/transform?session_id=${id}`)
     } catch (error) {
-      setError('Failed to save ontology. Please try again.')
+      console.error('Error creating ontology session:', error)
+      setError('Failed to create ontology session. Please try again.')
     } finally {
       setIsSubmitting(false)
     }
   }
 
-  const loadSampleYaml = () => {
+  const loadSampleYaml = useCallback(() => {
     updateFromYaml(SAMPLE_YAML)
-  }
+  }, [updateFromYaml])
+
+  const handleSave = useCallback(() => {
+    // TODO: Implement save
+    console.log('Saving...')
+  }, [])
+
+  const tools = [
+    {
+      id: 'run',
+      icon: <Play className="h-4 w-4" />,
+      label: 'Run',
+      action: handleSubmit,
+      shortcut: '⌘R'
+    },
+    {
+      id: 'save',
+      icon: <Save className="h-4 w-4" />,
+      label: 'Save',
+      action: handleSave,
+      shortcut: '⌘S'
+    },
+    {
+      id: 'code',
+      icon: <Code2 className="h-4 w-4" />,
+      label: 'Code View',
+      action: () => setActiveView('code')
+    },
+    {
+      id: 'visual',
+      icon: <Grid2x2 className="h-4 w-4" />,
+      label: 'Visual View',
+      action: () => setActiveView('visual')
+    },
+    {
+      id: 'split',
+      icon: <SplitSquareVertical className="h-4 w-4" />,
+      label: 'Split View',
+      action: () => setActiveView('split')
+    },
+    {
+      id: 'settings',
+      icon: <Settings className="h-4 w-4" />,
+      label: 'Settings',
+      action: () => {}
+    }
+  ]
+
+  // Setup keyboard shortcuts
+  useKeyboardShortcuts({
+    focusEditor: () => {
+      // TODO: Focus editor
+    },
+    runQuery: handleSubmit,
+    saveChanges: handleSave,
+    toggleSidebar: () => {
+      setSidebarWidth(prev => prev === 0 ? 320 : 0)
+    },
+    commandPalette: () => setIsCommandPaletteOpen(true),
+    findInEditor: () => {
+      // TODO: Implement find
+    }
+  })
 
   return (
-    <WorkflowLayout>
-      <div className="container mx-auto p-4 max-w-6xl flex-1">
-        <div className="space-y-6">
-          <div className="flex justify-between items-center">
-            <div>
-              <h1 className="text-2xl font-bold">Visual Ontology Builder</h1>
-              <p className="text-gray-500 mt-2">
-                Build your ontology schema visually. Switch between visual and YAML views to edit your schema.
-              </p>
-            </div>
-            <Button variant="outline" onClick={loadSampleYaml}>
-              Load Sample
-            </Button>
+    <div className="command-center">
+      <ResizablePanel
+        defaultWidth={320}
+        onResize={setSidebarWidth}
+      >
+        <div className="h-full bg-gray-800 text-gray-100">
+          <div className="panel-header">
+            <span>Project Explorer</span>
           </div>
+          <div className="p-4">
+            <div className="control-group">
+              <div className="flex items-center gap-2 text-sm">
+                <Database className="h-4 w-4" />
+                <span>Data Sources</span>
+              </div>
+            </div>
+            <div className="control-group">
+              <div className="flex items-center gap-2 text-sm">
+                <GitBranch className="h-4 w-4" />
+                <span>Version Control</span>
+              </div>
+            </div>
+            <div className="control-group">
+              <div className="flex items-center gap-2 text-sm">
+                <Button 
+                  variant="outline" 
+                  onClick={loadSampleYaml}
+                  className="w-full"
+                >
+                  Load Sample
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </ResizablePanel>
 
+      <div className="flex-1 flex flex-col min-w-0">
+        <Toolbar tools={tools} />
+
+        <div className="flex-1 p-4 bg-gray-900">
           {error && (
-            <Alert variant="destructive">
+            <Alert variant="destructive" className="mb-4">
               <AlertDescription>{error}</AlertDescription>
             </Alert>
           )}
 
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1">
-            <div className="flex justify-between items-center mb-4">
-              <TabsList>
-                <TabsTrigger value="visual">Visual Editor</TabsTrigger>
-                <TabsTrigger value="yaml">YAML Editor</TabsTrigger>
-              </TabsList>
-            </div>
-
-            <div className="flex-1 min-h-[500px] border rounded-lg bg-background">
-              <TabsContent value="visual" className="h-full m-0">
-                <VisualEditor />
-              </TabsContent>
-              
-              <TabsContent value="yaml" className="h-full m-0 p-4">
-                <YAMLEditor 
-                  value={yaml} 
-                  onChange={updateFromYaml}
-                />
-              </TabsContent>
-            </div>
-          </Tabs>
-
-          <div className="flex justify-end">
-            <Button 
-              onClick={handleSubmit} 
-              disabled={isSubmitting || !yaml.trim()}
-              className="min-w-[120px]"
-            >
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Processing...
-                </>
-              ) : (
-                'Next'
-              )}
-            </Button>
+          <div className="h-full">
+            {activeView === 'split' ? (
+              <div className="grid grid-cols-2 gap-4 h-full">
+                <div className="h-full">
+                  <YAMLEditor 
+                    value={yaml} 
+                    onChange={updateFromYaml}
+                  />
+                </div>
+                <div className="h-full">
+                  <VisualEditor />
+                </div>
+              </div>
+            ) : activeView === 'code' ? (
+              <YAMLEditor 
+                value={yaml} 
+                onChange={updateFromYaml}
+              />
+            ) : (
+              <VisualEditor />
+            )}
           </div>
         </div>
       </div>
-    </WorkflowLayout>
+
+      <CommandPalette
+        open={isCommandPaletteOpen}
+        onOpenChange={setIsCommandPaletteOpen}
+        commands={tools}
+      />
+    </div>
   )
 }

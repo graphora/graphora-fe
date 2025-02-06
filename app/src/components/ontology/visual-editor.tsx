@@ -27,13 +27,6 @@ export function VisualEditor() {
     <div className="h-full flex flex-col">
       <div className="border-b p-4">
         <div className="flex justify-between items-center">
-          <Tabs value={activeView} onValueChange={setActiveView}>
-            <TabsList>
-              <TabsTrigger value="tree">Tree View</TabsTrigger>
-              <TabsTrigger value="graph">Graph View</TabsTrigger>
-            </TabsList>
-          </Tabs>
-
           <div className="flex gap-2">
             <Button
               variant="outline"
@@ -55,18 +48,25 @@ export function VisualEditor() {
         </div>
       </div>
 
-      <div className="flex-1 overflow-auto">
-        <TabsContent value="tree" className="h-full m-0">
-          <TreeView 
-            ontology={ontology} 
-            onChange={updateFromOntology}
-          />
-        </TabsContent>
-        
-        <TabsContent value="graph" className="h-full m-0">
-          <GraphView ontology={ontology} />
-        </TabsContent>
-      </div>
+      <Tabs value={activeView} onValueChange={setActiveView} className="flex-1 flex flex-col">
+        <TabsList>
+          <TabsTrigger value="tree">Tree View</TabsTrigger>
+          <TabsTrigger value="graph">Graph View</TabsTrigger>
+        </TabsList>
+
+        <div className="flex-1 overflow-auto">
+          <TabsContent value="tree" className="h-full m-0">
+            <TreeView 
+              ontology={ontology} 
+              onChange={updateFromOntology}
+            />
+          </TabsContent>
+          
+          <TabsContent value="graph" className="h-full m-0">
+            <GraphView ontology={ontology} />
+          </TabsContent>
+        </div>
+      </Tabs>
 
       <AddEntityModal
         isOpen={isAddEntityOpen}

@@ -119,6 +119,36 @@
   .typing-indicator .dot:nth-child(3) {
     animation-delay: 0.4s;
   }
+
+  /* Command Center Styles */
+  .command-center {
+    @apply flex h-screen bg-gray-900 text-gray-100;
+  }
+
+  .toolbar {
+    @apply h-12 flex items-center px-4;
+    @apply bg-gray-800 border-b border-gray-700;
+  }
+
+  .tool-button {
+    @apply px-3 py-1.5 rounded-md;
+    @apply hover:bg-gray-700 active:bg-gray-600;
+    @apply flex items-center gap-2;
+    @apply transition-colors duration-150;
+  }
+
+  .panel-header {
+    @apply flex justify-between items-center;
+    @apply px-4 py-2 bg-gray-800;
+    @apply border-b border-gray-700;
+    @apply text-sm font-medium;
+  }
+
+  .control-group {
+    @apply space-y-4 p-4;
+    @apply border-l-2 border-transparent;
+    @apply hover:border-blue-500;
+  }
 }
 
 @keyframes typing {
