@@ -1,84 +1,132 @@
+'use client'
+
 import { useState } from 'react'
-import { ChevronRight, ChevronDown, GripVertical } from 'lucide-react'
-import { useOntologyStore } from '@/lib/store/ontology-store'
+import { ChevronRight, ChevronDown } from 'lucide-react'
+import { cn } from '@/lib/utils'
 
-export function TreeView() {
-  const { sections, entities, selectedEntity, setSelectedEntity } = useOntologyStore()
-  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set())
+interface TreeNodeProps {
+  name: string
+  type: 'section' | 'entity'
+  data: any
+  level?: number
+  expanded?: boolean
+  onToggle?: () => void
+}
 
-  const toggleSection = (sectionId: string) => {
-    setExpandedSections((prev) => {
-      const next = new Set(prev)
-      if (next.has(sectionId)) {
-        next.delete(sectionId)
-      } else {
-        next.add(sectionId)
-      }
-      return next
-    })
+function TreeNode({ name, type, data, level = 0, expanded = false, onToggle }: TreeNodeProps) {
+  const hasChildren = type === 'section' || data.properties || data.relationships
+  const indent = level * 20
+
+  return (
+    <div>
+      <div 
+        className={cn(
+          "flex items-center py-1 px-2 hover:bg-accent rounded-sm cursor-pointer",
+          type === 'section' ? 'font-semibold' : ''
+        )}
+        style={{ paddingLeft: `${indent}px` }}
+        onClick={onToggle}
+      >
+        {hasChildren && (
+          <span className="mr-1">
+            {expanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+          </span>
+        )}
+        <span className="mr-2">{name}</span>
+        <span className="text-xs text-muted-foreground">{type}</span>
+      </div>
+
+      {expanded && (
+        <div>
+          {type === 'section' && Array.isArray(data) && data.map((item: string) => (
+            <TreeNode
+              key={item}
+              name={item}
+              type="entity"
+              data={{}}
+              level={level + 1}
+            />
+          ))}
+
+          {data.properties && (
+            <div style={{ paddingLeft: `${indent + 20}px` }}>
+              <div className="text-sm text-muted-foreground py-1">Properties:</div>
+              {Object.entries(data.properties).map(([propName, propData]: [string, any]) => (
+                <div key={propName} className="py-1 px-2">
+                  <span className="font-mono text-sm">{propName}</span>
+                  <span className="text-xs text-muted-foreground ml-2">({propData.type})</span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {data.relationships && (
+            <div style={{ paddingLeft: `${indent + 20}px` }}>
+              <div className="text-sm text-muted-foreground py-1">Relationships:</div>
+              {Object.entries(data.relationships).map(([relName, relData]: [string, any]) => (
+                <div key={relName} className="py-1 px-2">
+                  <span className="font-mono text-sm">{relName}</span>
+                  <span className="text-xs text-muted-foreground ml-2">→ {(relData as any).target}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+interface TreeViewProps {
+  ontology: {
+    sections: Record<string, any>
+    entities: Record<string, any>
   }
+  onChange?: (ontology: any) => void
+}
 
-  const handleDragStart = (e: React.DragEvent, entityId: string) => {
-    e.dataTransfer.setData('text/plain', entityId)
-  }
+export function TreeView({ ontology, onChange }: TreeViewProps) {
+  const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set())
 
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault()
-  }
-
-  const handleDrop = (e: React.DragEvent, sectionId: string) => {
-    e.preventDefault()
-    const entityId = e.dataTransfer.getData('text/plain')
-    // Handle entity move logic here
+  const toggleNode = (nodeName: string) => {
+    const newExpanded = new Set(expandedNodes)
+    if (newExpanded.has(nodeName)) {
+      newExpanded.delete(nodeName)
+    } else {
+      newExpanded.add(nodeName)
+    }
+    setExpandedNodes(newExpanded)
   }
 
   return (
-    <div className="flex-1 overflow-auto p-2">
-      {sections.map((section) => {
-        const isExpanded = expandedSections.has(section.id)
-        const sectionEntities = entities.filter((e) => e.section === section.id)
+    <div className="p-2">
+      <div className="mb-4">
+        <div className="text-sm font-semibold mb-2">Sections</div>
+        {Object.entries(ontology.sections || {}).map(([name, data]) => (
+          <TreeNode
+            key={name}
+            name={name}
+            type="section"
+            data={data}
+            expanded={expandedNodes.has(name)}
+            onToggle={() => toggleNode(name)}
+          />
+        ))}
+      </div>
 
-        return (
-          <div
-            key={section.id}
-            className="mb-2"
-            onDragOver={handleDragOver}
-            onDrop={(e) => handleDrop(e, section.id)}
-          >
-            <div
-              className="flex items-center gap-1 p-1 rounded hover:bg-gray-100 cursor-pointer"
-              onClick={() => toggleSection(section.id)}
-            >
-              {isExpanded ? (
-                <ChevronDown className="h-4 w-4 text-gray-500" />
-              ) : (
-                <ChevronRight className="h-4 w-4 text-gray-500" />
-              )}
-              <span className="font-medium">{section.name}</span>
-              <span className="text-gray-400 text-sm">({sectionEntities.length})</span>
-            </div>
-
-            {isExpanded && (
-              <div className="ml-6 space-y-1 mt-1">
-                {sectionEntities.map((entity) => (
-                  <div
-                    key={entity.id}
-                    className={`flex items-center gap-2 p-1 rounded cursor-pointer ${
-                      selectedEntity === entity.id ? 'bg-blue-50' : 'hover:bg-gray-50'
-                    }`}
-                    onClick={() => setSelectedEntity(entity.id)}
-                    draggable
-                    onDragStart={(e) => handleDragStart(e, entity.id)}
-                  >
-                    <GripVertical className="h-4 w-4 text-gray-400" />
-                    <span>{entity.name}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )
-      })}
+      <div>
+        <div className="text-sm font-semibold mb-2">Entities</div>
+        {Object.entries(ontology.entities || {}).map(([name, data]) => (
+          <TreeNode
+            key={name}
+            name={name}
+            type="entity"
+            data={data}
+            expanded={expandedNodes.has(name)}
+            onToggle={() => toggleNode(name)}
+          />
+        ))}
+      </div>
     </div>
   )
 }
