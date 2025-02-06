@@ -10,7 +10,7 @@ import { cn } from '@/lib/utils'
 
 const cards = [
   {
-    title: "Graph N00b",
+    title: "Graph Beginner",
     subtitle: "I'm new to Knowledge Graphs",
     icon: <BeginnerIcon />,
     features: [
@@ -29,7 +29,7 @@ const cards = [
       "Advanced Controls",
       "Query Interface",
       "Custom Rules",
-      "API Access"
+      "Code Editor"
     ],
     ctaText: "Start Expert Mode"
   }
@@ -62,7 +62,7 @@ export function WelcomeScreen() {
 
   const handleModeSelect = (mode: 'easy' | 'expert') => {
     setSelectedMode(mode)
-    router.push('/ontology')
+    router.push(mode === 'easy' ? '/chat' : '/ontology')
   }
 
   return (
@@ -83,8 +83,8 @@ export function WelcomeScreen() {
               <ModeCard
                 key={card.title}
                 {...card}
-                selected={selectedMode === (card.title === "Graph N00b" ? 'easy' : 'expert')}
-                onClick={() => handleModeSelect(card.title === "Graph N00b" ? 'easy' : 'expert')}
+                selected={selectedMode === (card.title === "Graph Beginner" ? 'easy' : 'expert')}
+                onClick={() => handleModeSelect(card.title === "Graph Beginner" ? 'easy' : 'expert')}
               />
             ))}
           </div>

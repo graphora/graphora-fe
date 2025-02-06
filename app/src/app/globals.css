@@ -75,3 +75,63 @@
     font-feature-settings: "rlig" 1, "calt" 1;
   }
 }
+
+@layer components {
+  .chat-container {
+    @apply flex flex-col h-screen bg-gray-50;
+  }
+
+  .message-bubble {
+    @apply max-w-[80%] rounded-lg p-4 mb-4;
+  }
+
+  .assistant-message {
+    @apply bg-white shadow-sm ml-4;
+    @apply border-l-4 border-blue-500;
+  }
+
+  .user-message {
+    @apply bg-blue-500 text-white ml-auto mr-4;
+  }
+
+  .quick-reply-buttons {
+    @apply flex flex-wrap gap-4 mt-4;
+  }
+
+  .quick-reply-buttons button {
+    @apply bg-white hover:bg-gray-50 rounded-2xl shadow-sm p-4 text-left flex-1 min-w-[200px] min-h-[5rem];
+    @apply border border-gray-100;
+  }
+
+  .typing-indicator {
+    @apply flex gap-1 px-3 py-2;
+  }
+
+  .typing-indicator .dot {
+    @apply w-2 h-2 bg-gray-400 rounded-full;
+    animation: typing 1s infinite;
+  }
+
+  .typing-indicator .dot:nth-child(2) {
+    animation-delay: 0.2s;
+  }
+
+  .typing-indicator .dot:nth-child(3) {
+    animation-delay: 0.4s;
+  }
+}
+
+@keyframes typing {
+  0% { opacity: 0.4; }
+  50% { opacity: 1; }
+  100% { opacity: 0.4; }
+}
+
+@keyframes slideIn {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.message-enter {
+  animation: slideIn 0.3s ease-out;
+}
