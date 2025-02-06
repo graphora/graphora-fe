@@ -12,10 +12,10 @@ export default clerkMiddleware(async (auth, request) => {
     await auth.protect()
   }
   // Redirect root to ontology page first
-  if (request.nextUrl.pathname === '/') {
-    const ontologyUrl = new URL('/ontology', request.url)
-    return Response.redirect(ontologyUrl)
-  }
+  // if (request.nextUrl.pathname === '/') {
+  //   const ontologyUrl = new URL('/ontology', request.url)
+  //   return Response.redirect(ontologyUrl)
+  // }
 })
 
 export const config = {
