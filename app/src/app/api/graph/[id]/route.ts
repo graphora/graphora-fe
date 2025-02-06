@@ -55,7 +55,6 @@ export async function GET(
     }
 
     const data = await response.json()
-    console.log('API response:', data)
 
     if (!data || !data.nodes || !data.edges) {
       console.error('Invalid data received:', data)

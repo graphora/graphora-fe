@@ -2,13 +2,17 @@
 
 import { useState, useCallback, useEffect, Suspense } from 'react'
 import { useDropzone } from 'react-dropzone'
-import { Loader2, X, Upload, FileText, ChevronLeft, ChevronRight, GitMerge } from 'lucide-react'
+import { 
+  Loader2, X, Upload, FileText, 
+  ChevronLeft, ChevronRight, GitMerge,
+  Database, Settings2
+} from 'lucide-react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Progress } from '@/components/ui/progress'
 import { GraphVisualization } from '@/components/graph-visualization'
-import type { FileWithPreview, GraphData, TransformResponse } from '@/types/graph'
+import { type FileWithPreview, type GraphData, type TransformResponse } from '@/types/graph'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -21,6 +25,11 @@ import {
 } from "@/components/ui/alert-dialog"
 import { WorkflowLayout } from '@/components/workflow-layout'
 import { clsx as cn } from 'clsx'
+import { Toolbar } from '@/components/command-center/toolbar'
+import { ResizablePanel } from '@/components/command-center/resizable-panel'
+import { CommandPalette } from '@/components/command-center/command-palette'
+import { AIAssistantPanel } from '@/components/ai-assistant/ai-assistant-panel'
+import { type AIAssistantState } from '@/lib/types/ai-assistant'
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB
 const ACCEPTED_FILE_TYPES = {
@@ -41,6 +50,52 @@ function TransformPageContent() {
   const [isUploadPanelExpanded, setIsUploadPanelExpanded] = useState(true)
   const [showMergeConfirm, setShowMergeConfirm] = useState(false)
   const [transformId, setTransformId] = useState<string | null>(null)
+  const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false)
+  const [sidebarWidth, setSidebarWidth] = useState(320)
+  const [aiAssistantState, setAiAssistantState] = useState<AIAssistantState>({
+    isExpanded: false,
+    isCompact: true,
+    suggestions: [
+      {
+        id: '1',
+        priority: 'high',
+        type: 'pattern',
+        content: {
+          title: 'Potential Entity Match',
+          description: 'Found similar entities in your document that could be merged.',
+          impact: 'Reduces data redundancy and improves graph consistency.',
+          confidence: 0.9
+        }
+      }
+    ],
+    activePatterns: [
+      {
+        id: '1',
+        name: 'Document Structure',
+        description: 'Common document organization pattern detected.',
+        confidence: 0.9,
+        type: 'domain',
+        matches: [
+          { path: 'sections.header', score: 0.9 },
+          { path: 'sections.content', score: 0.85 }
+        ]
+      }
+    ],
+    qualityMetrics: {
+      score: 85,
+      components: {
+        completeness: 90,
+        consistency: 85,
+        optimization: 80,
+        bestPractices: 85
+      },
+      improvements: [],
+      history: [
+        { timestamp: Date.now() - 3600000, score: 80 },
+        { timestamp: Date.now(), score: 85 }
+      ]
+    }
+  })
 
   useEffect(() => {
     // Redirect back to ontology if no session_id is present
@@ -69,8 +124,8 @@ function TransformPageContent() {
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     setError(null)
-    const file = acceptedFiles[0]
     
+    const file = acceptedFiles[0]
     if (file.size > MAX_FILE_SIZE) {
       setError('File size exceeds 10MB limit')
       return
@@ -142,85 +197,6 @@ function TransformPageContent() {
     }
   }
 
-  useEffect(() => {
-    let statusInterval: NodeJS.Timeout | null = null
-    const STATUS_CHECK_INTERVAL = 30000 // 30 seconds
-
-    const checkStatus = async () => {
-      if (!transformId || !isProcessing) return
-
-      try {
-        console.log('Checking transform status:', transformId)
-        const response = await fetch(`/api/transform/status/${transformId}`)
-        
-        if (!response.ok) {
-          if (response.status === 404) {
-            console.log('Transform not found, continuing processing')
-            return
-          }
-          // Don't throw error, just log it and continue
-          console.error('Failed to fetch status:', response.status)
-          return
-        }
-        
-        const data = await response.json()
-        console.log('Transform status:', data)
-
-        if (data.status === 'completed') {
-          setProgress(100)
-          setIsProcessing(false)
-          setIsUploadPanelExpanded(false)
-          console.log('Transform completed, loading graph data')
-          
-          // Wait a moment before loading graph data
-          setTimeout(async () => {
-            try {
-              await loadGraphData(transformId)
-            } catch (err) {
-              console.error('Error loading graph data:', err)
-              // Don't show graph data load errors in UI while transform is still processing
-              if (!isProcessing) {
-                setError(err instanceof Error ? err.message : 'Failed to load graph data')
-              }
-            }
-          }, 1000)
-
-          if (statusInterval) {
-            clearInterval(statusInterval)
-          }
-        } else if (data.status === 'failed') {
-          setIsProcessing(false)
-          setError(data.message || 'Processing failed')
-          if (statusInterval) {
-            clearInterval(statusInterval)
-          }
-        } else {
-          // Update progress only if we have a valid number
-          if (typeof data.progress === 'number') {
-            setProgress(Math.max(10, data.progress))
-          }
-        }
-      } catch (err) {
-        console.error('Error checking status:', err)
-        // Don't show status check errors in UI while transform is still processing
-      }
-    }
-
-    if (transformId && isProcessing) {
-      console.log('Starting status check interval for transform:', transformId)
-      // Check immediately
-      checkStatus()
-      // Then check every 30 seconds
-      statusInterval = setInterval(checkStatus, STATUS_CHECK_INTERVAL)
-    }
-
-    return () => {
-      if (statusInterval) {
-        clearInterval(statusInterval)
-      }
-    }
-  }, [transformId, isProcessing])
-
   const loadGraphData = async (transformId: string) => {
     if (!transformId) {
       console.error('No transform ID provided to loadGraphData')
@@ -240,7 +216,6 @@ function TransformPageContent() {
       }
       
       const data = await response.json()
-      console.log('Received graph data:', data)
       
       if (!data.nodes || !data.edges) {
         console.log('Invalid graph data received, will retry')
@@ -267,7 +242,6 @@ function TransformPageContent() {
       setGraphData(processedData)
     } catch (err) {
       console.error('Error loading graph data:', err)
-      // Only show error if we're not still processing
       if (!isProcessing) {
         setError(err instanceof Error ? err.message : 'Failed to load graph data')
       }
@@ -281,159 +255,251 @@ function TransformPageContent() {
     }
 
     try {
-      // Fetch fresh data from API
-      const response = await fetch(`/api/graph/${transformId}`)
-      if (!response.ok) throw new Error('Failed to reset graph')
-      const data = await response.json()
-      
-      // Clear local storage and reset state
-      localStorage.removeItem(`graph_state_${transformId}`)
-      
-      // Set fresh data and force a re-render
-      setGraphData({
-        ...data,
-        id: transformId,
-        _reset: Date.now() // Force re-mount on reset
-      })
+      await loadGraphData(transformId)
     } catch (error) {
       console.error('Error resetting graph:', error)
       setError('Failed to reset graph')
     }
   }
 
+  useEffect(() => {
+    let statusInterval: NodeJS.Timeout | null = null
+    const STATUS_CHECK_INTERVAL = 2000 // Check every 2 seconds instead of 30
+
+    const checkStatus = async () => {
+      if (!transformId || !isProcessing) return
+
+      try {
+        console.log('Checking transform status:', transformId)
+        const response = await fetch(`/api/transform/status/${transformId}`)
+        
+        if (!response.ok) {
+          if (response.status === 404) {
+            console.log('Transform not found, continuing processing')
+            return
+          }
+          console.error('Failed to fetch status:', response.status)
+          return
+        }
+        
+        const data = await response.json()
+        console.log('Transform status:', data)
+
+        if (data.status === 'completed') {
+          setProgress(100)
+          setIsProcessing(false)
+          setIsUploadPanelExpanded(false)
+          console.log('Transform completed, loading graph data')
+          
+          // Load graph data immediately after completion
+          await loadGraphData(transformId)
+
+          if (statusInterval) {
+            clearInterval(statusInterval)
+          }
+        } else if (data.status === 'failed') {
+          setIsProcessing(false)
+          setError(data.message || 'Processing failed')
+          if (statusInterval) {
+            clearInterval(statusInterval)
+          }
+        } else {
+          // Update progress only if we have a valid number
+          if (typeof data.progress === 'number') {
+            setProgress(Math.max(10, data.progress))
+          }
+        }
+      } catch (err) {
+        console.error('Error checking status:', err)
+      }
+    }
+
+    if (transformId && isProcessing) {
+      console.log('Starting status check interval for transform:', transformId)
+      checkStatus()
+      statusInterval = setInterval(checkStatus, STATUS_CHECK_INTERVAL)
+    }
+
+    return () => {
+      if (statusInterval) {
+        clearInterval(statusInterval)
+      }
+    }
+  }, [transformId, isProcessing])
+
   const handleMergeConfirm = () => {
     setShowMergeConfirm(false)
     router.push(`/merge?session_id=${sessionId}&transform_id=${transformId}`)
   }
 
+  const handleApplySuggestion = useCallback((id: string) => {
+    console.log('Applying suggestion:', id)
+  }, [])
+
+  const handleDismissSuggestion = useCallback((id: string) => {
+    setAiAssistantState(prev => ({
+      ...prev,
+      suggestions: prev.suggestions.filter(s => s.id !== id)
+    }))
+  }, [])
+
+  const handleExplainSuggestion = useCallback((id: string) => {
+    setAiAssistantState(prev => ({
+      ...prev,
+      selectedSuggestion: id
+    }))
+  }, [])
+
+  const handleCustomizeSuggestion = useCallback((id: string) => {
+    console.log('Customizing suggestion:', id)
+  }, [])
+
+  const tools = [
+    {
+      id: 'upload',
+      icon: <Upload className="h-4 w-4" />,
+      label: 'Upload',
+      action: handleExtract,
+      disabled: !file || isProcessing
+    },
+    {
+      id: 'merge',
+      icon: <GitMerge className="h-4 w-4" />,
+      label: 'Merge',
+      action: () => setShowMergeConfirm(true),
+      disabled: !graphData || isProcessing
+    },
+    {
+      id: 'settings',
+      icon: <Settings2 className="h-4 w-4" />,
+      label: 'Settings',
+      action: () => {}
+    }
+  ]
+
   return (
     <WorkflowLayout progress={progress} currentStep={isProcessing ? 'Processing Document...' : undefined}>
-      <div className="container mx-auto p-4 max-w-6xl flex-1 flex flex-col">
-        <div className="flex flex-1 gap-4 min-h-[600px] overflow-hidden">
-          {/* Upload Panel */}
-          <div 
-            className={cn(
-              "transition-all duration-300 ease-in-out flex flex-col bg-background border rounded-lg",
-              isUploadPanelExpanded ? "w-1/3" : "w-12"
-            )}
-          >
-            <div className={cn(
-              "flex-1 p-4",
-              isUploadPanelExpanded ? "opacity-100" : "opacity-0 overflow-hidden w-0"
-            )}>
-              <div className="space-y-4">
-                <h1 className="text-2xl font-bold">Transform Document</h1>
-                
-                {error && (
-                  <Alert variant="destructive">
-                    <AlertDescription>{error}</AlertDescription>
-                  </Alert>
-                )}
-
-                <div className="flex flex-col items-center justify-center p-8 border-2 border-dashed rounded-lg hover:border-primary/50 transition-colors">
-                  <div {...getRootProps()} className="w-full text-center cursor-pointer">
-                    <input {...getInputProps()} />
-                    {file ? (
-                      <div className="space-y-4">
-                        <FileText className="w-12 h-12 mx-auto text-gray-400" />
-                        <div>
-                          <p className="text-sm font-medium">{file.name}</p>
-                          <p className="text-xs text-gray-500">
-                            {(file.size / 1024 / 1024).toFixed(2)} MB
-                          </p>
-                        </div>
-                        {isProcessing ? (
-                          <div className="space-y-2">
-                            <div className="flex items-center justify-center gap-2">
-                              <Loader2 className="w-4 h-4 animate-spin" />
-                              <span className="text-sm text-gray-500">Processing document...</span>
-                            </div>
-                            <div className="w-full max-w-xs mx-auto">
-                              <Progress value={progress} className="h-1" />
-                              <p className="mt-1 text-xs text-center text-gray-500">{progress}%</p>
-                            </div>
-                          </div>
-                        ) : (
-                          <Button
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              handleExtract()
-                            }}
-                            disabled={isProcessing}
-                          >
-                            Process Document
-                          </Button>
-                        )}
+      <div className="command-center">
+        <ResizablePanel
+          defaultWidth={320}
+          onResize={setSidebarWidth}
+        >
+          <div className="h-full bg-gray-800 text-gray-100">
+            <div className="panel-header">
+              <span>Document Explorer</span>
+            </div>
+            <div className="p-4">
+              <div className="control-group">
+                <div className="flex items-center gap-2 text-sm">
+                  <Database className="h-4 w-4" />
+                  <span>Documents</span>
+                </div>
+                {file && (
+                  <div className="mt-2 p-2 rounded-md bg-gray-700/50">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <FileText className="h-4 w-4" />
+                        <span className="text-sm truncate">{file.name}</span>
                       </div>
-                    ) : (
-                      <div className="space-y-4">
-                        <Upload className="w-12 h-12 mx-auto text-gray-400" />
-                        <div>
-                          <p className="text-sm font-medium">Drop your document here or click to upload</p>
-                          <p className="text-xs text-gray-500">
-                            Supports TXT files
-                          </p>
-                        </div>
-                      </div>
-                    )}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleRemoveFile}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
-                  {file && !isProcessing && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        setFile(null)
-                        setError(null)
-                      }}
-                      className="mt-2"
-                    >
-                      Remove File
-                    </Button>
+                )}
+              </div>
+
+              <div {...getRootProps()} className="mt-4">
+                <input {...getInputProps()} />
+                <div
+                  className={cn(
+                    'border-2 border-dashed rounded-lg p-4 text-center cursor-pointer',
+                    'transition-colors duration-200',
+                    isDragActive ? 'border-blue-500 bg-blue-500/10' : 'border-gray-700 hover:border-gray-600'
                   )}
+                >
+                  <Upload className="h-6 w-6 mx-auto mb-2" />
+                  <p className="text-sm">
+                    {isDragActive
+                      ? 'Drop the file here'
+                      : 'Drag & drop a file here, or click to select'}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    PDF, TXT, DOCX (max 10MB)
+                  </p>
                 </div>
               </div>
-            </div>
-            
-            {/* Expand/Collapse Button */}
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-12 w-12 shrink-0"
-              onClick={() => setIsUploadPanelExpanded(!isUploadPanelExpanded)}
-            >
-              {isUploadPanelExpanded ? (
-                <ChevronLeft className="h-4 w-4" />
-              ) : (
-                <ChevronRight className="h-4 w-4" />
+
+              {file && !isProcessing && (
+                <Button
+                  onClick={handleExtract}
+                  className="w-full mt-4"
+                >
+                  Process Document
+                </Button>
               )}
-            </Button>
-          </div>
 
-          {/* Graph Section */}
-          <div className="flex-1 min-h-0">
-            {graphData && (
-              <GraphVisualization 
-                key={graphData._reset} // Force re-mount on reset
-                graphData={graphData} 
-                onGraphReset={handleGraphReset}
-              />
+              {isProcessing && (
+                <div className="mt-4 space-y-2">
+                  <div className="flex items-center justify-center gap-2">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span className="text-sm text-gray-500">Processing document...</span>
+                  </div>
+                  <div className="w-full">
+                    <Progress value={progress} className="h-1" />
+                    <p className="mt-1 text-xs text-center text-gray-500">{progress}%</p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </ResizablePanel>
+
+        <div className="flex-1 flex flex-col min-w-0">
+          <Toolbar tools={tools} />
+
+          <div className="flex-1 p-4 bg-gray-900">
+            {error && (
+              <Alert variant="destructive" className="mb-4">
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
             )}
+
+            <div className="h-full">
+              {graphData ? (
+                <GraphVisualization 
+                  key={`${transformId}-${graphData._reset}`}
+                  graphData={graphData} 
+                  onGraphReset={handleGraphReset}
+                />
+              ) : (
+                <div className="h-full flex items-center justify-center text-gray-500">
+                  <p>Upload a document to begin transformation</p>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
-        {/* Merge Button */}
-        <div className="flex justify-end">
-          <Button
-            onClick={() => setShowMergeConfirm(true)}
-            disabled={!graphData}
-          >
-            <GitMerge className="w-4 h-4" />
-            Merge to Prod DB
-          </Button>
-        </div>
+        <AIAssistantPanel
+          state={aiAssistantState}
+          onStateChange={(changes) => setAiAssistantState(prev => ({ ...prev, ...changes }))}
+          onApplySuggestion={handleApplySuggestion}
+          onDismissSuggestion={handleDismissSuggestion}
+          onExplainSuggestion={handleExplainSuggestion}
+          onCustomizeSuggestion={handleCustomizeSuggestion}
+        />
 
-        {/* Merge Confirmation Dialog */}
+        <CommandPalette
+          open={isCommandPaletteOpen}
+          onOpenChange={setIsCommandPaletteOpen}
+          commands={tools}
+        />
+
         <AlertDialog open={showMergeConfirm} onOpenChange={setShowMergeConfirm}>
           <AlertDialogContent>
             <AlertDialogHeader>
