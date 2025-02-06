@@ -11,8 +11,10 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Toolbar } from '@/components/command-center/toolbar'
 import { ResizablePanel } from '@/components/command-center/resizable-panel'
 import { CommandPalette } from '@/components/command-center/command-palette'
+import { AIAssistantPanel } from '@/components/ai-assistant/ai-assistant-panel'
 import { useKeyboardShortcuts } from '@/hooks/use-keyboard-shortcuts'
 import { type ViewMode } from '@/lib/types/command-center'
+import { type AIAssistantState } from '@/lib/types/ai-assistant'
 import { 
   Play, Save, Code2, Grid2x2, 
   SplitSquareVertical, Settings,
@@ -210,6 +212,61 @@ export default function OntologyPage() {
   const [error, setError] = useState<string | null>(null)
   const [sidebarWidth, setSidebarWidth] = useState(320)
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false)
+  const [aiAssistantState, setAiAssistantState] = useState<AIAssistantState>({
+    isExpanded: true,
+    isCompact: false,
+    suggestions: [
+      {
+        id: '1',
+        priority: 'high',
+        type: 'pattern',
+        content: {
+          title: 'Add Timestamps to Entities',
+          description: 'Consider adding created_at and updated_at fields to track entity changes.',
+          impact: 'Improves auditability and helps track data lineage.',
+          confidence: 0.9
+        }
+      },
+      {
+        id: '2',
+        priority: 'medium',
+        type: 'improvement',
+        content: {
+          title: 'Normalize Property Names',
+          description: 'Use consistent casing (snake_case) for property names.',
+          impact: 'Enhances code readability and maintainability.',
+          confidence: 0.8
+        }
+      }
+    ],
+    activePatterns: [
+      {
+        id: '1',
+        name: 'Temporal Pattern',
+        description: 'Track entity changes over time using timestamp fields.',
+        confidence: 0.9,
+        type: 'domain',
+        matches: [
+          { path: 'entities.user', score: 0.9 },
+          { path: 'entities.post', score: 0.85 }
+        ]
+      }
+    ],
+    qualityMetrics: {
+      score: 75,
+      components: {
+        completeness: 80,
+        consistency: 70,
+        optimization: 75,
+        bestPractices: 75
+      },
+      improvements: [],
+      history: [
+        { timestamp: Date.now() - 3600000, score: 70 },
+        { timestamp: Date.now(), score: 75 }
+      ]
+    }
+  })
 
   const handleSubmit = async () => {
     if (!yaml.trim()) {
@@ -255,6 +312,30 @@ export default function OntologyPage() {
   const handleSave = useCallback(() => {
     // TODO: Implement save
     console.log('Saving...')
+  }, [])
+
+  const handleApplySuggestion = useCallback((id: string) => {
+    // TODO: Implement applying suggestion
+    console.log('Applying suggestion:', id)
+  }, [])
+
+  const handleDismissSuggestion = useCallback((id: string) => {
+    setAiAssistantState(prev => ({
+      ...prev,
+      suggestions: prev.suggestions.filter(s => s.id !== id)
+    }))
+  }, [])
+
+  const handleExplainSuggestion = useCallback((id: string) => {
+    setAiAssistantState(prev => ({
+      ...prev,
+      selectedSuggestion: id
+    }))
+  }, [])
+
+  const handleCustomizeSuggestion = useCallback((id: string) => {
+    // TODO: Implement customizing suggestion
+    console.log('Customizing suggestion:', id)
   }, [])
 
   const tools = [
@@ -386,6 +467,15 @@ export default function OntologyPage() {
           </div>
         </div>
       </div>
+
+      <AIAssistantPanel
+        state={aiAssistantState}
+        onStateChange={(changes) => setAiAssistantState(prev => ({ ...prev, ...changes }))}
+        onApplySuggestion={handleApplySuggestion}
+        onDismissSuggestion={handleDismissSuggestion}
+        onExplainSuggestion={handleExplainSuggestion}
+        onCustomizeSuggestion={handleCustomizeSuggestion}
+      />
 
       <CommandPalette
         open={isCommandPaletteOpen}
