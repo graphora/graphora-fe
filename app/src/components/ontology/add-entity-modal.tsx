@@ -121,10 +121,13 @@ export function AddEntityModal({
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="sm:max-w-[600px]" onClick={(e) => e.stopPropagation()}>
         <DialogHeader>
-          <DialogTitle>{editEntity ? 'Edit Entity' : 'Add Entity'}</DialogTitle>
+          <DialogTitle>
+            {editEntity ? 'Edit ' : 'Add '}
+            {isSection ? 'Section' : 'Entity'}
+          </DialogTitle>
           <DialogDescription>
-            {editEntity 
-              ? 'Update the entity details below.' 
+            {isSection 
+              ? 'Create a new section to organize your entities. Sections can be nested within other sections.'
               : 'Fill in the entity details below. You can add properties to define its structure.'}
           </DialogDescription>
         </DialogHeader>
@@ -140,6 +143,7 @@ export function AddEntityModal({
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 className="col-span-3"
+                placeholder={`Enter ${isSection ? 'section' : 'entity'} name`}
               />
               {validation.name && (
                 <p className="col-start-2 col-span-3 text-sm text-destructive">
@@ -148,7 +152,7 @@ export function AddEntityModal({
               )}
             </div>
 
-            <div className="grid grid-cols-4 items-center gap-4">
+            {/* <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="description" className="text-right">
                 Description
               </Label>
@@ -157,89 +161,66 @@ export function AddEntityModal({
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 className="col-span-3"
+                placeholder="Enter description (optional)"
               />
-            </div>
+            </div> */}
 
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="isSection" className="text-right">
-                Is Section
+              {/* <Label htmlFor="section" className="text-right">
+                Section
               </Label>
-              <div className="col-span-3">
-                <Switch
-                  id="isSection"
-                  checked={isSection}
-                  onCheckedChange={setIsSection}
-                />
-              </div>
+              <Select
+                value={selectedSection || ''}
+                onValueChange={(value) => setSelectedSection(value || null)}
+              >
+                <SelectTrigger className="col-span-3">
+                  <SelectValue placeholder="Select a section" />
+                </SelectTrigger>
+                <SelectContent>
+                  {sections.map((section) => (
+                    <SelectItem key={section.id} value={section.id}>
+                      {section.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select> */}
             </div>
 
-            {!isSection && sections.length > 0 && (
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="section" className="text-right">
-                  Section
-                </Label>
-                <Select
-                  value={selectedSection || ''}
-                  onValueChange={(value) => setSelectedSection(value || null)}
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                <Label>Properties</Label>
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setProperties([
+                      ...properties,
+                      DEFAULT_PROPERTY
+                    ])
+                  }}
                 >
-                  <SelectTrigger className="col-span-3">
-                    <SelectValue placeholder="Select a section" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {sections.map((section) => (
-                      <SelectItem key={section.id} value={section.id}>
-                        {section.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  Add Property
+                </Button>
               </div>
-            )}
-
-            {!isSection && (
-              <div className="space-y-4">
-                <div className="flex justify-between items-center">
-                  <Label>Properties</Label>
-                  <Button 
-                    type="button" 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      setProperties([
-                        ...properties,
-                        {
-                          name: '',
-                          type: 'str',
-                          description: '',
-                          flags: {
-                            unique: false,
-                            required: false,
-                            index: false
-                          }
-                        }
-                      ])
-                    }}
-                  >
-                    Add Property
-                  </Button>
-                </div>
-                <PropertiesTable
-                  properties={properties}
-                  onChange={handleUpdateProperties}
-                />
-                {validation.properties && (
-                  <p className="text-sm text-destructive">{validation.properties}</p>
-                )}
-              </div>
-            )}
+              <PropertiesTable
+                properties={properties}
+                onChange={handleUpdateProperties}
+              />
+              {validation.properties && (
+                <p className="text-sm text-destructive">{validation.properties}</p>
+              )}
+            </div>
           </div>
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={onClose}>
               Cancel
             </Button>
-            <Button type="submit">Save</Button>
+            <Button type="submit">
+              {editEntity ? 'Save' : 'Create'} {isSection ? 'Section' : 'Entity'}
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>

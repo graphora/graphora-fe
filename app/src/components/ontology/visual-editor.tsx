@@ -12,7 +12,6 @@ import {
 import { useOntologyStore } from '@/lib/store/ontology-store'
 import { Entity } from '@/lib/types/entity'
 import { cn } from '@/lib/utils'
-import { AddSectionModal } from './add-section-modal'
 import { AddEntityModal } from './add-entity-modal'
 import { AddRelationshipModal } from './add-relationship-modal'
 
@@ -426,11 +425,12 @@ export function VisualEditor() {
         </div>
       </div>
 
-      <AddSectionModal
+      <AddEntityModal
         isOpen={isAddSectionOpen}
         onClose={handleSectionModalClose}
-        parentSectionId={selectedSectionId}
-        editSection={editingEntity}
+        initialParentId={selectedSectionId}
+        editEntity={editingEntity}
+        initialIsSection={true}
       />
       <AddRelationshipModal
         isOpen={isAddRelationshipOpen}

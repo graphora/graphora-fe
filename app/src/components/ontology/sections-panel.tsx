@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { SectionItem } from './section-item'
-import { AddSectionModal } from './add-section-modal'
+import { AddEntityModal } from './add-entity-modal'
 import { useOntologyStore } from '@/lib/store/ontology-store'
 import { Entity } from '@/lib/types/entity'
 
@@ -117,9 +117,10 @@ export function SectionsPanel() {
         {rootSections.map(section => renderSection(section))}
       </div>
 
-      <AddSectionModal
+      <AddEntityModal
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
+        initialIsSection={true}
       />
     </div>
   )
