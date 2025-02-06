@@ -384,7 +384,7 @@ function TransformPageContent() {
           defaultWidth={320}
           onResize={setSidebarWidth}
         >
-          <div className="h-full bg-gray-800 text-gray-100">
+          <div className="h-full bg-white text-gray-800">
             <div className="panel-header">
               <span>Document Explorer</span>
             </div>
@@ -395,7 +395,7 @@ function TransformPageContent() {
                   <span>Documents</span>
                 </div>
                 {file && (
-                  <div className="mt-2 p-2 rounded-md bg-gray-700/50">
+                  <div className="mt-2 p-2 rounded-md bg-white">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <FileText className="h-4 w-4" />
@@ -419,7 +419,7 @@ function TransformPageContent() {
                   className={cn(
                     'border-2 border-dashed rounded-lg p-4 text-center cursor-pointer',
                     'transition-colors duration-200',
-                    isDragActive ? 'border-blue-500 bg-blue-500/10' : 'border-gray-700 hover:border-gray-600'
+                    isDragActive ? 'border-blue-500 bg-blue-500/10' : 'border-gray-200 hover:border-gray-400'
                   )}
                 >
                   <Upload className="h-6 w-6 mx-auto mb-2" />
@@ -462,7 +462,7 @@ function TransformPageContent() {
         <div className="flex-1 flex flex-col min-w-0">
           <Toolbar tools={tools} />
 
-          <div className="flex-1 p-4 bg-gray-900">
+          <div className="flex-1 p-4 bg-gray-50">
             {error && (
               <Alert variant="destructive" className="mb-4">
                 <AlertDescription>{error}</AlertDescription>
