@@ -213,8 +213,8 @@ export default function OntologyPage() {
   const [sidebarWidth, setSidebarWidth] = useState(320)
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false)
   const [aiAssistantState, setAiAssistantState] = useState<AIAssistantState>({
-    isExpanded: true,
-    isCompact: false,
+    isExpanded: false,
+    isCompact: true,
     suggestions: [
       {
         id: '1',
