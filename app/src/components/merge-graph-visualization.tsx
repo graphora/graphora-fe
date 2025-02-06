@@ -15,9 +15,9 @@ import type { GraphData } from '@/types/graph'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 
 interface MergeGraphVisualizationProps {
-  sessionId: string
-  wsInstance: MergeWebSocket | null
   graphData: GraphData
+  loading?: boolean
+  error?: string | null
 }
 
 // Color scheme for different states
@@ -36,6 +36,7 @@ type Status = keyof typeof COLOR_SCHEME
 
 const LoadingGraph = () => (
   <div className="w-full h-full min-h-[600px] flex items-center justify-center text-gray-400">
+    <Loader2 className="h-8 w-8 animate-spin mr-2" />
     Loading graph visualization...
   </div>
 )
@@ -46,19 +47,7 @@ const ForceGraph2D = dynamic(
   { ssr: false, loading: () => <LoadingGraph /> }
 )
 
-export const MergeGraphVisualization = ({ sessionId, wsInstance, graphData }: MergeGraphVisualizationProps) => {
-  const { 
-    loading,
-    error,
-    wsConnected,
-    addNode,
-    updateNode,
-    deleteNode,
-    addEdge,
-    updateEdge,
-    deleteEdge,
-  } = useMergeVisualization(sessionId, wsInstance)
-
+export const MergeGraphVisualization = ({ graphData, loading, error }: MergeGraphVisualizationProps) => {
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedNode, setSelectedNode] = useState<any>(null)
   const FILTER_KEYS = ['New', 'Deleted', 'Modified', 'Conflicts', 'Unchanged', 'Unknown', 'Reference', 'NeedsReview'] as const;
@@ -189,12 +178,12 @@ export const MergeGraphVisualization = ({ sessionId, wsInstance, graphData }: Me
   }, [])
 
   // Show loading state
-  if (loading || !wsConnected) {
+  if (loading) {
     return (
       <div className="w-full h-full min-h-[600px] flex items-center justify-center">
         <div className="flex flex-col items-center gap-2 text-gray-400">
           <Loader2 className="h-8 w-8 animate-spin" />
-          <p>{!wsConnected ? 'Connecting...' : 'Loading graph data...'}</p>
+          <p>Loading graph data...</p>
         </div>
       </div>
     )

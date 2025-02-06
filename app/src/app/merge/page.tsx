@@ -156,28 +156,27 @@ function MergePageContent() {
             }])
           }
           setCanSubmit(true)
-          // Refresh visualization after question
-          refreshVisualization()
         })
 
         ws.on('STATUS', (payload: any) => {
           setStatus(payload.status)
-          // Refresh visualization after status update
-          refreshVisualization()
+          // Only refresh visualization on successful status updates
+          if (payload.status !== 'FAILED') {
+            refreshVisualization()
+          }
         })
 
         ws.on('PROGRESS', (payload: any) => {
-          setProgress(payload.progress)
+          setProgress(payload.progress || 0)
           if (payload.currentStep) {
             setCurrentStep(payload.currentStep)
           }
-          // Refresh visualization after progress update
-          refreshVisualization()
         })
 
         ws.on('ERROR', (payload: any) => {
           console.error('Received error from WebSocket:', payload.message)
           setError(payload.message)
+          setStatus('FAILED')
         })
 
         // Connect to WebSocket first
@@ -193,6 +192,7 @@ function MergePageContent() {
       } catch (error) {
         console.error('Error in WebSocket setup:', error)
         setError(error instanceof Error ? error.message : 'Failed to initialize WebSocket connection')
+        setStatus('FAILED')
       }
     }
 
@@ -270,46 +270,78 @@ function MergePageContent() {
   }
 
   return (
-    <WorkflowLayout>
-      <div className="flex flex-col h-[calc(100vh-4rem)]">
-        {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b bg-background sticky top-0 z-50">
+    <WorkflowLayout 
+      progress={progress} 
+      currentStep={currentStep}
+      toolbarContent={
+        <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <h1 className="text-2xl font-bold">Graph Merge Process</h1>
-            {(status === 'IN_PROGRESS' || progress > 0) && (
+            <div className="flex items-center gap-2 text-sm">
+              <AlertCircle className="h-4 w-4" />
+              <span>Status:</span>
               <div className="flex items-center gap-2">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                <span className="text-sm text-muted-foreground">
-                  {currentStep} ({progress}%)
+                {status === 'IN_PROGRESS' ? (
+                  <Loader2 className="h-4 w-4 animate-spin text-blue-500" />
+                ) : status === 'COMPLETED' ? (
+                  <CheckCircle2 className="h-4 w-4 text-green-500" />
+                ) : status === 'FAILED' ? (
+                  <AlertCircle className="h-4 w-4 text-red-500" />
+                ) : null}
+                <span className="text-sm capitalize">
+                  {status ? status.toLowerCase().replace('_', ' ') : 'DONE'}
                 </span>
               </div>
-            )}
+            </div>
+            <div className="flex items-center gap-2 text-sm">
+              <span>Progress:</span>
+              <span className="text-gray-500">{progress}%</span>
+            </div>
           </div>
-
-          <div className="flex items-center gap-4">
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => {
-                setIsPaused(!isPaused)
-                if (wsRef.current) {
-                  if (isPaused) {
-                    wsRef.current.sendResume()
-                  } else {
-                    wsRef.current.sendPause()
+          <div className="flex items-center gap-2">
+            {error ? (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleRetry}
+                disabled={isRetrying}
+                className="gap-2"
+              >
+                <RefreshCcw className="h-4 w-4" />
+                {isRetrying ? 'Retrying...' : 'Retry'}
+              </Button>
+            ) : status === 'IN_PROGRESS' ? (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  if (wsRef.current) {
+                    if (isPaused) {
+                      wsRef.current.sendResume()
+                    } else {
+                      wsRef.current.sendPause()
+                    }
+                    setIsPaused(!isPaused)
                   }
-                }
-              }}
-            >
-              {isPaused ? (
-                <PlayCircle className="h-5 w-5" />
-              ) : (
-                <PauseCircle className="h-5 w-5" />
-              )}
-            </Button>
+                }}
+                className="gap-2"
+              >
+                {isPaused ? (
+                  <>
+                    <PlayCircle className="h-4 w-4" />
+                    Resume
+                  </>
+                ) : (
+                  <>
+                    <PauseCircle className="h-4 w-4" />
+                    Pause
+                  </>
+                )}
+              </Button>
+            ) : null}
             {canSubmit && (
               <Button
                 variant="default"
+                size="sm"
                 className="bg-green-600 hover:bg-green-700 gap-2"
                 onClick={handleRetry}
                 disabled={isRetrying}
@@ -324,186 +356,125 @@ function MergePageContent() {
             )}
           </div>
         </div>
-
-        {error && (
-          <Alert variant="destructive" className="m-4">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription className="flex items-center justify-between ml-2">
-              <span>{error}</span>
-              {isRetrying && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleRetry}
-                  className="ml-4"
-                >
-                  <RefreshCcw className="h-4 w-4 mr-2" />
-                  Retry
-                </Button>
-              )}
-            </AlertDescription>
-          </Alert>
-        )}
-
-        <div className="flex-1 p-4 min-h-0">
-          <ResizablePanelGroup
-            direction="horizontal"
-            className="min-h-[500px] h-full rounded-lg border bg-background"
-          >
-            {/* Chat Panel */}
-            <ResizablePanel defaultSize={40} minSize={30}>
-              <div className="flex flex-col h-full">
-                <div className="p-2 border-b font-medium">Agent Chat</div>
-                <ScrollArea className="flex-1">
-                  <div className="p-4 space-y-4" ref={scrollRef}>
-                    {messages.map((message) => (
-                      <Card
-                        key={`${message.questionId || ''}-${message.timestamp}`}
-                        className={cn(
-                          'w-full',
-                          message.role === 'agent' ? 'bg-gray-50' : ''
-                        )}
-                      >
-                        <CardContent className="p-4">
-                          <div className="flex items-center justify-between mb-2">
-                            <span className="font-medium capitalize">
-                              {message.role}
-                            </span>
-                            <span className="text-xs text-gray-500">
-                              {new Date(message.timestamp).toLocaleTimeString()}
-                            </span>
-                          </div>
-                          <p className="whitespace-pre-wrap">{message.content}</p>
-                          {message.type === 'conflict' && message.conflict && (
-                            <div className="mt-4">
-                              <ConflictDisplay
-                                {...message.conflict}
-                                onSuggestionSelect={(suggestion) => {
-                                  handleAnswerSubmit(
-                                    JSON.stringify({
-                                      suggestion_type: suggestion.suggestion_type,
-                                      affected_properties: suggestion.affected_properties
-                                    }),
-                                    message.questionId!
-                                  )
-                                }}
-                              />
-                            </div>
-                          )}
-                          {message.type === 'question' && message.options && message.requiresAction && (
-                            <div className="mt-4 space-y-2">
-                              {message.options.map((option) => {
-                                const isSelected =
-                                  selectedOptions[message.questionId!] ===
-                                  option.id
-                                return (
-                                  <Button
-                                    key={option.id}
-                                    variant="outline"
-                                    className={cn(
-                                      'w-full justify-between',
-                                      isSelected &&
-                                        'border-green-500 bg-green-50 text-green-700'
-                                    )}
-                                    onClick={() =>
-                                      handleAnswerSubmit(
-                                        option.id,
-                                        message.questionId!
-                                      )
-                                    }
-                                    disabled={
-                                      selectedOptions[message.questionId!] !==
-                                      undefined
-                                    }
-                                  >
-                                    <span>{option.label}</span>
-                                    {isSelected && (
-                                      <CheckCircle2 className="h-4 w-4 ml-2" />
-                                    )}
-                                  </Button>
-                                )
-                              })}
-                            </div>
-                          )}
-                        </CardContent>
-                      </Card>
-                    ))}
-                    {status === 'FAILED' && (
-                      <Alert variant="destructive">
-                        <AlertCircle className="h-4 w-4" />
-                        <AlertDescription className="ml-2">
-                          Merge process failed. Please try again.
-                        </AlertDescription>
-                      </Alert>
-                    )}
-                    {status === 'COMPLETED' && (
-                      <Alert className="bg-green-50 border-green-200">
-                        <CheckCircle2 className="h-4 w-4 text-green-600" />
-                        <AlertDescription className="ml-2 text-green-600">
-                          Merge process completed successfully!
-                        </AlertDescription>
-                      </Alert>
-                    )}
-                  </div>
-                </ScrollArea>
+      }
+    >
+      <div className="command-center">
+        <ResizablePanelGroup direction="horizontal">
+          <ResizablePanel defaultSize={70}>
+            <div className="h-full bg-white text-black">
+              <div className="panel-header">
+                <span>Graph Visualization</span>
               </div>
-            </ResizablePanel>
-
-            <ResizableHandle className="w-2 bg-muted hover:bg-muted/90 transition-colors" />
-
-            {/* Graph Panel */}
-            <ResizablePanel defaultSize={60} minSize={30}>
-              <div className="flex flex-col h-full">
-                <div className="p-2 border-b font-medium flex justify-between items-center">
-                  <span>Graph Preview</span>
-                  <div className="flex items-center gap-2">
-                    {/* <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={undo}
-                      disabled={!canUndo || visualizationLoading}
+              <div className="h-[calc(100%-2.5rem)] p-4">
+                <MergeGraphVisualization
+                  graphData={graphDataMemo || { nodes: [], edges: [] }}
+                  loading={visualizationLoading}
+                  error={visualizationError}
+                />
+              </div>
+            </div>
+          </ResizablePanel>
+          <ResizableHandle />
+          <ResizablePanel defaultSize={30}>
+            <div className="h-full bg-white text-black">
+              <div className="panel-header">
+                <span>Conflict Resolver</span>
+              </div>
+              <ScrollArea ref={scrollRef} className="h-[calc(100%-2.5rem)]">
+                <div className="p-4 space-y-4">
+                  {messages.map((message) => (
+                    <Card
+                      key={`${message.questionId || ''}-${message.timestamp}`}
+                      className={cn(
+                        'w-full',
+                        message.role === 'agent' ? 'bg-gray-50' : ''
+                      )}
                     >
-                      <ChevronLeft className="w-4 h-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={redo}
-                      disabled={!canRedo || visualizationLoading}
-                    >
-                      <ChevronRight className="w-4 h-4" />
-                    </Button> */}
-                    {visualizationLoading ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={refreshVisualization}
-                        className="p-1 hover:bg-gray-100 rounded"
-                      >
-                        <RefreshCcw className="w-4 h-4" />
-                      </Button>
-                    )}
-                  </div>
-                </div>
-                <div className="flex-1 min-h-0">
-                  {visualizationLoading ? (
-                    <div className="flex items-center justify-center h-full">
-                      <Loader2 className="h-8 w-8 animate-spin" />
-                    </div>
-                  ) : (
-                    <MergeGraphVisualization 
-                      sessionId={sessionId} 
-                      wsInstance={wsRef.current}
-                      graphData={graphDataMemo || { nodes: [], edges: [] }} 
-                    />
+                      <CardContent className="p-4">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="font-medium capitalize">
+                            {message.role}
+                          </span>
+                          <span className="text-xs text-gray-500">
+                            {new Date(message.timestamp).toLocaleTimeString()}
+                          </span>
+                        </div>
+                        <p className="whitespace-pre-wrap">{message.content}</p>
+                        {message.type === 'conflict' && message.conflict && (
+                          <div className="mt-4">
+                            <ConflictDisplay
+                              {...message.conflict}
+                              onSuggestionSelect={(suggestion) => {
+                                handleAnswerSubmit(
+                                  JSON.stringify({
+                                    suggestion_type: suggestion.suggestion_type,
+                                    affected_properties: suggestion.affected_properties
+                                  }),
+                                  message.questionId!
+                                )
+                              }}
+                            />
+                          </div>
+                        )}
+                        {message.type === 'question' && message.options && message.requiresAction && (
+                          <div className="mt-4 space-y-2">
+                            {message.options.map((option) => {
+                              const isSelected =
+                                selectedOptions[message.questionId!] ===
+                                option.id
+                              return (
+                                <Button
+                                  key={option.id}
+                                  variant="outline"
+                                  className={cn(
+                                    'w-full justify-between',
+                                    isSelected &&
+                                      'border-green-500 bg-green-50 text-green-700'
+                                  )}
+                                  onClick={() =>
+                                    handleAnswerSubmit(
+                                      option.id,
+                                      message.questionId!
+                                    )
+                                  }
+                                  disabled={
+                                    selectedOptions[message.questionId!] !==
+                                    undefined
+                                  }
+                                >
+                                  <span>{option.label}</span>
+                                  {isSelected && (
+                                    <CheckCircle2 className="h-4 w-4 ml-2" />
+                                  )}
+                                </Button>
+                              )
+                            })}
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  ))}
+                  {status === 'FAILED' && (
+                    <Alert variant="destructive">
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertDescription className="ml-2">
+                        Merge process failed. Please try again.
+                      </AlertDescription>
+                    </Alert>
+                  )}
+                  {status === 'COMPLETED' && (
+                    <Alert className="bg-green-50 border-green-200">
+                      <CheckCircle2 className="h-4 w-4 text-green-600" />
+                      <AlertDescription className="ml-2 text-green-600">
+                        Merge process completed successfully!
+                      </AlertDescription>
+                    </Alert>
                   )}
                 </div>
-              </div>
-            </ResizablePanel>
-          </ResizablePanelGroup>
-        </div>
+              </ScrollArea>
+            </div>
+          </ResizablePanel>
+        </ResizablePanelGroup>
       </div>
     </WorkflowLayout>
   )

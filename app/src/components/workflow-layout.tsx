@@ -8,9 +8,10 @@ interface WorkflowLayoutProps {
   children: React.ReactNode
   progress?: number
   currentStep?: string
+  toolbarContent?: React.ReactNode
 }
 
-export function WorkflowLayout({ children, progress, currentStep }: WorkflowLayoutProps) {
+export function WorkflowLayout({ children, progress, currentStep, toolbarContent }: WorkflowLayoutProps) {
   const pathname = usePathname()
 
   const workflowSteps: WorkflowStep[] = [
@@ -56,6 +57,15 @@ export function WorkflowLayout({ children, progress, currentStep }: WorkflowLayo
           status={currentStep}
           className="px-4 py-2 border-b bg-white"
         />
+      )}
+
+      {/* Toolbar Content */}
+      {toolbarContent && (
+        <div className="border-b bg-white">
+          <div className="container mx-auto px-4 py-2">
+            {toolbarContent}
+          </div>
+        </div>
       )}
 
       {/* Main Content */}

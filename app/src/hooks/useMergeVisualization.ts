@@ -12,14 +12,10 @@ export function useMergeVisualization(sessionId: string, wsInstance: MergeWebSoc
   const prevDataRef = useRef<string>('')
 
   const transformGraphData = useCallback((responseData: any): GraphData => {
-    console.log('Raw response data:', responseData)
     if (!responseData) return { nodes: [], edges: [] }
 
-    // Extract nodes and edges from the correct level
     const nodes = responseData.nodes || []
     const edges = responseData.edges || []
-    
-    console.log('Processing nodes:', nodes.length, 'edges:', edges.length)
 
     return {
       nodes: nodes.map((node: any) => ({
@@ -33,11 +29,13 @@ export function useMergeVisualization(sessionId: string, wsInstance: MergeWebSoc
         }
       })),
       edges: edges.map((edge: any) => ({
-        id: `${edge.source}-${edge.target}`,
+        id: edge.id || `${edge.source}-${edge.target}`,
         source: edge.source,
         target: edge.target,
         type: edge.type,
         properties: {
+          ...edge.properties,
+          __status: edge.status,
           confidence: edge.confidence,
           __type: edge.type
         }
@@ -45,107 +43,148 @@ export function useMergeVisualization(sessionId: string, wsInstance: MergeWebSoc
     }
   }, [])
 
-  useEffect(() => {
-    if (data) {
-      console.log('Data from hook:', data)
-      const newGraphData = transformGraphData(data)
-      console.log('Transformed graph data:', newGraphData)
-      const newDataStr = JSON.stringify(newGraphData)
-      if (newDataStr !== prevDataRef.current) {
-        setGraphData(newGraphData)
-        prevDataRef.current = newDataStr
-      }
-    }
-  }, [data, transformGraphData])
-
-  // Fetch data from the API
   const fetchData = useCallback(async () => {
-    if (!sessionId) return
-    
+    if (!sessionId) {
+      setError('No session ID provided')
+      return
+    }
+
     try {
       setLoading(true)
+      setError(null)
+
       const response = await fetch(`/api/merge/${sessionId}/visualization`)
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
-      const responseData: MergeVisualizationResponse = await response.json()
       
+      if (!response.ok) {
+        if (response.status === 404) {
+          setGraphData({ nodes: [], edges: [] })
+          return
+        }
+        throw new Error(`Failed to fetch visualization data: ${response.statusText}`)
+      }
+
+      const responseData = await response.json()
+      
+      if (!responseData || !responseData.data) {
+        throw new Error('Invalid response format')
+      }
+
+      const currentDataString = JSON.stringify(responseData.data)
+      if (currentDataString === prevDataRef.current) {
+        return // Data hasn't changed, no need to update
+      }
+
+      prevDataRef.current = currentDataString
       setData(responseData)
-      
+      setGraphData(transformGraphData(responseData.data))
+    } catch (err) {
+      console.error('Error fetching visualization data:', err)
+      setError(err instanceof Error ? err.message : 'Failed to load visualization')
+      setGraphData({ nodes: [], edges: [] })
+    } finally {
       setLoading(false)
-      return responseData
-    } catch (error) {
-      console.error('Error fetching data:', error)
-      setError(error instanceof Error ? error.message : 'Failed to fetch data')
-      setLoading(false)
-      return null
     }
-  }, [sessionId])
+  }, [sessionId, transformGraphData])
 
-  const handleNodeOperation = useCallback(async (operation: GraphOperation) => {
-    try {
-      const response = await fetch(`/api/merge/${sessionId}/node`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(operation),
-      })
-
-      if (!response.ok) {
-        throw new Error(`Failed to apply node operation: ${response.statusText}`)
-      }
-
-      // Refresh data after operation
-      await fetchData()
-    } catch (error) {
-      console.error('Error applying node operation:', error)
-      throw error
-    }
-  }, [sessionId, fetchData])
-
-  const handleEdgeOperation = useCallback(async (operation: GraphOperation) => {
-    try {
-      const response = await fetch(`/api/merge/${sessionId}/edge`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(operation),
-      })
-
-      if (!response.ok) {
-        throw new Error(`Failed to apply edge operation: ${response.statusText}`)
-      }
-
-      // Refresh data after operation
-      await fetchData()
-    } catch (error) {
-      console.error('Error applying edge operation:', error)
-      throw error
-    }
-  }, [sessionId, fetchData])
-
-  // Update connection status when websocket instance changes
-  useEffect(() => {
-    if (wsInstance) {
-      const isConnected = wsInstance.isConnected()
-      setWsConnected(isConnected)
-      if (isConnected) {
-        // Fetch initial data when WebSocket connects
-        fetchData()
-      }
-    } else {
-      setWsConnected(false)
-    }
-  }, [wsInstance, fetchData])
-
-  // Initial data fetch
   useEffect(() => {
     if (sessionId) {
       fetchData()
     }
   }, [sessionId, fetchData])
+
+  useEffect(() => {
+    if (wsInstance) {
+      const handleWsConnected = () => {
+        setWsConnected(true)
+        fetchData()
+      }
+
+      const handleWsDisconnected = () => {
+        setWsConnected(false)
+      }
+
+      const handleVisualizationUpdate = () => {
+        fetchData()
+      }
+
+      // Add event listeners
+      wsInstance.on('connected', handleWsConnected)
+      wsInstance.on('disconnected', handleWsDisconnected)
+      wsInstance.on('VISUALIZATION_UPDATE', handleVisualizationUpdate)
+
+      // Check initial connection state
+      setWsConnected(wsInstance.isConnected())
+
+      return () => {
+        // Only try to remove listeners if wsInstance still exists
+        if (wsInstance) {
+          try {
+            wsInstance.off('connected', handleWsConnected)
+            wsInstance.off('disconnected', handleWsDisconnected)
+            wsInstance.off('VISUALIZATION_UPDATE', handleVisualizationUpdate)
+          } catch (err) {
+            console.warn('Error removing WebSocket listeners:', err)
+          }
+        }
+      }
+    }
+  }, [wsInstance, fetchData])
+
+  const handleNodeOperation = useCallback((operation: GraphOperation) => {
+    setGraphData(prevData => {
+      switch (operation.type) {
+        case 'ADD_NODE':
+          return {
+            ...prevData,
+            nodes: [...prevData.nodes, operation.payload],
+          }
+        case 'UPDATE_NODE':
+          return {
+            ...prevData,
+            nodes: prevData.nodes.map(node =>
+              node.id === operation.payload.id
+                ? { ...node, ...operation.payload }
+                : node
+            ),
+          }
+        case 'DELETE_NODE':
+          return {
+            ...prevData,
+            nodes: prevData.nodes.filter(node => node.id !== operation.payload.id),
+          }
+        default:
+          return prevData
+      }
+    })
+  }, [])
+
+  const handleEdgeOperation = useCallback((operation: GraphOperation) => {
+    setGraphData(prevData => {
+      switch (operation.type) {
+        case 'ADD_EDGE':
+          return {
+            ...prevData,
+            edges: [...prevData.edges, operation.payload],
+          }
+        case 'UPDATE_EDGE':
+          return {
+            ...prevData,
+            edges: prevData.edges.map(edge =>
+              edge.id === operation.payload.id
+                ? { ...edge, ...operation.payload }
+                : edge
+            ),
+          }
+        case 'DELETE_EDGE':
+          return {
+            ...prevData,
+            edges: prevData.edges.filter(edge => edge.id !== operation.payload.id),
+          }
+        default:
+          return prevData
+      }
+    })
+  }, [])
 
   return {
     data,
@@ -154,11 +193,17 @@ export function useMergeVisualization(sessionId: string, wsInstance: MergeWebSoc
     wsConnected,
     graphData,
     fetchData,
-    addNode: (node: Omit<Node, 'id'>) => handleNodeOperation({ type: 'CREATE_NODE', payload: node }),
-    updateNode: (nodeId: string, updates: Record<string, any>) => handleNodeOperation({ type: 'UPDATE_NODE', payload: { id: nodeId, properties: updates } }),
-    deleteNode: (nodeId: string) => handleNodeOperation({ type: 'DELETE_NODE', payload: { id: nodeId } }),
-    addEdge: (edge: Omit<Edge, 'id'>) => handleEdgeOperation({ type: 'CREATE_EDGE', payload: edge }),
-    updateEdge: (edgeId: string, updates: Record<string, any>) => handleEdgeOperation({ type: 'UPDATE_EDGE', payload: { id: edgeId, properties: updates } }),
-    deleteEdge: (edgeId: string) => handleEdgeOperation({ type: 'DELETE_EDGE', payload: { id: edgeId } })
+    addNode: (node: Omit<Node, 'id'>) =>
+      handleNodeOperation({ type: 'ADD_NODE', payload: node }),
+    updateNode: (nodeId: string, updates: Record<string, any>) =>
+      handleNodeOperation({ type: 'UPDATE_NODE', payload: { id: nodeId, ...updates } }),
+    deleteNode: (nodeId: string) =>
+      handleNodeOperation({ type: 'DELETE_NODE', payload: { id: nodeId } }),
+    addEdge: (edge: Omit<Edge, 'id'>) =>
+      handleEdgeOperation({ type: 'ADD_EDGE', payload: edge }),
+    updateEdge: (edgeId: string, updates: Record<string, any>) =>
+      handleEdgeOperation({ type: 'UPDATE_EDGE', payload: { id: edgeId, ...updates } }),
+    deleteEdge: (edgeId: string) =>
+      handleEdgeOperation({ type: 'DELETE_EDGE', payload: { id: edgeId } }),
   }
 }

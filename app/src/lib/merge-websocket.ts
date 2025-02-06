@@ -138,6 +138,17 @@ export class MergeWebSocket {
     this.messageHandlers.set(type, handlers);
   }
 
+  public off(type: string, handler: MessageHandler) {
+    const handlers = this.messageHandlers.get(type);
+    if (handlers) {
+      const index = handlers.indexOf(handler);
+      if (index !== -1) {
+        handlers.splice(index, 1);
+        this.messageHandlers.set(type, handlers);
+      }
+    }
+  }
+
   public sendAnswer(questionId: string, answer: string) {
     const payload: AnswerPayload = {
       question_id: questionId,
