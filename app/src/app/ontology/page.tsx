@@ -401,7 +401,7 @@ export default function OntologyPage() {
         defaultWidth={320}
         onResize={setSidebarWidth}
       >
-        <div className="h-full bg-gray-800 text-gray-100">
+        <div className="h-full bg-white text-black">
           <div className="panel-header">
             <span>Project Explorer</span>
           </div>
@@ -436,7 +436,7 @@ export default function OntologyPage() {
       <div className="flex-1 flex flex-col min-w-0">
         <Toolbar tools={tools} />
 
-        <div className="flex-1 p-4 bg-gray-900">
+        <div className="flex-1 p-4 bg-white">
           {error && (
             <Alert variant="destructive" className="mb-4">
               <AlertDescription>{error}</AlertDescription>

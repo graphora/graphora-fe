@@ -38,7 +38,7 @@ export function YAMLEditor({ value, onChange, onValidYamlChange }: YAMLEditorPro
     <div className="h-full border rounded-md">
       <CodeMirror
         value={value}
-        height="400px"
+        height="595px"
         theme="dark"
         extensions={[
           StreamLanguage.define(yaml),

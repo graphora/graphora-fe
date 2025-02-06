@@ -122,25 +122,25 @@
 
   /* Command Center Styles */
   .command-center {
-    @apply flex h-screen bg-gray-900 text-gray-100;
+    @apply flex h-screen bg-white text-black;
   }
 
   .toolbar {
     @apply h-12 flex items-center px-4;
-    @apply bg-gray-800 border-b border-gray-700;
+    @apply bg-white border-b border-gray-200;
   }
 
   .tool-button {
     @apply px-3 py-1.5 rounded-md;
-    @apply hover:bg-gray-700 active:bg-gray-600;
+    @apply hover:bg-white active:bg-gray-600;
     @apply flex items-center gap-2;
     @apply transition-colors duration-150;
   }
 
   .panel-header {
     @apply flex justify-between items-center;
-    @apply px-4 py-2 bg-gray-800;
-    @apply border-b border-gray-700;
+    @apply px-4 py-3 bg-white;
+    @apply border-b border-gray-200;
     @apply text-sm font-medium;
   }
 

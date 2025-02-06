@@ -44,13 +44,13 @@ export function AIAssistantPanel({
   return (
     <div 
       className={cn(
-        'flex flex-col h-full bg-gray-900 border-l border-gray-800',
+        'flex flex-col h-full bg-white border-l border-gray-200',
         'transition-all duration-300',
         state.isCompact ? 'w-[60px]' : 'w-[320px]'
       )}
     >
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-gray-800">
+      <div className="flex items-center justify-between p-4 border-b border-gray-200">
         {!state.isCompact && <h2 className="text-sm font-medium">AI Assistant</h2>}
         <Button
           variant="ghost"
@@ -68,7 +68,7 @@ export function AIAssistantPanel({
 
       {/* Tabs */}
       {!state.isCompact && (
-        <div className="flex border-b border-gray-800">
+        <div className="flex border-b border-gray-200">
           <Button
             variant="ghost"
             size="sm"
@@ -156,7 +156,7 @@ export function AIAssistantPanel({
             {state.activePatterns.map((pattern) => (
               <div
                 key={pattern.id}
-                className="p-4 rounded-lg border border-gray-800 bg-gray-800/50"
+                className="p-4 rounded-lg border border-gray-200 bg-white"
               >
                 <div className="flex items-start justify-between">
                   <div>
@@ -204,7 +204,7 @@ export function AIAssistantPanel({
             <div className="space-y-4">
               <div className="space-y-2">
                 <label className="text-sm text-gray-500">Completeness</label>
-                <div className="h-2 bg-gray-800 rounded-full overflow-hidden">
+                <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
                   <div
                     className="h-full bg-blue-500 transition-all duration-300"
                     style={{ width: `${state.qualityMetrics.components.completeness}%` }}
@@ -213,7 +213,7 @@ export function AIAssistantPanel({
               </div>
               <div className="space-y-2">
                 <label className="text-sm text-gray-500">Consistency</label>
-                <div className="h-2 bg-gray-800 rounded-full overflow-hidden">
+                <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
                   <div
                     className="h-full bg-green-500 transition-all duration-300"
                     style={{ width: `${state.qualityMetrics.components.consistency}%` }}
@@ -222,7 +222,7 @@ export function AIAssistantPanel({
               </div>
               <div className="space-y-2">
                 <label className="text-sm text-gray-500">Optimization</label>
-                <div className="h-2 bg-gray-800 rounded-full overflow-hidden">
+                <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
                   <div
                     className="h-full bg-yellow-500 transition-all duration-300"
                     style={{ width: `${state.qualityMetrics.components.optimization}%` }}
@@ -231,7 +231,7 @@ export function AIAssistantPanel({
               </div>
               <div className="space-y-2">
                 <label className="text-sm text-gray-500">Best Practices</label>
-                <div className="h-2 bg-gray-800 rounded-full overflow-hidden">
+                <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
                   <div
                     className="h-full bg-purple-500 transition-all duration-300"
                     style={{ width: `${state.qualityMetrics.components.bestPractices}%` }}
