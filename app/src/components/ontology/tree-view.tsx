@@ -33,7 +33,7 @@ function TreeNode({ name, type, data, level = 0, expanded = false, onToggle }: T
           </span>
         )}
         <span className="mr-2">{name}</span>
-        <span className="text-xs text-muted-foreground">{type}</span>
+        <span className="text-xs text-muted-foreground text-gray-400">{type}</span>
       </div>
 
       {expanded && (
@@ -50,11 +50,11 @@ function TreeNode({ name, type, data, level = 0, expanded = false, onToggle }: T
 
           {data.properties && (
             <div style={{ paddingLeft: `${indent + 20}px` }}>
-              <div className="text-sm text-muted-foreground py-1">Properties:</div>
+              <div className="text-sm text-muted-foreground py-1 font-semibold text-purple-800">Properties:</div>
               {Object.entries(data.properties).map(([propName, propData]: [string, any]) => (
                 <div key={propName} className="py-1 px-2">
-                  <span className="font-mono text-sm">{propName}</span>
-                  <span className="text-xs text-muted-foreground ml-2">({propData.type})</span>
+                  <span className="font-mono text-sm text-blue-800">{propName}</span>
+                  <span className="text-xs text-muted-foreground ml-2 text-gray-500">({propData.type})</span>
                 </div>
               ))}
             </div>
@@ -62,11 +62,11 @@ function TreeNode({ name, type, data, level = 0, expanded = false, onToggle }: T
 
           {data.relationships && (
             <div style={{ paddingLeft: `${indent + 20}px` }}>
-              <div className="text-sm text-muted-foreground py-1">Relationships:</div>
+              <div className="text-sm text-muted-foreground py-1 font-semibold text-pink-800">Relationships:</div>
               {Object.entries(data.relationships).map(([relName, relData]: [string, any]) => (
                 <div key={relName} className="py-1 px-2">
-                  <span className="font-mono text-sm">{relName}</span>
-                  <span className="text-xs text-muted-foreground ml-2">→ {(relData as any).target}</span>
+                  <span className="font-mono text-sm text-orange-800">{relName}</span>
+                  <span className="font-mono text-sm text-orange-800"> → {(relData as any).target}</span>
                 </div>
               ))}
             </div>
@@ -104,12 +104,12 @@ export function TreeView({ ontology, onChange }: TreeViewProps) {
         <div className="text-sm font-semibold mb-2">Sections</div>
         {Object.entries(ontology.sections || {}).map(([name, data]) => (
           <TreeNode
-            key={name}
-            name={name}
+            key={data.name}
+            name={data.name}
             type="section"
             data={data}
-            expanded={expandedNodes.has(name)}
-            onToggle={() => toggleNode(name)}
+            expanded={expandedNodes.has(data.name)}
+            onToggle={() => toggleNode(data.name)}
           />
         ))}
       </div>
@@ -118,12 +118,12 @@ export function TreeView({ ontology, onChange }: TreeViewProps) {
         <div className="text-sm font-semibold mb-2">Entities</div>
         {Object.entries(ontology.entities || {}).map(([name, data]) => (
           <TreeNode
-            key={name}
-            name={name}
+            key={data.name}
+            name={data.name}
             type="entity"
             data={data}
-            expanded={expandedNodes.has(name)}
-            onToggle={() => toggleNode(name)}
+            expanded={expandedNodes.has(data.name)}
+            onToggle={() => toggleNode(data.name)}
           />
         ))}
       </div>
