@@ -1,11 +1,15 @@
 import {
   ClerkProvider,
-  SignInButton,
   SignedIn,
   SignedOut,
   UserButton
 } from '@clerk/nextjs'
+import { Inter } from 'next/font/google'
+import { Toaster } from '@/components/ui/toaster'
+import { cn } from '@/lib/utils'
 import './globals.css'
+
+const inter = Inter({ subsets: ['latin'] })
 
 export default function RootLayout({
   children,
@@ -13,20 +17,13 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <ClerkProvider>
-      <html lang="en">
-        <body>
-          <header className="p-4 flex justify-end items-center border-b">
-            <SignedOut>
-              <SignInButton />
-            </SignedOut>
-            <SignedIn>
-              <UserButton afterSignOutUrl="/"/>
-            </SignedIn>
-          </header>
+    <html lang="en">
+      <body className={cn(inter.className, 'min-h-screen bg-gray-50')}>
+        <ClerkProvider>
+          <Toaster />
           {children}
-        </body>
-      </html>
-    </ClerkProvider>
+        </ClerkProvider>
+      </body>
+    </html>
   )
 }

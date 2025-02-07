@@ -149,6 +149,38 @@
     @apply border-l-2 border-transparent;
     @apply hover:border-blue-500;
   }
+
+  /* Navigation System Animations */
+  @keyframes dropdownEnter {
+    from {
+      opacity: 0;
+      transform: scale(0.95) translateY(-10px);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+    }
+  }
+
+  @keyframes pageEnter {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .profile-dropdown {
+    @apply origin-top-right;
+    animation: dropdownEnter 200ms ease-out;
+  }
+
+  .page-transition {
+    animation: pageEnter 300ms ease-out;
+  }
 }
 
 @keyframes typing {

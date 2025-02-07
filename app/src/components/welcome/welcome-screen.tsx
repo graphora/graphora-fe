@@ -68,7 +68,7 @@ export function WelcomeScreen() {
   return (
     <div className="welcome-screen fixed inset-0 flex items-center justify-center bg-black bg-opacity-80 backdrop-blur-sm z-50">
       <div className="container mx-auto px-4 max-w-6xl">
-        <div className="bg-white rounded-2xl p-8 shadow-xl">
+        <div className="bg-white rounded-2xl p-4 shadow-xl">
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold mb-4">
               Welcome to Graph-it

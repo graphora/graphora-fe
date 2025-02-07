@@ -1,17 +1,25 @@
 'use client'
 
 import { usePathname } from 'next/navigation'
-import { WorkflowSteps, type WorkflowStep } from '@/components/workflow-steps'
+import { NavigationSystem } from '@/components/navigation/navigation-system'
 import { ProgressBar } from '@/components/progress-bar'
+import type { WorkflowStep } from '@/components/navigation/workflow-header'
 
 interface WorkflowLayoutProps {
   children: React.ReactNode
   progress?: number
   currentStep?: string
   toolbarContent?: React.ReactNode
+  hasUnsavedChanges?: boolean
 }
 
-export function WorkflowLayout({ children, progress, currentStep, toolbarContent }: WorkflowLayoutProps) {
+export function WorkflowLayout({ 
+  children, 
+  progress, 
+  currentStep, 
+  toolbarContent,
+  hasUnsavedChanges = false 
+}: WorkflowLayoutProps) {
   const pathname = usePathname()
 
   const workflowSteps: WorkflowStep[] = [
@@ -45,19 +53,17 @@ export function WorkflowLayout({ children, progress, currentStep, toolbarContent
     }
   ]
 
+  const currentStepIndex = workflowSteps.findIndex(step => step.status === 'current')
+
   return (
     <div className="h-screen flex flex-col">
-      {/* Workflow Steps */}
-      <WorkflowSteps steps={workflowSteps} className="border-b" />
-
-      {/* Progress Bar - only show if progress is provided */}
-      {typeof progress === 'number' && currentStep && (
-        <ProgressBar
-          progress={progress}
-          status={currentStep}
-          className="px-4 py-2 border-b bg-white"
-        />
-      )}
+      {/* Navigation System */}
+      <NavigationSystem
+        steps={workflowSteps}
+        currentStep={currentStepIndex}
+        progress={progress}
+        hasUnsavedChanges={hasUnsavedChanges}
+      />
 
       {/* Toolbar Content */}
       {toolbarContent && (
@@ -69,7 +75,7 @@ export function WorkflowLayout({ children, progress, currentStep, toolbarContent
       )}
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col overflow-hidden page-transition">
         {children}
       </div>
     </div>

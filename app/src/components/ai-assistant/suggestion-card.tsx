@@ -33,7 +33,7 @@ export function SuggestionCard({
         priority === 'high' && 'border-l-red-500 bg-red-50/10',
         priority === 'medium' && 'border-l-amber-500 bg-amber-50/10',
         priority === 'low' && 'border-l-blue-500 bg-blue-50/10',
-        isSelected && 'ring-2 ring-blue-500'
+        isSelected && 'ring-2 ring-gray-100'
       )}
     >
       <div className="flex items-start justify-between">
@@ -92,14 +92,14 @@ export function SuggestionCard({
           className="text-xs"
           onClick={() => onCustomize(id)}
         >
-          <Settings2 className="h-3 w-3 mr-1" />
-          Customize
+          {/* <Settings2 className="h-3 w-3 mr-1" />
+          Customize */}
         </Button>
       </div>
 
       {isSelected && (
-        <div className="impact-preview mt-2 p-3 rounded-md bg-gray-800/50 border border-gray-700">
-          <p className="text-xs text-gray-400">Expected Impact</p>
+        <div className="impact-preview mt-2 p-3 rounded-md bg-gray-100 border border-gray-10">
+          <p className="text-xs text-gray-500">Expected Impact</p>
           <p className="text-sm mt-1">{content.impact}</p>
         </div>
       )}

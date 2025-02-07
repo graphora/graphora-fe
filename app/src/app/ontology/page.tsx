@@ -4,22 +4,20 @@ import { useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { useUser } from '@clerk/nextjs'
 import { Button } from '@/components/ui/button'
-import { VisualEditor } from '@/components/ontology/visual-editor'
-import { YAMLEditor } from '@/components/ontology/yaml-editor'
-import { useOntologyEditorStore } from '@/lib/store/ontology-editor-store'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Toolbar } from '@/components/command-center/toolbar'
-import { ResizablePanel } from '@/components/command-center/resizable-panel'
-import { CommandPalette } from '@/components/command-center/command-palette'
+import { YAMLEditor } from '@/components/ontology/yaml-editor'
+import { EntityList } from '@/components/ontology/entity-list'
+import { useOntologyEditorStore } from '@/lib/store/ontology-editor-store'
+import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable'
+import { WorkflowLayout } from '@/components/workflow-layout'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { Search, FileJson, Upload, Play, Save, Code2, Grid2x2, SplitSquareVertical, Settings } from 'lucide-react'
 import { AIAssistantPanel } from '@/components/ai-assistant/ai-assistant-panel'
 import { useKeyboardShortcuts } from '@/hooks/use-keyboard-shortcuts'
-import { type ViewMode } from '@/lib/types/command-center'
+import { VisualEditor } from '@/components/ontology/visual-editor'
 import { type AIAssistantState } from '@/lib/types/ai-assistant'
-import { 
-  Play, Save, Code2, Grid2x2, 
-  SplitSquareVertical, Settings,
-  Database, GitBranch
-} from 'lucide-react'
+
+type ViewMode = 'code' | 'visual' | 'split'
 
 const SAMPLE_YAML = `sections:
   Metadata:
@@ -207,66 +205,62 @@ export default function OntologyPage() {
   const router = useRouter()
   const { user } = useUser()
   const { yaml, updateFromYaml } = useOntologyEditorStore()
-  const [activeView, setActiveView] = useState<ViewMode>('split')
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [error, setError] = useState<string | null>(null)
   const [sidebarWidth, setSidebarWidth] = useState(320)
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [viewMode, setViewMode] = useState<ViewMode>('split')
   const [aiAssistantState, setAiAssistantState] = useState<AIAssistantState>({
     isExpanded: false,
     isCompact: true,
     suggestions: [
       {
         id: '1',
-        priority: 'high',
-        type: 'pattern',
+        priority: 'high' as const,
+        type: 'pattern' as const,
         content: {
           title: 'Add Timestamps to Entities',
           description: 'Consider adding created_at and updated_at fields to track entity changes.',
           impact: 'Improves auditability and helps track data lineage.',
           confidence: 0.9
         }
-      },
-      {
-        id: '2',
-        priority: 'medium',
-        type: 'improvement',
-        content: {
-          title: 'Normalize Property Names',
-          description: 'Use consistent casing (snake_case) for property names.',
-          impact: 'Enhances code readability and maintainability.',
-          confidence: 0.8
-        }
       }
     ],
     activePatterns: [
       {
-        id: '1',
-        name: 'Temporal Pattern',
-        description: 'Track entity changes over time using timestamp fields.',
+        id: 'p1',
+        name: 'Timestamp Pattern',
+        description: 'Add created_at and updated_at fields',
         confidence: 0.9,
-        type: 'domain',
+        type: 'domain' as const,
         matches: [
-          { path: 'entities.user', score: 0.9 },
-          { path: 'entities.post', score: 0.85 }
+          {
+            path: 'entities.User',
+            score: 0.9
+          }
         ]
       }
     ],
     qualityMetrics: {
-      score: 75,
+      score: 85,
       components: {
         completeness: 80,
-        consistency: 70,
-        optimization: 75,
-        bestPractices: 75
+        consistency: 90,
+        optimization: 85,
+        bestPractices: 85
       },
       improvements: [],
       history: [
-        { timestamp: Date.now() - 3600000, score: 70 },
-        { timestamp: Date.now(), score: 75 }
+        {
+          id: '1',
+          timestamp: Date.now(),
+          score: 85
+        }
       ]
     }
   })
+
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
 
   const handleSubmit = async () => {
     if (!yaml.trim()) {
@@ -307,17 +301,37 @@ export default function OntologyPage() {
 
   const loadSampleYaml = useCallback(() => {
     updateFromYaml(SAMPLE_YAML)
+    setHasUnsavedChanges(true)
   }, [updateFromYaml])
 
   const handleSave = useCallback(() => {
     // TODO: Implement save
     console.log('Saving...')
+    setHasUnsavedChanges(false)
   }, [])
 
+  const handleFileUpload = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      const content = e.target?.result as string
+      if (content) {
+        updateFromYaml(content)
+        setHasUnsavedChanges(true)
+      }
+    }
+    reader.readAsText(file)
+  }, [updateFromYaml])
+
   const handleApplySuggestion = useCallback((id: string) => {
+    const suggestion = aiAssistantState.suggestions.find(s => s.id === id)
+    if (!suggestion?.content) return
+    
     // TODO: Implement applying suggestion
-    console.log('Applying suggestion:', id)
-  }, [])
+    console.log('Applying suggestion:', suggestion.content)
+  }, [aiAssistantState.suggestions])
 
   const handleDismissSuggestion = useCallback((id: string) => {
     setAiAssistantState(prev => ({
@@ -334,9 +348,12 @@ export default function OntologyPage() {
   }, [])
 
   const handleCustomizeSuggestion = useCallback((id: string) => {
+    const suggestion = aiAssistantState.suggestions.find(s => s.id === id)
+    if (!suggestion?.content) return
+    
     // TODO: Implement customizing suggestion
-    console.log('Customizing suggestion:', id)
-  }, [])
+    console.log('Customizing suggestion:', suggestion.content)
+  }, [aiAssistantState.suggestions])
 
   const tools = [
     {
@@ -357,19 +374,19 @@ export default function OntologyPage() {
       id: 'code',
       icon: <Code2 className="h-4 w-4" />,
       label: 'Code View',
-      action: () => setActiveView('code')
+      action: () => setViewMode('code')
     },
     {
       id: 'visual',
       icon: <Grid2x2 className="h-4 w-4" />,
       label: 'Visual View',
-      action: () => setActiveView('visual')
+      action: () => setViewMode('visual')
     },
     {
       id: 'split',
       icon: <SplitSquareVertical className="h-4 w-4" />,
       label: 'Split View',
-      action: () => setActiveView('split')
+      action: () => setViewMode('split')
     },
     {
       id: 'settings',
@@ -396,92 +413,139 @@ export default function OntologyPage() {
   })
 
   return (
-    <div className="command-center">
-      <ResizablePanel
-        defaultWidth={320}
-        onResize={setSidebarWidth}
-      >
-        <div className="h-full bg-white text-black">
-          <div className="panel-header">
-            <span>Project Explorer</span>
+    <WorkflowLayout hasUnsavedChanges={hasUnsavedChanges}>
+      <div className="flex-1 flex">
+        <div className="flex-1 flex flex-col">
+          <div className="h-14 flex items-center justify-between px-4 border-b">
+            <div className="font-medium">Ontology Editor</div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleSave}
+                className="gap-2"
+              >
+                <Save className="h-4 w-4" />
+                Save
+              </Button>
+              <Button
+                variant="default"
+                size="sm"
+                onClick={handleSubmit}
+                disabled={isSubmitting}
+                className="gap-2"
+              >
+                {isSubmitting ? (
+                  <>Loading...</>
+                ) : (
+                  <>
+                    <Play className="h-4 w-4" />
+                    Submit Ontology
+                  </>
+                )}
+              </Button>
+            </div>
           </div>
-          <div className="p-4">
-            <div className="control-group">
-              <div className="flex items-center gap-2 text-sm">
-                <Database className="h-4 w-4" />
-                <span>Data Sources</span>
-              </div>
-            </div>
-            <div className="control-group">
-              <div className="flex items-center gap-2 text-sm">
-                <GitBranch className="h-4 w-4" />
-                <span>Version Control</span>
-              </div>
-            </div>
-            <div className="control-group">
-              <div className="flex items-center gap-2 text-sm">
-                <Button 
-                  variant="outline" 
-                  onClick={loadSampleYaml}
-                  className="w-full"
-                >
-                  Load Sample
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </ResizablePanel>
-
-      <div className="flex-1 flex flex-col min-w-0">
-        <Toolbar tools={tools} />
-
-        <div className="flex-1 p-4 bg-white">
           {error && (
-            <Alert variant="destructive" className="mb-4">
+            <Alert variant="destructive" className="m-4">
               <AlertDescription>{error}</AlertDescription>
             </Alert>
           )}
-
-          <div className="h-full">
-            {activeView === 'split' ? (
-              <div className="grid grid-cols-2 gap-4 h-full">
-                <div className="h-full">
-                  <YAMLEditor 
-                    value={yaml} 
-                    onChange={updateFromYaml}
-                  />
+          <div className="flex-1 flex">
+            <ResizablePanelGroup direction="horizontal">
+              <ResizablePanel
+                defaultSize={25}
+                minSize={20}
+                maxSize={40}
+                className="min-w-[250px]"
+              >
+                <div className="h-full border-r">
+                  <div className="h-14 flex items-center justify-between px-4 border-b">
+                    <div className="font-medium">Entities</div>
+                    <Button variant="ghost" size="icon" onClick={() => setIsCommandPaletteOpen(true)}>
+                      <Search className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <ScrollArea className="h-[calc(100%-3.5rem)]">
+                    <div className="p-4 space-y-4">
+                      <EntityList onLoadSample={loadSampleYaml} />
+                    </div>
+                  </ScrollArea>
                 </div>
+              </ResizablePanel>
+              <ResizableHandle />
+              <ResizablePanel defaultSize={75}>
                 <div className="h-full">
-                  <VisualEditor />
+                  <div className="h-14 flex items-center justify-between px-4 border-b">
+                    <div className="font-medium">Schema Editor</div>
+                    <div className="flex items-center gap-2">
+                      <label>
+                        <Button variant="ghost" size="sm">
+                          <div className="flex items-center gap-2">
+                            <Upload className="h-4 w-4" />
+                            Import
+                          </div>
+                        </Button>
+                        <input
+                          type="file"
+                          accept=".yaml,.yml"
+                          className="hidden"
+                          onChange={handleFileUpload}
+                        />
+                      </label>
+                    </div>
+                  </div>
+                  <div className="h-[calc(100%-3.5rem)]">
+                    {viewMode === 'split' ? (
+                      <div className="grid grid-cols-2 h-full">
+                        <div className="h-full p-4 border-r">
+                          <YAMLEditor 
+                            value={yaml} 
+                            onChange={(value) => {
+                              updateFromYaml(value)
+                              setHasUnsavedChanges(true)
+                            }} 
+                          />
+                        </div>
+                        <div className="h-full p-4">
+                          <VisualEditor />
+                        </div>
+                      </div>
+                    ) : viewMode === 'code' ? (
+                      <div className="h-full p-4">
+                        <YAMLEditor 
+                          value={yaml} 
+                          onChange={(value) => {
+                            updateFromYaml(value)
+                            setHasUnsavedChanges(true)
+                          }} 
+                        />
+                      </div>
+                    ) : (
+                      <div className="h-full p-4">
+                        <VisualEditor />
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ) : activeView === 'code' ? (
-              <YAMLEditor 
-                value={yaml} 
-                onChange={updateFromYaml}
-              />
-            ) : (
-              <VisualEditor />
-            )}
+              </ResizablePanel>
+            </ResizablePanelGroup>
           </div>
         </div>
+        <AIAssistantPanel
+          state={aiAssistantState}
+          onStateChange={(newState) => {
+            setAiAssistantState(prev => ({
+              ...prev,
+              ...newState
+            }))
+          }}
+          onApplySuggestion={handleApplySuggestion}
+          onDismissSuggestion={handleDismissSuggestion}
+          onExplainSuggestion={handleExplainSuggestion}
+          onCustomizeSuggestion={handleCustomizeSuggestion}
+        />
       </div>
-
-      <AIAssistantPanel
-        state={aiAssistantState}
-        onStateChange={(changes) => setAiAssistantState(prev => ({ ...prev, ...changes }))}
-        onApplySuggestion={handleApplySuggestion}
-        onDismissSuggestion={handleDismissSuggestion}
-        onExplainSuggestion={handleExplainSuggestion}
-        onCustomizeSuggestion={handleCustomizeSuggestion}
-      />
-
-      <CommandPalette
-        open={isCommandPaletteOpen}
-        onOpenChange={setIsCommandPaletteOpen}
-        commands={tools}
-      />
-    </div>
+    </WorkflowLayout>
   )
 }
