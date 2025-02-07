@@ -416,12 +416,11 @@ export function useGraphState(initialData: GraphData) {
         case 'UPDATE_NODE': {
           const nodeIndex = newState.data.nodes.findIndex((n: Node) => n.id === operation.payload.id)
           if (nodeIndex !== -1) {
-            const prevNode = prev.data.nodes[nodeIndex]
             newState.data = {
               ...newState.data,
               nodes: [
                 ...newState.data.nodes.slice(0, nodeIndex),
-                prevNode,
+                { ...newState.data.nodes[nodeIndex], properties: operation.payload.properties || {} },
                 ...newState.data.nodes.slice(nodeIndex + 1)
               ]
             }
@@ -531,7 +530,7 @@ export function useGraphState(initialData: GraphData) {
               ...newState.data,
               nodes: [
                 ...newState.data.nodes.slice(0, nodeIndex),
-                { ...newState.data.nodes[nodeIndex], properties: operation.payload.properties },
+                { ...newState.data.nodes[nodeIndex], properties: operation.payload.properties || {} },
                 ...newState.data.nodes.slice(nodeIndex + 1)
               ]
             }
@@ -545,7 +544,7 @@ export function useGraphState(initialData: GraphData) {
               ...newState.data,
               edges: [
                 ...newState.data.edges.slice(0, edgeIndex),
-                { ...newState.data.edges[edgeIndex], properties: operation.payload.properties },
+                { ...newState.data.edges[edgeIndex], properties: operation.payload.properties || {} },
                 ...newState.data.edges.slice(edgeIndex + 1)
               ]
             }

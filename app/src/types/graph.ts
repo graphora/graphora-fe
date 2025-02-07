@@ -40,10 +40,10 @@ export interface TransformResponse {
 // Graph editing types
 export type GraphOperation = 
   | { type: 'CREATE_NODE'; payload: Omit<Node, 'id'> }
-  | { type: 'UPDATE_NODE'; payload: { id: string; properties: Record<string, any> } }
+  | { type: 'UPDATE_NODE'; payload: { id: string; properties?: Record<string, any> } }
   | { type: 'DELETE_NODE'; payload: { id: string } }
   | { type: 'CREATE_EDGE'; payload: Omit<Edge, 'id'> }
-  | { type: 'UPDATE_EDGE'; payload: { id: string; properties: Record<string, any> } }
+  | { type: 'UPDATE_EDGE'; payload: { id: string; properties?: Record<string, any> } }
   | { type: 'DELETE_EDGE'; payload: { id: string } }
 
 export interface BatchOperationResponse {

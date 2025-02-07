@@ -1,17 +1,18 @@
 import { create } from 'zustand'
 import { v4 as uuidv4 } from 'uuid'
-import { Entity } from '../types/entity'
+import { Entity, EntityFormData } from '../types/entity'
 import { Relationship } from '../types/relationship'
 import { dump as yamlDump } from 'js-yaml'
 
 interface OntologyState {
   entities: Entity[]
   relationships: Relationship[]
-  addEntity: (entity: Partial<Entity>) => void
-  updateEntity: (id: string, updates: Partial<Entity>) => void
+  addEntity: (entity: Partial<EntityFormData | Entity>) => void
+  updateEntity: (id: string, updates: Partial<EntityFormData | Entity>) => void
   deleteEntity: (id: string) => void
   moveEntity: (entityId: string, newParentId: string | null) => void
   addRelationship: (relationship: Omit<Relationship, 'id'>) => void
+  updateRelationship: (id:string, updates:Partial<Relationship>) => void
   deleteRelationship: (id: string) => void
   getYamlContent: () => string
 }
@@ -21,7 +22,7 @@ export const useOntologyStore = create<OntologyState>((set, get) => ({
   relationships: [],
 
   addEntity: (entity) => {
-    const newEntity: Entity = {
+    const newEntity: any = {
       id: uuidv4(),
       name: '',
       isSection: false,
@@ -36,8 +37,8 @@ export const useOntologyStore = create<OntologyState>((set, get) => ({
   },
 
   updateEntity: (id, updates) => {
-    set((state) => ({
-      entities: state.entities.map((entity) =>
+    set((state: any) => ({
+      entities: state.entities.map((entity: any) =>
         entity.id === id ? { ...entity, ...updates } : entity
       ),
     }))
@@ -72,6 +73,14 @@ export const useOntologyStore = create<OntologyState>((set, get) => ({
     }
     set((state) => ({
       relationships: [...state.relationships, newRelationship],
+    }))
+  },
+
+  updateRelationship: (id:string, updates:any) => {
+    set((state) => ({
+      relationships: state.relationships.map((rel) =>
+        rel.id === id ? { ...rel, ...updates } : rel
+      ),
     }))
   },
 

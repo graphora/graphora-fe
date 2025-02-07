@@ -9,7 +9,7 @@ export interface Message {
   choices?: Choice[]
   skippable?: boolean
   helpLink?: string
-  preview?: ReactNode
+  preview?: any
   typing?: boolean
   actions?: string[]
 }
@@ -24,7 +24,7 @@ export interface Choice {
 export interface BuildingStep {
   type: 'entity' | 'relationship' | 'property'
   question: string
-  visualization?: ReactNode
+  visualization?: any
   suggestions: string[]
   validation: (answer: string) => boolean
   nextStep: (answer: string) => BuildingStep

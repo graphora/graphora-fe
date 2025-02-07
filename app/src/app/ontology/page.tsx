@@ -11,9 +11,8 @@ import { useOntologyEditorStore } from '@/lib/store/ontology-editor-store'
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable'
 import { WorkflowLayout } from '@/components/workflow-layout'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { Search, FileJson, Upload, Play, Save, Code2, Grid2x2, SplitSquareVertical, Settings } from 'lucide-react'
+import { Search, Upload, Play, Save, Code2, Grid2x2, SplitSquareVertical, Settings } from 'lucide-react'
 import { AIAssistantPanel } from '@/components/ai-assistant/ai-assistant-panel'
-import { useKeyboardShortcuts } from '@/hooks/use-keyboard-shortcuts'
 import { VisualEditor } from '@/components/ontology/visual-editor'
 import { type AIAssistantState } from '@/lib/types/ai-assistant'
 
@@ -395,22 +394,6 @@ export default function OntologyPage() {
       action: () => {}
     }
   ]
-
-  // Setup keyboard shortcuts
-  useKeyboardShortcuts({
-    focusEditor: () => {
-      // TODO: Focus editor
-    },
-    runQuery: handleSubmit,
-    saveChanges: handleSave,
-    toggleSidebar: () => {
-      setSidebarWidth(prev => prev === 0 ? 320 : 0)
-    },
-    commandPalette: () => setIsCommandPaletteOpen(true),
-    findInEditor: () => {
-      // TODO: Implement find
-    }
-  })
 
   return (
     <WorkflowLayout hasUnsavedChanges={hasUnsavedChanges}>

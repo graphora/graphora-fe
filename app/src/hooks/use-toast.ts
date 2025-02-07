@@ -1,7 +1,7 @@
 // Inspired by react-hot-toast library
 import { useState, useEffect, useCallback } from 'react'
 
-export interface Toast {
+interface IToast {
   id: string
   title?: string
   description?: string
@@ -12,11 +12,13 @@ export interface Toast {
 const TOAST_LIMIT = 1
 const TOAST_REMOVE_DELAY = 1000
 
-type ToasterToast = Toast & {
+type ToasterToast = IToast & {
   id: string
   title?: string
   description?: string
   action?: React.ReactNode
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
 }
 
 const actionTypes = {
@@ -141,7 +143,7 @@ function dispatch(action: Action) {
   })
 }
 
-type Toast = Omit<ToasterToast, "id">
+export type Toast = Omit<ToasterToast, "id">
 
 function toast({ ...props }: Toast) {
   const id = generateId()

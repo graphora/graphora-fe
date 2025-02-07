@@ -31,10 +31,13 @@ export function PropertiesTable({ properties, onChange }: PropertiesTableProps) 
     onChange(properties.filter((_, i) => i !== index))
   }
 
-  const updatePropertyFlag = (index: number, flag: keyof Property['flags'], value: boolean) => {
+  const updatePropertyFlag = (index: number, flag: string, value: boolean) => {
     const property = properties[index]
     updateProperty(index, {
       flags: {
+        unique: false,
+        required: false,
+        index: false,
         ...property.flags,
         [flag]: value
       }
@@ -102,14 +105,14 @@ export function PropertiesTable({ properties, onChange }: PropertiesTableProps) 
           <div className="flex items-center gap-6">
             <div className="flex items-center gap-2">
               <Switch
-                checked={property.flags.required}
+                checked={property.flags?.required}
                 onCheckedChange={(checked) => updatePropertyFlag(index, 'required', checked)}
               />
               <Label>Required</Label>
             </div>
             <div className="flex items-center gap-2">
               <Switch
-                checked={property.flags.unique}
+                checked={property.flags?.unique}
                 onCheckedChange={(checked) => updatePropertyFlag(index, 'unique', checked)}
               />
               <Label>Unique</Label>

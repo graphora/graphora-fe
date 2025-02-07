@@ -42,14 +42,7 @@ function MergePageContent() {
     data: mergeVisualization, 
     loading: visualizationLoading, 
     error: visualizationError, 
-    fetchData: refreshVisualization,
-    graphData,
-    addNode,
-    updateNode,
-    deleteNode,
-    addEdge,
-    updateEdge,
-    deleteEdge
+    fetchData: refreshVisualization
   } = useMergeVisualization(sessionId || '', wsRef.current)
 
   const graphDataMemo = useMemo(() => {

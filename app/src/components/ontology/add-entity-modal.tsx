@@ -9,13 +9,10 @@ import {
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { PropertiesTable } from './properties-table'
 import { useOntologyStore } from '@/lib/store/ontology-store'
 import { EntityFormData, EntityValidation, Property, Entity } from '@/lib/types/entity'
-import { Switch } from '@/components/ui/switch'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
 interface AddEntityModalProps {
   isOpen: boolean
@@ -27,6 +24,7 @@ interface AddEntityModalProps {
 }
 
 const DEFAULT_PROPERTY: Property = {
+  id: '',
   name: '',
   type: 'str',
   description: '',
@@ -57,9 +55,9 @@ export function AddEntityModal({
     if (editEntity) {
       setName(editEntity.name)
       setDescription(editEntity.description || '')
-      setIsSection(editEntity.isSection)
+      setIsSection(editEntity.isSection || false)
       setSelectedSection(editEntity.parentIds?.[0] || null)
-      setProperties(editEntity.properties || [])
+      // setProperties(editEntity.properties || [])
     } else if (!isOpen) {
       setName('')
       setDescription('')
@@ -83,7 +81,7 @@ export function AddEntityModal({
       prop => !prop.name.trim() || !prop.type
     )
     if (hasInvalidProperties) {
-      errors.properties = 'All properties must have a name and type'
+      errors.name = 'All properties must have a name and type'
     }
 
     setValidation(errors)
@@ -102,10 +100,9 @@ export function AddEntityModal({
 
     const formData: EntityFormData = {
       name: name.trim(),
-      description: description || undefined,
       isSection,
       parentIds: selectedSection ? [selectedSection] : [],
-      properties: properties.length > 0 ? properties : undefined
+      properties: properties.length > 0 ? properties : []
     }
 
     if (editEntity) {
@@ -209,7 +206,16 @@ export function AddEntityModal({
                 onChange={handleUpdateProperties}
               />
               {validation.properties && (
-                <p className="text-sm text-destructive">{validation.properties}</p>
+                <div className="space-y-1">
+                  {Object.entries(validation.properties).map(([key, errors]) => (
+                    <p key={key} className="text-sm text-destructive">
+                      Property "{key}": {Object.entries(errors)
+                        .filter(([_, value]) => value)
+                        .map(([field, message]) => message)
+                        .join(", ")}
+                    </p>
+                  ))}
+                </div>
               )}
             </div>
           </div>

@@ -23,6 +23,7 @@ export interface QualityMetrics {
   }
   improvements: Suggestion[]
   history: Array<{
+    id?: string
     timestamp: number
     score: number
   }>

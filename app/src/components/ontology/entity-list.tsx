@@ -44,7 +44,7 @@ export function EntityList({ onLoadSample }: EntityListProps) {
     
     try {
       const currentYaml = yamlContent || ''
-      let parsed = {}
+      let parsed:any = {}
       
       try {
         parsed = yaml.load(currentYaml) || {}

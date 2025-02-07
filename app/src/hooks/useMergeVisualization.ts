@@ -133,10 +133,10 @@ export function useMergeVisualization(sessionId: string, wsInstance: MergeWebSoc
   const handleNodeOperation = useCallback((operation: GraphOperation) => {
     setGraphData(prevData => {
       switch (operation.type) {
-        case 'ADD_NODE':
+        case 'CREATE_NODE':
           return {
             ...prevData,
-            nodes: [...prevData.nodes, operation.payload],
+            nodes: [...prevData.nodes, { ...operation.payload, id: crypto.randomUUID() }],
           }
         case 'UPDATE_NODE':
           return {
@@ -161,7 +161,7 @@ export function useMergeVisualization(sessionId: string, wsInstance: MergeWebSoc
   const handleEdgeOperation = useCallback((operation: GraphOperation) => {
     setGraphData(prevData => {
       switch (operation.type) {
-        case 'ADD_EDGE':
+        case 'CREATE_EDGE':
           return {
             ...prevData,
             edges: [...prevData.edges, operation.payload],
@@ -193,14 +193,14 @@ export function useMergeVisualization(sessionId: string, wsInstance: MergeWebSoc
     wsConnected,
     graphData,
     fetchData,
-    addNode: (node: Omit<Node, 'id'>) =>
-      handleNodeOperation({ type: 'ADD_NODE', payload: node }),
+    createNode: (node: Omit<Node, 'id'>) =>
+      handleNodeOperation({ type: 'CREATE_NODE', payload: node }),
     updateNode: (nodeId: string, updates: Record<string, any>) =>
       handleNodeOperation({ type: 'UPDATE_NODE', payload: { id: nodeId, ...updates } }),
     deleteNode: (nodeId: string) =>
       handleNodeOperation({ type: 'DELETE_NODE', payload: { id: nodeId } }),
-    addEdge: (edge: Omit<Edge, 'id'>) =>
-      handleEdgeOperation({ type: 'ADD_EDGE', payload: edge }),
+    createEdge: (edge: Omit<Edge, 'id'>) =>
+      handleEdgeOperation({ type: 'CREATE_EDGE', payload: edge }),
     updateEdge: (edgeId: string, updates: Record<string, any>) =>
       handleEdgeOperation({ type: 'UPDATE_EDGE', payload: { id: edgeId, ...updates } }),
     deleteEdge: (edgeId: string) =>

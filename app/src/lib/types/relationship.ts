@@ -5,7 +5,7 @@ export interface Relationship {
   sourceId: string
   targetId: string
   type: string
-  direction: RelationshipDirection
+  direction?: RelationshipDirection
   metadata?: {
     createdAt: Date
     lastModified: Date

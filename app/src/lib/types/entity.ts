@@ -24,11 +24,13 @@ export interface Property {
   type: string;
   description?: string;
   required?: boolean;
+  flags?: PropertyFlags;
 }
 
 export interface Entity {
   id: string;
   name: string;
+  type?: string;
   description?: string;
   section: string;
   isSection?: boolean;
@@ -60,10 +62,9 @@ export interface Relationship {
 export interface EntityFormData {
   name: string;
   isSection?: boolean;
-  properties: {
-    [key: string]: PropertyDefinition;
-  };
-  relationships: {
+  parentIds?: string[];
+  properties: Property[];
+  relationships?: {
     [key: string]: RelationshipDefinition;
   };
 }

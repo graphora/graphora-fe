@@ -7,13 +7,14 @@ import ReactFlow, {
   Position,
   useNodesState,
   useEdgesState,
-  Handle
+  Handle,
+  MarkerType
 } from 'reactflow'
 import 'reactflow/dist/style.css'
 import { useOntologyStore } from '@/lib/store/ontology-store'
 
 const nodeTypes = {
-  section: ({ data }) => (
+  section: ({ data }: any) => (
     <div className="px-4 py-2 shadow-lg rounded-lg bg-background border-2 border-primary">
       <Handle 
         type="target" 
@@ -28,7 +29,7 @@ const nodeTypes = {
       />
     </div>
   ),
-  entity: ({ data }) => (
+  entity: ({ data }: any) => (
     <div className="px-4 py-2 shadow-lg rounded-lg bg-card border">
       <Handle 
         type="target" 
@@ -99,10 +100,16 @@ export function GraphView() {
         source: rel.sourceId,
         target: rel.targetId,
         type: 'smoothstep',
-        animated: true,
         label: rel.type,
-        labelStyle: { fill: 'hsl(var(--muted-foreground))', fontSize: 12 },
-        style: { stroke: 'hsl(var(--primary))' },
+        labelStyle: { fill: 'hsl(var(--foreground))', fontWeight: 500 },
+        style: { 
+          stroke: 'hsl(var(--primary))',
+          strokeWidth: 2
+        },
+        markerEnd: {
+          type: MarkerType.Arrow,
+          color: 'hsl(var(--primary))'
+        }
       })
     })
 
@@ -132,7 +139,7 @@ export function GraphView() {
         onNodeDragStop={onNodeDragStop}
         nodeTypes={nodeTypes}
         fitView
-        className="bg-muted/20"
+        className="bg-muted/30"
       >
         <Background />
         <Controls />

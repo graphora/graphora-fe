@@ -70,7 +70,7 @@ export function validateYAML(yamlString: string): ValidationResult {
         // Validate relationships if present
         if (entity.relationships) {
           Object.entries(entity.relationships).forEach(([relName, rel]) => {
-            if (!parsedYaml.entities[rel]) {
+            if (!parsedYaml.entities[rel.type]) {
               result.errors.push(`Invalid relationship target "${rel}" in entity "${entityName}"`)
             }
           })
@@ -93,7 +93,7 @@ export function validateYAML(yamlString: string): ValidationResult {
       entityNames.add(name)
     })
 
-  } catch (error) {
+  } catch (error: any) {
     result.errors.push(`YAML parsing error: ${error.message}`)
   }
 

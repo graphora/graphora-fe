@@ -11,13 +11,21 @@ interface OntologyEditorState {
   updateFromOntology: (ontology: any) => void
 }
 
+interface Section {
+  id: string;
+  name: string;
+  isSection: boolean;
+  parentIds: string[];
+  subsections?: Section[];
+}
+
 const DEFAULT_ONTOLOGY = {
   sections: [],
   entities: []
 }
 
-function processSection(sectionName: string, sectionData: any) {
-  const section = {
+function processSection(sectionName: string, sectionData: any): Section {
+  const section: Section = {
     id: uuidv4(),
     name: sectionName,
     isSection: true,
