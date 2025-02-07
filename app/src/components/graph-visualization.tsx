@@ -213,10 +213,14 @@ export function GraphVisualization({ graphData: initialData, onGraphReset }: Gra
               graphData={processedData}
               nodeLabel="name"
               nodeColor="color"
-              nodeRelSize={6}
-              linkDirectionalArrowLength={6}
+              linkColor="#999"
+              linkWidth={4}
+              linkDirectionalArrowLength={10}
               linkDirectionalArrowRelPos={1}
               linkLabel="name"
+              d3AlphaDecay={0.01}
+              d3VelocityDecay={0.4}
+              cooldownTime={200}
               onNodeClick={(node: ProcessedNode) => {
                 setSelectedElement({ type: 'node', data: node })
               }}
@@ -232,7 +236,7 @@ export function GraphVisualization({ graphData: initialData, onGraphReset }: Gra
                 
                 // Draw node
                 ctx.beginPath()
-                ctx.arc(node.x!, node.y!, 4, 0, 2 * Math.PI)
+                ctx.arc(node.x!, node.y!, 8, 0, 2 * Math.PI)
                 ctx.fillStyle = node.color
                 ctx.fill()
                 
@@ -254,6 +258,7 @@ export function GraphVisualization({ graphData: initialData, onGraphReset }: Gra
               }}
               width={dimensions.width}
               height={dimensions.height}
+              
             />
           </ContextMenuTrigger>
           <ContextMenuContent>
