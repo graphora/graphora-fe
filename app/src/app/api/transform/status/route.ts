@@ -4,6 +4,7 @@ export async function GET(request: Request) {
   try {
     const url = new URL(request.url)
     const sessionId = url.searchParams.get('session_id')
+    const transformId = url.searchParams.get('transform_id')
     
     if (!sessionId) {
       return NextResponse.json(
@@ -13,7 +14,7 @@ export async function GET(request: Request) {
     }
 
     const response = await fetch(
-      `${process.env.BACKEND_API_URL}/api/v1/transform/${sessionId}/status`,
+      `${process.env.BACKEND_API_URL}/api/v1/transform/status/${transformId}`,
       {
         method: 'GET',
         headers: {

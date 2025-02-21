@@ -104,24 +104,6 @@ function TransformPageContent() {
     }
   }, [sessionId, router])
 
-  useEffect(() => {
-    // If we have a transformId, fetch the graph data
-    if (transformId) {
-      const fetchGraphData = async () => {
-        try {
-          const response = await fetch(`/api/graph/${transformId}`)
-          if (!response.ok) throw new Error('Failed to fetch graph data')
-          const data = await response.json()
-          setGraphData(data)
-        } catch (error) {
-          console.error('Error fetching graph data:', error)
-          setError('Failed to load graph data')
-        }
-      }
-      fetchGraphData()
-    }
-  }, [transformId])
-
   const onDrop = useCallback((acceptedFiles: File[]) => {
     setError(null)
     
@@ -202,7 +184,7 @@ function TransformPageContent() {
       console.error('No transform ID provided to loadGraphData')
       return
     }
-
+    setTransformId(transformId)
     try {
       console.log('Loading graph data for transform:', transformId)
       const response = await fetch(`/api/graph/${transformId}`)
@@ -264,7 +246,7 @@ function TransformPageContent() {
 
   useEffect(() => {
     let statusInterval: NodeJS.Timeout | null = null
-    const STATUS_CHECK_INTERVAL = 2000 // Check every 2 seconds instead of 30
+    const STATUS_CHECK_INTERVAL = 100000 // Check every 2 seconds instead of 30
 
     const checkStatus = async () => {
       if (!transformId || !isProcessing) return
@@ -283,9 +265,8 @@ function TransformPageContent() {
         }
         
         const data = await response.json()
-        console.log('Transform status:', data)
 
-        if (data.status === 'completed') {
+        if (data.overall_status === 'completed') {
           setProgress(100)
           setIsProcessing(false)
           setIsUploadPanelExpanded(false)
@@ -305,9 +286,14 @@ function TransformPageContent() {
           }
         } else {
           // Update progress only if we have a valid number
-          if (typeof data.progress === 'number') {
-            setProgress(Math.max(10, data.progress))
+          const progressStatus: Record<string, number> = {
+            "upload": 10,
+            "parse": 20,
+            "chunk": 30,
+            "transform": 50,
+            "load": 90
           }
+          setProgress(Math.max(10, progressStatus[data.current_stage]))
         }
       } catch (err) {
         console.error('Error checking status:', err)
