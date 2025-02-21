@@ -246,7 +246,7 @@ function TransformPageContent() {
 
   useEffect(() => {
     let statusInterval: NodeJS.Timeout | null = null
-    const STATUS_CHECK_INTERVAL = 100000 // Check every 2 seconds instead of 30
+    const STATUS_CHECK_INTERVAL = 10000 // Check every 10 secs
 
     const checkStatus = async () => {
       if (!transformId || !isProcessing) return
