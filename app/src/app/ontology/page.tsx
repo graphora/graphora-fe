@@ -18,14 +18,7 @@ import { type AIAssistantState } from '@/lib/types/ai-assistant'
 
 type ViewMode = 'code' | 'visual' | 'split'
 
-const SAMPLE_YAML = `sections:
-  Metadata:
-  PartI:
-    - Business
-    - RiskFactor
-    - LegalProceeding
-    - MineSafety
-
+const SAMPLE_YAML = `version: 0.1.0 
 entities:
   Metadata:
     properties:
@@ -49,8 +42,12 @@ entities:
     relationships:
       ABOUT_COMPANY:
         target: Company
-      HAS_PART1:
-        target: PartI
+        properties:
+          name:
+            type: str
+            description: since
+            unique: true
+            required: false
   Company:
     properties:
       name:
@@ -62,7 +59,6 @@ entities:
         type: str
         description: Cusip Identifier for Company
         unique: true
-  PartI:
     relationships:
       HAS_BUSINESS:
         target: Business
@@ -76,16 +72,16 @@ entities:
     properties:
       description:
         type: str
-        description: General business description
+        description: General business description (10 words max)
       seasonality:
         type: str
-        description: Business seasonality patterns
+        description: Business seasonality patterns (10 words max)
       employees:
         type: int
         description: Number of employees
       regulatoryEnvironment:
         type: str
-        description: Regulatory framework description
+        description: Regulatory framework description (10 words max)
     relationships:
       HAS_SEGMENT:
         target: BusinessSegment
@@ -101,46 +97,46 @@ entities:
     properties:
       name:
         type: str
-        description: Name of the segment
+        description: Name of the segment (3 words max)
         unique: true
         required: true
   Product:
     properties:
       name:
         type: str
-        description: Name of the product
+        description: Name of the product (5 words max)
         unique: true
         required: true
   RawMaterial:
     properties:
       name:
         type: str
-        description: Name of the raw material
+        description: Name of the raw material (1 word max)
         unique: true
         required: true
   IntellectualProperty:
     properties:
       name:
         type: str
-        description: Name of the IntellectualProperty
+        description: Name of the IntellectualProperty (5 words max)
         unique: true
         required: true
   RiskFactor:
     properties:
       name:
         type: str
-        description: Risk factor name
+        description: Risk factor name (5 words max)
         unique: true
         required: true
       description:
         type: str
-        description: General risk description
+        description: General risk description (10 words max)
       potentialImpact:
         type: str
-        description: Potential impact of the risk on business
+        description: Potential impact of the risk on business (10 words max)
       mitigationStrategy:
         type: str
-        description: Risk mitigation strategy
+        description: Risk mitigation strategy (10 words max)
     relationships:
       HAS_RISK_CATEGORY:
         target: RiskCategory
@@ -148,44 +144,44 @@ entities:
     properties:
       name:
         type: str
-        description: Name of the Risk Category
+        description: Name of the Risk Category (5 words max)
         unique: true
         required: true
   LegalProceeding:
     properties:
       name:
         type: str
-        description: Legal proceeding name
+        description: Legal proceeding name (5 words max)
         unique: true
         required: true
       description:
         type: str
-        description: Legal case description
+        description: Legal case description (10 words max)
       jurisdiction:
         type: str
-        description: Legal jurisdiction
+        description: Legal jurisdiction (5 words max)
       status:
         type: str
-        description: Current proceeding status
+        description: Current proceeding status (5 words max)
       potentialLiability:
         type: str
-        description: Potential financial liability
+        description: Potential financial liability (5 words max)
       expectedResolution:
         type: str
-        description: Expected resolution timeline
+        description: Expected resolution timeline (5 words max)
   MineSafety:
     properties:
       name:
         type: str
-        description: Mine safety record name
+        description: Mine safety record name (5 words max)
         unique: true
         required: true
       violations:
         type: str
-        description: Number of safety violations
+        description: Number of safety violations (5 words max)
       assessments:
         type: str
-        description: Number of financial assessments or penalties
+        description: Number of financial assessments or penalties (5 words max)
     relationships:
       HAS_CITATION:
         target: Citation
@@ -193,12 +189,12 @@ entities:
     properties:
       name:
         type: str
-        description: Citation name
+        description: Citation name (5 words max)
         unique: true
         required: true
       description:
         type: str
-        description: Citation description`
+        description: Citation description (10 words max)`
 
 export default function OntologyPage() {
   const router = useRouter()
