@@ -13,7 +13,6 @@ import { WorkflowLayout } from '@/components/workflow-layout'
 import { cn } from '@/lib/utils'
 import type { ChatMessage, MergeStatus } from '@/types/merge'
 import { useUser } from '@clerk/nextjs'
-import { MergeWebSocket } from '@/lib/merge-websocket'
 import { ConflictDisplay } from '@/components/conflict-display'
 import { useMergeVisualization } from '@/hooks/useMergeVisualization'
 
@@ -32,7 +31,9 @@ function MergePageContent() {
   const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>({})
   const [isRetrying, setIsRetrying] = useState(false)
   const [currentConflict, setCurrentConflict] = useState<any>(null)
-  const wsRef = useRef<MergeWebSocket | null>(null)
+  const [mergeStarted, setMergeStarted] = useState(false)
+  const [mergeId, setMergeId] = useState<string | null>(null)
+  const statusIntervalRef = useRef<NodeJS.Timeout | null>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
 
   const sessionId = searchParams.get('session_id') || ''
@@ -43,7 +44,7 @@ function MergePageContent() {
     loading: visualizationLoading, 
     error: visualizationError, 
     fetchData: refreshVisualization
-  } = useMergeVisualization(sessionId || '', wsRef.current)
+  } = useMergeVisualization(sessionId || '')
 
   const graphDataMemo = useMemo(() => {
     if (!mergeVisualization?.data) return null
@@ -66,23 +67,15 @@ function MergePageContent() {
 
     try {
       setError(null)
-
-      // Double check WebSocket connection
-      if (!wsRef.current) {
-        throw new Error('WebSocket instance not initialized')
-      }
-
-      // Ensure WebSocket is connected and retry if needed
-      let retries = 0
-      while (!wsRef.current.isConnected() && retries < 3) {
-        console.log(`Waiting for WebSocket connection... Attempt ${retries + 1}/3`)
-        await new Promise(resolve => setTimeout(resolve, 1000))
-        retries++
-      }
-
-      if (!wsRef.current.isConnected()) {
-        throw new Error('WebSocket connection not established after retries')
-      }
+      setMergeStarted(true)
+      
+      // Add initial status message
+      setMessages(prev => [...prev, {
+        type: 'status',
+        role: 'system',
+        content: 'Initializing merge process...',
+        timestamp: new Date().toISOString()
+      }])
 
       console.log('Starting merge process...')
       const response = await fetch(`/api/merge/${sessionId}/start`, {
@@ -102,11 +95,196 @@ function MergePageContent() {
 
       const data = await response.json()
       console.log('Merge process started successfully:', data)
+      
+      if (data.merge_id) {
+        setMergeId(data.merge_id)
+      }
+      
+      // Add success message
+      setMessages(prev => [...prev, {
+        type: 'status',
+        role: 'system',
+        content: 'Merge process started successfully.',
+        timestamp: new Date().toISOString()
+      }])
+      
+      // Start polling for status updates
+      startStatusPolling()
+      
+      // Refresh visualization to show initial state
+      refreshVisualization()
+      
     } catch (error) {
       console.error('Error starting merge process:', error)
       const errorMessage = error instanceof Error ? error.message : 'Failed to start merge process'
       setError(errorMessage)
-      throw error
+      
+      // Add error message
+      setMessages(prev => [...prev, {
+        type: 'status',
+        role: 'system',
+        content: `Failed to start merge: ${errorMessage}`,
+        timestamp: new Date().toISOString()
+      }])
+      
+      setStatus('FAILED')
+    }
+  }
+  
+  const startStatusPolling = () => {
+    // Clear any existing interval
+    if (statusIntervalRef.current) {
+      clearInterval(statusIntervalRef.current)
+    }
+    
+    // Set up polling for status updates
+    const pollStatus = async () => {
+      if (!sessionId || !transformId) return
+      
+      try {
+        const response = await fetch(`/api/merge/${sessionId}/status?transform_id=${transformId}`)
+        
+        if (!response.ok) {
+          console.error('Failed to fetch merge status:', response.status)
+          return
+        }
+        
+        const data = await response.json()
+        
+        // Update status
+        setStatus(data.status)
+        
+        // Update progress if available
+        if (data.progress !== undefined) {
+          setProgress(data.progress)
+        }
+        
+        // Update current step if available
+        if (data.currentStep) {
+          setCurrentStep(data.currentStep)
+        }
+        
+        // Handle conflicts or questions if any
+        if (data.questions && data.questions.length > 0) {
+          handleNewQuestions(data.questions)
+        }
+        
+        // Refresh visualization on status updates
+        if (data.status !== 'FAILED') {
+          refreshVisualization()
+        }
+        
+        // If merge is completed or failed, stop polling
+        if (data.status === 'COMPLETED' || data.status === 'FAILED') {
+          if (statusIntervalRef.current) {
+            clearInterval(statusIntervalRef.current)
+            statusIntervalRef.current = null
+          }
+        }
+      } catch (error) {
+        console.error('Error polling merge status:', error)
+      }
+    }
+    
+    // Poll immediately and then at intervals
+    pollStatus()
+    statusIntervalRef.current = setInterval(pollStatus, 5000) // Poll every 5 seconds
+  }
+  
+  const handleNewQuestions = (questions: any[]) => {
+    questions.forEach(question => {
+      if (question.conflict_type) {
+        // Handle conflict type questions
+        setCurrentConflict(question)
+        setMessages(prev => [...prev, {
+          type: 'conflict',
+          role: 'agent',
+          content: 'Conflict detected. Please review the changes below.',
+          questionId: question.questionId,
+          requiresAction: true,
+          timestamp: new Date().toISOString(),
+          conflict: question
+        }])
+      } else {
+        // Handle regular questions
+        setMessages(prev => [...prev, {
+          type: 'question',
+          role: 'agent',
+          content: question.content,
+          questionId: question.questionId,
+          options: question.options,
+          requiresAction: true,
+          timestamp: new Date().toISOString()
+        }])
+      }
+      setCanSubmit(true)
+    })
+  }
+
+  const handleAnswerSubmit = async (answer: string, questionId: string) => {
+    if (!sessionId || !questionId) return
+
+    try {
+      setCanSubmit(false)
+
+      // Add user's answer to messages
+      setMessages(prev => [...prev, {
+        type: 'answer',
+        role: 'user',
+        content: answer,
+        timestamp: new Date().toISOString()
+      }])
+
+      const response = await fetch(`/api/merge/${sessionId}/answer`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          questionId,
+          answer
+        })
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || `HTTP error! status: ${response.status}`)
+      }
+
+      // Clear current conflict if it was answered
+      setCurrentConflict(null)
+      
+      // Refresh visualization after answering
+      refreshVisualization()
+      
+    } catch (error) {
+      console.error('Error submitting answer:', error)
+      setError(error instanceof Error ? error.message : 'Failed to submit answer')
+    }
+  }
+
+  const handleRetry = async () => {
+    if (!sessionId || !transformId) return
+
+    try {
+      setIsRetrying(true)
+      setError(null)
+
+      // Reset state
+      setStatus('IN_PROGRESS')
+      setProgress(0)
+      setCurrentStep('')
+      setMessages([])
+      setCurrentConflict(null)
+      
+      // Start the merge process again
+      await startMergeProcess()
+      
+    } catch (error) {
+      console.error('Error retrying merge:', error)
+      setError(error instanceof Error ? error.message : 'Failed to retry merge')
+    } finally {
+      setIsRetrying(false)
     }
   }
 
@@ -116,137 +294,22 @@ function MergePageContent() {
       return
     }
 
-    const setupWebSocket = async () => {
-      try {
-        // Create WebSocket instance using Next.js proxy
-        const ws = new MergeWebSocket('/api/v1', sessionId)
-        wsRef.current = ws
-
-        // Set up event handlers before connecting
-        ws.on('QUESTION', (payload: any) => {
-          // Handle conflict type questions
-          if (payload.conflict_type) {
-            setCurrentConflict(payload)
-            setMessages(prev => [...prev, {
-              type: 'conflict',
-              role: 'agent',
-              content: 'Conflict detected. Please review the changes below.',
-              questionId: payload.questionId,
-              requiresAction: true,
-              timestamp: new Date().toISOString(),
-              conflict: payload
-            }])
-          } else {
-            // Handle regular questions
-            setMessages(prev => [...prev, {
-              type: 'question',
-              role: 'agent',
-              content: payload.content,
-              questionId: payload.questionId,
-              options: payload.options,
-              requiresAction: true,
-              timestamp: new Date().toISOString()
-            }])
-          }
-          setCanSubmit(true)
-        })
-
-        ws.on('STATUS', (payload: any) => {
-          setStatus(payload.status)
-          // Only refresh visualization on successful status updates
-          if (payload.status !== 'FAILED') {
-            refreshVisualization()
-          }
-        })
-
-        ws.on('PROGRESS', (payload: any) => {
-          setProgress(payload.progress || 0)
-          if (payload.currentStep) {
-            setCurrentStep(payload.currentStep)
-          }
-        })
-
-        ws.on('ERROR', (payload: any) => {
-          console.error('Received error from WebSocket:', payload.message)
-          setError(payload.message)
-          setStatus('FAILED')
-        })
-
-        // Connect to WebSocket first
-        console.log('Connecting to WebSocket...')
-        await ws.connect()
-        console.log('WebSocket connected successfully')
-
-        // Wait for a short time to ensure all handlers are properly registered
-        await new Promise(resolve => setTimeout(resolve, 1000))
-
-        // Then start the merge process
-        await startMergeProcess()
-      } catch (error) {
-        console.error('Error in WebSocket setup:', error)
-        setError(error instanceof Error ? error.message : 'Failed to initialize WebSocket connection')
-        setStatus('FAILED')
-      }
-    }
-
-    setupWebSocket()
+    // Start the merge process when the component mounts
+    startMergeProcess()
 
     return () => {
-      if (wsRef.current) {
-        wsRef.current.disconnect()
-        wsRef.current = null
+      // Clean up interval on unmount
+      if (statusIntervalRef.current) {
+        clearInterval(statusIntervalRef.current)
+        statusIntervalRef.current = null
       }
     }
   }, [sessionId, transformId])
 
-  const handleAnswerSubmit = async (answer: string, questionId: string) => {
-    if (!wsRef.current || !wsRef.current.isConnected()) {
-      setError('WebSocket connection lost')
-      return
-    }
-
-    try {
-      wsRef.current.sendAnswer(questionId, answer)
-      setMessages(prev => [...prev, {
-        type: 'answer',
-        content: answer,
-        questionId,
-        timestamp: new Date().toISOString()
-      }])
-      setCanSubmit(false)
-    } catch (error) {
-      console.error('Error sending answer:', error)
-      setError('Failed to send answer')
-    }
-  }
-
-  const handleRetry = async () => {
-    setIsRetrying(true)
-    setError(null)
-    
-    try {
-      if (wsRef.current) {
-        wsRef.current.disconnect()
-      }
-      
-      const ws = new MergeWebSocket('/api/v1', sessionId)
-      wsRef.current = ws
-      await ws.connect()
-      await startMergeProcess()
-      
-      setIsRetrying(false)
-    } catch (error) {
-      console.error('Error retrying connection:', error)
-      setError(error instanceof Error ? error.message : 'Failed to retry connection')
-      setIsRetrying(false)
-    }
-  }
-
+  // Scroll to bottom of messages when new ones are added
   useEffect(() => {
-    // Auto-scroll to bottom when messages change
     if (scrollRef.current) {
-      const scrollElement = scrollRef.current
-      scrollElement.scrollTop = scrollElement.scrollHeight
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight
     }
   }, [messages])
 
@@ -307,25 +370,33 @@ function MergePageContent() {
                 variant="outline"
                 size="sm"
                 onClick={() => {
-                  if (wsRef.current) {
-                    if (isPaused) {
-                      wsRef.current.sendResume()
-                    } else {
-                      wsRef.current.sendPause()
-                    }
+                  if (status === 'IN_PROGRESS') {
                     setIsPaused(!isPaused)
+                    // Call the pause/resume API
+                    fetch(`/api/merge/${sessionId}/pause`, {
+                      method: 'POST',
+                      headers: {
+                        'Content-Type': 'application/json'
+                      },
+                      body: JSON.stringify({
+                        transform_id: transformId,
+                        action: isPaused ? 'resume' : 'pause'
+                      })
+                    }).catch(err => {
+                      console.error('Error toggling pause state:', err)
+                    })
                   }
                 }}
-                className="gap-2"
+                disabled={status !== 'IN_PROGRESS'}
               >
                 {isPaused ? (
                   <>
-                    <PlayCircle className="h-4 w-4" />
+                    <PlayCircle className="h-4 w-4 mr-2" />
                     Resume
                   </>
                 ) : (
                   <>
-                    <PauseCircle className="h-4 w-4" />
+                    <PauseCircle className="h-4 w-4 mr-2" />
                     Pause
                   </>
                 )}
@@ -477,7 +548,10 @@ export default function MergePage() {
   return (
     <Suspense fallback={
       <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="h-8 w-8 animate-spin" />
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+          <p className="text-gray-600">Initializing merge process...</p>
+        </div>
       </div>
     }>
       <MergePageContent />

@@ -2,7 +2,7 @@
 
 import { usePathname } from 'next/navigation'
 import { NavigationSystem } from '@/components/navigation/navigation-system'
-import { ProgressBar } from '@/components/progress-bar'
+import { Progress } from '@/components/ui/progress'
 import type { WorkflowStep } from '@/components/navigation/workflow-header'
 
 interface WorkflowLayoutProps {
@@ -64,6 +64,18 @@ export function WorkflowLayout({
         progress={progress}
         hasUnsavedChanges={hasUnsavedChanges}
       />
+
+      {/* Progress Indicator */}
+      {progress !== undefined && progress > 0 && (
+        <div className="border-b bg-white">
+          <div className="container mx-auto px-4 py-2">
+            <Progress value={progress} />
+            {currentStep && (
+              <p className="text-sm text-center mt-1 text-gray-600">{currentStep}</p>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Toolbar Content */}
       {toolbarContent && (

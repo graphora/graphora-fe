@@ -46,6 +46,7 @@ function TransformPageContent() {
   const [error, setError] = useState<string | null>(null)
   const [isProcessing, setIsProcessing] = useState(false)
   const [progress, setProgress] = useState(0)
+  const [currentStep, setCurrentStep] = useState<string>('')
   const [graphData, setGraphData] = useState<GraphData | null>(null)
   const [isUploadPanelExpanded, setIsUploadPanelExpanded] = useState(true)
   const [showMergeConfirm, setShowMergeConfirm] = useState(false)
@@ -315,6 +316,12 @@ function TransformPageContent() {
 
   const handleMergeConfirm = () => {
     setShowMergeConfirm(false)
+    
+    // Show a loading state before navigating
+    setIsProcessing(true)
+    setCurrentStep('Initializing merge process...')
+    
+    // Navigate to the merge page with required parameters
     router.push(`/merge?session_id=${sessionId}&transform_id=${transformId}`)
   }
 
@@ -353,7 +360,8 @@ function TransformPageContent() {
       icon: <GitMerge className="h-4 w-4" />,
       label: 'Merge',
       action: () => setShowMergeConfirm(true),
-      disabled: !graphData || isProcessing
+      disabled: !graphData || isProcessing,
+      primary: true // Mark this as a primary action
     },
     {
       id: 'settings',
@@ -491,8 +499,12 @@ function TransformPageContent() {
             <AlertDialogHeader>
               <AlertDialogTitle>Merge to Production Database</AlertDialogTitle>
               <AlertDialogDescription>
-                This will start the process of merging your local graph changes into the production database.
-                The merge process will be interactive, allowing you to review and resolve any conflicts.
+                This will start the process of merging your transformed graph into the production database.
+                <ul className="mt-2 list-disc pl-5 space-y-1">
+                  <li>The merge process will start automatically</li>
+                  <li>You'll be guided through any conflicts that need resolution</li>
+                  <li>No additional input is required to begin the process</li>
+                </ul>
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>

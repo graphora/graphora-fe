@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server'
+import { NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 
 export async function GET(
@@ -15,20 +15,14 @@ export async function GET(
     const url = new URL(request.url);
     const transform_id = url.searchParams.get('transform_id');
 
-    if (!session_id) {
+    if (!transform_id || !session_id) {
       return NextResponse.json(
         { error: 'Missing required fields' },
         { status: 400 }
       );
     }
 
-    // Construct the URL with transform_id if provided
-    let apiUrl = `${process.env.BACKEND_API_URL}/api/v1/merge/${session_id}/visualization`;
-    if (transform_id) {
-      apiUrl += `?transform_id=${transform_id}`;
-    }
-
-    const response = await fetch(apiUrl, {
+    const response = await fetch(`${process.env.BACKEND_API_URL}/api/v1/merge/${session_id}/${transform_id}/status`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -36,21 +30,10 @@ export async function GET(
     });
 
     if (!response.ok) {
-      if (response.status === 404) {
-        // Return empty visualization data if not found
-        return NextResponse.json({
-          status: 'success',
-          data: {
-            nodes: [],
-            edges: []
-          }
-        });
-      }
-      
       const error = await response.json();
       console.error('Backend error:', error);
       return NextResponse.json(
-        { error: error.message || 'Failed to get visualization data' },
+        { error: error.message || 'Failed to get merge status' },
         { status: response.status }
       );
     }
@@ -58,10 +41,10 @@ export async function GET(
     const data = await response.json();
     return NextResponse.json(data);
   } catch (error) {
-    console.error('Error getting visualization data:', error);
+    console.error('Error getting merge status:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
     );
   }
-}
+} 

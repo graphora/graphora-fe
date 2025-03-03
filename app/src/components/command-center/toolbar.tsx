@@ -25,10 +25,14 @@ export function Toolbar({ tools }: ToolbarProps) {
           }
         >
           <Button
-            variant="ghost"
+            variant={tool.primary ? "default" : "ghost"}
             size="sm"
             onClick={tool.action}
-            className="tool-button"
+            disabled={tool.disabled}
+            className={cn(
+              "tool-button",
+              tool.primary && "bg-blue-600 hover:bg-blue-700 text-white"
+            )}
           >
             {tool.icon}
             <span className="text-sm">{tool.label}</span>

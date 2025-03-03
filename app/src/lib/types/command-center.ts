@@ -10,6 +10,8 @@ export interface ToolbarItem {
   label: string
   action: () => void
   shortcut?: string
+  disabled?: boolean
+  primary?: boolean
 }
 
 export interface CommandCenterLayout {

@@ -1,12 +1,10 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { MergeVisualizationResponse } from '@/types/merge'
 import type { GraphData, GraphOperation, Node, Edge } from '@/types/graph'
-import { MergeWebSocket } from '@/lib/merge-websocket'
 
-export function useMergeVisualization(sessionId: string, wsInstance: MergeWebSocket | null) {
+export function useMergeVisualization(sessionId: string) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [wsConnected, setWsConnected] = useState(false)
   const [data, setData] = useState<MergeVisualizationResponse | null>(null)
   const [graphData, setGraphData] = useState<GraphData>({ nodes: [], edges: [] })
   const prevDataRef = useRef<string>('')
@@ -89,46 +87,17 @@ export function useMergeVisualization(sessionId: string, wsInstance: MergeWebSoc
   useEffect(() => {
     if (sessionId) {
       fetchData()
+      
+      // Set up polling for visualization updates
+      const intervalId = setInterval(() => {
+        fetchData()
+      }, 5000) // Poll every 5 seconds
+      
+      return () => {
+        clearInterval(intervalId)
+      }
     }
   }, [sessionId, fetchData])
-
-  useEffect(() => {
-    if (wsInstance) {
-      const handleWsConnected = () => {
-        setWsConnected(true)
-        fetchData()
-      }
-
-      const handleWsDisconnected = () => {
-        setWsConnected(false)
-      }
-
-      const handleVisualizationUpdate = () => {
-        fetchData()
-      }
-
-      // Add event listeners
-      wsInstance.on('connected', handleWsConnected)
-      wsInstance.on('disconnected', handleWsDisconnected)
-      wsInstance.on('VISUALIZATION_UPDATE', handleVisualizationUpdate)
-
-      // Check initial connection state
-      setWsConnected(wsInstance.isConnected())
-
-      return () => {
-        // Only try to remove listeners if wsInstance still exists
-        if (wsInstance) {
-          try {
-            wsInstance.off('connected', handleWsConnected)
-            wsInstance.off('disconnected', handleWsDisconnected)
-            wsInstance.off('VISUALIZATION_UPDATE', handleVisualizationUpdate)
-          } catch (err) {
-            console.warn('Error removing WebSocket listeners:', err)
-          }
-        }
-      }
-    }
-  }, [wsInstance, fetchData])
 
   const handleNodeOperation = useCallback((operation: GraphOperation) => {
     setGraphData(prevData => {
@@ -190,7 +159,6 @@ export function useMergeVisualization(sessionId: string, wsInstance: MergeWebSoc
     data,
     loading,
     error,
-    wsConnected,
     graphData,
     fetchData,
     createNode: (node: Omit<Node, 'id'>) =>

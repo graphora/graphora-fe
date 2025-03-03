@@ -49,7 +49,7 @@ export interface ConflictMessage {
 
 export interface ChatMessage {
   id?: string;
-  role?: 'agent' | 'user';
+  role?: 'agent' | 'user' | 'system';
   content: string;
   timestamp: string;
   requiresAction?: boolean;
@@ -59,7 +59,7 @@ export interface ChatMessage {
     label: string;
     value: any;
   }>;
-  type?: 'question' | 'answer' | 'conflict';
+  type?: 'question' | 'answer' | 'conflict' | 'status';
   conflict?: ConflictMessage;
 }
 
