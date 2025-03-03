@@ -21,14 +21,11 @@ export async function POST(
       );
     }
 
-    const response = await fetch(`${process.env.BACKEND_API_URL}/api/v1/merge/${session_id}/start`, {
+    const response = await fetch(`${process.env.BACKEND_API_URL}/api/v1/merge/${session_id}/${transform_id}/start`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        transform_id
-      }),
+      }
     });
 
     if (!response.ok) {
