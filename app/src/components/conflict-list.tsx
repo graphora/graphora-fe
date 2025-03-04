@@ -9,6 +9,7 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Loader2, AlertCircle, CheckCircle2, Filter, SortAsc, SortDesc } from 'lucide-react'
 import { type ConflictListItem, type ConflictListFilters, type ConflictListResponse } from '@/types/merge'
 import { cn } from '@/lib/utils'
+import { ConflictDetailsView } from '@/components/conflict-details-view'
 
 interface ConflictListProps {
   mergeId: string
@@ -41,6 +42,7 @@ export function ConflictList({
   const [data, setData] = useState<ConflictListResponse | null>(null)
   const [filters, setFilters] = useState<ConflictListFilters>(defaultFilters)
   const [searchQuery, setSearchQuery] = useState('')
+  const [selectedConflictForDetails, setSelectedConflictForDetails] = useState<ConflictListItem | null>(null)
 
   const fetchConflicts = async () => {
     try {
@@ -111,6 +113,26 @@ export function ConflictList({
     }
   }
 
+  const handleConflictClick = (conflict: ConflictListItem) => {
+    setSelectedConflictForDetails(conflict)
+    onConflictSelect(conflict)
+  }
+
+  const handleBackToList = () => {
+    setSelectedConflictForDetails(null)
+  }
+
+  const handleNextConflict = () => {
+    if (!data?.conflicts || !selectedConflictForDetails) return
+
+    const currentIndex = data.conflicts.findIndex(c => c.id === selectedConflictForDetails.id)
+    if (currentIndex < data.conflicts.length - 1) {
+      const nextConflict = data.conflicts[currentIndex + 1]
+      setSelectedConflictForDetails(nextConflict)
+      onConflictSelect(nextConflict)
+    }
+  }
+
   const summary = useMemo(() => {
     if (!data?.summary) return null
 
@@ -124,6 +146,33 @@ export function ConflictList({
       bySeverity
     }
   }, [data])
+
+  if (selectedConflictForDetails) {
+    return (
+      <ConflictDetailsView
+        mergeId={mergeId}
+        conflict={selectedConflictForDetails}
+        onBack={handleBackToList}
+        onNext={data?.conflicts && data.conflicts.length > 1 ? handleNextConflict : undefined}
+        onResolve={(resolution) => {
+          // Update local state to reflect resolution
+          if (data) {
+            const updatedConflicts = data.conflicts.map(c => 
+              c.id === selectedConflictForDetails.id
+                ? { ...c, resolution_status: 'manually-resolved' }
+                : c
+            )
+            setData({ ...data, conflicts: updatedConflicts })
+          }
+          // Remove from selected conflicts
+          onSelectionChange(selectedConflicts.filter(id => id !== selectedConflictForDetails.id))
+          // Move to next conflict if available
+          handleNextConflict()
+        }}
+        canSubmit={canSubmit}
+      />
+    )
+  }
 
   return (
     <div className="h-full flex flex-col">
@@ -292,7 +341,7 @@ export function ConflictList({
                       'border-t hover:bg-gray-50 cursor-pointer',
                       selectedConflicts.includes(conflict.id) && 'bg-blue-50'
                     )}
-                    onClick={() => onConflictSelect(conflict)}
+                    onClick={() => handleConflictClick(conflict)}
                   >
                     <td className="py-4">
                       <Checkbox
