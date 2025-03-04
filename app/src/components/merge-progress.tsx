@@ -18,7 +18,16 @@ interface MergeProgressProps {
 export function MergeProgress({ mergeId, onViewConflicts, onCancel }: MergeProgressProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [progress, setProgress] = useState<MergeProgressType | null>(null);
+  const [progress, setProgress] = useState<MergeProgressType>({
+    merge_id: mergeId,
+    overall_status: 'IN_PROGRESS',
+    overall_progress: 0,
+    current_stage: 'analyze',
+    start_time: new Date().toISOString(),
+    stages_progress: [],
+    has_conflicts: false,
+    conflict_count: 0
+  });
   const [elapsedTime, setElapsedTime] = useState(0);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
@@ -152,7 +161,59 @@ export function MergeProgress({ mergeId, onViewConflicts, onCancel }: MergeProgr
     return value !== undefined && value !== null ? value : defaultValue;
   };
 
-  if (loading && !progress) {
+  // Add a helper function to convert stages_progress object to array if needed
+  const getStagesArray = (): MergeStage[] => {
+    // Default stages in order
+    const defaultStages = [
+      'analyze',
+      'conflict_detection',
+      'merge',
+      'verification'
+    ];
+
+    if (Array.isArray(progress?.stages) && progress?.stages.length > 0) {
+      return progress.stages;
+    } 
+    
+    if (progress?.stages_progress) {
+      // Convert stages_progress object to array if it exists
+      if (typeof progress.stages_progress === 'object' && !Array.isArray(progress.stages_progress)) {
+        return Object.entries(progress.stages_progress).map(([key, value]: [string, any]) => ({
+          name: key,
+          status: value?.status || 'pending',
+          progress: value?.percentage_complete || 0,
+          start_time: value?.start_time,
+          end_time: value?.end_time
+        }));
+      } else if (Array.isArray(progress.stages_progress)) {
+        return progress.stages_progress;
+      }
+    }
+    
+    // Return default stages with appropriate status based on current stage
+    return defaultStages.map(stageName => {
+      const isCurrent = progress?.current_stage === stageName;
+      const stageIndex = defaultStages.indexOf(stageName);
+      const currentIndex = defaultStages.indexOf(progress?.current_stage || '');
+      
+      let status: MergeStageStatus = 'pending';
+      if (stageIndex < currentIndex) {
+        status = 'completed';
+      } else if (isCurrent) {
+        status = 'running';
+      }
+
+      return {
+        name: stageName,
+        status,
+        progress: status === 'completed' ? 100 : isCurrent ? progress?.overall_progress || 0 : 0,
+        start_time: isCurrent ? progress?.start_time : undefined,
+        end_time: status === 'completed' ? progress?.start_time : undefined
+      };
+    });
+  };
+
+  if (loading && !progress.merge_id) {
     return (
       <Card className="w-full">
         <CardContent className="pt-6 flex justify-center items-center h-64">
@@ -182,16 +243,6 @@ export function MergeProgress({ mergeId, onViewConflicts, onCancel }: MergeProgr
             Retry
           </Button>
         </CardFooter>
-      </Card>
-    );
-  }
-
-  if (!progress) {
-    return (
-      <Card className="w-full">
-        <CardContent className="pt-6">
-          <p className="text-center text-muted-foreground">No merge data available</p>
-        </CardContent>
       </Card>
     );
   }
@@ -269,50 +320,25 @@ export function MergeProgress({ mergeId, onViewConflicts, onCancel }: MergeProgr
         <div>
           <h4 className="text-sm font-medium mb-2">Current Stage: {safeValue(progress.current_stage, 'Unknown')}</h4>
           <div className="space-y-3">
-            {Array.isArray(progress.stages) ? 
-              progress.stages.map((stage, index) => (
-                <div key={index} className="flex items-center gap-2">
-                  {getStageIcon(stage)}
-                  <div className="flex-1">
-                    <div className="flex justify-between items-center">
-                      <div className="flex items-center gap-1">
-                        <span className="text-sm font-medium">{safeValue(stage.name, 'Unknown Stage')}</span>
-                        {stage.status === 'running' && (
-                          <Tooltip content={`Started: ${formatDateTime(stage.start_time)}`}>
-                            <Info className="h-3 w-3 text-blue-500 cursor-help" />
-                          </Tooltip>
-                        )}
-                      </div>
-                      <span className="text-xs">{Math.round(safeValue(stage.progress, 0))}%</span>
+            {getStagesArray().map((stage, index) => (
+              <div key={index} className="flex items-center gap-2">
+                {getStageIcon(stage)}
+                <div className="flex-1">
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-1">
+                      <span className="text-sm font-medium">{safeValue(stage.name, 'Unknown Stage')}</span>
+                      {stage.status === 'running' && (
+                        <Tooltip content={`Started: ${formatDateTime(stage.start_time)}`}>
+                          <Info className="h-3 w-3 text-blue-500 cursor-help" />
+                        </Tooltip>
+                      )}
                     </div>
-                    <Progress value={safeValue(stage.progress, 0)} className="h-1.5" />
+                    <span className="text-xs">{Math.round(safeValue(stage.progress, 0))}%</span>
                   </div>
+                  <Progress value={safeValue(stage.progress, 0)} className="h-1.5" />
                 </div>
-              )) : Array.isArray(progress.stages_progress) ?
-              progress.stages_progress.map((stage, index) => (
-                <div key={index} className="flex items-center gap-2">
-                  {getStageIcon(stage)}
-                  <div className="flex-1">
-                    <div className="flex justify-between items-center">
-                      <div className="flex items-center gap-1">
-                        <span className="text-sm font-medium">{safeValue(stage.name, 'Unknown Stage')}</span>
-                        {stage.status === 'running' && (
-                          <Tooltip content={`Started: ${formatDateTime(stage.start_time)}`}>
-                            <Info className="h-3 w-3 text-blue-500 cursor-help" />
-                          </Tooltip>
-                        )}
-                      </div>
-                      <span className="text-xs">{Math.round(safeValue(stage.progress, 0))}%</span>
-                    </div>
-                    <Progress value={safeValue(stage.progress, 0)} className="h-1.5" />
-                  </div>
-                </div>
-              )) : (
-                <div className="text-sm text-muted-foreground">
-                  No stage information available
-                </div>
-              )
-            }
+              </div>
+            ))}
           </div>
         </div>
 

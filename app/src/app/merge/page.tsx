@@ -213,10 +213,10 @@ function MergePageContent() {
     
     // Set up polling for status updates
     const pollStatus = async () => {
-      if (!sessionId || !transformId) return
+      if (!initialMergeId) return
       
       try {
-        const response = await fetch(`/api/merge/${sessionId}/status?transform_id=${transformId}`)
+        const response = await fetch(`/api/merge/status/${initialMergeId}`)
         
         if (!response.ok) {
           console.error('Failed to fetch merge status:', response.status)
@@ -262,7 +262,7 @@ function MergePageContent() {
     
     // Poll immediately and then at intervals
     pollStatus()
-    statusIntervalRef.current = setInterval(pollStatus, 5000) // Poll every 5 seconds
+    statusIntervalRef.current = setInterval(pollStatus, 15000) // Poll every 15 seconds
   }
   
   const handleNewQuestions = (questions: any[]) => {

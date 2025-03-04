@@ -23,10 +23,7 @@ export async function GET(
     }
 
     // Construct the URL with transform_id if provided
-    let apiUrl = `${process.env.BACKEND_API_URL}/api/v1/merge/${session_id}/visualization`;
-    if (transform_id) {
-      apiUrl += `?transform_id=${transform_id}`;
-    }
+    let apiUrl = `${process.env.BACKEND_API_URL}/api/v1/merge/${session_id}/${transform_id}/visualization`;
 
     const response = await fetch(apiUrl, {
       method: 'GET',
