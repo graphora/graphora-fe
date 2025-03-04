@@ -3,7 +3,7 @@ import { auth } from '@clerk/nextjs/server';
 
 export async function POST(
   request: Request,
-  {params}: any
+  {params}: { params: { mergeId: string } }
 ) {
   try {
     const { userId } = await auth();
@@ -11,18 +11,18 @@ export async function POST(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { merge_id } = await params;
+    const { mergeId } = params;
 
-    if (!merge_id) {
+    if (!mergeId) {
       return NextResponse.json(
-        { error: 'Missing required merge_id' },
+        { error: 'Missing required mergeId' },
         { status: 400 }
       );
     }
 
     try {
       // Try to fetch from the backend API
-      const response = await fetch(`${process.env.BACKEND_API_URL}/api/v1/merge/cancel/${merge_id}`, {
+      const response = await fetch(`${process.env.BACKEND_API_URL}/api/v1/merge/cancel/${mergeId}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -37,7 +37,7 @@ export async function POST(
       // If backend API fails or is not available, use mock data
       console.log('Using mock data for merge cancel');
       return NextResponse.json({
-        merge_id,
+        merge_id: mergeId,
         status: 'cancelled',
         message: 'Merge process has been cancelled successfully'
       });
@@ -46,7 +46,7 @@ export async function POST(
       // If there's an error with the backend API, use mock data
       console.log('Error fetching from backend, using mock data:', error);
       return NextResponse.json({
-        merge_id,
+        merge_id: mergeId,
         status: 'cancelled',
         message: 'Merge process has been cancelled successfully'
       });

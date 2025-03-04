@@ -65,7 +65,7 @@ export function ConflictList({
         queryParams.append('search', searchQuery)
       }
 
-      const response = await fetch(`/api/merge/conflicts/${mergeId}/conflicts?${queryParams.toString()}`)
+      const response = await fetch(`/api/merge/${mergeId}/conflicts?${queryParams.toString()}`)
       
       if (!response.ok) {
         throw new Error('Failed to fetch conflicts')
@@ -126,14 +126,21 @@ export function ConflictList({
   }
 
   const handleNextConflict = () => {
-    if (!data?.conflicts || !selectedConflictForDetails) return
-
-    const currentIndex = data.conflicts.findIndex(c => c.id === selectedConflictForDetails.id)
-    if (currentIndex < data.conflicts.length - 1) {
-      const nextConflict = data.conflicts[currentIndex + 1]
-      setSelectedConflictForDetails(nextConflict)
-      onConflictSelect(nextConflict)
+    if (!data?.conflicts || data.conflicts.length <= 1) return
+    
+    const currentIndex = data.conflicts.findIndex(c => c.id === selectedConflictForDetails?.id)
+    if (currentIndex === -1 || currentIndex === data.conflicts.length - 1) {
+      // If current conflict is the last one or not found, go back to list
+      handleBackToList()
+    } else {
+      // Move to next conflict
+      setSelectedConflictForDetails(data.conflicts[currentIndex + 1])
     }
+  }
+
+  // Handle search input
+  const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(event.target.value)
   }
 
   const summary = useMemo(() => {
@@ -173,7 +180,7 @@ export function ConflictList({
           if (data) {
             const updatedConflicts = data.conflicts.map(c => 
               c.id === selectedConflictForDetails.id
-                ? { ...c, resolution_status: 'manually-resolved' }
+                ? { ...c, resolution_status: 'manually-resolved' as const }
                 : c
             )
             setData({ ...data, conflicts: updatedConflicts })
@@ -183,7 +190,6 @@ export function ConflictList({
           // Move to next conflict if available
           handleNextConflict()
         }}
-        canSubmit={canSubmit}
       />
     )
   }
@@ -245,7 +251,7 @@ export function ConflictList({
             <Input
               placeholder="Search conflicts..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={handleSearchChange}
               className="max-w-sm"
             />
           </div>
@@ -390,10 +396,11 @@ export function ConflictList({
                         checked={selectedConflicts.includes(conflict.id)}
                         onCheckedChange={(checked) => {
                           handleConflictSelect(conflict.id, !!checked)
-                          // Prevent card click when checkbox is clicked
+                          // Prevent propagation using a separate onClick handler
+                        }}
+                        onClick={(event) => {
                           event.stopPropagation()
                         }}
-                        onClick={(event) => event.stopPropagation()}
                       />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">

@@ -11,7 +11,7 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Card, CardContent } from '@/components/ui/card'
 import { WorkflowLayout } from '@/components/workflow-layout'
 import { cn } from '@/lib/utils'
-import type { ChatMessage, MergeStatus, ConflictListItem } from '@/types/merge'
+import type { ChatMessage, MergeStatus, ConflictListItem, ConflictMessage } from '@/types/merge'
 import { useUser } from '@clerk/nextjs'
 import { ConflictDisplay } from '@/components/conflict-display'
 import { useMergeVisualization } from '@/hooks/useMergeVisualization'
@@ -218,7 +218,7 @@ function MergePageContent() {
       if (!initialMergeId) return
       
       try {
-        const response = await fetch(`/api/merge/status/${initialMergeId}`)
+        const response = await fetch(`/api/merge/${initialMergeId}/status`)
         
         if (!response.ok) {
           console.error('Failed to fetch merge status:', response.status)
@@ -369,7 +369,7 @@ function MergePageContent() {
     
     try {
       setIsCancelling(true);
-      const response = await fetch(`/api/merge/cancel/${mergeId}`, {
+      const response = await fetch(`/api/merge/${mergeId}/cancel`, {
         method: 'POST',
       });
       
@@ -391,7 +391,6 @@ function MergePageContent() {
         description: "The merge process has been cancelled successfully.",
         variant: "default",
       });
-      
     } catch (error) {
       console.error('Error cancelling merge:', error);
       toast({
@@ -417,6 +416,15 @@ function MergePageContent() {
     )
     
     if (!conflictMessageExists) {
+      // Convert ConflictListItem to ConflictMessage
+      const conflictMessage: ConflictMessage = {
+        id: conflict.id,
+        conflict_type: conflict.conflict_type,
+        description: conflict.description,
+        properties_affected: {},
+        suggestions: []
+      }
+      
       setMessages(prev => [...prev, {
         type: 'conflict',
         role: 'agent',
@@ -424,7 +432,7 @@ function MergePageContent() {
         questionId: conflict.id,
         requiresAction: true,
         timestamp: new Date().toISOString(),
-        conflict: conflict
+        conflict: conflictMessage
       }])
     }
   }

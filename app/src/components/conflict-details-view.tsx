@@ -44,6 +44,22 @@ interface ConflictDetails extends ConflictListItem {
     description: string
     additional_info?: Record<string, any>
   }
+  severity_details?: {
+    level: 'critical' | 'major' | 'minor'
+    label: string
+  }
+  properties_affected?: Record<string, PropertyDiff>
+  suggestions?: Array<{
+    suggestion_type: string
+    description: string
+    confidence: number
+    affected_properties: string[]
+  }>
+}
+
+interface PropertyDiff {
+  staging: string | number | boolean | null
+  prod: string | number | boolean | null
 }
 
 interface ResolutionPreview {
@@ -87,7 +103,7 @@ export function ConflictDetailsView({
         setLoading(true)
         setError(null)
 
-        const response = await fetch(`/api/merge/conflicts/${mergeId}/conflicts${conflict.id}`)
+        const response = await fetch(`/api/merge/${mergeId}/conflicts/${conflict.id}`)
         
         if (!response.ok) {
           throw new Error('Failed to fetch conflict details')
@@ -111,7 +127,7 @@ export function ConflictDetailsView({
       setError(null)
 
       const response = await fetch(
-        `/api/merge/conflicts/${mergeId}/conflicts/${conflict.id}/preview`,
+        `/api/merge/${mergeId}/conflicts/${conflict.id}/preview`,
         {
           method: 'POST',
           headers: {
@@ -150,7 +166,7 @@ export function ConflictDetailsView({
       setError(null)
 
       const response = await fetch(
-        `/api/merge/conflicts/${mergeId}/conflicts/${conflict.id}/resolve`,
+        `/api/merge/${mergeId}/conflicts/${conflict.id}`,
         {
           method: 'POST',
           headers: {
@@ -196,7 +212,7 @@ export function ConflictDetailsView({
       setError(null)
 
       const response = await fetch(
-        `/api/merge/conflicts/${mergeId}/conflicts/${conflict.id}/undo`,
+        `/api/merge/${mergeId}/conflicts/${conflict.id}/undo`,
         {
           method: 'POST'
         }
@@ -478,7 +494,12 @@ export function ConflictDetailsView({
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {conflict.suggestions.map((suggestion, index) => (
+                  {details?.suggestions?.map((suggestion: {
+                    suggestion_type: string;
+                    description: string;
+                    confidence: number;
+                    affected_properties: string[];
+                  }, index: number) => (
                     <Card 
                       key={index}
                       className={cn(
