@@ -2,7 +2,7 @@ import { Node, Edge } from "./graph";
 
 export type MergeStrategy = 'SAFE' | 'FORCE' | 'INTERACTIVE';
 
-export type MergeStatus = 'IN_PROGRESS' | 'WAITING_INPUT' | 'COMPLETED' | 'FAILED';
+export type MergeStatus = 'NOT_STARTED' | 'IN_PROGRESS' | 'PAUSED' | 'WAITING_FOR_INPUT' | 'COMPLETED' | 'FAILED' | 'CANCELLED';
 
 export interface MergeInitRequest {
   sourceGraphId: string;
@@ -113,4 +113,29 @@ export interface MergeVisualizationGraph {
 export interface MergeVisualizationResponse {
   status: string
   data: MergeVisualizationGraph
+}
+
+export type MergeStageStatus = 'pending' | 'running' | 'completed' | 'failed';
+
+export interface MergeStage {
+  name: string;
+  status: MergeStageStatus;
+  progress: number;
+  start_time?: string;
+  end_time?: string;
+}
+
+export interface MergeProgress {
+  merge_id: string;
+  overall_status: MergeStatus;
+  overall_progress: number;
+  current_stage: string;
+  stages_progress?: MergeStage[];
+  stages?: MergeStage[];
+  start_time: string;
+  estimated_end_time?: string;
+  end_time?: string;
+  error_message?: string;
+  has_conflicts: boolean;
+  conflict_count: number;
 }

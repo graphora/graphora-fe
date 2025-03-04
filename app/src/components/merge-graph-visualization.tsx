@@ -15,6 +15,7 @@ interface MergeGraphVisualizationProps {
   graphData: GraphData
   loading?: boolean
   error?: string | null
+  currentConflict?: any
 }
 
 // Color scheme for different states
@@ -44,7 +45,7 @@ const ForceGraph2D = dynamic(
   { ssr: false, loading: () => <LoadingGraph /> }
 )
 
-export const MergeGraphVisualization = ({ graphData, loading, error }: MergeGraphVisualizationProps) => {
+export const MergeGraphVisualization = ({ graphData, loading, error, currentConflict }: MergeGraphVisualizationProps) => {
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedNode, setSelectedNode] = useState<any>(null)
   const FILTER_KEYS = ['New', 'Deleted', 'Modified', 'Conflicts', 'Unchanged', 'Unknown', 'Reference', 'NeedsReview'] as const;
