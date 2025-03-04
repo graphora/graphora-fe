@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Checkbox } from '@/components/ui/checkbox'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { Loader2, AlertCircle, CheckCircle2, Filter, SortAsc, SortDesc } from 'lucide-react'
+import { Loader2, AlertCircle, CheckCircle2, Filter, SortAsc, SortDesc, Wand2 } from 'lucide-react'
 import { type ConflictListItem, type ConflictListFilters, type ConflictListResponse } from '@/types/merge'
 import { cn } from '@/lib/utils'
 import { ConflictDetailsView } from '@/components/conflict-details-view'
@@ -17,6 +17,7 @@ interface ConflictListProps {
   onConflictSelect: (conflict: ConflictListItem) => void
   selectedConflicts: string[]
   onSelectionChange: (selectedIds: string[]) => void
+  onAutoResolveComplete?: () => void
 }
 
 const severityColors = {
@@ -36,7 +37,8 @@ export function ConflictList({
   mergeId,
   onConflictSelect,
   selectedConflicts,
-  onSelectionChange
+  onSelectionChange,
+  onAutoResolveComplete
 }: ConflictListProps) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -63,7 +65,7 @@ export function ConflictList({
         queryParams.append('search', searchQuery)
       }
 
-      const response = await fetch(`/api/v1/merge/conflicts/${mergeId}?${queryParams.toString()}`)
+      const response = await fetch(`/api/merge/conflicts/${mergeId}/conflicts?${queryParams.toString()}`)
       
       if (!response.ok) {
         throw new Error('Failed to fetch conflicts')
@@ -154,6 +156,9 @@ export function ConflictList({
 
   const handleAutoResolveComplete = () => {
     fetchConflicts()
+    if (onAutoResolveComplete) {
+      onAutoResolveComplete()
+    }
   }
 
   if (selectedConflictForDetails) {
@@ -297,112 +302,144 @@ export function ConflictList({
       </div>
 
       {/* Conflict List */}
-      <ScrollArea className="flex-1">
+      <div className="flex-1 overflow-hidden">
         {loading ? (
-          <div className="flex items-center justify-center h-full">
-            <Loader2 className="h-8 w-8 animate-spin" />
+          <div className="h-full flex items-center justify-center">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
         ) : error ? (
-          <div className="flex items-center justify-center h-full">
+          <div className="h-full flex items-center justify-center">
             <div className="text-center">
               <AlertCircle className="h-8 w-8 text-red-500 mx-auto mb-2" />
-              <p className="text-gray-600">{error}</p>
+              <p className="text-red-500">{error}</p>
               <Button
                 variant="outline"
                 size="sm"
-                onClick={fetchConflicts}
                 className="mt-4"
+                onClick={fetchConflicts}
               >
                 Retry
               </Button>
             </div>
           </div>
         ) : data?.conflicts.length === 0 ? (
-          <div className="flex items-center justify-center h-full">
+          <div className="h-full flex items-center justify-center">
             <div className="text-center">
               <CheckCircle2 className="h-8 w-8 text-green-500 mx-auto mb-2" />
-              <p className="text-gray-600">No conflicts found</p>
+              <p className="text-gray-500">No conflicts found</p>
             </div>
           </div>
         ) : (
-          <div className="p-4">
-            <table className="w-full">
-              <thead>
-                <tr className="text-left">
-                  <th className="pb-4">
-                    <Checkbox
-                      checked={selectedConflicts.length === data?.conflicts.length}
-                      onCheckedChange={handleSelectAll}
-                    />
-                  </th>
-                  <th 
-                    className="pb-4 cursor-pointer"
+          <ScrollArea className="h-full">
+            <div className="p-4 space-y-2">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    checked={selectedConflicts.length === data?.conflicts.length}
+                    onCheckedChange={handleSelectAll}
+                  />
+                  <span className="text-sm font-medium">
+                    {selectedConflicts.length} selected
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
                     onClick={() => handleSort('detected_at')}
+                    className="gap-1"
                   >
-                    <div className="flex items-center gap-2">
-                      Time
-                      {filters.sort_by === 'detected_at' && (
-                        filters.sort_order === 'asc' ? (
-                          <SortAsc className="h-4 w-4" />
-                        ) : (
-                          <SortDesc className="h-4 w-4" />
-                        )
-                      )}
-                    </div>
-                  </th>
-                  <th className="pb-4">Type</th>
-                  <th className="pb-4">Severity</th>
-                  <th className="pb-4">Description</th>
-                  <th className="pb-4">Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {data?.conflicts.map((conflict) => (
-                  <tr
-                    key={conflict.id}
-                    className={cn(
-                      'border-t hover:bg-gray-50 cursor-pointer',
-                      selectedConflicts.includes(conflict.id) && 'bg-blue-50'
+                    Date
+                    {filters.sort_by === 'detected_at' && (
+                      filters.sort_order === 'asc' ? (
+                        <SortAsc className="h-4 w-4" />
+                      ) : (
+                        <SortDesc className="h-4 w-4" />
+                      )
                     )}
-                    onClick={() => handleConflictClick(conflict)}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleSort('severity')}
+                    className="gap-1"
                   >
-                    <td className="py-4">
+                    Severity
+                    {filters.sort_by === 'severity' && (
+                      filters.sort_order === 'asc' ? (
+                        <SortAsc className="h-4 w-4" />
+                      ) : (
+                        <SortDesc className="h-4 w-4" />
+                      )
+                    )}
+                  </Button>
+                </div>
+              </div>
+              {data?.conflicts.map(conflict => (
+                <Card
+                  key={conflict.id}
+                  className={cn(
+                    "cursor-pointer hover:bg-gray-50 transition-colors",
+                    selectedConflicts.includes(conflict.id) && "border-primary"
+                  )}
+                  onClick={() => handleConflictClick(conflict)}
+                >
+                  <CardContent className="p-4">
+                    <div className="flex items-start gap-4">
                       <Checkbox
                         checked={selectedConflicts.includes(conflict.id)}
-                        onCheckedChange={(checked) => handleConflictSelect(conflict.id, !!checked)}
-                        onClick={(e) => e.stopPropagation()}
+                        onCheckedChange={(checked) => {
+                          handleConflictSelect(conflict.id, !!checked)
+                          // Prevent card click when checkbox is clicked
+                          event.stopPropagation()
+                        }}
+                        onClick={(event) => event.stopPropagation()}
                       />
-                    </td>
-                    <td className="py-4 text-sm text-gray-600">
-                      {new Date(conflict.detected_at).toLocaleString()}
-                    </td>
-                    <td className="py-4">
-                      <Badge variant="outline">{conflict.conflict_type}</Badge>
-                    </td>
-                    <td className="py-4">
-                      <Badge className={severityColors[conflict.severity.level]}>
-                        {conflict.severity.label}
-                      </Badge>
-                    </td>
-                    <td className="py-4 text-sm">{conflict.description}</td>
-                    <td className="py-4">
-                      <Badge
-                        variant={conflict.resolution_status === 'unresolved' ? 'destructive' : 'default'}
-                        className={cn(
-                          conflict.resolution_status === 'auto-resolved' && 'bg-green-500',
-                          conflict.resolution_status === 'manually-resolved' && 'bg-blue-500'
-                        )}
-                      >
-                        {conflict.resolution_status.replace('-', ' ')}
-                      </Badge>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="font-medium truncate">
+                            {conflict.entity_name || conflict.entity_id}
+                          </span>
+                          <Badge
+                            className={cn(
+                              severityColors[conflict.severity] || 'bg-gray-100'
+                            )}
+                          >
+                            {conflict.severity}
+                          </Badge>
+                          <Badge variant="outline">
+                            {conflict.conflict_type}
+                          </Badge>
+                          {conflict.resolution_status === 'auto-resolved' && (
+                            <Badge className="bg-blue-100 text-blue-800 border-blue-200">
+                              <Wand2 className="h-3 w-3 mr-1" />
+                              Auto-resolved
+                            </Badge>
+                          )}
+                        </div>
+                        <p className="text-sm text-gray-500 truncate">
+                          {conflict.description}
+                        </p>
+                        <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
+                          <span>
+                            Detected: {new Date(conflict.detected_at).toLocaleString()}
+                          </span>
+                          {conflict.resolved && (
+                            <span className="flex items-center text-green-600">
+                              <CheckCircle2 className="h-3 w-3 mr-1" />
+                              Resolved
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </ScrollArea>
         )}
-      </ScrollArea>
+      </div>
 
       {/* Pagination */}
       {data && data.total_count > filters.limit! && (

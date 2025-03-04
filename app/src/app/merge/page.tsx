@@ -429,6 +429,33 @@ function MergePageContent() {
     }
   }
 
+  const handleAutoResolveComplete = async () => {
+    // Refresh the conflict list
+    try {
+      const response = await fetch(`/api/v1/merge/${mergeId}/status`)
+      if (response.ok) {
+        const data = await response.json()
+        setStatus(data.status)
+        setProgress(data.progress)
+        setCurrentStep(data.current_step)
+        
+        // Update visualization if needed
+        if (activeTab === 'visualization' || activeTab === 'conflicts') {
+          refreshVisualization()
+        }
+        
+        // Show success toast
+        toast({
+          title: "Auto-Resolution Complete",
+          description: "Conflicts have been automatically resolved.",
+          variant: "default",
+        })
+      }
+    } catch (error) {
+      console.error('Error refreshing status after auto-resolution:', error)
+    }
+  }
+
   useEffect(() => {
     if (!sessionId || !transformId) {
       setError('Missing required parameters')
@@ -664,33 +691,32 @@ function MergePageContent() {
                           </>
                         )}
                       </Button>
-                      
                       <Button
-                        variant="outline"
+                        variant="destructive"
                         size="sm"
-                        onClick={refreshVisualization}
+                        onClick={handleCancelMerge}
+                        disabled={isCancelling || status === 'COMPLETED' || status === 'FAILED'}
                       >
-                        <RefreshCcw className="h-4 w-4 mr-2" />
-                        Refresh
+                        {isCancelling ? 'Cancelling...' : 'Cancel Merge'}
                       </Button>
                     </div>
                   </div>
                   
-                  {mergeId ? (
-                    <ConflictList
-                      mergeId={mergeId}
-                      onConflictSelect={handleConflictSelect}
-                      selectedConflicts={selectedConflicts}
-                      onSelectionChange={setSelectedConflicts}
-                    />
-                  ) : (
-                    <div className="flex items-center justify-center h-full">
-                      <div className="text-center">
-                        <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-                        <p className="text-gray-600">Initializing merge process...</p>
+                  <div className="flex-1">
+                    {mergeId ? (
+                      <ConflictList
+                        mergeId={mergeId}
+                        onConflictSelect={handleConflictSelect}
+                        selectedConflicts={selectedConflicts}
+                        onSelectionChange={setSelectedConflicts}
+                        onAutoResolveComplete={handleAutoResolveComplete}
+                      />
+                    ) : (
+                      <div className="flex items-center justify-center h-full">
+                        <Loader2 className="h-8 w-8 animate-spin" />
                       </div>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
               </ResizablePanel>
             </ResizablePanelGroup>

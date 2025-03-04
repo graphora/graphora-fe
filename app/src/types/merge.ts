@@ -147,12 +147,19 @@ export interface ConflictSeverity {
   color: string
 }
 
-export interface ConflictListItem extends ConflictMessage {
+export interface ConflictListItem {
   id: string
-  severity: ConflictSeverity
+  merge_id: string
+  entity_id: string
+  entity_name?: string
   entity_type: string
-  resolution_status: 'unresolved' | 'auto-resolved' | 'manually-resolved'
+  conflict_type: string
+  severity: 'critical' | 'major' | 'minor'
+  description: string
   detected_at: string
+  resolved: boolean
+  resolution_status?: 'unresolved' | 'auto-resolved' | 'manually-resolved'
+  resolution_confidence?: number
 }
 
 export interface ConflictListResponse {

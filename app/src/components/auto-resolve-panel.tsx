@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
@@ -21,7 +21,8 @@ import {
   AlertOctagon,
   Loader2,
   XCircle,
-  CheckCircle2
+  CheckCircle2,
+  RefreshCcw
 } from 'lucide-react'
 import { toast } from '@/components/ui/use-toast'
 
@@ -60,16 +61,170 @@ export function AutoResolvePanel({
   const [progress, setProgress] = useState(0)
   const [result, setResult] = useState<AutoResolutionResult | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [pollInterval, setPollInterval] = useState<NodeJS.Timeout | null>(null)
+  const [isUndoing, setIsUndoing] = useState(false)
 
   const eligibleCount = conflictSummary.by_severity.minor
+
+  // Clean up polling on unmount
+  useEffect(() => {
+    return () => {
+      if (pollInterval) {
+        clearInterval(pollInterval)
+      }
+    }
+  }, [pollInterval])
 
   const handleAutoResolve = async () => {
     try {
       setIsResolving(true)
       setError(null)
       setProgress(0)
+      setResult(null)
 
-      const response = await fetch(`/api/v1/merge/${mergeId}/auto-resolve`, {
+      // Step 1: Initiate auto-resolution
+      const startResponse = await fetch(`/api/merge/conflicts/${mergeId}/auto-resolve`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({})
+      })
+
+      if (!startResponse.ok) {
+        throw new Error(`Failed to start auto-resolution: ${startResponse.statusText}`)
+      }
+
+      const startData = await startResponse.json()
+      const operationId = startData.operation_id
+
+      if (!operationId) {
+        throw new Error('No operation ID returned from auto-resolve endpoint')
+      }
+
+      // Step 2: Poll for progress updates
+      const interval = setInterval(async () => {
+        try {
+          const statusResponse = await fetch(`/api/merge/conflicts/${mergeId}/operations/${operationId}`, {
+            method: 'GET'
+          })
+
+          if (!statusResponse.ok) {
+            clearInterval(interval)
+            throw new Error(`Failed to get operation status: ${statusResponse.statusText}`)
+          }
+
+          const statusData = await statusResponse.json()
+          
+          // Update progress
+          if (statusData.progress) {
+            setProgress(statusData.progress)
+          }
+
+          // Check if operation is complete
+          if (statusData.status === 'completed') {
+            clearInterval(interval)
+            setPollInterval(null)
+            
+            // Fetch final results
+            const resultsResponse = await fetch(`/api/merge/conflicts/${mergeId}/auto-resolve/results`, {
+              method: 'GET'
+            })
+
+            if (!resultsResponse.ok) {
+              throw new Error(`Failed to get auto-resolution results: ${resultsResponse.statusText}`)
+            }
+
+            const resultsData = await resultsResponse.json()
+            setResult(resultsData)
+            setProgress(100)
+            setIsResolving(false)
+
+            // Show success toast
+            toast({
+              title: "Auto-Resolution Complete",
+              description: `Successfully resolved ${resultsData.resolved} conflicts.`,
+              variant: "default",
+            })
+
+            // Refresh conflict list
+            onResolutionComplete()
+          } else if (statusData.status === 'failed') {
+            clearInterval(interval)
+            setPollInterval(null)
+            throw new Error(statusData.error || 'Auto-resolution failed')
+          }
+        } catch (error) {
+          clearInterval(interval)
+          setPollInterval(null)
+          setError(error instanceof Error ? error.message : 'An error occurred during polling')
+          setIsResolving(false)
+          
+          toast({
+            title: "Error",
+            description: "Failed to complete auto-resolution. Please try again.",
+            variant: "destructive",
+          })
+        }
+      }, 2000) // Poll every 2 seconds
+
+      setPollInterval(interval)
+    } catch (error) {
+      setError(error instanceof Error ? error.message : 'An error occurred')
+      setIsResolving(false)
+      
+      toast({
+        title: "Error",
+        description: "Failed to start auto-resolution. Please try again.",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const handleCancelAutoResolve = async () => {
+    if (!isResolving) return
+    
+    try {
+      // Cancel the polling
+      if (pollInterval) {
+        clearInterval(pollInterval)
+        setPollInterval(null)
+      }
+      
+      // Call cancel endpoint
+      const cancelResponse = await fetch(`/api/merge/conflicts/${mergeId}/auto-resolve/cancel`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({})
+      })
+
+      if (!cancelResponse.ok) {
+        throw new Error(`Failed to cancel auto-resolution: ${cancelResponse.statusText}`)
+      }
+
+      toast({
+        title: "Cancelled",
+        description: "Auto-resolution has been cancelled.",
+        variant: "default",
+      })
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to cancel auto-resolution.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsResolving(false)
+    }
+  }
+
+  const handleUndoAutoResolutions = async () => {
+    try {
+      setIsUndoing(true)
+      
+      const response = await fetch(`/api/merge/conflicts/${mergeId}/auto-resolve/undo`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -78,16 +233,16 @@ export function AutoResolvePanel({
       })
 
       if (!response.ok) {
-        throw new Error('Failed to auto-resolve conflicts')
+        throw new Error(`Failed to undo auto-resolutions: ${response.statusText}`)
       }
 
-      const data = await response.json()
-      setResult(data)
-
+      // Reset result state
+      setResult(null)
+      
       // Show success toast
       toast({
-        title: "Auto-Resolution Complete",
-        description: `Successfully resolved ${data.resolved} conflicts.`,
+        title: "Auto-Resolutions Undone",
+        description: "All auto-resolved conflicts have been reset to unresolved.",
         variant: "default",
       })
 
@@ -95,14 +250,14 @@ export function AutoResolvePanel({
       onResolutionComplete()
     } catch (error) {
       setError(error instanceof Error ? error.message : 'An error occurred')
+      
       toast({
         title: "Error",
-        description: "Failed to auto-resolve conflicts. Please try again.",
+        description: "Failed to undo auto-resolutions. Please try again.",
         variant: "destructive",
       })
     } finally {
-      setIsResolving(false)
-      setProgress(100)
+      setIsUndoing(false)
     }
   }
 
@@ -116,14 +271,27 @@ export function AutoResolvePanel({
               Overview of conflicts by severity level
             </CardDescription>
           </div>
-          <Button
-            onClick={() => setIsConfirmOpen(true)}
-            disabled={eligibleCount === 0 || isResolving}
-            className="gap-2"
-          >
-            <Wand2 className="h-4 w-4" />
-            Auto-Resolve
-          </Button>
+          <div className="flex gap-2">
+            {isResolving ? (
+              <Button 
+                variant="outline" 
+                onClick={handleCancelAutoResolve}
+                className="gap-2"
+              >
+                <XCircle className="h-4 w-4" />
+                Cancel
+              </Button>
+            ) : (
+              <Button
+                onClick={() => setIsConfirmOpen(true)}
+                disabled={eligibleCount === 0 || isResolving}
+                className="gap-2"
+              >
+                <Wand2 className="h-4 w-4" />
+                Auto-Resolve
+              </Button>
+            )}
+          </div>
         </div>
       </CardHeader>
       <CardContent>
@@ -175,7 +343,10 @@ export function AutoResolvePanel({
           {isResolving && (
             <div className="space-y-2">
               <div className="flex items-center justify-between text-sm">
-                <span>Auto-resolving conflicts...</span>
+                <div className="flex items-center gap-2">
+                  <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                  <span>Auto-resolving conflicts...</span>
+                </div>
                 <span>{progress}%</span>
               </div>
               <Progress value={progress} className="h-2" />
@@ -185,9 +356,25 @@ export function AutoResolvePanel({
           {/* Results */}
           {result && !isResolving && (
             <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <CheckCircle2 className="h-5 w-5 text-green-500" />
-                <span className="font-medium">Auto-Resolution Complete</span>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="h-5 w-5 text-green-500" />
+                  <span className="font-medium">Auto-Resolution Complete</span>
+                </div>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={handleUndoAutoResolutions}
+                  disabled={isUndoing}
+                  className="gap-1"
+                >
+                  {isUndoing ? (
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                  ) : (
+                    <RefreshCcw className="h-3 w-3" />
+                  )}
+                  {isUndoing ? 'Undoing...' : 'Undo All'}
+                </Button>
               </div>
               <div className="grid grid-cols-3 gap-4">
                 <div className="flex items-center gap-2">
