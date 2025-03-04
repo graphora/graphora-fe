@@ -1,9 +1,9 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { getAuth } from '@/lib/auth';
 import { API_BASE_URL } from '@/lib/constants';
 
 export async function POST(
-  request: Request,
+  request: NextRequest,
   { params }: { params: { mergeId: string } }
 ) {
   try {
@@ -48,9 +48,9 @@ export async function POST(
     const data = await response.json();
     return NextResponse.json(data);
   } catch (error) {
-    console.error('Error canceling merge:', error);
+    console.error('Error cancelling merge:', error);
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Failed to cancel merge' },
       { status: 500 }
     );
   }

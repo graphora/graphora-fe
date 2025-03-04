@@ -4,23 +4,34 @@ import { Badge } from './ui/badge';
 import { Button } from './ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from './ui/card';
 import { Separator } from './ui/separator';
-import { Clock, AlertCircle, CheckCircle, XCircle, Loader2, Info, Calendar } from 'lucide-react';
+import { Clock, AlertCircle, CheckCircle, XCircle, Loader2, Info, Calendar, ArrowRight, CheckCircle2 } from 'lucide-react';
 import { MergeProgress as MergeProgressType, MergeStage, MergeStageStatus } from '@/types/merge';
 import { format } from 'date-fns';
 import { Tooltip } from './ui/tooltip';
+import { Alert, AlertDescription } from './ui/alert';
+import { toast } from './ui/use-toast';
 
 interface MergeProgressProps {
   mergeId: string;
   onViewConflicts?: () => void;
   onCancel?: () => void;
+  onFinalize?: () => void;
 }
 
-export function MergeProgress({ mergeId, onViewConflicts, onCancel }: MergeProgressProps) {
+// Define the verification result type
+interface VerificationResult {
+  status: 'success' | 'error';
+  data?: any;
+  message?: string;
+  issues: any[];
+}
+
+export function MergeProgress({ mergeId, onViewConflicts, onCancel, onFinalize }: MergeProgressProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [progress, setProgress] = useState<MergeProgressType>({
     merge_id: mergeId,
-    overall_status: 'IN_PROGRESS',
+    overall_status: 'running',
     overall_progress: 0,
     current_stage: 'analyze',
     start_time: new Date().toISOString(),
@@ -33,6 +44,10 @@ export function MergeProgress({ mergeId, onViewConflicts, onCancel }: MergeProgr
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const [retryCount, setRetryCount] = useState(0);
   const maxRetries = 3;
+  const [isFinalizingMerge, setIsFinalizingMerge] = useState(false);
+  const [verificationResult, setVerificationResult] = useState<VerificationResult | null>(null);
+  const [showZeroConflictNotification, setShowZeroConflictNotification] = useState(false);
+  const [hasShownNotification, setHasShownNotification] = useState(false);
 
   useEffect(() => {
     const fetchStatus = async () => {
@@ -47,6 +62,24 @@ export function MergeProgress({ mergeId, onViewConflicts, onCancel }: MergeProgr
         const data = await response.json();
         console.log('Merge status data:', data);
         setProgress(data);
+        
+        // Check for zero conflicts scenario
+        if ((data.current_stage === 'conflict_detection' || data.current_stage === 'merge') && 
+            !data.has_conflicts && 
+            (data.conflict_count === 0 || !data.conflict_count) &&
+            data.overall_status == 'completed' &&
+            !hasShownNotification) {
+          setShowZeroConflictNotification(true);
+          setHasShownNotification(true);
+          
+          // Show toast notification
+          toast({
+            title: "No Conflicts Detected",
+            description: "Your merge has no conflicts and is ready to finalize.",
+            variant: "default",
+          });
+        }
+        
         setError(null);
         setRetryCount(0); // Reset retry count on successful fetch
       } catch (err) {
@@ -81,7 +114,108 @@ export function MergeProgress({ mergeId, onViewConflicts, onCancel }: MergeProgr
       if (intervalRef.current) clearInterval(intervalRef.current);
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [mergeId, retryCount]);
+  }, [mergeId, retryCount, hasShownNotification]);
+
+  const handleFinalizeMerge = async () => {
+    if (!mergeId) return;
+    
+    try {
+      setIsFinalizingMerge(true);
+      
+      // Show toast notification for starting finalization
+      toast({
+        title: "Finalizing Merge",
+        description: "Starting the finalization process...",
+        variant: "default",
+      });
+      
+      // Call the apply-strategies endpoint
+      const response = await fetch(`/api/merge/${mergeId}/apply-strategies`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({}) // Empty strategies object since no conflicts
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to finalize merge: ${response.status}`);
+      }
+      
+      // Show success toast
+      toast({
+        title: "Merge Finalized",
+        description: "The merge process has been successfully finalized.",
+        variant: "default",
+      });
+      
+      // Verify the merge
+      await verifyMerge();
+      
+      // Update status to show completion
+      setProgress(prev => ({
+        ...prev,
+        overall_status: 'completed',
+        overall_progress: 100
+      }));
+      
+      // Call the onFinalize callback if provided
+      if (onFinalize) {
+        onFinalize();
+      }
+      
+      // Show completion toast
+      toast({
+        title: "Merge Complete",
+        description: "The merge has been successfully completed with no conflicts.",
+        variant: "default",
+      });
+    } catch (error) {
+      console.error('Error finalizing merge:', error);
+      toast({
+        title: "Error",
+        description: "Failed to finalize the merge process. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsFinalizingMerge(false);
+    }
+  };
+  
+  const verifyMerge = async () => {
+    try {
+      const response = await fetch(`/api/merge/${mergeId}/verify`);
+      
+      if (!response.ok) {
+        throw new Error(`Failed to verify merge: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      console.log('Verification result:', data);
+      
+      // Format the verification result
+      const formattedResult: VerificationResult = {
+        status: 'success',
+        data: data,
+        issues: data.issues || []
+      };
+      
+      setVerificationResult(formattedResult);
+      return formattedResult;
+    } catch (error) {
+      console.error('Error verifying merge:', error);
+      
+      // Set error verification result
+      const errorResult: VerificationResult = {
+        status: 'error',
+        message: error instanceof Error ? error.message : 'Unknown error occurred during verification',
+        issues: []
+      };
+      
+      setVerificationResult(errorResult);
+      return errorResult;
+    }
+  };
 
   const formatTime = (seconds: number): string => {
     const hours = Math.floor(seconds / 3600);
@@ -124,18 +258,18 @@ export function MergeProgress({ mergeId, onViewConflicts, onCancel }: MergeProgr
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case 'IN_PROGRESS':
+      case 'running':
         return <Badge className="bg-blue-500 hover:bg-blue-600">In Progress</Badge>;
-      case 'COMPLETED':
+      case 'completed':
         return <Badge className="bg-green-500 hover:bg-green-600">Completed</Badge>;
-      case 'FAILED':
+      case 'failed':
         return <Badge className="bg-red-500 hover:bg-red-600">Failed</Badge>;
-      case 'PAUSED':
-        return <Badge className="bg-yellow-500 hover:bg-yellow-600">Paused</Badge>;
-      case 'WAITING_FOR_INPUT':
-        return <Badge className="bg-purple-500 hover:bg-purple-600">Waiting for Input</Badge>;
-      case 'CANCELLED':
+      case 'pending':
+        return <Badge className="bg-yellow-500 hover:bg-yellow-600">Pending</Badge>;
+      case 'cancelled':
         return <Badge className="bg-gray-500 hover:bg-gray-600">Cancelled</Badge>;
+      case 'READY_TO_FINALIZE':
+        return <Badge className="bg-green-500 hover:bg-green-600 animate-pulse-subtle">Ready to Finalize</Badge>;
       default:
         return <Badge className="bg-gray-500 hover:bg-gray-600">{status}</Badge>;
     }
@@ -247,167 +381,162 @@ export function MergeProgress({ mergeId, onViewConflicts, onCancel }: MergeProgr
     );
   }
 
-  const hasConflicts = progress.has_conflicts || progress.overall_status === 'WAITING_FOR_INPUT';
-  const isCompleted = progress.overall_status === 'COMPLETED';
-  const isFailed = progress.overall_status === 'FAILED';
-  const isCancelled = progress.overall_status === 'CANCELLED';
+  const hasConflicts = progress.has_conflicts || progress.overall_status === 'pending';
+  const isReadyToFinalize = (progress.current_stage === 'conflict_detection' || 
+                           progress.current_stage === 'merge') &&
+                           !progress.has_conflicts && 
+                           (progress.conflict_count === 0 || !progress.conflict_count) &&
+                           progress.overall_status == 'completed';
 
   return (
-    <Card className="w-full">
-      <CardHeader>
-        <div className="flex justify-between items-center">
-          <CardTitle>Merge Progress</CardTitle>
-          {getStatusBadge(safeValue(progress.overall_status, 'UNKNOWN'))}
+    <Card className="w-full flex flex-col max-h-[calc(100vh-100px)] min-h-[500px]">
+      <CardHeader className="flex-shrink-0">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+          <div>
+            <CardTitle>Merge Progress</CardTitle>
+            <CardDescription>
+              Started {formatDateTime(progress.start_time)}
+            </CardDescription>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            {getStatusBadge(isReadyToFinalize ? 'READY_TO_FINALIZE' : progress.overall_status)}
+            {progress.conflict_count > 0 && (
+              <Badge variant="outline" className="ml-2">
+                {progress.conflict_count} Conflicts
+              </Badge>
+            )}
+            {isReadyToFinalize && (
+              <Badge variant="outline" className="ml-2 bg-green-100 text-green-800 border-green-300">
+                No Conflicts
+              </Badge>
+            )}
+          </div>
         </div>
-        <CardDescription className="flex items-center gap-1">
-          <span>Merge ID: {mergeId}</span>
-          {hasConflicts && (
-            <Tooltip content="This merge has conflicts that need to be resolved">
-              <div className="inline-flex items-center">
-                <AlertCircle className="h-4 w-4 text-amber-500 ml-2 cursor-help" />
-              </div>
-            </Tooltip>
-          )}
-        </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="overflow-y-auto flex-grow">
+        {/* Zero Conflict Notification */}
+        {showZeroConflictNotification && (
+          <Alert className="bg-green-50 border-green-200 animate-fadeIn mb-4">
+            <CheckCircle2 className="h-5 w-5 text-green-600" />
+            <div className="font-medium text-green-800">No Conflicts Detected!</div>
+            <AlertDescription className="text-green-700">
+              Great news! This merge has no conflicts and is ready to finalize. 
+              <strong className="block mt-1">Please click the "Finalize Merge" button below to complete the process.</strong>
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {/* Verification Results */}
+        {verificationResult && (
+          <Alert className={verificationResult.status === 'success' ? 'bg-green-50 border-green-200 mb-4' : 'bg-amber-50 border-amber-200 mb-4'}>
+            {verificationResult.status === 'success' ? (
+              <CheckCircle2 className="h-5 w-5 text-green-600" />
+            ) : (
+              <AlertCircle className="h-5 w-5 text-amber-600" />
+            )}
+            <div className="font-medium">{verificationResult.status === 'success' ? 'Merge Successful' : 'Verification Complete'}</div>
+            <AlertDescription>
+              {verificationResult.status === 'success' 
+                ? 'The merge has been verified successfully with no issues found.'
+                : `Verification completed with ${verificationResult.issues?.length || 0} issues.`}
+            </AlertDescription>
+          </Alert>
+        )}
+
         {/* Overall Progress */}
-        <div className="space-y-2">
-          <div className="flex justify-between items-center">
-            <span className="text-sm font-medium">Overall Progress</span>
-            <span className="text-sm font-medium">{Math.round(safeValue(progress.overall_progress, 0))}%</span>
+        <div className="space-y-2 mb-4">
+          <div className="flex justify-between text-sm">
+            <span>Overall Progress</span>
+            <span>{Math.round(progress.overall_progress)}%</span>
           </div>
-          <Progress value={safeValue(progress.overall_progress, 0)} className="h-2" />
+          <Progress value={progress.overall_progress} className="h-2" />
         </div>
 
-        {/* Time Information */}
-        <div className="grid grid-cols-2 gap-4 py-2">
-          <div className="flex flex-col">
-            <span className="text-xs text-muted-foreground">Elapsed Time</span>
-            <span className="text-sm font-medium flex items-center gap-1">
-              <Clock className="h-3 w-3" /> {formatTime(elapsedTime)}
-            </span>
-          </div>
-          <div className="flex flex-col">
-            <span className="text-xs text-muted-foreground">Estimated Time Remaining</span>
-            <span className="text-sm font-medium">{getEstimatedTimeRemaining()}</span>
-          </div>
-        </div>
-
-        {/* Start/End Time */}
-        <div className="grid grid-cols-2 gap-4">
-          <div className="flex flex-col">
-            <span className="text-xs text-muted-foreground">Started At</span>
-            <span className="text-sm font-medium flex items-center gap-1">
-              <Calendar className="h-3 w-3" /> {formatDateTime(progress.start_time)}
-            </span>
-          </div>
-          <div className="flex flex-col">
-            <span className="text-xs text-muted-foreground">
-              {isCompleted ? 'Completed At' : 'Estimated Completion'}
-            </span>
-            <span className="text-sm font-medium">
-              {isCompleted && progress.end_time 
-                ? formatDateTime(progress.end_time) 
-                : formatDateTime(progress.estimated_end_time)}
-            </span>
-          </div>
-        </div>
-
-        <Separator />
-
-        {/* Current Stage */}
-        <div>
-          <h4 className="text-sm font-medium mb-2">Current Stage: {safeValue(progress.current_stage, 'Unknown')}</h4>
-          <div className="space-y-3">
+        {/* Stage Progress */}
+        <div className="space-y-4 mb-4">
+          <h4 className="text-sm font-medium">Stages</h4>
+          <div className="space-y-4">
             {getStagesArray().map((stage, index) => (
-              <div key={index} className="flex items-center gap-2">
-                {getStageIcon(stage)}
-                <div className="flex-1">
-                  <div className="flex justify-between items-center">
-                    <div className="flex items-center gap-1">
-                      <span className="text-sm font-medium">{safeValue(stage.name, 'Unknown Stage')}</span>
-                      {stage.status === 'running' && (
-                        <Tooltip content={`Started: ${formatDateTime(stage.start_time)}`}>
-                          <Info className="h-3 w-3 text-blue-500 cursor-help" />
-                        </Tooltip>
-                      )}
-                    </div>
-                    <span className="text-xs">{Math.round(safeValue(stage.progress, 0))}%</span>
+              <div key={stage.name} className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    {getStageIcon(stage)}
+                    <span className="text-sm font-medium capitalize">
+                      {stage.name.replace(/_/g, ' ')}
+                    </span>
                   </div>
-                  <Progress value={safeValue(stage.progress, 0)} className="h-1.5" />
+                  <div className="text-sm text-muted-foreground">
+                    {stage.status === 'completed' ? '100%' : stage.status === 'running' ? `${Math.round(stage.progress)}%` : ''}
+                  </div>
                 </div>
+                {stage.status === 'running' && (
+                  <Progress value={stage.progress} className="h-1" />
+                )}
               </div>
             ))}
           </div>
         </div>
 
-        {/* Conflict Information */}
-        {hasConflicts && (
-          <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-md">
-            <div className="flex items-start gap-2">
-              <AlertCircle className="h-5 w-5 text-amber-500 mt-0.5" />
-              <div>
-                <h4 className="text-sm font-medium text-amber-800">Conflicts Detected</h4>
-                <p className="text-xs text-amber-600">
-                  {progress.conflict_count 
-                    ? `${progress.conflict_count} conflicts need your attention` 
-                    : 'Some conflicts need your attention'}
-                </p>
-              </div>
+        {/* Time Information */}
+        <div className="grid grid-cols-2 gap-4 mb-4">
+          <div>
+            <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
+              <Clock className="h-4 w-4" />
+              <span>Elapsed Time</span>
+            </div>
+            <div className="text-lg font-semibold">
+              {formatTime(elapsedTime)}
             </div>
           </div>
-        )}
-
-        {/* Error Message */}
-        {progress.error_message && (
-          <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-md">
-            <div className="flex items-start gap-2">
-              <AlertCircle className="h-5 w-5 text-red-500 mt-0.5" />
-              <div>
-                <h4 className="text-sm font-medium text-red-800">Error</h4>
-                <p className="text-xs text-red-600">{progress.error_message}</p>
-              </div>
+          <div>
+            <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
+              <Calendar className="h-4 w-4" />
+              <span>Estimated Remaining</span>
+            </div>
+            <div className="text-lg font-semibold">
+              {getEstimatedTimeRemaining()}
             </div>
           </div>
-        )}
+        </div>
       </CardContent>
-      <CardFooter className="flex justify-between gap-2">
-        {hasConflicts && (
-          <Button 
-            variant="default" 
-            onClick={onViewConflicts}
-            className="flex-1"
-          >
-            View Conflicts
-          </Button>
-        )}
-        {isCompleted ? (
-          <Button 
-            variant="outline" 
-            className="flex-1"
-            onClick={() => window.location.href = '/'}
-          >
-            Return to Dashboard
-          </Button>
-        ) : isFailed || isCancelled ? (
-          <Button 
-            variant="outline" 
-            className="flex-1"
-            onClick={() => window.location.href = '/'}
-          >
-            {isFailed ? 'Merge Failed - Return Home' : 'Merge Cancelled - Return Home'}
-          </Button>
-        ) : (
-          <Button 
-            variant="destructive" 
-            onClick={onCancel}
-            className="flex-1"
-            disabled={isFailed || isCancelled}
-          >
-            Cancel Merge
-          </Button>
-        )}
+      
+      {/* Action Buttons - Fixed at the bottom */}
+      <CardFooter className="flex flex-col sm:flex-row justify-between gap-3 pt-4 border-t mt-auto flex-shrink-0 bg-white sticky bottom-0 z-10 pb-4">
+        <div>
+          {onCancel && progress.overall_status === 'running' && (
+            <Button variant="outline" onClick={onCancel} className="w-full sm:w-auto">
+              Cancel Merge
+            </Button>
+          )}
+        </div>
+        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+          {hasConflicts && onViewConflicts && (
+            <Button onClick={onViewConflicts} className="w-full sm:w-auto">
+              View Conflicts
+            </Button>
+          )}
+          
+          {isReadyToFinalize && (
+            <Button 
+              onClick={handleFinalizeMerge} 
+              disabled={isFinalizingMerge}
+              className="bg-green-600 hover:bg-green-700 text-white animate-pulse-subtle w-full sm:w-auto"
+              size="lg"
+            >
+              {isFinalizingMerge ? (
+                <>
+                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                  Finalizing...
+                </>
+              ) : (
+                <>
+                  <ArrowRight className="mr-2 h-5 w-5" />
+                  Finalize Merge
+                </>
+              )}
+            </Button>
+          )}
+        </div>
       </CardFooter>
     </Card>
   );

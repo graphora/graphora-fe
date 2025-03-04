@@ -149,13 +149,14 @@ function MergePageContent() {
       }])
 
       console.log('Starting merge process...')
-      const response = await fetch(`/api/merge/${sessionId}/start`, {
+      const response = await fetch(`/api/merge/start`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          transform_id: transformId
+          transformId: transformId,
+          sessionId: sessionId
         })
       })
 
@@ -624,6 +625,7 @@ function MergePageContent() {
                 mergeId={mergeId} 
                 onViewConflicts={handleViewConflicts}
                 onCancel={handleCancelMerge}
+                onFinalize={handleAutoResolveComplete}
               />
             ) : (
               <div className="flex flex-col items-center justify-center h-full">

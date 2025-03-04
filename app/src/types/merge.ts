@@ -2,7 +2,7 @@ import { Node, Edge } from "./graph";
 
 export type MergeStrategy = 'SAFE' | 'FORCE' | 'INTERACTIVE';
 
-export type MergeStatus = 'NOT_STARTED' | 'IN_PROGRESS' | 'PAUSED' | 'WAITING_FOR_INPUT' | 'COMPLETED' | 'FAILED' | 'CANCELLED';
+export type MergeStatus = 'pending' | 'running' | 'rolled_back' | 'completed' | 'failed' | 'cancelled';
 
 export interface MergeInitRequest {
   sourceGraphId: string;
