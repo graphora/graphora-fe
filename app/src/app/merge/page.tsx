@@ -11,7 +11,7 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Card, CardContent } from '@/components/ui/card'
 import { WorkflowLayout } from '@/components/workflow-layout'
 import { cn } from '@/lib/utils'
-import type { ChatMessage, MergeStatus } from '@/types/merge'
+import type { ChatMessage, MergeStatus, ConflictListItem } from '@/types/merge'
 import { useUser } from '@clerk/nextjs'
 import { ConflictDisplay } from '@/components/conflict-display'
 import { useMergeVisualization } from '@/hooks/useMergeVisualization'
@@ -19,6 +19,7 @@ import { MergeProgress } from '@/components/merge-progress'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
 import { toast } from '@/components/ui/use-toast'
+import { ConflictList } from '@/components/conflict-list'
 
 function MergePageContent() {
   const router = useRouter()
@@ -41,6 +42,7 @@ function MergePageContent() {
   const statusIntervalRef = useRef<NodeJS.Timeout | null>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
   const [isCancelling, setIsCancelling] = useState(false)
+  const [selectedConflicts, setSelectedConflicts] = useState<string[]>([])
 
   const sessionId = searchParams.get('session_id') || ''
   const transformId = searchParams.get('transform_id')
@@ -406,6 +408,27 @@ function MergePageContent() {
     setActiveTab('conflicts')
   }
 
+  const handleConflictSelect = (conflict: ConflictListItem) => {
+    setCurrentConflict(conflict)
+    
+    // Add conflict message if not already in messages
+    const conflictMessageExists = messages.some(
+      m => m.type === 'conflict' && m.conflict?.id === conflict.id
+    )
+    
+    if (!conflictMessageExists) {
+      setMessages(prev => [...prev, {
+        type: 'conflict',
+        role: 'agent',
+        content: 'Conflict detected. Please review the changes below.',
+        questionId: conflict.id,
+        requiresAction: true,
+        timestamp: new Date().toISOString(),
+        conflict: conflict
+      }])
+    }
+  }
+
   useEffect(() => {
     if (!sessionId || !transformId) {
       setError('Missing required parameters')
@@ -653,86 +676,21 @@ function MergePageContent() {
                     </div>
                   </div>
                   
-                  <ScrollArea className="flex-1 p-4" ref={scrollRef}>
-                    <div className="space-y-4">
-                      {error && (
-                        <Alert variant="destructive">
-                          <AlertCircle className="h-4 w-4" />
-                          <AlertDescription className="ml-2">
-                            {error}
-                          </AlertDescription>
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
-                            onClick={handleRetry}
-                            disabled={isRetrying}
-                            className="ml-auto"
-                          >
-                            {isRetrying ? (
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                            ) : (
-                              <RefreshCcw className="h-4 w-4" />
-                            )}
-                            Retry
-                          </Button>
-                        </Alert>
-                      )}
-                      
-                      {messages.map((message, index) => (
-                        <Card key={index} className={cn(
-                          "mb-4",
-                          message.role === 'user' ? "bg-blue-50 border-blue-100" : ""
-                        )}>
-                          <CardContent className="p-4">
-                            {message.type === 'conflict' && message.conflict ? (
-                              <ConflictDisplay 
-                                conflict={message.conflict}
-                                onResolve={(resolution: string) => handleAnswerSubmit(resolution, message.questionId || '')}
-                                canSubmit={canSubmit && message.requiresAction}
-                              />
-                            ) : (
-                              <div className="prose prose-sm max-w-none">
-                                <p>{message.content}</p>
-                                
-                                {message.options && message.requiresAction && (
-                                  <div className="mt-4 space-y-2">
-                                    {message.options.map((option) => (
-                                      <Button
-                                        key={option.id}
-                                        variant="outline"
-                                        className="mr-2"
-                                        onClick={() => handleAnswerSubmit(option.id, message.questionId || '')}
-                                        disabled={!canSubmit}
-                                      >
-                                        {option.label}
-                                      </Button>
-                                    ))}
-                                  </div>
-                                )}
-                              </div>
-                            )}
-                          </CardContent>
-                        </Card>
-                      ))}
-                      
-                      {status === 'FAILED' && (
-                        <Alert variant="destructive">
-                          <AlertCircle className="h-4 w-4" />
-                          <AlertDescription className="ml-2">
-                            Merge process failed. Please try again.
-                          </AlertDescription>
-                        </Alert>
-                      )}
-                      {status === 'COMPLETED' && (
-                        <Alert className="bg-green-50 border-green-200">
-                          <CheckCircle2 className="h-4 w-4 text-green-600" />
-                          <AlertDescription className="ml-2 text-green-600">
-                            Merge process completed successfully!
-                          </AlertDescription>
-                        </Alert>
-                      )}
+                  {mergeId ? (
+                    <ConflictList
+                      mergeId={mergeId}
+                      onConflictSelect={handleConflictSelect}
+                      selectedConflicts={selectedConflicts}
+                      onSelectionChange={setSelectedConflicts}
+                    />
+                  ) : (
+                    <div className="flex items-center justify-center h-full">
+                      <div className="text-center">
+                        <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+                        <p className="text-gray-600">Initializing merge process...</p>
+                      </div>
                     </div>
-                  </ScrollArea>
+                  )}
                 </div>
               </ResizablePanel>
             </ResizablePanelGroup>

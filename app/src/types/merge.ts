@@ -41,6 +41,7 @@ export interface Suggestion {
 }
 
 export interface ConflictMessage {
+  id: string
   conflict_type: string
   description: string
   properties_affected: Record<string, PropertyDiff>
@@ -138,4 +139,41 @@ export interface MergeProgress {
   error_message?: string;
   has_conflicts: boolean;
   conflict_count: number;
+}
+
+export interface ConflictSeverity {
+  level: 'critical' | 'major' | 'minor'
+  label: string
+  color: string
+}
+
+export interface ConflictListItem extends ConflictMessage {
+  id: string
+  severity: ConflictSeverity
+  entity_type: string
+  resolution_status: 'unresolved' | 'auto-resolved' | 'manually-resolved'
+  detected_at: string
+}
+
+export interface ConflictListResponse {
+  conflicts: ConflictListItem[]
+  total_count: number
+  summary: {
+    total: number
+    by_severity: Record<string, number>
+    by_status: Record<string, number>
+    by_type: Record<string, number>
+  }
+}
+
+export interface ConflictListFilters {
+  conflict_type?: string[]
+  severity?: string[]
+  resolution_status?: string[]
+  entity_type?: string[]
+  search?: string
+  sort_by?: string
+  sort_order?: 'asc' | 'desc'
+  limit?: number
+  offset?: number
 }
