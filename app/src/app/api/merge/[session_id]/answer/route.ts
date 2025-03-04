@@ -11,7 +11,7 @@ export async function POST(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { session_id } = params;
+    const { session_id } = await params;
     const { questionId, answer } = await request.json();
 
     if (!questionId || !session_id || answer === undefined) {

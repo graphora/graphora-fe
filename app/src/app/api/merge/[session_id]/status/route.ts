@@ -11,7 +11,7 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { session_id } = params;
+    const { session_id } = await params;
     const url = new URL(request.url);
     const transform_id = url.searchParams.get('transform_id');
 

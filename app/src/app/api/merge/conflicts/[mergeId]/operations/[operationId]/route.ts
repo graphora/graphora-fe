@@ -7,7 +7,7 @@ export async function GET(
   { params }: { params: { mergeId: string, operationId: string } }
 ) {
   try {
-    const { mergeId, operationId } = params
+    const { mergeId, operationId } = await params
     const { userId } = getAuth(request)
 
     if (!userId) {

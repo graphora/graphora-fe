@@ -87,7 +87,7 @@ export function ConflictDetailsView({
         setLoading(true)
         setError(null)
 
-        const response = await fetch(`/api/v1/merge/conflicts/${mergeId}/${conflict.id}`)
+        const response = await fetch(`/api/merge/conflicts/${mergeId}/conflicts${conflict.id}`)
         
         if (!response.ok) {
           throw new Error('Failed to fetch conflict details')
@@ -111,7 +111,7 @@ export function ConflictDetailsView({
       setError(null)
 
       const response = await fetch(
-        `/api/v1/merge/conflicts/${mergeId}/${conflict.id}/preview`,
+        `/api/merge/conflicts/${mergeId}/conflicts/${conflict.id}/preview`,
         {
           method: 'POST',
           headers: {
@@ -150,7 +150,7 @@ export function ConflictDetailsView({
       setError(null)
 
       const response = await fetch(
-        `/api/v1/merge/conflicts/${mergeId}/${conflict.id}/resolve`,
+        `/api/merge/conflicts/${mergeId}/conflicts/${conflict.id}/resolve`,
         {
           method: 'POST',
           headers: {
@@ -196,7 +196,7 @@ export function ConflictDetailsView({
       setError(null)
 
       const response = await fetch(
-        `/api/v1/merge/conflicts/${mergeId}/${conflict.id}/undo`,
+        `/api/merge/conflicts/${mergeId}/conflicts/${conflict.id}/undo`,
         {
           method: 'POST'
         }
@@ -226,7 +226,10 @@ export function ConflictDetailsView({
     }
   }
 
-  const severityStyle = severityColors[conflict.severity.level]
+  // Use severity from details if available, otherwise use from conflict
+  const severityLevel = details?.severity_details?.level || conflict.severity
+  const severityStyle = severityColors[severityLevel]
+  const severityLabel = details?.severity_details?.label || severityLevel
 
   return (
     <div className="h-full flex flex-col">
@@ -254,7 +257,7 @@ export function ConflictDetailsView({
                 {conflict.conflict_type}
               </Badge>
               <Badge className={cn(severityStyle.bg, severityStyle.text, severityStyle.border)}>
-                {conflict.severity.label}
+                {severityLabel}
               </Badge>
             </div>
             <p className="text-sm text-gray-600 mt-1">
@@ -298,53 +301,55 @@ export function ConflictDetailsView({
           </Card>
 
           {/* Side by Side Comparison */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <GitCompare className="h-5 w-5" />
-                Changes
-              </CardTitle>
-              <CardDescription>Compare staging and production values</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <h4 className="text-sm font-medium mb-2 text-green-700">Staging</h4>
-                  <Card className="bg-green-50 border-green-100">
-                    <CardContent className="p-4">
-                      <div className="space-y-2">
-                        {Object.entries(conflict.properties_affected).map(([property, diff]) => (
-                          <div key={property} className="text-sm">
-                            <span className="font-medium">{property}:</span>
-                            <div className="mt-1 p-2 bg-white rounded border border-green-200">
-                              {diff.staging}
+          {details && details.properties_affected && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <GitCompare className="h-5 w-5" />
+                  Changes
+                </CardTitle>
+                <CardDescription>Compare staging and production values</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <h4 className="text-sm font-medium mb-2 text-green-700">Staging</h4>
+                    <Card className="bg-green-50 border-green-100">
+                      <CardContent className="p-4">
+                        <div className="space-y-2">
+                          {Object.entries(details.properties_affected).map(([property, diff]) => (
+                            <div key={property} className="text-sm">
+                              <span className="font-medium">{property}:</span>
+                              <div className="mt-1 p-2 bg-white rounded border border-green-200">
+                                {(diff as PropertyDiff).staging}
+                              </div>
                             </div>
-                          </div>
-                        ))}
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
-                <div>
-                  <h4 className="text-sm font-medium mb-2 text-blue-700">Production</h4>
-                  <Card className="bg-blue-50 border-blue-100">
-                    <CardContent className="p-4">
-                      <div className="space-y-2">
-                        {Object.entries(conflict.properties_affected).map(([property, diff]) => (
-                          <div key={property} className="text-sm">
-                            <span className="font-medium">{property}:</span>
-                            <div className="mt-1 p-2 bg-white rounded border border-blue-200">
-                              {diff.prod}
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-medium mb-2 text-blue-700">Production</h4>
+                    <Card className="bg-blue-50 border-blue-100">
+                      <CardContent className="p-4">
+                        <div className="space-y-2">
+                          {Object.entries(details.properties_affected).map(([property, diff]) => (
+                            <div key={property} className="text-sm">
+                              <span className="font-medium">{property}:</span>
+                              <div className="mt-1 p-2 bg-white rounded border border-blue-200">
+                                {(diff as PropertyDiff).prod}
+                              </div>
                             </div>
-                          </div>
-                        ))}
-                      </div>
-                    </CardContent>
-                  </Card>
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Resolution Preview */}
           {selectedResolution && (
@@ -465,64 +470,66 @@ export function ConflictDetailsView({
           )}
 
           {/* Resolution Options */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Resolution Options</CardTitle>
-              <CardDescription>Select how to resolve this conflict</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {conflict.suggestions.map((suggestion, index) => (
-                  <Card 
-                    key={index}
-                    className={cn(
-                      "hover:border-blue-300 transition-colors cursor-pointer",
-                      selectedResolution === suggestion.suggestion_type && "border-blue-500 bg-blue-50",
-                      suggestion.confidence > 0.8 && "ring-2 ring-green-100"
-                    )}
-                    onClick={() => handleResolutionSelect(suggestion.suggestion_type)}
-                  >
-                    <CardContent className="p-4">
-                      <div className="flex justify-between items-start">
-                        <div className="space-y-2">
-                          <div>
-                            <h5 className="font-medium">{suggestion.suggestion_type}</h5>
-                            <p className="text-sm text-gray-600">{suggestion.description}</p>
-                          </div>
-                          <div className="flex items-center gap-4">
-                            <div className="flex-1 max-w-[200px]">
-                              <div className="flex items-center justify-between text-xs mb-1">
-                                <span>Confidence</span>
-                                <span>{Math.round(suggestion.confidence * 100)}%</span>
-                              </div>
-                              <Progress 
-                                value={suggestion.confidence * 100} 
-                                className={cn(
-                                  suggestion.confidence > 0.8 ? "bg-green-100" : "bg-gray-100",
-                                  "h-2"
-                                )}
-                                indicatorClassName={
-                                  suggestion.confidence > 0.8 ? "bg-green-500" : "bg-blue-500"
-                                }
-                              />
+          {details && details.suggestions && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Resolution Options</CardTitle>
+                <CardDescription>Select a resolution strategy to apply</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {conflict.suggestions.map((suggestion, index) => (
+                    <Card 
+                      key={index}
+                      className={cn(
+                        "hover:border-blue-300 transition-colors cursor-pointer",
+                        selectedResolution === suggestion.suggestion_type && "border-blue-500 bg-blue-50",
+                        suggestion.confidence > 0.8 && "ring-2 ring-green-100"
+                      )}
+                      onClick={() => handleResolutionSelect(suggestion.suggestion_type)}
+                    >
+                      <CardContent className="p-4">
+                        <div className="flex justify-between items-start">
+                          <div className="space-y-2">
+                            <div>
+                              <h5 className="font-medium">{suggestion.suggestion_type}</h5>
+                              <p className="text-sm text-gray-600">{suggestion.description}</p>
                             </div>
-                            {suggestion.confidence > 0.8 && (
-                              <Badge variant="default" className="bg-green-500 text-xs">
-                                Recommended
-                              </Badge>
-                            )}
+                            <div className="flex items-center gap-4">
+                              <div className="flex-1 max-w-[200px]">
+                                <div className="flex items-center justify-between text-xs mb-1">
+                                  <span>Confidence</span>
+                                  <span>{Math.round(suggestion.confidence * 100)}%</span>
+                                </div>
+                                <Progress 
+                                  value={suggestion.confidence * 100} 
+                                  className={cn(
+                                    suggestion.confidence > 0.8 ? "bg-green-100" : "bg-gray-100",
+                                    "h-2"
+                                  )}
+                                  indicatorClassName={
+                                    suggestion.confidence > 0.8 ? "bg-green-500" : "bg-blue-500"
+                                  }
+                                />
+                              </div>
+                              {suggestion.confidence > 0.8 && (
+                                <Badge variant="default" className="bg-green-500 text-xs">
+                                  Recommended
+                                </Badge>
+                              )}
+                            </div>
                           </div>
+                          {selectedResolution === suggestion.suggestion_type && (
+                            <CheckCircle2 className="h-5 w-5 text-blue-500" />
+                          )}
                         </div>
-                        {selectedResolution === suggestion.suggestion_type && (
-                          <CheckCircle2 className="h-5 w-5 text-blue-500" />
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </div>
       </ScrollArea>
 

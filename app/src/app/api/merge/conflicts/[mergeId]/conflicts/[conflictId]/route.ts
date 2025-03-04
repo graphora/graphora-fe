@@ -4,12 +4,11 @@ import { API_BASE_URL } from '@/lib/constants'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { mergeId: string } }
+  { params }: { params: { mergeId: string, conflictId: string } }
 ) {
   try {
-    const { mergeId } = await params
+    const { mergeId, conflictId } =  await params
     const { userId } = getAuth(request)
-    const searchParams = request.nextUrl.searchParams
 
     if (!userId) {
       return NextResponse.json(
@@ -18,12 +17,8 @@ export async function GET(
       )
     }
 
-    // Forward all query parameters
-    const queryString = searchParams.toString()
-    const apiUrl = `${API_BASE_URL}/merge/conflicts/${mergeId}${queryString ? `?${queryString}` : ''}`
-
     // Call the backend API
-    const response = await fetch(apiUrl, {
+    const response = await fetch(`${API_BASE_URL}/merge/${mergeId}/conflicts/${conflictId}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -34,7 +29,7 @@ export async function GET(
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}))
       return NextResponse.json(
-        { error: errorData.error || 'Failed to fetch conflicts' },
+        { error: errorData.error || 'Failed to fetch conflict details' },
         { status: response.status }
       )
     }
@@ -42,7 +37,7 @@ export async function GET(
     const data = await response.json()
     return NextResponse.json(data)
   } catch (error) {
-    console.error('Error in conflicts API route:', error)
+    console.error('Error in conflict details API route:', error)
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
