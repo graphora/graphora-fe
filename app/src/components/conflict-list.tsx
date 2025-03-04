@@ -10,6 +10,7 @@ import { Loader2, AlertCircle, CheckCircle2, Filter, SortAsc, SortDesc } from 'l
 import { type ConflictListItem, type ConflictListFilters, type ConflictListResponse } from '@/types/merge'
 import { cn } from '@/lib/utils'
 import { ConflictDetailsView } from '@/components/conflict-details-view'
+import { AutoResolvePanel } from '@/components/auto-resolve-panel'
 
 interface ConflictListProps {
   mergeId: string
@@ -143,9 +144,17 @@ export function ConflictList({
       total: data.summary.total || 0,
       resolved: (byStatus['auto-resolved'] || 0) + (byStatus['manually-resolved'] || 0),
       unresolved: byStatus['unresolved'] || 0,
-      bySeverity
+      bySeverity: {
+        critical: bySeverity['critical'] || 0,
+        major: bySeverity['major'] || 0,
+        minor: bySeverity['minor'] || 0
+      }
     }
   }, [data])
+
+  const handleAutoResolveComplete = () => {
+    fetchConflicts()
+  }
 
   if (selectedConflictForDetails) {
     return (
@@ -176,6 +185,20 @@ export function ConflictList({
 
   return (
     <div className="h-full flex flex-col">
+      {/* Auto-Resolve Panel */}
+      {summary && (
+        <div className="p-4 border-b">
+          <AutoResolvePanel
+            mergeId={mergeId}
+            conflictSummary={{
+              total: summary.total,
+              by_severity: summary.bySeverity
+            }}
+            onResolutionComplete={handleAutoResolveComplete}
+          />
+        </div>
+      )}
+
       {/* Summary Header */}
       {summary && (
         <div className="p-4 border-b">
