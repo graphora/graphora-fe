@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuth } from '@clerk/nextjs/server'
+import { API_BASE_URL } from '@/lib/constants'
 
 export async function POST(
   request: NextRequest,
@@ -11,11 +12,11 @@ export async function POST(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const merge_id = params.mergeId
+    const { mergeId } = await params
     const body = await request.json()
 
     // Call the backend API to apply strategies
-    const response = await fetch(`${process.env.API_BASE_URL}/api/v1/merge/${merge_id}/apply-strategies`, {
+    const response = await fetch(`${API_BASE_URL}/merge/${mergeId}/apply-strategies`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

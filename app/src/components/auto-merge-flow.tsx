@@ -392,7 +392,9 @@ export function AutoMergeFlow({ sessionId, transformId, mergeId: initialMergeId,
         <TabsContent value="progress" className="mt-4">
           {mergeId && (
             <MergeProgress 
-              mergeId={mergeId} 
+              mergeId={mergeId}
+              sessionId={sessionId}
+              transformId={transformId}
               onCancel={cancelMerge}
               onFinalize={() => {
                 // Handle completion

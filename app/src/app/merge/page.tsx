@@ -45,7 +45,7 @@ function MergePageContent() {
   const [selectedConflicts, setSelectedConflicts] = useState<string[]>([])
 
   const sessionId = searchParams.get('session_id') || ''
-  const transformId = searchParams.get('transform_id')
+  const transformId = searchParams.get('transform_id') || ''
   const initialMergeId = searchParams.get('merge_id')
 
   const { 
@@ -114,7 +114,7 @@ function MergePageContent() {
       
       // Poll immediately and then at intervals
       pollStatus()
-      statusIntervalRef.current = setInterval(pollStatus, 5000) // Poll every 5 seconds
+      statusIntervalRef.current = setInterval(pollStatus, 15000) // Poll every 15 seconds
       
       // Refresh visualization
       refreshVisualization()
@@ -622,7 +622,9 @@ function MergePageContent() {
           <TabsContent value="progress" className="flex-1 p-4">
             {mergeId ? (
               <MergeProgress 
-                mergeId={mergeId} 
+                mergeId={mergeId}
+                sessionId={sessionId}
+                transformId={transformId}
                 onViewConflicts={handleViewConflicts}
                 onCancel={handleCancelMerge}
                 onFinalize={handleAutoResolveComplete}

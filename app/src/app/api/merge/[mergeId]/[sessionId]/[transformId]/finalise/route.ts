@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuth } from '@clerk/nextjs/server'
+import { API_BASE_URL } from '@/lib/constants'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { mergeId: string } }
+  { params }: { params: { mergeId: string, sessionId: string, transformId: string } }
 ) {
   try {
     const { userId } = getAuth(request)
@@ -11,13 +12,13 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const merge_id = params.mergeId
+    const { mergeId, sessionId, transformId } = await params
 
     // Call the backend API to verify the merge
     const response = await fetch(
-      `${process.env.API_BASE_URL}/api/v1/merge/${merge_id}/verify`,
+      `${API_BASE_URL}/merge/${mergeId}/${sessionId}/${transformId}/finalise`,
       {
-        method: 'GET',
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${request.headers.get('Authorization')?.split(' ')[1] || ''}`,
@@ -35,9 +36,9 @@ export async function GET(
 
     const data = await response.json()
     return NextResponse.json({
-      status: 'success',
+      status: data.status == 'false' ? 'error' : 'success',
       data,
-      issues: data.issues || []
+      issues: data.checks || []
     })
   } catch (error) {
     console.error('Error verifying merge:', error)

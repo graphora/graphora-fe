@@ -13,6 +13,8 @@ import { toast } from './ui/use-toast';
 
 interface MergeProgressProps {
   mergeId: string;
+  sessionId: string;
+  transformId: string,
   onViewConflicts?: () => void;
   onCancel?: () => void;
   onFinalize?: () => void;
@@ -26,7 +28,7 @@ interface VerificationResult {
   issues: any[];
 }
 
-export function MergeProgress({ mergeId, onViewConflicts, onCancel, onFinalize }: MergeProgressProps) {
+export function MergeProgress({ mergeId, sessionId, transformId, onViewConflicts, onCancel, onFinalize }: MergeProgressProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [progress, setProgress] = useState<MergeProgressType>({
@@ -64,10 +66,10 @@ export function MergeProgress({ mergeId, onViewConflicts, onCancel, onFinalize }
         setProgress(data);
         
         // Check for zero conflicts scenario
-        if ((data.current_stage === 'conflict_detection' || data.current_stage === 'merge') && 
-            !data.has_conflicts && 
+        if (!data.has_conflicts && 
             (data.conflict_count === 0 || !data.conflict_count) &&
-            data.overall_status == 'completed' &&
+            data.overall_status !== 'completed' &&
+            data.current_stage == 'apply_changes' &&
             !hasShownNotification) {
           setShowZeroConflictNotification(true);
           setHasShownNotification(true);
@@ -150,7 +152,7 @@ export function MergeProgress({ mergeId, onViewConflicts, onCancel, onFinalize }
       });
       
       // Verify the merge
-      await verifyMerge();
+      await finaliseMerge();
       
       // Update status to show completion
       setProgress(prev => ({
@@ -182,9 +184,9 @@ export function MergeProgress({ mergeId, onViewConflicts, onCancel, onFinalize }
     }
   };
   
-  const verifyMerge = async () => {
+  const finaliseMerge = async () => {
     try {
-      const response = await fetch(`/api/merge/${mergeId}/verify`);
+      const response = await fetch(`/api/merge/${mergeId}/${sessionId}/${transformId}/finalise`);
       
       if (!response.ok) {
         throw new Error(`Failed to verify merge: ${response.status}`);
@@ -195,9 +197,9 @@ export function MergeProgress({ mergeId, onViewConflicts, onCancel, onFinalize }
       
       // Format the verification result
       const formattedResult: VerificationResult = {
-        status: 'success',
+        status: data.status == 'false' ? 'error' : 'success',
         data: data,
-        issues: data.issues || []
+        issues: data.checks || []
       };
       
       setVerificationResult(formattedResult);
@@ -382,11 +384,10 @@ export function MergeProgress({ mergeId, onViewConflicts, onCancel, onFinalize }
   }
 
   const hasConflicts = progress.has_conflicts || progress.overall_status === 'pending';
-  const isReadyToFinalize = (progress.current_stage === 'conflict_detection' || 
-                           progress.current_stage === 'merge') &&
+  const isReadyToFinalize = (progress.current_stage === 'apply_changes') &&
                            !progress.has_conflicts && 
                            (progress.conflict_count === 0 || !progress.conflict_count) &&
-                           progress.overall_status == 'completed';
+                           progress.overall_status !== 'completed';
 
   return (
     <Card className="w-full flex flex-col max-h-[calc(100vh-100px)] min-h-[500px]">
@@ -447,7 +448,8 @@ export function MergeProgress({ mergeId, onViewConflicts, onCancel, onFinalize }
         <div className="space-y-2 mb-4">
           <div className="flex justify-between text-sm">
             <span>Overall Progress</span>
-            <span>{Math.round(progress.overall_progress)}%</span>
+            <span>{progress.overall_status}</span>
+            {/* <span>{Math.round(progress.overall_progress)}%</span> */}
           </div>
           <Progress value={progress.overall_progress} className="h-2" />
         </div>
@@ -488,7 +490,7 @@ export function MergeProgress({ mergeId, onViewConflicts, onCancel, onFinalize }
               {formatTime(elapsedTime)}
             </div>
           </div>
-          <div>
+          {/* <div>
             <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
               <Calendar className="h-4 w-4" />
               <span>Estimated Remaining</span>
@@ -496,7 +498,7 @@ export function MergeProgress({ mergeId, onViewConflicts, onCancel, onFinalize }
             <div className="text-lg font-semibold">
               {getEstimatedTimeRemaining()}
             </div>
-          </div>
+          </div> */}
         </div>
       </CardContent>
       
