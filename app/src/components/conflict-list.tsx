@@ -18,6 +18,7 @@ interface ConflictListProps {
   selectedConflicts: string[]
   onSelectionChange: (selectedIds: string[]) => void
   onAutoResolveComplete?: () => void
+  className?: string
 }
 
 const severityColors = {
@@ -29,7 +30,7 @@ const severityColors = {
 const defaultFilters: ConflictListFilters = {
   limit: 10,
   offset: 0,
-  sort_by: 'detected_at',
+  sort_by: 'created_at',
   sort_order: 'desc'
 }
 
@@ -38,7 +39,8 @@ export function ConflictList({
   onConflictSelect,
   selectedConflicts,
   onSelectionChange,
-  onAutoResolveComplete
+  onAutoResolveComplete,
+  className
 }: ConflictListProps) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -146,13 +148,12 @@ export function ConflictList({
   const summary = useMemo(() => {
     if (!data?.summary) return null
 
-    const byStatus = data.summary.by_status || {}
     const bySeverity = data.summary.by_severity || {}
 
     return {
       total: data.summary.total || 0,
-      resolved: (byStatus['auto-resolved'] || 0) + (byStatus['manually-resolved'] || 0),
-      unresolved: byStatus['unresolved'] || 0,
+      resolved: data.summary.resolved || 0,
+      unresolved: data.summary.unresolved || 0,
       bySeverity: {
         critical: bySeverity['critical'] || 0,
         major: bySeverity['major'] || 0,
@@ -167,6 +168,14 @@ export function ConflictList({
       onAutoResolveComplete()
     }
   }
+
+  // Calculate the resolved and unresolved counts
+  const resolvedCount = data?.summary?.resolved || 0
+  const unresolvedCount = data?.summary?.unresolved || 0
+  const totalCount = data?.summary?.total || 0
+  
+  // Calculate progress percentage
+  const progressPercentage = totalCount > 0 ? (resolvedCount / totalCount) * 100 : 0
 
   if (selectedConflictForDetails) {
     return (
@@ -195,7 +204,7 @@ export function ConflictList({
   }
 
   return (
-    <div className="h-full flex flex-col">
+    <div className={cn("h-full flex flex-col", className)}>
       {/* Auto-Resolve Panel */}
       {summary && (
         <div className="p-4 border-b">
@@ -352,11 +361,11 @@ export function ConflictList({
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => handleSort('detected_at')}
+                    onClick={() => handleSort('created_at')}
                     className="gap-1"
                   >
                     Date
-                    {filters.sort_by === 'detected_at' && (
+                    {filters.sort_by === 'created_at' && (
                       filters.sort_order === 'asc' ? (
                         <SortAsc className="h-4 w-4" />
                       ) : (
@@ -429,7 +438,7 @@ export function ConflictList({
                         </p>
                         <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
                           <span>
-                            Detected: {new Date(conflict.detected_at).toLocaleString()}
+                            Detected: {new Date(conflict.created_at).toLocaleString()}
                           </span>
                           {conflict.resolved && (
                             <span className="flex items-center text-green-600">

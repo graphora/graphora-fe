@@ -263,7 +263,7 @@ export function ConflictDetailsView({
   return (
     <div className="h-[calc(100vh-14rem)] flex flex-col overflow-hidden">
       {/* Header */}
-      <div className="flex-none bg-white border-b">
+      <div className="flex-none bg-white border-b shadow-sm">
         <div className="p-4">
           <Breadcrumb>
             <BreadcrumbItem>
@@ -291,7 +291,7 @@ export function ConflictDetailsView({
                 </Badge>
               </div>
               <p className="text-sm text-gray-600 mt-1">
-                Detected at: {new Date(conflict.detected_at).toLocaleString()}
+                Detected at: {new Date(conflict.created_at).toLocaleString()}
               </p>
             </div>
             <Button variant="outline" size="sm" onClick={onBack}>
@@ -303,8 +303,8 @@ export function ConflictDetailsView({
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 overflow-y-auto">
-        <div className="p-4 space-y-6">
+      <div className="flex-1 min-h-0 overflow-y-auto">
+        <div className="p-4 space-y-6 pb-[calc(4rem+1px)]">
           {error && (
             <Alert variant="destructive">
               <AlertCircle className="h-4 w-4" />
@@ -573,7 +573,7 @@ export function ConflictDetailsView({
       </div>
 
       {/* Footer Actions */}
-      <div className="flex-none bg-gray-50 border-t">
+      <div className="flex-none bg-gray-50 border-t shadow-[0_-1px_2px_rgba(0,0,0,0.05)]">
         <div className="p-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">

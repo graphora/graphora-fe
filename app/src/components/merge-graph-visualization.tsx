@@ -20,6 +20,7 @@ interface MergeGraphVisualizationProps {
   loading?: boolean
   error?: string | null
   currentConflict?: any
+  graphData?: any
 }
 
 // Color scheme for different states
@@ -58,21 +59,23 @@ export const MergeGraphVisualization = ({
   mergeId,
   loading: externalLoading,
   error: externalError,
-  currentConflict 
+  currentConflict,
+  graphData: externalGraphData
 }: MergeGraphVisualizationProps) => {
   const {
-    graphData,
+    graphData: fetchedGraphData,
     loading: dataLoading,
     error: dataError,
     refetch
   } = useGraphData({
     transformId,
     mergeId,
-    enabled: !externalLoading // Only fetch if not loading externally
+    enabled: !externalLoading && !externalGraphData // Only fetch if not loading externally and no external data
   })
 
   const loading = externalLoading || dataLoading
   const error = externalError || dataError
+  const graphData = externalGraphData || fetchedGraphData
 
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedNode, setSelectedNode] = useState<any>(null)

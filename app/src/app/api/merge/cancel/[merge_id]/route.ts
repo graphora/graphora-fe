@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
+import { API_BASE_URL } from '@/lib/constants';
 
 export async function POST(
   request: Request,
@@ -22,7 +23,7 @@ export async function POST(
 
     try {
       // Try to fetch from the backend API
-      const response = await fetch(`${process.env.BACKEND_API_URL}/api/v1/merge/cancel/${mergeId}`, {
+      const response = await fetch(`${API_BASE_URL}/merge/${mergeId}/rollback`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

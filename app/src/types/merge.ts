@@ -156,10 +156,28 @@ export interface ConflictListItem {
   conflict_type: string
   severity: 'critical' | 'major' | 'minor'
   description: string
-  detected_at: string
   resolved: boolean
   resolution_status?: 'unresolved' | 'auto-resolved' | 'manually-resolved'
   resolution_confidence?: number
+  property_name?: string | null
+  staging_value?: any
+  production_value?: any
+  resolution?: {
+    id: string
+    description: string
+    resolution_type: string
+    resolution_data: Record<string, any>
+    confidence: number
+    reasoning: string
+    requires_review: boolean
+    auto_resolvable: boolean
+    risks: string[]
+  }
+  resolution_timestamp?: string
+  resolved_by?: string
+  requires_review?: boolean
+  created_at: string
+  updated_at: string
 }
 
 export interface ConflictListResponse {
@@ -168,9 +186,12 @@ export interface ConflictListResponse {
   summary: {
     total: number
     by_severity: Record<string, number>
-    by_status: Record<string, number>
     by_type: Record<string, number>
+    resolved: number
+    unresolved: number
   }
+  limit?: number
+  offset?: number
 }
 
 export interface ConflictListFilters {
@@ -183,4 +204,6 @@ export interface ConflictListFilters {
   sort_order?: 'asc' | 'desc'
   limit?: number
   offset?: number
+  created_after?: string
+  created_before?: string
 }

@@ -20,6 +20,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
 import { toast } from '@/components/ui/use-toast'
 import { ConflictList } from '@/components/conflict-list'
+import { MergeCompletionBanner } from '@/components/merge-completion-banner'
 
 function MergePageContent() {
   const router = useRouter()
@@ -27,7 +28,7 @@ function MergePageContent() {
   const searchParams = useSearchParams()
 
   const [isPaused, setIsPaused] = useState(false)
-  const [status, setStatus] = useState<MergeStatus>('IN_PROGRESS')
+  const [status, setStatus] = useState<MergeStatus>('running')
   const [progress, setProgress] = useState(0)
   const [currentStep, setCurrentStep] = useState('')
   const [messages, setMessages] = useState<ChatMessage[]>([])
@@ -43,6 +44,11 @@ function MergePageContent() {
   const scrollRef = useRef<HTMLDivElement>(null)
   const [isCancelling, setIsCancelling] = useState(false)
   const [selectedConflicts, setSelectedConflicts] = useState<string[]>([])
+  const [allConflictsResolved, setAllConflictsResolved] = useState(false)
+  const [conflictStats, setConflictStats] = useState<{total: number, resolved: number}>({
+    total: 0,
+    resolved: 0
+  })
 
   const sessionId = searchParams.get('session_id') || ''
   const transformId = searchParams.get('transform_id') || ''
@@ -77,31 +83,60 @@ function MergePageContent() {
       
       // Start polling for status updates
       const pollStatus = async () => {
+        if (!initialMergeId) return
+        
         try {
-          const response = await fetch(`/api/merge/status/${initialMergeId}`)
-          
+          const response = await fetch(`/api/merge/${initialMergeId}/status`)
           if (!response.ok) {
-            console.error('Failed to fetch merge status:', response.status)
-            return
+            throw new Error(`HTTP error! status: ${response.status}`)
           }
           
           const data = await response.json()
           
-          // Update status
-          setStatus(data.overall_status)
-          
-          // Update progress if available
-          if (data.overall_progress !== undefined) {
+          if (data) {
+            setStatus(data.overall_status as MergeStatus)
             setProgress(data.overall_progress)
-          }
-          
-          // Update current step if available
-          if (data.current_stage) {
             setCurrentStep(data.current_stage)
+            
+            // Check if all conflicts are resolved
+            if (data.has_conflicts && data.conflict_count > 0) {
+              // Fetch conflict stats to check if all are resolved
+              try {
+                const conflictResponse = await fetch(`/api/merge/${initialMergeId}/conflicts?limit=1&offset=0`)
+                if (conflictResponse.ok) {
+                  const conflictData = await conflictResponse.json()
+                  
+                  // Use the resolved count directly from the summary
+                  const resolvedCount = conflictData.summary?.resolved || 0
+                  
+                  setConflictStats({
+                    total: conflictData.total_count,
+                    resolved: resolvedCount
+                  })
+                  
+                  // Check if all conflicts are resolved
+                  const allResolved = conflictData.total_count > 0 && 
+                    resolvedCount === conflictData.total_count
+                  
+                  // If all conflicts are resolved and this is a change, show a toast
+                  if (allResolved && !allConflictsResolved) {
+                    toast({
+                      title: "All Conflicts Resolved",
+                      description: "All conflicts have been successfully resolved. You can now view the final merged graph.",
+                      variant: "default",
+                    })
+                  }
+                  
+                  setAllConflictsResolved(allResolved)
+                }
+              } catch (err) {
+                console.error('Error fetching conflict stats:', err)
+              }
+            }
           }
           
           // If merge is completed or failed, stop polling
-          if (data.overall_status === 'COMPLETED' || data.overall_status === 'FAILED') {
+          if (data.overall_status === 'completed' || data.overall_status === 'failed') {
             if (statusIntervalRef.current) {
               clearInterval(statusIntervalRef.current)
               statusIntervalRef.current = null
@@ -204,32 +239,28 @@ function MergePageContent() {
         timestamp: new Date().toISOString()
       }])
       
-      setStatus('FAILED')
+      setStatus('failed')
     }
   }
   
   const startStatusPolling = () => {
-    // Clear any existing interval
     if (statusIntervalRef.current) {
       clearInterval(statusIntervalRef.current)
     }
     
-    // Set up polling for status updates
     const pollStatus = async () => {
-      if (!initialMergeId) return
+      if (!mergeId) return
       
       try {
-        const response = await fetch(`/api/merge/${initialMergeId}/status`)
-        
+        const response = await fetch(`/api/merge/${mergeId}/status`)
         if (!response.ok) {
-          console.error('Failed to fetch merge status:', response.status)
-          return
+          throw new Error(`HTTP error! status: ${response.status}`)
         }
         
         const data = await response.json()
         
         // Update status
-        setStatus(data.status)
+        setStatus(data.status as MergeStatus)
         
         // Update progress if available
         if (data.progress !== undefined) {
@@ -247,12 +278,48 @@ function MergePageContent() {
         }
         
         // Refresh visualization on status updates
-        if (data.status !== 'FAILED') {
+        if (data.status !== 'failed') {
           refreshVisualization()
         }
         
+        // Check if all conflicts are resolved
+        if (data.has_conflicts && data.conflict_count > 0) {
+          // Fetch conflict stats to check if all are resolved
+          try {
+            const conflictResponse = await fetch(`/api/merge/${mergeId}/conflicts?limit=1&offset=0`)
+            if (conflictResponse.ok) {
+              const conflictData = await conflictResponse.json()
+              
+              // Use the resolved count directly from the summary
+              const resolvedCount = conflictData.summary?.resolved || 0
+              
+              setConflictStats({
+                total: conflictData.total_count,
+                resolved: resolvedCount
+              })
+              
+              // Check if all conflicts are resolved
+              const allResolved = conflictData.total_count > 0 && 
+                resolvedCount === conflictData.total_count
+              
+              // If all conflicts are resolved and this is a change, show a toast
+              if (allResolved && !allConflictsResolved) {
+                toast({
+                  title: "All Conflicts Resolved",
+                  description: "All conflicts have been successfully resolved. You can now view the final merged graph.",
+                  variant: "default",
+                })
+              }
+              
+              setAllConflictsResolved(allResolved)
+            }
+          } catch (err) {
+            console.error('Error fetching conflict stats:', err)
+          }
+        }
+        
         // If merge is completed or failed, stop polling
-        if (data.status === 'COMPLETED' || data.status === 'FAILED') {
+        if (data.status === 'completed' || data.status === 'failed') {
           if (statusIntervalRef.current) {
             clearInterval(statusIntervalRef.current)
             statusIntervalRef.current = null
@@ -265,7 +332,7 @@ function MergePageContent() {
     
     // Poll immediately and then at intervals
     pollStatus()
-    statusIntervalRef.current = setInterval(pollStatus, 15000) // Poll every 15 seconds
+    statusIntervalRef.current = setInterval(pollStatus, 5000) // Poll every 5 seconds
   }
   
   const handleNewQuestions = (questions: any[]) => {
@@ -348,7 +415,7 @@ function MergePageContent() {
       setError(null)
 
       // Reset state
-      setStatus('IN_PROGRESS')
+      setStatus('running')
       setProgress(0)
       setCurrentStep('')
       setMessages([])
@@ -379,7 +446,7 @@ function MergePageContent() {
       }
       
       // Update status to cancelled
-      setStatus('CANCELLED');
+      setStatus('cancelled');
       
       // Stop polling
       if (statusIntervalRef.current) {
@@ -406,6 +473,12 @@ function MergePageContent() {
 
   const handleViewConflicts = () => {
     setActiveTab('conflicts')
+    
+    toast({
+      title: "Viewing Conflicts",
+      description: "Showing the conflicts that need to be resolved.",
+      variant: "default",
+    })
   }
 
   const handleConflictSelect = (conflict: ConflictListItem) => {
@@ -441,12 +514,45 @@ function MergePageContent() {
   const handleAutoResolveComplete = async () => {
     // Refresh the conflict list
     try {
-      const response = await fetch(`/api/v1/merge/${mergeId}/status`)
+      const response = await fetch(`/api/merge/${mergeId}/status`)
       if (response.ok) {
         const data = await response.json()
-        setStatus(data.status)
+        setStatus(data.status as MergeStatus)
         setProgress(data.progress)
         setCurrentStep(data.current_step)
+        
+        // Check if all conflicts are resolved
+        try {
+          const conflictResponse = await fetch(`/api/merge/${mergeId}/conflicts?limit=1&offset=0`)
+          if (conflictResponse.ok) {
+            const conflictData = await conflictResponse.json()
+            
+            // Use the resolved count directly from the summary
+            const resolvedCount = conflictData.summary?.resolved || 0
+            
+            setConflictStats({
+              total: conflictData.total_count,
+              resolved: resolvedCount
+            })
+            
+            // Check if all conflicts are resolved
+            const allResolved = conflictData.total_count > 0 && 
+              resolvedCount === conflictData.total_count
+            
+            setAllConflictsResolved(allResolved)
+            
+            // If all conflicts are resolved, show a success toast
+            if (allResolved) {
+              toast({
+                title: "All Conflicts Resolved",
+                description: "All conflicts have been successfully resolved. You can now view the final merged graph.",
+                variant: "default",
+              })
+            }
+          }
+        } catch (err) {
+          console.error('Error fetching conflict stats:', err)
+        }
         
         // Update visualization if needed
         if (activeTab === 'visualization' || activeTab === 'conflicts') {
@@ -461,8 +567,22 @@ function MergePageContent() {
         })
       }
     } catch (error) {
-      console.error('Error refreshing status after auto-resolution:', error)
+      console.error('Error updating status after auto-resolution:', error)
     }
+  }
+
+  const handleViewFinalGraph = () => {
+    setActiveTab('visualization')
+    
+    // Refresh the visualization to show the final state
+    refreshVisualization()
+    
+    // Show a toast notification
+    toast({
+      title: "Final Merged Graph",
+      description: "Showing the final merged graph with all conflicts resolved.",
+      variant: "default",
+    })
   }
 
   useEffect(() => {
@@ -518,11 +638,11 @@ function MergePageContent() {
               <AlertCircle className="h-4 w-4" />
               <span>Status:</span>
               <div className="flex items-center gap-2">
-                {status === 'IN_PROGRESS' ? (
+                {status === 'running' ? (
                   <Loader2 className="h-4 w-4 animate-spin text-blue-500" />
-                ) : status === 'COMPLETED' ? (
+                ) : status === 'completed' ? (
                   <CheckCircle2 className="h-4 w-4 text-green-500" />
-                ) : status === 'FAILED' ? (
+                ) : status === 'failed' ? (
                   <AlertCircle className="h-4 w-4 text-red-500" />
                 ) : null}
                 <span className="text-sm capitalize">
@@ -547,12 +667,12 @@ function MergePageContent() {
                 <RefreshCcw className="h-4 w-4" />
                 {isRetrying ? 'Retrying...' : 'Retry'}
               </Button>
-            ) : status === 'IN_PROGRESS' ? (
+            ) : status === 'running' ? (
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => {
-                  if (status === 'IN_PROGRESS') {
+                  if (status === 'running') {
                     setIsPaused(!isPaused)
                     // Call the pause/resume API
                     fetch(`/api/merge/${sessionId}/pause`, {
@@ -569,7 +689,7 @@ function MergePageContent() {
                     })
                   }
                 }}
-                disabled={status !== 'IN_PROGRESS'}
+                disabled={status !== 'running'}
               >
                 {isPaused ? (
                   <>
@@ -621,14 +741,28 @@ function MergePageContent() {
           
           <TabsContent value="progress" className="flex-1 p-4">
             {mergeId ? (
-              <MergeProgress 
-                mergeId={mergeId}
-                sessionId={sessionId}
-                transformId={transformId}
-                onViewConflicts={handleViewConflicts}
-                onCancel={handleCancelMerge}
-                onFinalize={handleAutoResolveComplete}
-              />
+              <div className="h-full flex flex-col">
+                <div className="p-4 border-b">
+                  <MergeProgress
+                    mergeId={mergeId || ''}
+                    sessionId={sessionId}
+                    transformId={transformId}
+                    onViewConflicts={handleViewConflicts}
+                    onCancel={handleCancelMerge}
+                    onFinalize={handleAutoResolveComplete}
+                  />
+                </div>
+                
+                {/* Show the merge completion banner when all conflicts are resolved */}
+                {allConflictsResolved && mergeId && (
+                  <div className="p-4 border-b bg-green-50">
+                    <MergeCompletionBanner
+                      mergeId={mergeId}
+                      onViewFinalGraph={handleViewFinalGraph}
+                    />
+                  </div>
+                )}
+              </div>
             ) : (
               <div className="flex flex-col items-center justify-center h-full">
                 <Loader2 className="h-8 w-8 animate-spin mb-4" />
@@ -649,7 +783,7 @@ function MergePageContent() {
                         variant="outline"
                         size="sm"
                         onClick={() => {
-                          if (status === 'IN_PROGRESS') {
+                          if (status === 'running') {
                             setIsPaused(!isPaused)
                             // Call the pause/resume API
                             fetch(`/api/merge/${sessionId}/pause`, {
@@ -666,7 +800,7 @@ function MergePageContent() {
                             })
                           }
                         }}
-                        disabled={status !== 'IN_PROGRESS'}
+                        disabled={status !== 'running'}
                       >
                         {isPaused ? (
                           <>
@@ -684,12 +818,22 @@ function MergePageContent() {
                         variant="destructive"
                         size="sm"
                         onClick={handleCancelMerge}
-                        disabled={isCancelling || status === 'COMPLETED' || status === 'FAILED'}
+                        disabled={isCancelling || status === 'completed' || status === 'failed'}
                       >
                         {isCancelling ? 'Cancelling...' : 'Cancel Merge'}
                       </Button>
                     </div>
                   </div>
+                  
+                  {/* Show the merge completion banner when all conflicts are resolved */}
+                  {allConflictsResolved && mergeId && (
+                    <div className="p-4 border-b">
+                      <MergeCompletionBanner
+                        mergeId={mergeId}
+                        onViewFinalGraph={handleViewFinalGraph}
+                      />
+                    </div>
+                  )}
                   
                   <div className="h-[calc(100vh-14rem)] overflow-hidden">
                     {mergeId ? (
@@ -699,7 +843,6 @@ function MergePageContent() {
                         selectedConflicts={selectedConflicts}
                         onSelectionChange={setSelectedConflicts}
                         onAutoResolveComplete={handleAutoResolveComplete}
-                        className="h-full"
                       />
                     ) : (
                       <div className="flex items-center justify-center h-full">
@@ -738,10 +881,23 @@ function MergePageContent() {
           
           <TabsContent value="visualization" className="flex-1 p-0 h-full">
             <div className="h-full relative">
+              {/* Show the merge completion banner at the top of the visualization when all conflicts are resolved */}
+              {allConflictsResolved && mergeId && (
+                <div className="absolute top-0 left-0 right-0 z-10 p-4 bg-white bg-opacity-90 border-b">
+                  <MergeCompletionBanner
+                    mergeId={mergeId}
+                    onViewFinalGraph={handleViewFinalGraph}
+                    className="max-w-3xl mx-auto"
+                  />
+                </div>
+              )}
+              
               {graphDataMemo ? (
                 <MergeGraphVisualization 
-                  graphData={graphDataMemo} 
+                  transformId={transformId}
+                  mergeId={mergeId || undefined}
                   currentConflict={currentConflict}
+                  graphData={graphDataMemo}
                 />
               ) : visualizationLoading ? (
                 <div className="absolute inset-0 flex items-center justify-center">
