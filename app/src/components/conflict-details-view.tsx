@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { ScrollArea } from '@/components/ui/scroll-area'
 import { Separator } from '@/components/ui/separator'
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink } from '@/components/ui/breadcrumb'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -43,17 +42,31 @@ interface ConflictDetails extends ConflictListItem {
   context?: {
     description: string
     additional_info?: Record<string, any>
+    entity_type?: string
+    property_name?: string
+    staging_value?: any
+    production_value?: any
+    analysis?: {
+      strategy: string
+      confidence: number
+      explanation: string
+      risks?: string[]
+    }
   }
   severity_details?: {
     level: 'critical' | 'major' | 'minor'
     label: string
   }
   properties_affected?: Record<string, PropertyDiff>
-  suggestions?: Array<{
-    suggestion_type: string
+  resolution_options?: Array<{
+    id: string
     description: string
+    resolution_type: string
+    resolution_data: Record<string, any>
     confidence: number
-    affected_properties: string[]
+    reasoning: string
+    requires_review: boolean
+    auto_resolvable: boolean
   }>
 }
 
@@ -166,7 +179,7 @@ export function ConflictDetailsView({
       setError(null)
 
       const response = await fetch(
-        `/api/merge/${mergeId}/conflicts/${conflict.id}`,
+        `/api/merge/${mergeId}/conflicts/${conflict.id}/resolve`,
         {
           method: 'POST',
           headers: {
@@ -248,47 +261,49 @@ export function ConflictDetailsView({
   const severityLabel = details?.severity_details?.label || severityLevel
 
   return (
-    <div className="h-full flex flex-col">
+    <div className="h-[calc(100vh-14rem)] flex flex-col overflow-hidden">
       {/* Header */}
-      <div className="p-4 border-b">
-        <Breadcrumb>
-          <BreadcrumbItem>
-            <BreadcrumbLink onClick={onBack}>Conflicts</BreadcrumbLink>
-          </BreadcrumbItem>
-          <BreadcrumbItem>
-            <ChevronRight className="h-4 w-4" />
-          </BreadcrumbItem>
-          <BreadcrumbItem isCurrentPage>
-            <span className="text-gray-600">Conflict Details</span>
-          </BreadcrumbItem>
-        </Breadcrumb>
+      <div className="flex-none bg-white border-b">
+        <div className="p-4">
+          <Breadcrumb>
+            <BreadcrumbItem>
+              <BreadcrumbLink onClick={onBack}>Conflicts</BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbItem>
+              <ChevronRight className="h-4 w-4" />
+            </BreadcrumbItem>
+            <BreadcrumbItem isCurrentPage>
+              <span className="text-gray-600">Conflict Details</span>
+            </BreadcrumbItem>
+          </Breadcrumb>
 
-        <div className="mt-4 flex items-start justify-between">
-          <div>
-            <div className="flex items-center gap-2">
-              <h2 className="text-lg font-semibold">Conflict #{conflict.id}</h2>
-              <Badge variant="outline" className="flex items-center gap-1">
-                {conflictTypeIcons[conflict.conflict_type.toLowerCase()] || 
-                  <AlertTriangle className="h-4 w-4" />}
-                {conflict.conflict_type}
-              </Badge>
-              <Badge className={cn(severityStyle.bg, severityStyle.text, severityStyle.border)}>
-                {severityLabel}
-              </Badge>
+          <div className="mt-4 flex items-start justify-between">
+            <div>
+              <div className="flex items-center gap-2">
+                <h2 className="text-lg font-semibold">Conflict #{conflict.id}</h2>
+                <Badge variant="outline" className="flex items-center gap-1">
+                  {conflictTypeIcons[conflict.conflict_type.toLowerCase()] || 
+                    <AlertTriangle className="h-4 w-4" />}
+                  {conflict.conflict_type}
+                </Badge>
+                <Badge className={cn(severityStyle.bg, severityStyle.text, severityStyle.border)}>
+                  {severityLabel}
+                </Badge>
+              </div>
+              <p className="text-sm text-gray-600 mt-1">
+                Detected at: {new Date(conflict.detected_at).toLocaleString()}
+              </p>
             </div>
-            <p className="text-sm text-gray-600 mt-1">
-              Detected at: {new Date(conflict.detected_at).toLocaleString()}
-            </p>
+            <Button variant="outline" size="sm" onClick={onBack}>
+              <ArrowLeft className="h-4 w-2 mr-2" />
+              Back
+            </Button>
           </div>
-          <Button variant="outline" size="sm" onClick={onBack}>
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to List
-          </Button>
         </div>
       </div>
 
       {/* Main Content */}
-      <ScrollArea className="flex-1">
+      <div className="flex-1 overflow-y-auto">
         <div className="p-4 space-y-6">
           {error && (
             <Alert variant="destructive">
@@ -486,7 +501,7 @@ export function ConflictDetailsView({
           )}
 
           {/* Resolution Options */}
-          {details && details.suggestions && (
+          {details && details.resolution_options && (
             <Card>
               <CardHeader>
                 <CardTitle>Resolution Options</CardTitle>
@@ -494,53 +509,56 @@ export function ConflictDetailsView({
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {details?.suggestions?.map((suggestion: {
-                    suggestion_type: string;
-                    description: string;
-                    confidence: number;
-                    affected_properties: string[];
-                  }, index: number) => (
+                  {details.resolution_options.map((option) => (
                     <Card 
-                      key={index}
+                      key={option.id}
                       className={cn(
                         "hover:border-blue-300 transition-colors cursor-pointer",
-                        selectedResolution === suggestion.suggestion_type && "border-blue-500 bg-blue-50",
-                        suggestion.confidence > 0.8 && "ring-2 ring-green-100"
+                        selectedResolution === option.id && "border-blue-500 bg-blue-50",
+                        option.confidence > 0.8 && "ring-2 ring-green-100"
                       )}
-                      onClick={() => handleResolutionSelect(suggestion.suggestion_type)}
+                      onClick={() => handleResolutionSelect(option.id)}
                     >
                       <CardContent className="p-4">
                         <div className="flex justify-between items-start">
                           <div className="space-y-2">
                             <div>
-                              <h5 className="font-medium">{suggestion.suggestion_type}</h5>
-                              <p className="text-sm text-gray-600">{suggestion.description}</p>
+                              <h5 className="font-medium">{option.resolution_type}</h5>
+                              <p className="text-sm text-gray-600">{option.description}</p>
+                              {option.reasoning && (
+                                <p className="text-sm text-gray-500 mt-2">{option.reasoning}</p>
+                              )}
                             </div>
                             <div className="flex items-center gap-4">
                               <div className="flex-1 max-w-[200px]">
                                 <div className="flex items-center justify-between text-xs mb-1">
                                   <span>Confidence</span>
-                                  <span>{Math.round(suggestion.confidence * 100)}%</span>
+                                  <span>{Math.round(option.confidence * 100)}%</span>
                                 </div>
                                 <Progress 
-                                  value={suggestion.confidence * 100} 
+                                  value={option.confidence * 100} 
                                   className={cn(
-                                    suggestion.confidence > 0.8 ? "bg-green-100" : "bg-gray-100",
+                                    option.confidence > 0.8 ? "bg-green-100" : "bg-gray-100",
                                     "h-2"
                                   )}
                                   indicatorClassName={
-                                    suggestion.confidence > 0.8 ? "bg-green-500" : "bg-blue-500"
+                                    option.confidence > 0.8 ? "bg-green-500" : "bg-blue-500"
                                   }
                                 />
                               </div>
-                              {suggestion.confidence > 0.8 && (
+                              {option.confidence > 0.8 && (
                                 <Badge variant="default" className="bg-green-500 text-xs">
                                   Recommended
                                 </Badge>
                               )}
+                              {option.auto_resolvable && (
+                                <Badge variant="outline" className="text-xs">
+                                  Auto-resolvable
+                                </Badge>
+                              )}
                             </div>
                           </div>
-                          {selectedResolution === suggestion.suggestion_type && (
+                          {selectedResolution === option.id && (
                             <CheckCircle2 className="h-5 w-5 text-blue-500" />
                           )}
                         </div>
@@ -552,48 +570,50 @@ export function ConflictDetailsView({
             </Card>
           )}
         </div>
-      </ScrollArea>
+      </div>
 
       {/* Footer Actions */}
-      <div className="p-4 border-t bg-gray-50">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={onBack}>
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back
-            </Button>
-            {lastAppliedResolution && (
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={handleUndo}
-                disabled={isApplying}
-              >
-                <Undo2 className="h-4 w-4 mr-2" />
-                Undo Resolution
+      <div className="flex-none bg-gray-50 border-t">
+        <div className="p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" onClick={onBack}>
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Back
               </Button>
-            )}
-          </div>
-          <div className="flex items-center gap-2">
-            {onNext && (
+              {lastAppliedResolution && (
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={handleUndo}
+                  disabled={isApplying}
+                >
+                  <Undo2 className="h-4 w-4 mr-2" />
+                  Undo Resolution
+                </Button>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              {onNext && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={onNext}
+                  disabled={isApplying}
+                >
+                  <SkipForward className="h-4 w-4 mr-2" />
+                  Skip
+                </Button>
+              )}
               <Button
-                variant="outline"
                 size="sm"
-                onClick={onNext}
-                disabled={isApplying}
+                onClick={handleApplyResolution}
+                disabled={!selectedResolution || !canSubmit || isApplying}
               >
-                <SkipForward className="h-4 w-4 mr-2" />
-                Skip
+                <ThumbsUp className="h-4 w-4 mr-2" />
+                {isApplying ? 'Applying...' : 'Apply Resolution'}
               </Button>
-            )}
-            <Button
-              size="sm"
-              onClick={handleApplyResolution}
-              disabled={!selectedResolution || !canSubmit || isApplying}
-            >
-              <ThumbsUp className="h-4 w-4 mr-2" />
-              {isApplying ? 'Applying...' : 'Apply Resolution'}
-            </Button>
+            </div>
           </div>
         </div>
       </div>

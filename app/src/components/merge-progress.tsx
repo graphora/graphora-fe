@@ -4,12 +4,14 @@ import { Badge } from './ui/badge';
 import { Button } from './ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from './ui/card';
 import { Separator } from './ui/separator';
-import { Clock, AlertCircle, CheckCircle, XCircle, Loader2, Info, Calendar, ArrowRight, CheckCircle2 } from 'lucide-react';
+import { Clock, AlertCircle, CheckCircle, XCircle, Loader2, Info, Calendar, ArrowRight, CheckCircle2, AlertTriangle, ExternalLink } from 'lucide-react';
 import { MergeProgress as MergeProgressType, MergeStage, MergeStageStatus } from '@/types/merge';
 import { format } from 'date-fns';
 import { Tooltip } from './ui/tooltip';
 import { Alert, AlertDescription } from './ui/alert';
 import { toast } from './ui/use-toast';
+import { Checkbox } from './ui/checkbox';
+import { useLocalStorage } from '../hooks/use-local-storage';
 
 interface MergeProgressProps {
   mergeId: string;
@@ -50,6 +52,9 @@ export function MergeProgress({ mergeId, sessionId, transformId, onViewConflicts
   const [verificationResult, setVerificationResult] = useState<VerificationResult | null>(null);
   const [showZeroConflictNotification, setShowZeroConflictNotification] = useState(false);
   const [hasShownNotification, setHasShownNotification] = useState(false);
+  const [showConflictTour, setShowConflictTour] = useState(false);
+  const [autoNavigateToConflicts, setAutoNavigateToConflicts] = useLocalStorage('autoNavigateToConflicts', false);
+  const [hasShownConflictNotification, setHasShownConflictNotification] = useState(false);
 
   useEffect(() => {
     const fetchStatus = async () => {
@@ -64,6 +69,42 @@ export function MergeProgress({ mergeId, sessionId, transformId, onViewConflicts
         const data = await response.json();
         console.log('Merge status data:', data);
         setProgress(data);
+
+        data.has_conflicts = data.stages_progress?.conflict_detection?.metrics?.total_conflicts > 0;
+        data.conflict_count = data.stages_progress?.conflict_detection?.metrics?.total_conflicts;
+        
+        // Handle conflict detection
+        if (data.has_conflicts && data.conflict_count > 0 && !hasShownConflictNotification) {
+          setHasShownConflictNotification(true);
+          
+          // Show conflict notification
+          toast({
+            title: "Conflicts Detected",
+            description: `${data.conflict_count} conflicts need to be resolved before proceeding.`,
+            variant: "destructive",
+            action: (
+              <Button 
+                variant="secondary" 
+                size="sm" 
+                onClick={() => onViewConflicts?.()}
+              >
+                Resolve Now
+              </Button>
+            ),
+          });
+
+          // Auto-navigate to conflicts if enabled
+          if (autoNavigateToConflicts && onViewConflicts) {
+            onViewConflicts();
+          }
+
+          // Show conflict tour for first-time users
+          const hasSeenTour = localStorage.getItem('hasSeenConflictTour');
+          if (!hasSeenTour) {
+            setShowConflictTour(true);
+            localStorage.setItem('hasSeenConflictTour', 'true');
+          }
+        }
         
         // Check for zero conflicts scenario
         if (!data.has_conflicts && 
@@ -116,7 +157,7 @@ export function MergeProgress({ mergeId, sessionId, transformId, onViewConflicts
       if (intervalRef.current) clearInterval(intervalRef.current);
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [mergeId, retryCount, hasShownNotification]);
+  }, [mergeId, retryCount, hasShownConflictNotification, autoNavigateToConflicts, onViewConflicts]);
 
   const handleFinalizeMerge = async () => {
     if (!mergeId) return;
@@ -384,7 +425,9 @@ export function MergeProgress({ mergeId, sessionId, transformId, onViewConflicts
   }
 
   const hasConflicts = progress.has_conflicts || progress.overall_status === 'pending';
-  const isReadyToFinalize = (progress.current_stage === 'apply_changes') &&
+  const isReadyToFinalize = (progress.current_stage === 'conflict_detection' || 
+                           progress.current_stage === 'merge') && 
+                           progress.overall_progress >= 100 && 
                            !progress.has_conflicts && 
                            (progress.conflict_count === 0 || !progress.conflict_count) &&
                            progress.overall_status !== 'completed';
@@ -402,7 +445,7 @@ export function MergeProgress({ mergeId, sessionId, transformId, onViewConflicts
           <div className="flex flex-wrap items-center gap-2">
             {getStatusBadge(isReadyToFinalize ? 'READY_TO_FINALIZE' : progress.overall_status)}
             {progress.conflict_count > 0 && (
-              <Badge variant="outline" className="ml-2">
+              <Badge variant="destructive" className="ml-2 animate-pulse">
                 {progress.conflict_count} Conflicts
               </Badge>
             )}
@@ -415,6 +458,40 @@ export function MergeProgress({ mergeId, sessionId, transformId, onViewConflicts
         </div>
       </CardHeader>
       <CardContent className="overflow-y-auto flex-grow">
+        {/* Conflict Alert */}
+        {hasConflicts && progress.conflict_count > 0 && (
+          <Alert className="bg-amber-50 border-amber-200 animate-fadeIn mb-4">
+            <AlertTriangle className="h-5 w-5 text-amber-600" />
+            <div className="font-medium text-amber-800">Action Required: Conflicts Detected</div>
+            <AlertDescription className="text-amber-700">
+              <p className="mb-2">
+                {progress.conflict_count} conflicts need to be resolved before the merge can proceed.
+                Please review and resolve these conflicts to continue.
+              </p>
+              <div className="flex flex-col gap-4">
+                <Button 
+                  variant="secondary"
+                  onClick={onViewConflicts}
+                  className="bg-amber-100 hover:bg-amber-200 text-amber-900"
+                >
+                  <ExternalLink className="mr-2 h-4 w-4" />
+                  View and Resolve Conflicts
+                </Button>
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    id="autoNavigate"
+                    checked={autoNavigateToConflicts}
+                    onCheckedChange={(checked) => setAutoNavigateToConflicts(checked as boolean)}
+                  />
+                  <label htmlFor="autoNavigate" className="text-sm text-amber-800 cursor-pointer">
+                    Always take me to conflict resolution when conflicts are detected
+                  </label>
+                </div>
+              </div>
+            </AlertDescription>
+          </Alert>
+        )}
+
         {/* Zero Conflict Notification */}
         {showZeroConflictNotification && (
           <Alert className="bg-green-50 border-green-200 animate-fadeIn mb-4">
@@ -513,8 +590,13 @@ export function MergeProgress({ mergeId, sessionId, transformId, onViewConflicts
         </div>
         <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
           {hasConflicts && onViewConflicts && (
-            <Button onClick={onViewConflicts} className="w-full sm:w-auto">
-              View Conflicts
+            <Button 
+              onClick={onViewConflicts} 
+              className="w-full sm:w-auto bg-amber-600 hover:bg-amber-700 text-white"
+              size="lg"
+            >
+              <AlertTriangle className="mr-2 h-5 w-5" />
+              Resolve {progress.conflict_count} Conflicts
             </Button>
           )}
           
@@ -540,6 +622,26 @@ export function MergeProgress({ mergeId, sessionId, transformId, onViewConflicts
           )}
         </div>
       </CardFooter>
+
+      {/* Floating Action Button for Conflicts */}
+      {hasConflicts && onViewConflicts && (
+        <div className="fixed bottom-6 right-6 z-50 sm:hidden">
+          <Button
+            onClick={onViewConflicts}
+            className="rounded-full w-14 h-14 bg-amber-600 hover:bg-amber-700 text-white shadow-lg"
+          >
+            <div className="relative">
+              <AlertTriangle className="h-6 w-6" />
+              <Badge 
+                variant="destructive" 
+                className="absolute -top-2 -right-2 min-w-[1.5rem] h-6 rounded-full animate-pulse"
+              >
+                {progress.conflict_count}
+              </Badge>
+            </div>
+          </Button>
+        </div>
+      )}
     </Card>
   );
 }

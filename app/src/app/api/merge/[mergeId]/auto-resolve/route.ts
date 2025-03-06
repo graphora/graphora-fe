@@ -7,7 +7,7 @@ export async function POST(
   { params }: { params: { mergeId: string } }
 ) {
   try {
-    const { mergeId } = params
+    const { mergeId } = await params
     const { userId } = getAuth(request)
 
     if (!userId) {
@@ -18,7 +18,7 @@ export async function POST(
     }
 
     // Call the backend API
-    const response = await fetch(`${API_BASE_URL}/merge/${mergeId}/conflicts/auto-resolve`, {
+    const response = await fetch(`${API_BASE_URL}/merge/${mergeId}/auto-resolve`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

@@ -83,7 +83,7 @@ export function AutoResolvePanel({
       setResult(null)
 
       // Step 1: Initiate auto-resolution
-      const startResponse = await fetch(`/api/merge/conflicts/${mergeId}/auto-resolve`, {
+      const startResponse = await fetch(`/api/merge/${mergeId}/auto-resolve`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -96,79 +96,21 @@ export function AutoResolvePanel({
       }
 
       const startData = await startResponse.json()
-      const operationId = startData.operation_id
+      
+      if (startData.manual_required == 0) {
 
-      if (!operationId) {
-        throw new Error('No operation ID returned from auto-resolve endpoint')
+        // Show success toast
+        toast({
+          title: "Auto-Resolution Complete",
+          description: `Successfully resolved ${startData.auto_resolved} / ${startData.total} conflicts.`,
+          variant: "default",
+        })
+
+        // Refresh conflict list
+        onResolutionComplete()
+      } else {
+        throw new Error('Auto-resolution failed')
       }
-
-      // Step 2: Poll for progress updates
-      const interval = setInterval(async () => {
-        try {
-          const statusResponse = await fetch(`/api/merge/conflicts/${mergeId}/operations/${operationId}`, {
-            method: 'GET'
-          })
-
-          if (!statusResponse.ok) {
-            clearInterval(interval)
-            throw new Error(`Failed to get operation status: ${statusResponse.statusText}`)
-          }
-
-          const statusData = await statusResponse.json()
-          
-          // Update progress
-          if (statusData.progress) {
-            setProgress(statusData.progress)
-          }
-
-          // Check if operation is complete
-          if (statusData.status === 'completed') {
-            clearInterval(interval)
-            setPollInterval(null)
-            
-            // Fetch final results
-            const resultsResponse = await fetch(`/api/merge/conflicts/${mergeId}/auto-resolve/results`, {
-              method: 'GET'
-            })
-
-            if (!resultsResponse.ok) {
-              throw new Error(`Failed to get auto-resolution results: ${resultsResponse.statusText}`)
-            }
-
-            const resultsData = await resultsResponse.json()
-            setResult(resultsData)
-            setProgress(100)
-            setIsResolving(false)
-
-            // Show success toast
-            toast({
-              title: "Auto-Resolution Complete",
-              description: `Successfully resolved ${resultsData.resolved} conflicts.`,
-              variant: "default",
-            })
-
-            // Refresh conflict list
-            onResolutionComplete()
-          } else if (statusData.status === 'failed') {
-            clearInterval(interval)
-            setPollInterval(null)
-            throw new Error(statusData.error || 'Auto-resolution failed')
-          }
-        } catch (error) {
-          clearInterval(interval)
-          setPollInterval(null)
-          setError(error instanceof Error ? error.message : 'An error occurred during polling')
-          setIsResolving(false)
-          
-          toast({
-            title: "Error",
-            description: "Failed to complete auto-resolution. Please try again.",
-            variant: "destructive",
-          })
-        }
-      }, 2000) // Poll every 2 seconds
-
-      setPollInterval(interval)
     } catch (error) {
       setError(error instanceof Error ? error.message : 'An error occurred')
       setIsResolving(false)
@@ -192,7 +134,7 @@ export function AutoResolvePanel({
       }
       
       // Call cancel endpoint
-      const cancelResponse = await fetch(`/api/merge/conflicts/${mergeId}/auto-resolve/cancel`, {
+      const cancelResponse = await fetch(`/api/merge/${mergeId}/auto-resolve/cancel`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -224,7 +166,7 @@ export function AutoResolvePanel({
     try {
       setIsUndoing(true)
       
-      const response = await fetch(`/api/merge/conflicts/${mergeId}/auto-resolve/undo`, {
+      const response = await fetch(`/api/merge/${mergeId}/auto-resolve/undo`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

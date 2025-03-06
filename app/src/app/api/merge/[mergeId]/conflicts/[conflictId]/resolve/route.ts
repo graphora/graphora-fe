@@ -21,7 +21,7 @@ export async function POST(
     const body = await request.json().catch(() => ({}))
 
     // Call the backend API
-    const response = await fetch(`${API_BASE_URL}/merge/${mergeId}/conflicts/${conflictId}/resolve`, {
+    const response = await fetch(`${API_BASE_URL}/merge/conflicts/${mergeId}/${conflictId}/resolve`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
