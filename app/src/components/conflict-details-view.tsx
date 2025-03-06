@@ -294,10 +294,10 @@ export function ConflictDetailsView({
                 Detected at: {new Date(conflict.created_at).toLocaleString()}
               </p>
             </div>
-            <Button variant="outline" size="sm" onClick={onBack}>
+            {/* <Button variant="outline" size="sm" onClick={onBack}>
               <ArrowLeft className="h-4 w-2 mr-2" />
               Back
-            </Button>
+            </Button> */}
           </div>
         </div>
       </div>
@@ -573,8 +573,8 @@ export function ConflictDetailsView({
       </div>
 
       {/* Footer Actions */}
-      <div className="flex-none bg-gray-50 border-t shadow-[0_-1px_2px_rgba(0,0,0,0.05)]">
-        <div className="p-4">
+      <div className="flex-none bg-gray-50 border-t shadow-[0_-1px_2px_rgba(0,0,0,0.05)] p-1 fixed bottom-0 left-0 w-3/5">
+        <div className="">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Button variant="outline" size="sm" onClick={onBack}>
