@@ -4,16 +4,11 @@ import { useState, useEffect, useRef, useMemo, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Loader2, PauseCircle, PlayCircle, AlertCircle, CheckCircle2, RefreshCcw} from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Alert, AlertDescription } from '@/components/ui/alert'
 import { MergeGraphVisualization } from '@/components/merge-graph-visualization'
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable'
-import { ScrollArea } from '@/components/ui/scroll-area'
-import { Card, CardContent } from '@/components/ui/card'
-import { WorkflowLayout } from '@/components/workflow-layout'
 import { cn } from '@/lib/utils'
 import type { ChatMessage, MergeStatus, ConflictListItem, ConflictMessage } from '@/types/merge'
 import { useUser } from '@clerk/nextjs'
-import { ConflictDisplay } from '@/components/conflict-display'
 import { useMergeVisualization } from '@/hooks/useMergeVisualization'
 import { MergeProgress } from '@/components/merge-progress'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -21,7 +16,8 @@ import { Badge } from '@/components/ui/badge'
 import { toast } from '@/components/ui/use-toast'
 import { ConflictList } from '@/components/conflict-list'
 import { MergeCompletionBanner } from '@/components/merge-completion-banner'
-
+import { Activity, AlertTriangle, Network, BarChart3 } from 'lucide-react'
+import { WorkflowLayout } from '@/components/workflow-layout'
 function MergePageContent() {
   const router = useRouter()
   const { user, isLoaded } = useUser()
@@ -52,14 +48,14 @@ function MergePageContent() {
 
   const sessionId = searchParams.get('session_id') || ''
   const transformId = searchParams.get('transform_id') || ''
-  const initialMergeId = searchParams.get('merge_id')
+  const initialMergeId = searchParams.get('merge_id') || ''
 
   const { 
     data: mergeVisualization, 
     loading: visualizationLoading, 
     error: visualizationError, 
     fetchData: refreshVisualization
-  } = useMergeVisualization(sessionId)
+  } = useMergeVisualization(initialMergeId, transformId)
 
   const graphDataMemo = useMemo(() => {
     if (!mergeVisualization?.data) return null
@@ -628,117 +624,38 @@ function MergePageContent() {
   }
 
   return (
-    <WorkflowLayout 
-      progress={progress} 
-      currentStep={currentStep}
-      toolbarContent={
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2 text-sm">
-              <AlertCircle className="h-4 w-4" />
-              <span>Status:</span>
-              <div className="flex items-center gap-2">
-                {status === 'running' ? (
-                  <Loader2 className="h-4 w-4 animate-spin text-blue-500" />
-                ) : status === 'completed' ? (
-                  <CheckCircle2 className="h-4 w-4 text-green-500" />
-                ) : status === 'failed' ? (
-                  <AlertCircle className="h-4 w-4 text-red-500" />
-                ) : null}
-                <span className="text-sm capitalize">
-                  {status ? status.toLowerCase().replace('_', ' ') : 'DONE'}
-                </span>
-              </div>
-            </div>
-            <div className="flex items-center gap-2 text-sm">
-              <span>Progress:</span>
-              <span className="text-gray-500">{progress}%</span>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            {error ? (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleRetry}
-                disabled={isRetrying}
-                className="gap-2"
-              >
-                <RefreshCcw className="h-4 w-4" />
-                {isRetrying ? 'Retrying...' : 'Retry'}
-              </Button>
-            ) : status === 'running' ? (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  if (status === 'running') {
-                    setIsPaused(!isPaused)
-                    // Call the pause/resume API
-                    fetch(`/api/merge/${sessionId}/pause`, {
-                      method: 'POST',
-                      headers: {
-                        'Content-Type': 'application/json'
-                      },
-                      body: JSON.stringify({
-                        transform_id: transformId,
-                        action: isPaused ? 'resume' : 'pause'
-                      })
-                    }).catch(err => {
-                      console.error('Error toggling pause state:', err)
-                    })
-                  }
-                }}
-                disabled={status !== 'running'}
-              >
-                {isPaused ? (
-                  <>
-                    <PlayCircle className="h-4 w-4 mr-2" />
-                    Resume
-                  </>
-                ) : (
-                  <>
-                    <PauseCircle className="h-4 w-4 mr-2" />
-                    Pause
-                  </>
+    <WorkflowLayout progress={progress}>
+    <div className="h-full flex flex-col">
+
+      {/* Main Content */}
+      <div className="flex-1 min-h-0">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full">
+          <div className="container py-4">
+            <TabsList>
+              <TabsTrigger value="progress">
+                <Activity className="h-4 w-4 mr-2" />
+                Progress
+              </TabsTrigger>
+              <TabsTrigger value="conflicts">
+                <AlertTriangle className="h-4 w-4 mr-2" />
+                Conflicts
+                {conflictStats.total > 0 && (
+                  <Badge variant="secondary" className="ml-2">
+                    {conflictStats.resolved}/{conflictStats.total}
+                  </Badge>
                 )}
-              </Button>
-            ) : null}
-            {canSubmit && (
-              <Button
-                variant="default"
-                size="sm"
-                className="bg-green-600 hover:bg-green-700 gap-2"
-                onClick={handleRetry}
-                disabled={isRetrying}
-              >
-                {isRetrying ? (
-                  <RefreshCcw className="h-4 w-4 animate-spin" />
-                ) : (
-                  <CheckCircle2 className="h-4 w-4" />
+              </TabsTrigger>
+              <TabsTrigger value="visualization">
+                <Network className="h-4 w-4 mr-2" />
+                Graph View
+                {allConflictsResolved && (
+                  <Badge variant="success" className="ml-2">
+                    <CheckCircle2 className="h-3 w-3" />
+                  </Badge>
                 )}
-                {isRetrying ? 'Retrying...' : 'Merge to Prod DB'}
-              </Button>
-            )}
-          </div>
-        </div>
-      }
-    >
-      <div className="h-full flex flex-col">
-        <Tabs 
-          defaultValue="progress" 
-          value={activeTab} 
-          onValueChange={setActiveTab}
-          className="w-full"
-        >
-          <div className="border-b px-4">
-            <TabsList className="h-10">
-              <TabsTrigger value="progress">Progress</TabsTrigger>
-              <TabsTrigger value="conflicts">Conflicts</TabsTrigger>
-              <TabsTrigger value="visualization">Visualization</TabsTrigger>
+              </TabsTrigger>
             </TabsList>
           </div>
-          
           <TabsContent value="progress" className="flex-1 p-4">
             {mergeId ? (
               <div className="h-full flex flex-col">
@@ -770,10 +687,9 @@ function MergePageContent() {
               </div>
             )}
           </TabsContent>
-          
           <TabsContent value="conflicts" className="flex-1 p-0 h-full">
             <ResizablePanelGroup direction="horizontal" className="h-full">
-            <ResizablePanel defaultSize={60} minSize={40}>
+              <ResizablePanel defaultSize={60} minSize={40}>
                 <div className="h-full flex flex-col">
                   <div className="p-4 border-b flex justify-between items-center">
                     <h3 className="font-medium">Merge Conflicts</h3>
@@ -860,8 +776,10 @@ function MergePageContent() {
                   <div className="flex-1 relative">
                     {graphDataMemo ? (
                       <MergeGraphVisualization 
-                        graphData={graphDataMemo} 
+                        transformId={transformId}
+                        mergeId={mergeId || undefined}
                         currentConflict={currentConflict}
+                        graphData={graphDataMemo}
                       />
                     ) : visualizationLoading ? (
                       <div className="absolute inset-0 flex items-center justify-center">
@@ -878,7 +796,6 @@ function MergePageContent() {
               
             </ResizablePanelGroup>
           </TabsContent>
-          
           <TabsContent value="visualization" className="flex-1 p-0 h-full">
             <div className="h-full relative">
               {/* Show the merge completion banner at the top of the visualization when all conflicts are resolved */}
@@ -905,13 +822,14 @@ function MergePageContent() {
                 </div>
               ) : (
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <p className="text-gray-500">No graph data available</p>
+                  <p className="text-sm text-gray-500">No graph data available</p>
                 </div>
               )}
             </div>
           </TabsContent>
         </Tabs>
       </div>
+    </div>
     </WorkflowLayout>
   )
 }

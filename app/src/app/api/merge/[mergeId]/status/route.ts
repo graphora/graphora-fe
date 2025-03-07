@@ -16,7 +16,7 @@ export async function GET(
       );
     }
 
-    const { mergeId } = params;
+    const { mergeId } = await params;
 
     // Call backend API to get merge status
     const response = await fetch(

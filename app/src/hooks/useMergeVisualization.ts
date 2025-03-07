@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { MergeVisualizationResponse } from '@/types/merge'
 import type { GraphData, GraphOperation, Node, Edge } from '@/types/graph'
 
-export function useMergeVisualization(sessionId: string) {
+export function useMergeVisualization(mergeId: string, transformId: string) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [data, setData] = useState<MergeVisualizationResponse | null>(null)
@@ -42,8 +42,8 @@ export function useMergeVisualization(sessionId: string) {
   }, [])
 
   const fetchData = useCallback(async () => {
-    if (!sessionId) {
-      setError('No session ID provided')
+    if (!mergeId || !transformId) {
+      setError('No merge ID or transform ID provided')
       return
     }
 
@@ -51,7 +51,7 @@ export function useMergeVisualization(sessionId: string) {
       setLoading(true)
       setError(null)
 
-      const response = await fetch(`/api/merge/${sessionId}/visualization`)
+      const response = await fetch(`/api/merge/${mergeId}/graph/${transformId}`)
       
       if (!response.ok) {
         if (response.status === 404) {
@@ -82,10 +82,10 @@ export function useMergeVisualization(sessionId: string) {
     } finally {
       setLoading(false)
     }
-  }, [sessionId, transformGraphData])
+  }, [mergeId, transformId, transformGraphData])
 
   useEffect(() => {
-    if (sessionId) {
+    if (mergeId && transformId) {
       fetchData()
       
       // Set up polling for visualization updates
@@ -97,7 +97,7 @@ export function useMergeVisualization(sessionId: string) {
         clearInterval(intervalId)
       }
     }
-  }, [sessionId, fetchData])
+  }, [mergeId, transformId, fetchData])
 
   const handleNodeOperation = useCallback((operation: GraphOperation) => {
     setGraphData(prevData => {

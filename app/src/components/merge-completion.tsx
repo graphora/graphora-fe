@@ -68,7 +68,7 @@ export function MergeCompletion({ mergeId, onComplete }: MergeCompletionProps) {
   // Fetch initial statistics
   const fetchStatistics = useCallback(async () => {
     try {
-      const response = await fetch(`/api/merge/statistics/${mergeId}`)
+      const response = await fetch(`/api/merge/${mergeId}/statistics`)
       if (!response.ok) throw new Error('Failed to fetch statistics')
       const data = await response.json()
       setStatistics(data)

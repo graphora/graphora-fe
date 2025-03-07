@@ -8,7 +8,6 @@ import { Badge } from '@/components/ui/badge'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { Input } from '@/components/ui/input'
-import type { GraphData } from '@/types/graph'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { useGraphData } from '@/hooks/useGraphData'
@@ -26,17 +25,7 @@ interface MergeGraphVisualizationProps {
 // Color scheme for different states
 const COLOR_SCHEME = {
   new: '#4ade80', // green-400
-  deleted: '#f87171', // red-400
-  modified: '#60a5fa', // blue-400
-  conflict: '#fbbf24', // amber-400
-  unchanged: '#9ca3af', // gray-400
-  unknown: '#a78bfa', // violet-400
-  reference: '#22d3ee', // cyan-400
-  needs_review: '#fb923c', // orange-400
-  conflict_source: '#f59e0b', // amber-500
-  conflict_target: '#d97706', // amber-600
-  preview_add: '#86efac', // green-300
-  preview_remove: '#fca5a5', // red-300
+  modified: '#60a5fa'
 } as const
 
 type Status = keyof typeof COLOR_SCHEME
@@ -73,24 +62,50 @@ export const MergeGraphVisualization = ({
     enabled: !externalLoading && !externalGraphData // Only fetch if not loading externally and no external data
   })
 
+  const [isFinalGraph, setIsFinalGraph] = useState(false)
+  const [finalGraphData, setFinalGraphData] = useState<any>(null)
+
+  useEffect(() => {
+    // If we have a mergeId and no current conflict, fetch the final merged graph
+    const fetchFinalGraph = async () => {
+      if (!mergeId || currentConflict || finalGraphData) return
+
+      try {
+        const response = await fetch(`/api/merge/${mergeId}/graph/${transformId}`)
+        
+        if (!response.ok) {
+          throw new Error(`Failed to fetch final graph: ${response.statusText}`)
+        }
+        
+        const data = await response.json()
+        setFinalGraphData(data)
+        setIsFinalGraph(true)
+      } catch (err) {
+        console.error('Error fetching final graph:', err)
+        toast({
+          title: "Error",
+          description: "Failed to load final merged graph. Please try again.",
+          variant: "destructive",
+        })
+      }
+    }
+
+    fetchFinalGraph()
+  }, [mergeId, currentConflict, finalGraphData])
+
   const loading = externalLoading || dataLoading
   const error = externalError || dataError
-  const graphData = externalGraphData || fetchedGraphData
+  const graphData = finalGraphData || externalGraphData || fetchedGraphData
 
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedNode, setSelectedNode] = useState<any>(null)
-  const FILTER_KEYS = ['New', 'Deleted', 'Modified', 'Conflicts', 'Unchanged', 'Unknown', 'Reference', 'NeedsReview'] as const;
+  const FILTER_KEYS = ['New', 'Deleted', 'Modified'] as const;
   type FilterKey = typeof FILTER_KEYS[number];
   type Filters = { [K in `show${FilterKey}`]: boolean };
   const [filters, setFilters] = useState<Filters>({
     showNew: true,
-    showDeleted: true,
+    showDeleted: false,
     showModified: true,
-    showConflicts: true,
-    showUnchanged: true,
-    showUnknown: true,
-    showReference: true,
-    showNeedsReview: true,
   })
 
   const [showPropertiesModal, setShowPropertiesModal] = useState(false)
@@ -125,17 +140,12 @@ export const MergeGraphVisualization = ({
     const nodes = (graphData.nodes || [])
       .filter(node => {
         if (!node || !node.properties) return false
-        const status = node.properties.__status || 'unknown'
+        const status = isFinalGraph ? 'final_merged' : (node.properties.__status || 'new')
 
         // Filter based on status
         if (!filters.showNew && status === 'new') return false
         if (!filters.showDeleted && status === 'deleted') return false
         if (!filters.showModified && status === 'modified') return false
-        if (!filters.showConflicts && status === 'conflict') return false
-        if (!filters.showUnchanged && status === 'unchanged') return false
-        if (!filters.showUnknown && status === 'unknown') return false
-        if (!filters.showReference && status === 'reference') return false
-        if (!filters.showNeedsReview && status === 'needs_review') return false
 
         if (searchQuery) {
           const nodeStr = JSON.stringify(node).toLowerCase()
@@ -144,10 +154,12 @@ export const MergeGraphVisualization = ({
         return true
       })
       .map(node => {
-        let color = COLOR_SCHEME[node.properties?.__status as Status] || COLOR_SCHEME.unknown
+        let color = isFinalGraph ? 
+          COLOR_SCHEME.final_merged : 
+          COLOR_SCHEME[node.properties?.__status as Status] || COLOR_SCHEME.unknown
         
         // Highlight nodes involved in current conflict
-        if (currentConflict && (
+        if (!isFinalGraph && currentConflict && (
           currentConflict.nodeId === node.id ||
           currentConflict.relatedNodes?.includes(node.id)
         )) {
@@ -155,21 +167,12 @@ export const MergeGraphVisualization = ({
             COLOR_SCHEME.conflict_source : 
             COLOR_SCHEME.conflict_target
         }
-        
-        // Apply preview colors if showing resolution preview
-        if (showPreview && previewResolution) {
-          if (previewResolution.addedNodes?.includes(node.id)) {
-            color = COLOR_SCHEME.preview_add
-          } else if (previewResolution.removedNodes?.includes(node.id)) {
-            color = COLOR_SCHEME.preview_remove
-          }
-        }
 
         const processedNode = {
           ...node,
           color,
           displayName: node.properties?.name || node.labels?.[0] || 'Unnamed',
-          val: node.properties?.__importance || 1, // Node size based on importance
+          val: node.properties?.__importance || 1,
         }
         nodesMap.set(node.id, processedNode)
         return processedNode
@@ -178,42 +181,30 @@ export const MergeGraphVisualization = ({
     // Second pass: Create links
     const links = (graphData.edges || [])
       .filter(edge => {
-        // Only keep edges where both source and target are node IDs that exist in our nodes
         const sourceExists = nodesMap.has(edge.source)
         const targetExists = nodesMap.has(edge.target)
         return sourceExists && targetExists
       })
       .map(edge => {
-        let color = COLOR_SCHEME[edge.properties?.__status as Status] || COLOR_SCHEME.unknown
+        let color = isFinalGraph ? 
+          COLOR_SCHEME.final_merged : 
+          COLOR_SCHEME[edge.properties?.__status as Status] || COLOR_SCHEME.unknown
         
         // Highlight edges involved in current conflict
-        if (currentConflict && currentConflict.edgeId === edge.id) {
+        if (!isFinalGraph && currentConflict && currentConflict.edgeId === edge.id) {
           color = COLOR_SCHEME.conflict
-        }
-        
-        // Apply preview colors if showing resolution preview
-        if (showPreview && previewResolution) {
-          if (previewResolution.addedEdges?.includes(edge.id)) {
-            color = COLOR_SCHEME.preview_add
-          } else if (previewResolution.removedEdges?.includes(edge.id)) {
-            color = COLOR_SCHEME.preview_remove
-          }
         }
 
         return {
           ...edge,
-          id: `${edge.source}-${edge.target}`,
+          color,
           source: nodesMap.get(edge.source),
           target: nodesMap.get(edge.target),
-          color,
-          type: edge.type,
-          displayName: edge.type?.replace(/_/g, ' ').toLowerCase() || 'related',
-          curvature: 0.2 // Add slight curve to edges for better visibility
         }
       })
 
     return { nodes, links }
-  }, [graphData, filters, searchQuery, currentConflict, showPreview, previewResolution])
+  }, [graphData, filters, searchQuery, currentConflict, isFinalGraph])
 
   // Function to focus on a specific node
   const focusOnNode = useCallback((nodeId: string) => {
@@ -499,8 +490,8 @@ export const MergeGraphVisualization = ({
               cooldownTicks={100}
               onEngineStop={() => {
                 // Save final positions for smoother updates
-                if (fgRef.current) {
-                  const { nodes } = fgRef.current.graphData()
+                if (fgRef.current && fgRef.current.graphData) {
+                  const { nodes } = fgRef.current.graphData
                   nodes.forEach((node: any) => {
                     node.fx = node.x
                     node.fy = node.y
@@ -544,6 +535,13 @@ export const MergeGraphVisualization = ({
             </div>
           )}
         </div>
+        {isFinalGraph && (
+          <div className="absolute top-4 right-4 z-10">
+            <Badge variant="success" className="bg-green-100 text-green-800">
+              Final Merged Graph
+            </Badge>
+          </div>
+        )}
       </div>
 
       {/* Node Properties Modal */}

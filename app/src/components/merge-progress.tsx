@@ -37,13 +37,17 @@ export function MergeProgress({ mergeId, sessionId, transformId, onViewConflicts
     merge_id: mergeId,
     overall_status: 'running',
     overall_progress: 0,
-    current_stage: 'analyze',
-    start_time: new Date().toISOString(),
-    stages_progress: [],
+    current_stage: 'Initializing merge...',
+    stages: [],
     has_conflicts: false,
-    conflict_count: 0
+    conflict_count: 0,
+    start_time: new Date().toISOString(),
+    estimated_completion: null,
+    elapsed_time: 0,
+    remaining_time: null
   });
-  const [elapsedTime, setElapsedTime] = useState(0);
+  const [elapsedTime, setElapsedTime] = useState<string>('00:00');
+  const [showDetails, setShowDetails] = useState(false);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const [retryCount, setRetryCount] = useState(0);
@@ -150,7 +154,12 @@ export function MergeProgress({ mergeId, sessionId, transformId, onViewConflicts
     
     // Start timer for elapsed time
     timerRef.current = setInterval(() => {
-      setElapsedTime(prev => prev + 1);
+      const startTime = new Date(progress.start_time);
+      const now = new Date();
+      const diff = Math.floor((now.getTime() - startTime.getTime()) / 1000);
+      const minutes = Math.floor(diff / 60).toString().padStart(2, '0');
+      const seconds = (diff % 60).toString().padStart(2, '0');
+      setElapsedTime(`${minutes}:${seconds}`);
     }, 1000);
     
     return () => {
@@ -425,9 +434,8 @@ export function MergeProgress({ mergeId, sessionId, transformId, onViewConflicts
   }
 
   const hasConflicts = progress.has_conflicts || progress.overall_status === 'pending';
-  const isReadyToFinalize = (progress.current_stage === 'conflict_detection' || 
+  const isReadyToFinalize = (progress.current_stage === 'apply_changes' || 
                            progress.current_stage === 'merge') && 
-                           progress.overall_progress >= 100 && 
                            !progress.has_conflicts && 
                            (progress.conflict_count === 0 || !progress.conflict_count) &&
                            progress.overall_status !== 'completed';
@@ -452,6 +460,11 @@ export function MergeProgress({ mergeId, sessionId, transformId, onViewConflicts
             {isReadyToFinalize && (
               <Badge variant="outline" className="ml-2 bg-green-100 text-green-800 border-green-300">
                 No Conflicts
+              </Badge>
+            )}
+            {progress.overall_status === 'completed' && (
+              <Badge variant="success" className="ml-2">
+                All Conflicts Resolved
               </Badge>
             )}
           </div>
@@ -528,7 +541,12 @@ export function MergeProgress({ mergeId, sessionId, transformId, onViewConflicts
             <span>{progress.overall_status}</span>
             {/* <span>{Math.round(progress.overall_progress)}%</span> */}
           </div>
-          <Progress value={progress.overall_progress} className="h-2" />
+          <Progress 
+            value={progress.overall_progress} 
+            className={progress.overall_status === 'completed' ? "bg-green-100" : "bg-gray-100"}
+            indicatorClassName={progress.overall_status === 'completed' ? "bg-green-500" : undefined}
+            className="h-2"
+          />
         </div>
 
         {/* Stage Progress */}
@@ -564,7 +582,7 @@ export function MergeProgress({ mergeId, sessionId, transformId, onViewConflicts
               <span>Elapsed Time</span>
             </div>
             <div className="text-lg font-semibold">
-              {formatTime(elapsedTime)}
+              {elapsedTime}
             </div>
           </div>
           {/* <div>

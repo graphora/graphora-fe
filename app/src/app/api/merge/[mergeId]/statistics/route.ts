@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { API_BASE_URL } from '@/lib/constants'
 
 export async function GET(
   request: NextRequest,
   { params }: { params: { mergeId: string } }
 ) {
   try {
-    const { mergeId } = params
+    const { mergeId } = await params
     const response = await fetch(
-      `${process.env.API_BASE_URL}/api/v1/merge/statistics/${mergeId}`,
+      `${API_BASE_URL}/merge/statistics/${mergeId}`,
       {
         headers: {
           'Content-Type': 'application/json',

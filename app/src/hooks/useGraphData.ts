@@ -31,9 +31,7 @@ export function useGraphData({
 
     try {
       // Fetch graph data
-      const graphResponse = transformId ? 
-        await fetch(`/api/graph/${transformId}`) :
-        await fetch(`/api/merge/${mergeId}/conflicts`)
+      const graphResponse = await fetch(`/api/merge/${mergeId}/graph/${transformId}`)
 
       if (!graphResponse.ok) {
         throw new Error(`Failed to fetch graph data: ${graphResponse.status}`)
