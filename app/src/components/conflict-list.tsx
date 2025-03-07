@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -53,6 +53,9 @@ export function ConflictList({
   const [filters, setFilters] = useState<ConflictListFilters>(defaultFilters)
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedConflictForDetails, setSelectedConflictForDetails] = useState<ConflictListItem | null>(null)
+  const [leftWidth, setLeftWidth] = useState(33)
+  const containerRef = useRef<HTMLDivElement>(null)
+  const isResizing = useRef(false)
 
   const fetchConflicts = async () => {
     try {
@@ -169,9 +172,31 @@ export function ConflictList({
     }
   }
 
+  const startResizing = (e: React.MouseEvent) => {
+    e.preventDefault()
+    isResizing.current = true
+    document.body.style.cursor = 'col-resize'
+    document.addEventListener('mousemove', handleResize)
+    document.addEventListener('mouseup', stopResizing)
+  }
+
+  const handleResize = (e: MouseEvent) => {
+    if (!isResizing.current || !containerRef.current) return
+    
+    const containerRect = containerRef.current.getBoundingClientRect()
+    const newWidth = ((e.clientX - containerRect.left) / containerRect.width) * 100
+    setLeftWidth(Math.max(20, Math.min(80, newWidth)))
+  }
+
+  const stopResizing = () => {
+    isResizing.current = false
+    document.body.style.cursor = 'default'
+    document.removeEventListener('mousemove', handleResize)
+    document.removeEventListener('mouseup', stopResizing)
+  }
+
   return (
-    <div className={cn("min-h-screen flex flex-col", className)}>
-      {/* Show MergeCompletionBanner when all conflicts are resolved */}
+    <div className={cn("h-screen flex flex-col", className)}>
       {summary?.unresolved === 0 && summary?.total > 0 && (
         <div className="p-2 border-b bg-white">
           <MergeCompletionBanner
@@ -180,7 +205,6 @@ export function ConflictList({
           />
         </div>
       )}
-      {/* Top Area: Auto-Resolve Panel */}
       {summary && (
         <div className="p-2 border-b bg-white">
           <AutoResolvePanel
@@ -191,175 +215,184 @@ export function ConflictList({
         </div>
       )}
 
-      {/* Main Content Area */}
-      <div className="flex flex-col md:flex-row">
-        {/* Left Side: Conflict List */}
-        <div className="w-full md:w-1/3 border-b md:border-b-0 md:border-r bg-white">
-          {/* Filters */}
-          <div className="p-4 border-b">
-            <div className="flex items-center gap-2 flex-wrap">
-              <Input
-                placeholder="Search conflicts..."
-                value={searchQuery}
-                onChange={handleSearchChange}
-                className="max-w-sm border-gray-300 rounded"
-              />
-              <Select
-                value={filters.conflict_type?.[0]}
-                onValueChange={(value) => handleFilterChange('conflict_type', [value])}
-              >
-                <SelectTrigger className="w-[140px] border-gray-300 rounded">
-                  <SelectValue placeholder="Type" />
-                </SelectTrigger>
-                <SelectContent>
-                  {data?.summary.by_type && Object.keys(data.summary.by_type).map(type => (
-                    <SelectItem key={type} value={type}>{type}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Select
-                value={filters.severity?.[0]}
-                onValueChange={(value) => handleFilterChange('severity', [value])}
-              >
-                <SelectTrigger className="w-[140px] border-gray-300 rounded">
-                  <SelectValue placeholder="Severity" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="critical">Critical</SelectItem>
-                  <SelectItem value="major">Major</SelectItem>
-                  <SelectItem value="minor">Minor</SelectItem>
-                </SelectContent>
-              </Select>
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={() => setFilters(defaultFilters)}
-                className="border-gray-300 rounded"
-              >
-                <Filter className="h-4 w-4" />
-              </Button>
+      <div className="flex-1 flex overflow-hidden" ref={containerRef}>
+        <div 
+          className="relative bg-white border-r"
+          style={{ width: `${leftWidth}%` }}
+        >
+          <div className="h-full flex flex-col">
+            <div className="p-4 border-b bg-white z-10">
+              <div className="flex items-center gap-2 flex-wrap">
+                <Input
+                  placeholder="Search conflicts..."
+                  value={searchQuery}
+                  onChange={handleSearchChange}
+                  className="max-w-sm border-gray-300 rounded"
+                />
+                <Select
+                  value={filters.conflict_type?.[0]}
+                  onValueChange={(value) => handleFilterChange('conflict_type', [value])}
+                >
+                  <SelectTrigger className="w-[140px] border-gray-300 rounded">
+                    <SelectValue placeholder="Type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {data?.summary.by_type && Object.keys(data.summary.by_type).map(type => (
+                      <SelectItem key={type} value={type}>{type}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select
+                  value={filters.severity?.[0]}
+                  onValueChange={(value) => handleFilterChange('severity', [value])}
+                >
+                  <SelectTrigger className="w-[140px] border-gray-300 rounded">
+                    <SelectValue placeholder="Severity" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="critical">Critical</SelectItem>
+                    <SelectItem value="major">Major</SelectItem>
+                    <SelectItem value="minor">Minor</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => setFilters(defaultFilters)}
+                  className="border-gray-300 rounded"
+                >
+                  <Filter className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
-          </div>
 
-          {/* Conflict List */}
-          <div className="p-4">
-            {loading ? (
-              <div className="flex items-center justify-center py-8">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              </div>
-            ) : error ? (
-              <div className="flex items-center justify-center py-8">
-                <div className="text-center">
-                  <AlertCircle className="h-8 w-8 text-red-500 mx-auto mb-2" />
-                  <p className="text-red-500">{error}</p>
-                  <Button variant="outline" size="sm" className="mt-4" onClick={fetchConflicts}>Retry</Button>
-                </div>
-              </div>
-            ) : data?.conflicts.length === 0 ? (
-              <div className="flex items-center justify-center py-8">
-                <div className="text-center">
-                  <CheckCircle2 className="h-8 w-8 text-green-500 mx-auto mb-2" />
-                  <p className="text-gray-500">No conflicts found</p>
-                </div>
-              </div>
-            ) : (
-              <div className="space-y-2">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <Checkbox
-                      checked={selectedConflicts.length === data?.conflicts.length}
-                      onCheckedChange={handleSelectAll}
-                    />
-                    <span className="text-xs">{selectedConflicts.length} selected</span>
+            <ScrollArea className="flex-1 overflow-auto pb-32">
+              <div className="p-4 min-h-full">
+                {loading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
                   </div>
-                  <div className="flex items-center gap-1">
-                    <Button variant="ghost" size="sm" onClick={() => handleSort('severity')}>
-                      {filters.sort_by === 'severity' && (filters.sort_order === 'asc' ? <SortAsc className="h-4 w-4" /> : <SortDesc className="h-4 w-4" />)}
+                ) : error ? (
+                  <div className="flex items-center justify-center py-8">
+                    <div className="text-center">
+                      <AlertCircle className="h-8 w-8 text-red-500 mx-auto mb-2" />
+                      <p className="text-red-500">{error}</p>
+                      <Button variant="outline" size="sm" className="mt-4" onClick={fetchConflicts}>Retry</Button>
+                    </div>
+                  </div>
+                ) : data?.conflicts.length === 0 ? (
+                  <div className="flex items-center justify-center py-8">
+                    <div className="text-center">
+                      <CheckCircle2 className="h-8 w-8 text-green-500 mx-auto mb-2" />
+                      <p className="text-gray-500">No conflicts found</p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <Checkbox
+                          checked={selectedConflicts.length === data?.conflicts.length}
+                          onCheckedChange={handleSelectAll}
+                        />
+                        <span className="text-xs">{selectedConflicts.length} selected</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Button variant="ghost" size="sm" onClick={() => handleSort('severity')}>
+                          {filters.sort_by === 'severity' && (filters.sort_order === 'asc' ? <SortAsc className="h-4 w-4" /> : <SortDesc className="h-4 w-4" />)}
+                        </Button>
+                      </div>
+                    </div>
+                    {data?.conflicts.map(conflict => (
+                      <Card
+                        key={conflict.id}
+                        className={cn(
+                          "cursor-pointer hover:bg-gray-50 transition-colors",
+                          selectedConflictForDetails?.id === conflict.id && "bg-gray-100 border-primary"
+                        )}
+                        onClick={() => handleConflictClick(conflict)}
+                      >
+                        <CardContent className="p-3">
+                          <div className="flex items-start gap-2">
+                            <Checkbox
+                              checked={selectedConflicts.includes(conflict.id)}
+                              onCheckedChange={(checked) => handleConflictSelect(conflict.id, !!checked)}
+                              onClick={(e) => e.stopPropagation()}
+                            />
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className="font-medium text-sm truncate">
+                                  {conflict.entity_name || conflict.entity_id}
+                                </span>
+                                <Badge className={cn(severityColors[conflict.severity], 'rounded-full text-xs')}>
+                                  {conflict.severity}
+                                </Badge>
+                              </div>
+                              <p className="text-xs text-gray-500 truncate">{conflict.description}</p>
+                              <div className="flex items-center gap-2 mt-1 text-xs text-gray-500">
+                                <span>{new Date(conflict.created_at).toLocaleDateString()}</span>
+                                {conflict.resolution_status === 'auto-resolved' && (
+                                  <Badge className="bg-blue-100 text-blue-800 border-blue-200 rounded-full text-xs">
+                                    <Wand2 className="h-3 w-3 mr-1" />
+                                    Auto
+                                  </Badge>
+                                )}
+                                {conflict.resolved && (
+                                  <span className="flex items-center text-green-600">
+                                    <CheckCircle2 className="h-3 w-3 mr-1" />
+                                    Resolved
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </ScrollArea>
+
+            {data && data.total_count > filters.limit! && (
+              <div className="p-2 border-t bg-white z-10">
+                <div className="flex items-center justify-between text-xs">
+                  <span>
+                    {filters.offset! + 1} - {Math.min(filters.offset! + filters.limit!, data.total_count)} of {data.total_count}
+                  </span>
+                  <div className="flex gap-1">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={filters.offset === 0}
+                      onClick={() => handleFilterChange('offset', Math.max(0, filters.offset! - filters.limit!))}
+                    >
+                      Prev
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={filters.offset! + filters.limit! >= data.total_count}
+                      onClick={() => handleFilterChange('offset', filters.offset! + filters.limit!)}
+                    >
+                      Next
                     </Button>
                   </div>
                 </div>
-                {data?.conflicts.map(conflict => (
-                  <Card
-                    key={conflict.id}
-                    className={cn(
-                      "cursor-pointer hover:bg-gray-50 transition-colors",
-                      selectedConflictForDetails?.id === conflict.id && "bg-gray-100 border-primary"
-                    )}
-                    onClick={() => handleConflictClick(conflict)}
-                  >
-                    <CardContent className="p-3">
-                      <div className="flex items-start gap-2">
-                        <Checkbox
-                          checked={selectedConflicts.includes(conflict.id)}
-                          onCheckedChange={(checked) => handleConflictSelect(conflict.id, !!checked)}
-                          onClick={(e) => e.stopPropagation()}
-                        />
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="font-medium text-sm truncate">
-                              {conflict.entity_name || conflict.entity_id}
-                            </span>
-                            <Badge className={cn(severityColors[conflict.severity], 'rounded-full text-xs')}>
-                              {conflict.severity}
-                            </Badge>
-                          </div>
-                          <p className="text-xs text-gray-500 truncate">{conflict.description}</p>
-                          <div className="flex items-center gap-2 mt-1 text-xs text-gray-500">
-                            <span>{new Date(conflict.created_at).toLocaleDateString()}</span>
-                            {conflict.resolution_status === 'auto-resolved' && (
-                              <Badge className="bg-blue-100 text-blue-800 border-blue-200 rounded-full text-xs">
-                                <Wand2 className="h-3 w-3 mr-1" />
-                                Auto
-                              </Badge>
-                            )}
-                            {conflict.resolved && (
-                              <span className="flex items-center text-green-600">
-                                <CheckCircle2 className="h-3 w-3 mr-1" />
-                                Resolved
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
               </div>
             )}
           </div>
 
-          {/* Pagination */}
-          {data && data.total_count > filters.limit! && (
-            <div className="p-2 border-t">
-              <div className="flex items-center justify-between text-xs">
-                <span>
-                  {filters.offset! + 1} - {Math.min(filters.offset! + filters.limit!, data.total_count)} of {data.total_count}
-                </span>
-                <div className="flex gap-1">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={filters.offset === 0}
-                    onClick={() => handleFilterChange('offset', Math.max(0, filters.offset! - filters.limit!))}
-                  >
-                    Prev
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={filters.offset! + filters.limit! >= data.total_count}
-                    onClick={() => handleFilterChange('offset', filters.offset! + filters.limit!)}
-                  >
-                    Next
-                  </Button>
-                </div>
-              </div>
-            </div>
-          )}
+          <div
+            className="absolute right-0 top-0 bottom-0 w-1 bg-gray-300 cursor-col-resize hover:bg-gray-400"
+            onMouseDown={startResizing}
+          />
         </div>
 
-        {/* Right Side: Conflict Details */}
-        <div className="w-full md:w-2/3 bg-white">
+        <div 
+          className="bg-white flex-1 overflow-auto"
+          style={{ width: `${100 - leftWidth}%` }}
+        >
           {selectedConflictForDetails ? (
             <ConflictDetailsView
               mergeId={mergeId}
