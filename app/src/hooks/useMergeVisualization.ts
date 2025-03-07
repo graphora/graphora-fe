@@ -88,14 +88,14 @@ export function useMergeVisualization(mergeId: string, transformId: string) {
     if (mergeId && transformId) {
       fetchData()
       
-      // Set up polling for visualization updates
-      const intervalId = setInterval(() => {
-        fetchData()
-      }, 5000) // Poll every 5 seconds
+      // // Set up polling for visualization updates
+      // const intervalId = setInterval(() => {
+      //   fetchData()
+      // }, 5000) // Poll every 5 seconds
       
-      return () => {
-        clearInterval(intervalId)
-      }
+      // return () => {
+      //   clearInterval(intervalId)
+      // }
     }
   }, [mergeId, transformId, fetchData])
 

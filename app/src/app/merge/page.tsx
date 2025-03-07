@@ -148,7 +148,7 @@ function MergePageContent() {
       statusIntervalRef.current = setInterval(pollStatus, 15000) // Poll every 15 seconds
       
       // Refresh visualization
-      refreshVisualization()
+      // refreshVisualization()
       
       return () => {
         if (statusIntervalRef.current) {
@@ -220,7 +220,7 @@ function MergePageContent() {
       startStatusPolling()
       
       // Refresh visualization to show initial state
-      refreshVisualization()
+      // refreshVisualization()
       
     } catch (error) {
       console.error('Error starting merge process:', error)
@@ -275,7 +275,7 @@ function MergePageContent() {
         
         // Refresh visualization on status updates
         if (data.status !== 'failed') {
-          refreshVisualization()
+          // refreshVisualization()
         }
         
         // Check if all conflicts are resolved
@@ -395,7 +395,7 @@ function MergePageContent() {
       setCurrentConflict(null)
       
       // Refresh visualization after answering
-      refreshVisualization()
+      // refreshVisualization()
       
     } catch (error) {
       console.error('Error submitting answer:', error)
@@ -551,9 +551,9 @@ function MergePageContent() {
         }
         
         // Update visualization if needed
-        if (activeTab === 'visualization' || activeTab === 'conflicts') {
-          refreshVisualization()
-        }
+        // if (activeTab === 'visualization' || activeTab === 'conflicts') {
+        //   refreshVisualization()
+        // }
         
         // Show success toast
         toast({
@@ -649,7 +649,7 @@ function MergePageContent() {
                 <Network className="h-4 w-4 mr-2" />
                 Graph View
                 {allConflictsResolved && (
-                  <Badge variant="success" className="ml-2">
+                  <Badge variant="outline" className="ml-2 bg-green-100 text-green-800">
                     <CheckCircle2 className="h-3 w-3" />
                   </Badge>
                 )}

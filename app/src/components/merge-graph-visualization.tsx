@@ -25,7 +25,13 @@ interface MergeGraphVisualizationProps {
 // Color scheme for different states
 const COLOR_SCHEME = {
   new: '#4ade80', // green-400
-  modified: '#60a5fa'
+  modified: '#60a5fa', // blue-400
+  deleted: '#f87171', // red-400
+  unknown: '#a1a1aa', // gray-400
+  final_merged: '#c084fc', // purple-400
+  conflict: '#f59e0b', // amber-500
+  conflict_source: '#f97316', // orange-500
+  conflict_target: '#ec4899' // pink-500
 } as const
 
 type Status = keyof typeof COLOR_SCHEME
@@ -68,7 +74,7 @@ export const MergeGraphVisualization = ({
   useEffect(() => {
     // If we have a mergeId and no current conflict, fetch the final merged graph
     const fetchFinalGraph = async () => {
-      if (!mergeId || currentConflict || finalGraphData) return
+      if (!mergeId || !transformId || currentConflict || finalGraphData) return
 
       try {
         const response = await fetch(`/api/merge/${mergeId}/graph/${transformId}`)
@@ -90,7 +96,7 @@ export const MergeGraphVisualization = ({
       }
     }
 
-    fetchFinalGraph()
+    //fetchFinalGraph()
   }, [mergeId, currentConflict, finalGraphData])
 
   const loading = externalLoading || dataLoading
@@ -134,11 +140,13 @@ export const MergeGraphVisualization = ({
   const processedGraphData = useMemo(() => {
     if (!graphData) return { nodes: [], links: [] }
     
+    console.log('Processing graph data:', graphData)
+    
     const nodesMap = new Map()
     
-    // First pass: Create all nodes
+    // First pass: Create all nodes with fixed positions in a circle layout
     const nodes = (graphData.nodes || [])
-      .filter(node => {
+      .filter((node: any) => {
         if (!node || !node.properties) return false
         const status = isFinalGraph ? 'final_merged' : (node.properties.__status || 'new')
 
@@ -153,7 +161,7 @@ export const MergeGraphVisualization = ({
         }
         return true
       })
-      .map(node => {
+      .map((node: any, idx: number, arr: any[]) => {
         let color = isFinalGraph ? 
           COLOR_SCHEME.final_merged : 
           COLOR_SCHEME[node.properties?.__status as Status] || COLOR_SCHEME.unknown
@@ -168,24 +176,34 @@ export const MergeGraphVisualization = ({
             COLOR_SCHEME.conflict_target
         }
 
+        // Calculate fixed position in a circle layout
+        const angle = (idx / arr.length) * 2 * Math.PI
+        const radius = Math.sqrt(arr.length) * 50
+        
         const processedNode = {
           ...node,
           color,
-          displayName: node.properties?.name || node.labels?.[0] || 'Unnamed',
+          displayName: node.properties?.name || node.label || node.labels?.[0] || 'Unnamed',
           val: node.properties?.__importance || 1,
+          // Add fixed positions to prevent nodes from disappearing
+          fx: Math.cos(angle) * radius,
+          fy: Math.sin(angle) * radius,
+          // Initial positions for the simulation
+          x: Math.cos(angle) * radius,
+          y: Math.sin(angle) * radius
         }
         nodesMap.set(node.id, processedNode)
         return processedNode
       })
 
-    // Second pass: Create links
+    // Second pass: Create links with proper source and target references
     const links = (graphData.edges || [])
-      .filter(edge => {
+      .filter((edge: any) => {
         const sourceExists = nodesMap.has(edge.source)
         const targetExists = nodesMap.has(edge.target)
         return sourceExists && targetExists
       })
-      .map(edge => {
+      .map((edge: any) => {
         let color = isFinalGraph ? 
           COLOR_SCHEME.final_merged : 
           COLOR_SCHEME[edge.properties?.__status as Status] || COLOR_SCHEME.unknown
@@ -200,15 +218,88 @@ export const MergeGraphVisualization = ({
           color,
           source: nodesMap.get(edge.source),
           target: nodesMap.get(edge.target),
+          id: edge.id || `${edge.source}-${edge.target}`,
+          displayName: edge.type || 'Relationship'
         }
       })
 
-    return { nodes, links }
+    const result = { nodes, links }
+    console.log('Processed graph data:', result)
+    return result
   }, [graphData, filters, searchQuery, currentConflict, isFinalGraph])
+
+  // Add effect to stabilize graph after rendering
+  useEffect(() => {
+    if (fgRef.current && processedGraphData.nodes.length > 0) {
+      console.log('Stabilizing graph with', processedGraphData.nodes.length, 'nodes')
+      
+      // Adjust forces for better stability
+      fgRef.current.d3Force('link').distance(100).strength(0.5)
+      fgRef.current.d3Force('charge').strength(-300)
+      
+      // Ensure the center force is strong enough
+      if (!fgRef.current.d3Force('center')) {
+        fgRef.current.d3Force('center', d3.forceCenter())
+      }
+      fgRef.current.d3Force('center').strength(0.1)
+      
+      // Reheat the simulation to ensure it runs
+      fgRef.current.d3ReheatSimulation()
+      
+      // Set a timeout to fix positions after initial layout
+      const timer = setTimeout(() => {
+        if (fgRef.current) {
+          console.log('Fixing node positions')
+          const { nodes } = fgRef.current.graphData()
+          nodes.forEach((node: any) => {
+            // Keep the fixed positions
+            if (!node.fx && !node.fy) {
+              node.fx = node.x
+              node.fy = node.y
+            }
+          })
+          fgRef.current.refresh()
+        }
+      }, 2000)
+      
+      return () => clearTimeout(timer)
+    }
+  }, [processedGraphData])
+
+  // Add effect to handle initial graph data
+  useEffect(() => {
+    if (graphData && !processedGraphData.nodes.length) {
+      console.log('Initial graph data received but no processed nodes, refreshing...');
+      // Force a re-render with a slight delay to ensure the component is mounted
+      const timer = setTimeout(() => {
+        if (containerRef.current) {
+          const { width, height } = containerRef.current.getBoundingClientRect();
+          setDimensions({ width, height });
+        }
+      }, 500);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [graphData, processedGraphData.nodes.length]);
+
+  // Add effect to periodically refresh the graph to prevent it from disappearing
+  // useEffect(() => {
+  //   if (fgRef.current && processedGraphData.nodes.length > 0) {
+  //     // Set up a periodic refresh to ensure the graph stays visible
+  //     const refreshInterval = setInterval(() => {
+  //       if (fgRef.current) {
+  //         console.log('Periodic graph refresh');
+  //         fgRef.current.refresh();
+  //       }
+  //     }, 5000); // Refresh every 5 seconds
+      
+  //     return () => clearInterval(refreshInterval);
+  //   }
+  // }, [fgRef.current, processedGraphData.nodes.length]);
 
   // Function to focus on a specific node
   const focusOnNode = useCallback((nodeId: string) => {
-    const node = graphDataMemo.nodes.find(n => n.id === nodeId)
+    const node = graphDataMemo.nodes.find((n: any) => n.id === nodeId)
     if (node && fgRef.current) {
       const distance = 200
       const angle = Math.random() * 2 * Math.PI
@@ -223,15 +314,15 @@ export const MergeGraphVisualization = ({
       
       // Highlight the node and its connections
       const connectedLinks = processedGraphData.links.filter(
-        link => (link.source as any).id === nodeId || (link.target as any).id === nodeId
+        (link: any) => (link.source as any).id === nodeId || (link.target as any).id === nodeId
       )
-      const connectedNodes = new Set(connectedLinks.flatMap(link => [
+      const connectedNodes = new Set(connectedLinks.flatMap((link: any) => [
         (link.source as any).id,
         (link.target as any).id
       ]))
       
       setHighlightNodes(connectedNodes)
-      setHighlightLinks(new Set(connectedLinks.map(link => link.id)))
+      setHighlightLinks(new Set(connectedLinks.map((link: any) => link.id)))
     }
   }, [graphDataMemo, processedGraphData])
 
@@ -468,7 +559,7 @@ export const MergeGraphVisualization = ({
       {/* Graph Area */}
       <div className="flex-1 relative">
         <div ref={containerRef} className="absolute inset-0">
-          {dimensions.width > 0 && dimensions.height > 0 && (
+          {dimensions.width > 0 && dimensions.height > 0 && processedGraphData.nodes.length > 0 ? (
             <ForceGraph2D
               ref={fgRef}
               graphData={processedGraphData}
@@ -478,27 +569,86 @@ export const MergeGraphVisualization = ({
               linkLabel="displayName"
               nodeColor={node => node.color}
               linkColor={link => link.color}
-              nodeVal={node => node.val}
+              nodeVal={node => node.val || 1}
               linkWidth={2}
               linkDirectionalParticles={4}
               linkDirectionalParticleWidth={2}
               onNodeHover={handleNodeHover}
               onLinkHover={handleLinkHover}
               onNodeClick={handleNodeClick}
-              d3AlphaDecay={0.02} // Slower layout stabilization
-              d3VelocityDecay={0.3}
+              d3AlphaDecay={0.01} // Slower layout stabilization
+              d3VelocityDecay={0.1} // Lower value to allow more movement
               cooldownTicks={100}
-              onEngineStop={() => {
-                // Save final positions for smoother updates
-                if (fgRef.current && fgRef.current.graphData) {
-                  const { nodes } = fgRef.current.graphData
-                  nodes.forEach((node: any) => {
-                    node.fx = node.x
-                    node.fy = node.y
-                  })
+              warmupTicks={50}
+              nodeCanvasObject={(node, ctx, globalScale) => {
+                // Custom node rendering to ensure visibility
+                const label = node.displayName;
+                const fontSize = 12/globalScale;
+                const nodeR = Math.sqrt(node.val || 1) * 5;
+                
+                // Draw node circle
+                ctx.beginPath();
+                ctx.arc(node.x || 0, node.y || 0, nodeR, 0, 2 * Math.PI);
+                ctx.fillStyle = node.color;
+                ctx.fill();
+                ctx.strokeStyle = 'rgba(0,0,0,0.2)';
+                ctx.stroke();
+                
+                // Draw node label if zoomed in enough
+                if (globalScale > 0.8) {
+                  ctx.font = `${fontSize}px Sans-Serif`;
+                  ctx.textAlign = 'center';
+                  ctx.textBaseline = 'middle';
+                  ctx.fillStyle = 'black';
+                  ctx.fillText(label, node.x || 0, (node.y || 0) + nodeR + fontSize);
                 }
               }}
+              onEngineStop={() => {
+                console.log('Engine stopped, fixing positions');
+                // Save final positions for smoother updates
+                if (fgRef.current && fgRef.current.graphData) {
+                  const { nodes } = fgRef.current.graphData();
+                  nodes.forEach((node: any) => {
+                    if (!node.fx && !node.fy) {
+                      node.fx = node.x;
+                      node.fy = node.y;
+                    }
+                  });
+                  // Force a refresh to ensure the graph stays visible
+                  setTimeout(() => {
+                    if (fgRef.current) {
+                      fgRef.current.refresh();
+                    }
+                  }, 100);
+                }
+              }}
+              // Disable automatic cooldown to prevent the simulation from stopping
+              cooldownTime={0}
             />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center text-gray-400">
+              {processedGraphData.nodes.length === 0 ? (
+                <div className="text-center">
+                  <p>No graph data available to display.</p>
+                  <p className="text-sm mt-2">Try adjusting filters or check your data source.</p>
+                  <Button 
+                    variant="outline" 
+                    className="mt-4"
+                    onClick={() => {
+                      refetch();
+                      toast({
+                        title: "Refreshing",
+                        description: "Attempting to reload graph data...",
+                      });
+                    }}
+                  >
+                    Refresh Data
+                  </Button>
+                </div>
+              ) : (
+                <LoadingGraph />
+              )}
+            </div>
           )}
 
           {/* Tooltip */}
@@ -537,7 +687,7 @@ export const MergeGraphVisualization = ({
         </div>
         {isFinalGraph && (
           <div className="absolute top-4 right-4 z-10">
-            <Badge variant="success" className="bg-green-100 text-green-800">
+            <Badge variant="outline" className="bg-green-100 text-green-800">
               Final Merged Graph
             </Badge>
           </div>
