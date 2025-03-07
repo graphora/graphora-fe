@@ -66,7 +66,6 @@ export function AutoResolvePanel({
 
   const eligibleCount = conflictSummary.by_severity.minor
 
-  // Clean up polling on unmount
   useEffect(() => {
     return () => {
       if (pollInterval) {
@@ -82,12 +81,9 @@ export function AutoResolvePanel({
       setProgress(0)
       setResult(null)
 
-      // Step 1: Initiate auto-resolution
       const startResponse = await fetch(`/api/merge/${mergeId}/auto-resolve`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({})
       })
 
@@ -98,15 +94,11 @@ export function AutoResolvePanel({
       const startData = await startResponse.json()
       
       if (startData.manual_required == 0) {
-
-        // Show success toast
         toast({
           title: "Auto-Resolution Complete",
-          description: `Successfully resolved ${startData.auto_resolved} / ${startData.total} conflicts.`,
+          description: `Resolved ${startData.auto_resolved} / ${startData.total} conflicts.`,
           variant: "default",
         })
-
-        // Refresh conflict list
         onResolutionComplete()
       } else {
         throw new Error('Auto-resolution failed')
@@ -114,7 +106,6 @@ export function AutoResolvePanel({
     } catch (error) {
       setError(error instanceof Error ? error.message : 'An error occurred')
       setIsResolving(false)
-      
       toast({
         title: "Error",
         description: "Failed to start auto-resolution. Please try again.",
@@ -127,18 +118,14 @@ export function AutoResolvePanel({
     if (!isResolving) return
     
     try {
-      // Cancel the polling
       if (pollInterval) {
         clearInterval(pollInterval)
         setPollInterval(null)
       }
       
-      // Call cancel endpoint
       const cancelResponse = await fetch(`/api/merge/${mergeId}/auto-resolve/cancel`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({})
       })
 
@@ -168,9 +155,7 @@ export function AutoResolvePanel({
       
       const response = await fetch(`/api/merge/${mergeId}/auto-resolve/undo`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({})
       })
 
@@ -178,21 +163,15 @@ export function AutoResolvePanel({
         throw new Error(`Failed to undo auto-resolutions: ${response.statusText}`)
       }
 
-      // Reset result state
       setResult(null)
-      
-      // Show success toast
       toast({
         title: "Auto-Resolutions Undone",
-        description: "All auto-resolved conflicts have been reset to unresolved.",
+        description: "All auto-resolved conflicts have been reset.",
         variant: "default",
       })
-
-      // Refresh conflict list
       onResolutionComplete()
     } catch (error) {
       setError(error instanceof Error ? error.message : 'An error occurred')
-      
       toast({
         title: "Error",
         description: "Failed to undo auto-resolutions. Please try again.",
@@ -204,78 +183,72 @@ export function AutoResolvePanel({
   }
 
   return (
-    <Card>
-      <CardHeader>
+    <Card className="shadow-none border-0">
+      <CardHeader className="p-2">
         <div className="flex items-center justify-between">
-          <div className="space-y-1">
-            <CardTitle>Conflict Summary</CardTitle>
-            <CardDescription>
-              Overview of conflicts by severity level
+          <div>
+            <CardTitle className="text-sm">Conflict Summary</CardTitle>
+            <CardDescription className="text-xs">
+              Auto-resolve minor conflicts
             </CardDescription>
           </div>
-          <div className="flex gap-2">
-            {isResolving ? (
-              <Button 
-                variant="outline" 
-                onClick={handleCancelAutoResolve}
-                className="gap-2"
-              >
-                <XCircle className="h-4 w-4" />
-                Cancel
-              </Button>
-            ) : (
-              <Button
-                onClick={() => setIsConfirmOpen(true)}
-                disabled={eligibleCount === 0 || isResolving}
-                className="gap-2"
-              >
-                <Wand2 className="h-4 w-4" />
-                Auto-Resolve
-              </Button>
-            )}
-          </div>
+          {isResolving ? (
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={handleCancelAutoResolve}
+              className="gap-1"
+            >
+              <XCircle className="h-3 w-3" />
+              Cancel
+            </Button>
+          ) : (
+            <Button
+              size="sm"
+              onClick={() => setIsConfirmOpen(true)}
+              disabled={eligibleCount === 0 || isResolving}
+              className="gap-1"
+            >
+              <Wand2 className="h-3 w-3" />
+              Auto-Resolve
+            </Button>
+          )}
         </div>
       </CardHeader>
-      <CardContent>
-        <div className="space-y-4">
+      <CardContent className="p-2">
+        <div className="space-y-2">
           {/* Severity Summary */}
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-3 gap-2">
             <Card className="bg-red-50 border-red-200">
-              <CardContent className="p-4">
+              <CardContent className="p-2">
                 <div className="flex items-center justify-between">
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium text-red-700">Critical</p>
-                    <p className="text-2xl font-bold text-red-700">
-                      {conflictSummary.by_severity.critical}
-                    </p>
+                  <div>
+                    <p className="text-xs text-red-700">Critical</p>
+                    <p className="text-lg font-bold text-red-700">{conflictSummary.by_severity.critical}</p>
                   </div>
-                  <AlertOctagon className="h-8 w-8 text-red-500" />
+                  <AlertOctagon className="h-4 w-4 text-red-500" />
                 </div>
               </CardContent>
             </Card>
             <Card className="bg-orange-50 border-orange-200">
-              <CardContent className="p-4">
+              <CardContent className="p-2">
                 <div className="flex items-center justify-between">
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium text-orange-700">Major</p>
-                    <p className="text-2xl font-bold text-orange-700">
-                      {conflictSummary.by_severity.major}
-                    </p>
+                  <div>
+                    <p className="text-xs text-orange-700">Major</p>
+                    <p className="text-lg font-bold text-orange-700">{conflictSummary.by_severity.major}</p>
                   </div>
-                  <AlertTriangle className="h-8 w-8 text-orange-500" />
+                  <AlertTriangle className="h-4 w-4 text-orange-500" />
                 </div>
               </CardContent>
             </Card>
             <Card className="bg-yellow-50 border-yellow-200">
-              <CardContent className="p-4">
+              <CardContent className="p-2">
                 <div className="flex items-center justify-between">
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium text-yellow-700">Minor</p>
-                    <p className="text-2xl font-bold text-yellow-700">
-                      {conflictSummary.by_severity.minor}
-                    </p>
+                  <div>
+                    <p className="text-xs text-yellow-700">Minor</p>
+                    <p className="text-lg font-bold text-yellow-700">{conflictSummary.by_severity.minor}</p>
                   </div>
-                  <AlertCircle className="h-8 w-8 text-yellow-500" />
+                  <AlertCircle className="h-4 w-4 text-yellow-500" />
                 </div>
               </CardContent>
             </Card>
@@ -283,25 +256,25 @@ export function AutoResolvePanel({
 
           {/* Auto-Resolution Progress */}
           {isResolving && (
-            <div className="space-y-2">
-              <div className="flex items-center justify-between text-sm">
-                <div className="flex items-center gap-2">
-                  <Loader2 className="h-4 w-4 animate-spin text-primary" />
-                  <span>Auto-resolving conflicts...</span>
+            <div className="space-y-1">
+              <div className="flex items-center justify-between text-xs">
+                <div className="flex items-center gap-1">
+                  <Loader2 className="h-3 w-3 animate-spin text-primary" />
+                  <span>Resolving...</span>
                 </div>
                 <span>{progress}%</span>
               </div>
-              <Progress value={progress} className="h-2" />
+              <Progress value={progress} className="h-1" />
             </div>
           )}
 
           {/* Results */}
           {result && !isResolving && (
-            <div className="space-y-2">
+            <div className="space-y-1">
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <CheckCircle2 className="h-5 w-5 text-green-500" />
-                  <span className="font-medium">Auto-Resolution Complete</span>
+                <div className="flex items-center gap-1">
+                  <CheckCircle2 className="h-3 w-3 text-green-500" />
+                  <span className="text-xs font-medium">Complete</span>
                 </div>
                 <Button 
                   variant="outline" 
@@ -315,35 +288,28 @@ export function AutoResolvePanel({
                   ) : (
                     <RefreshCcw className="h-3 w-3" />
                   )}
-                  {isUndoing ? 'Undoing...' : 'Undo All'}
+                  {isUndoing ? 'Undoing...' : 'Undo'}
                 </Button>
               </div>
-              <div className="grid grid-cols-3 gap-4">
-                <div className="flex items-center gap-2">
-                  <Badge variant="default" className="bg-green-500">
-                    {result.resolved}
-                  </Badge>
-                  <span className="text-sm">Resolved</span>
+              <div className="flex gap-2 text-xs">
+                <div className="flex items-center gap-1">
+                  <Badge variant="default" className="bg-green-500 text-xs">{result.resolved}</Badge>
+                  <span>Resolved</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Badge variant="outline" className="border-orange-500 text-orange-500">
-                    {result.skipped}
-                  </Badge>
-                  <span className="text-sm">Skipped</span>
+                <div className="flex items-center gap-1">
+                  <Badge variant="outline" className="border-orange-500 text-orange-500 text-xs">{result.skipped}</Badge>
+                  <span>Skipped</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Badge variant="outline" className="border-red-500 text-red-500">
-                    {result.failed}
-                  </Badge>
-                  <span className="text-sm">Failed</span>
+                <div className="flex items-center gap-1">
+                  <Badge variant="outline" className="border-red-500 text-red-500 text-xs">{result.failed}</Badge>
+                  <span>Failed</span>
                 </div>
               </div>
               {result.errors && result.errors.length > 0 && (
-                <Alert variant="destructive">
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertDescription>
-                    {result.errors.length} conflicts could not be auto-resolved.
-                    Please review these conflicts manually.
+                <Alert variant="destructive" className="py-1">
+                  <AlertCircle className="h-3 w-3" />
+                  <AlertDescription className="text-xs">
+                    {result.errors.length} conflicts need manual review
                   </AlertDescription>
                 </Alert>
               )}
@@ -352,9 +318,9 @@ export function AutoResolvePanel({
 
           {/* Error State */}
           {error && (
-            <Alert variant="destructive">
-              <XCircle className="h-4 w-4" />
-              <AlertDescription>{error}</AlertDescription>
+            <Alert variant="destructive" className="py-1">
+              <XCircle className="h-3 w-3" />
+              <AlertDescription className="text-xs">{error}</AlertDescription>
             </Alert>
           )}
         </div>
@@ -364,16 +330,15 @@ export function AutoResolvePanel({
       <AlertDialog open={isConfirmOpen} onOpenChange={setIsConfirmOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Auto-Resolve Conflicts</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will automatically resolve {eligibleCount} minor conflicts.
-              Critical and major conflicts will need to be resolved manually.
-              You can review and undo any auto-resolutions later if needed.
+            <AlertDialogTitle className="text-sm">Auto-Resolve Conflicts</AlertDialogTitle>
+            <AlertDialogDescription className="text-xs">
+              This will auto-resolve {eligibleCount} minor conflicts. Critical and major conflicts require manual resolution. You can undo later if needed.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel className="text-xs">Cancel</AlertDialogCancel>
             <AlertDialogAction
+              className="text-xs"
               onClick={() => {
                 setIsConfirmOpen(false)
                 handleAutoResolve()
@@ -386,4 +351,4 @@ export function AutoResolvePanel({
       </AlertDialog>
     </Card>
   )
-} 
+}

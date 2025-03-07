@@ -23,6 +23,7 @@ import { type ConflictListItem, type ConflictSeverity } from '@/types/merge'
 import { cn } from '@/lib/utils'
 import { toast } from '@/components/ui/use-toast'
 import { Progress } from '@/components/ui/progress'
+import { formatLabel } from '@/lib/utils'
 
 interface ConflictDetailsViewProps {
   mergeId: string
@@ -134,41 +135,8 @@ export function ConflictDetailsView({
     fetchDetails()
   }, [mergeId, conflict.id])
 
-  const fetchResolutionPreview = async (resolutionId: string) => {
-    try {
-      setIsLoadingPreview(true)
-      setError(null)
-
-      const response = await fetch(
-        `/api/merge/${mergeId}/conflicts/${conflict.id}/preview`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            resolution_id: resolutionId
-          })
-        }
-      )
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch resolution preview')
-      }
-
-      const data = await response.json()
-      setPreview(data)
-    } catch (error) {
-      setError(error instanceof Error ? error.message : 'Failed to load preview')
-      setPreview(null)
-    } finally {
-      setIsLoadingPreview(false)
-    }
-  }
-
   const handleResolutionSelect = (resolutionId: string) => {
     setSelectedResolution(resolutionId)
-    fetchResolutionPreview(resolutionId)
   }
 
   const handleApplyResolution = async () => {
@@ -280,7 +248,7 @@ export function ConflictDetailsView({
           <div className="mt-4 flex items-start justify-between">
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="text-lg font-semibold">Conflict #{conflict.id}</h2>
+                <h2 className="text-lg font-semibold">Conflict</h2>
                 <Badge variant="outline" className="flex items-center gap-1">
                   {conflictTypeIcons[conflict.conflict_type.toLowerCase()] || 
                     <AlertTriangle className="h-4 w-4" />}
@@ -319,186 +287,32 @@ export function ConflictDetailsView({
             </CardHeader>
             <CardContent>
               <p className="text-sm text-gray-600">{conflict.description}</p>
-              {details?.context?.description && (
+              {details && (
                 <>
                   <Separator className="my-4" />
                   <div className="text-sm">
-                    <h4 className="font-medium mb-2">Additional Context</h4>
-                    <p className="text-gray-600">{details.context.description}</p>
+                    {/* Key-Value Pairs */}
+                    {details.context && Object.keys(details.context).length > 1 && (
+                      <div className="space-y-2">
+                        {Object.entries(details.context)
+                          .filter(([key]) => key !== 'description' && key !== 'analysis') // Exclude description since it's already shown
+                          .map(([key, value]) => (
+                            <div key={key} className="flex items-start gap-2">
+                              <span className="font-medium text-gray-700">{formatLabel(key)}:</span>
+                              <span className="text-gray-600">
+                                {typeof value === 'object' && value !== null
+                                  ? JSON.stringify(value) // Handle nested objects
+                                  : String(value)}
+                              </span>
+                            </div>
+                          ))}
+                      </div>
+                    )}
                   </div>
                 </>
               )}
             </CardContent>
           </Card>
-
-          {/* Side by Side Comparison */}
-          {details && details.properties_affected && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <GitCompare className="h-5 w-5" />
-                  Changes
-                </CardTitle>
-                <CardDescription>Compare staging and production values</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <h4 className="text-sm font-medium mb-2 text-green-700">Staging</h4>
-                    <Card className="bg-green-50 border-green-100">
-                      <CardContent className="p-4">
-                        <div className="space-y-2">
-                          {Object.entries(details.properties_affected).map(([property, diff]) => (
-                            <div key={property} className="text-sm">
-                              <span className="font-medium">{property}:</span>
-                              <div className="mt-1 p-2 bg-white rounded border border-green-200">
-                                {(diff as PropertyDiff).staging}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </div>
-                  <div>
-                    <h4 className="text-sm font-medium mb-2 text-blue-700">Production</h4>
-                    <Card className="bg-blue-50 border-blue-100">
-                      <CardContent className="p-4">
-                        <div className="space-y-2">
-                          {Object.entries(details.properties_affected).map(([property, diff]) => (
-                            <div key={property} className="text-sm">
-                              <span className="font-medium">{property}:</span>
-                              <div className="mt-1 p-2 bg-white rounded border border-blue-200">
-                                {(diff as PropertyDiff).prod}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Resolution Preview */}
-          {selectedResolution && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Resolution Preview</CardTitle>
-                <CardDescription>
-                  See how the selected resolution will affect the data
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {isLoadingPreview ? (
-                  <div className="flex items-center justify-center p-8">
-                    <Loader2 className="h-8 w-8 animate-spin" />
-                  </div>
-                ) : preview ? (
-                  <div className="space-y-4">
-                    <div>
-                      <h4 className="text-sm font-medium mb-2">Final State</h4>
-                      <Card className="bg-green-50 border-green-100">
-                        <CardContent className="p-4">
-                          <div className="space-y-2">
-                            {Object.entries(preview.final_state).map(([key, value]) => (
-                              <div key={key} className="text-sm">
-                                <span className="font-medium">{key}:</span>
-                                <div className="mt-1 p-2 bg-white rounded border border-green-200">
-                                  {String(value)}
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </CardContent>
-                      </Card>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <h4 className="text-sm font-medium mb-2">Changes in Staging</h4>
-                        <Card className="border-yellow-200">
-                          <CardContent className="p-4">
-                            <div className="space-y-2">
-                              {Object.entries(preview.staging_changes).map(([key, value]) => (
-                                <div key={key} className="text-sm">
-                                  <span className="font-medium">{key}:</span>
-                                  <div className="mt-1 p-2 bg-white rounded border border-yellow-200">
-                                    {String(value)}
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          </CardContent>
-                        </Card>
-                      </div>
-                      <div>
-                        <h4 className="text-sm font-medium mb-2">Changes in Production</h4>
-                        <Card className="border-blue-200">
-                          <CardContent className="p-4">
-                            <div className="space-y-2">
-                              {Object.entries(preview.prod_changes).map(([key, value]) => (
-                                <div key={key} className="text-sm">
-                                  <span className="font-medium">{key}:</span>
-                                  <div className="mt-1 p-2 bg-white rounded border border-blue-200">
-                                    {String(value)}
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          </CardContent>
-                        </Card>
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="text-center text-gray-600">
-                    Preview not available for this resolution
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Related Entities */}
-          {details?.related_entities && details.related_entities.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Related Entities</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {details.related_entities.map((entity) => (
-                    <Card key={entity.id}>
-                      <CardContent className="p-4">
-                        <div className="flex items-start justify-between">
-                          <div>
-                            <h5 className="font-medium">{entity.type}</h5>
-                            <p className="text-sm text-gray-600">ID: {entity.id}</p>
-                          </div>
-                          <Badge variant="outline">{entity.type}</Badge>
-                        </div>
-                        {Object.entries(entity.properties).length > 0 && (
-                          <div className="mt-4">
-                            <h6 className="text-sm font-medium mb-2">Properties</h6>
-                            <div className="grid grid-cols-2 gap-2 text-sm">
-                              {Object.entries(entity.properties).map(([key, value]) => (
-                                <div key={key} className="flex">
-                                  <span className="font-medium mr-2">{key}:</span>
-                                  <span className="text-gray-600">{String(value)}</span>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          )}
 
           {/* Resolution Options */}
           {details && details.resolution_options && (
@@ -508,7 +322,7 @@ export function ConflictDetailsView({
                 <CardDescription>Select a resolution strategy to apply</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
+                <div className="space-y-4 pb-24">
                   {details.resolution_options.map((option) => (
                     <Card 
                       key={option.id}
@@ -521,9 +335,9 @@ export function ConflictDetailsView({
                     >
                       <CardContent className="p-4">
                         <div className="flex justify-between items-start">
-                          <div className="space-y-2">
+                          <div className="space-y-1">
                             <div>
-                              <h5 className="font-medium">{option.resolution_type}</h5>
+                              <h5 className="font-medium">{formatLabel(option.resolution_type.toLowerCase())}</h5>
                               <p className="text-sm text-gray-600">{option.description}</p>
                               {option.reasoning && (
                                 <p className="text-sm text-gray-500 mt-2">{option.reasoning}</p>
@@ -573,14 +387,14 @@ export function ConflictDetailsView({
       </div>
 
       {/* Footer Actions */}
-      <div className="flex-none bg-gray-50 border-t shadow-[0_-1px_2px_rgba(0,0,0,0.05)] p-1 fixed bottom-0 left-0 w-3/5">
+      <div className="flex-none bg-gray-50 border-t shadow-[0_-1px_2px_rgba(0,0,0,0.05)] p-1 fixed bottom-0 left-0 w-full">
         <div className="">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" onClick={onBack}>
+              {/* <Button variant="outline" size="sm" onClick={onBack}>
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 Back
-              </Button>
+              </Button> */}
               {lastAppliedResolution && (
                 <Button 
                   variant="outline" 
