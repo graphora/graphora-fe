@@ -10,6 +10,21 @@ import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } from '@/components/ui/context-menu'
 import { GraphControls } from '@/components/graph-controls'
+import { forceCenter, forceLink, forceManyBody } from 'd3-force'
+
+// Dynamic color generator (similar to the previous component)
+const stringToColor = (str: string): string => {
+  let hash = 0
+  for (let i = 0; i < str.length; i++) {
+    hash = str.charCodeAt(i) + ((hash << 5) - hash)
+  }
+  const c = (hash & 0x00FFFFFF).toString(16).toUpperCase()
+  return '#' + '00000'.substring(0, 6 - c.length) + c
+}
+
+const SPECIAL_COLORS = {
+  default: '#6b7280'
+} as const
 
 const LoadingGraph = () => (
   <div className="w-full h-full min-h-[600px] flex items-center justify-center text-gray-400">
@@ -17,32 +32,10 @@ const LoadingGraph = () => (
   </div>
 )
 
-// Dynamically import ForceGraph2D to avoid SSR issues
 const ForceGraph2D = dynamic(
   () => import('react-force-graph').then((mod) => mod.ForceGraph2D),
-  { 
-    ssr: false, 
-    loading: () => <LoadingGraph /> 
-  }
-) as any // TODO: Add proper typing
-
-// Cache for consistent color assignment
-const colorCache: Record<string, string> = {}
-const seenTypes: string[] = []
-
-function getNodeColor(type: string): string {
-  // If type not seen before, add to seen types
-  if (!colorCache[type]) {
-    const index = seenTypes.length
-    seenTypes.push(type)
-    // Generate evenly distributed hue values based on the index
-    const hue = index * (360 / Math.max(1, seenTypes.length))
-    // Use high saturation and medium lightness for vibrant but readable colors
-    colorCache[type] = `hsl(${hue}, 70%, 60%)`
-  }
-
-  return colorCache[type] || '#a0aec0'
-} 
+  { ssr: false, loading: () => <LoadingGraph /> }
+)
 
 interface GraphVisualizationProps {
   graphData: GraphData | null
@@ -71,6 +64,9 @@ interface ProcessedNode {
   y?: number
   vx?: number
   vy?: number
+  val?: number
+  fx?: number
+  fy?: number
 }
 
 interface ProcessedLink {
@@ -81,20 +77,14 @@ interface ProcessedLink {
   id: string
 }
 
-interface ProcessedGraphData {
-  nodes: ProcessedNode[]
-  links: ProcessedLink[]
-}
-
 interface SelectedElement {
   type: 'node' | 'link'
   data: ProcessedNode | ProcessedLink
 }
 
 export function GraphVisualization({ graphData: initialData, onGraphReset }: GraphVisualizationProps) {
-  console.log('GraphVisualization received initialData:', initialData)
   const router = useRouter()
-  
+
   // Ensure initialData has the required structure
   const validInitialData = useMemo(() => {
     if (!initialData) {
@@ -114,7 +104,7 @@ export function GraphVisualization({ graphData: initialData, onGraphReset }: Gra
       })) || []
     }
   }, [initialData])
-  
+
   const {
     graphData,
     history,
@@ -132,62 +122,110 @@ export function GraphVisualization({ graphData: initialData, onGraphReset }: Gra
     resetGraph
   } = useGraphState(validInitialData)
 
-  console.log('GraphVisualization processed graphData:', graphData)
   const [selectedElement, setSelectedElement] = useState<SelectedElement | null>(null)
   const [showNodeForm, setShowNodeForm] = useState(false)
   const [showEdgeForm, setShowEdgeForm] = useState(false)
   const [nodeFormData, setNodeFormData] = useState<NodeFormData>({ type: NODE_TYPES[0], properties: {} })
   const [edgeFormData, setEdgeFormData] = useState<EdgeFormData>({ type: EDGE_TYPES[0], properties: {} })
+  const [hoveredNode, setHoveredNode] = useState<ProcessedNode | null>(null)
   const graphRef = useRef<any>(null)
-  const [dimensions, setDimensions] = useState({ width: 800, height: 600 });
+  const containerRef = useRef<HTMLDivElement>(null)
+  const [dimensions, setDimensions] = useState({ width: 800, height: 600 })
+  const [typeColors, setTypeColors] = useState<Record<string, string>>({})
 
   useEffect(() => {
-    // Update dimensions on mount and window resize
-    function updateDimensions() {
-      setDimensions({
-        width: window.innerWidth - 48,
-        height: window.innerHeight - 200
-      });
+    const updateDimensions = () => {
+      if (containerRef.current) {
+        const { width, height } = containerRef.current.getBoundingClientRect()
+        setDimensions({ width, height })
+      }
     }
+    updateDimensions()
+    window.addEventListener('resize', updateDimensions)
+    return () => window.removeEventListener('resize', updateDimensions)
+  }, [])
 
-    updateDimensions();
-    window.addEventListener('resize', updateDimensions);
-
-    return () => window.removeEventListener('resize', updateDimensions);
-  }, []);
+  useEffect(() => {
+    if (graphData?.nodes) {
+      const types = Array.from(
+        new Set(graphData.nodes.map((node: any) => node.type || node.label || 'default'))
+      )
+      const newTypeColors = types.reduce((acc: Record<string, string>, type: string) => ({
+        ...acc,
+        [type]: stringToColor(type)
+      }), SPECIAL_COLORS)
+      setTypeColors(newTypeColors)
+    }
+  }, [graphData])
 
   const processedData = useMemo(() => {
     if (!graphData?.nodes || !graphData?.edges) return { nodes: [], links: [] }
 
-    return {
-      nodes: graphData.nodes.map(node => ({
+    const degreeMap = new Map()
+    graphData.edges?.forEach((edge: any) => {
+      degreeMap.set(edge.source, (degreeMap.get(edge.source) || 0) + 1)
+      degreeMap.set(edge.target, (degreeMap.get(edge.target) || 0) + 1)
+    })
+
+    const nodes = graphData.nodes.map((node: any, idx: number, arr: any[]) => {
+      const nodeType = node.type || node.label || 'default'
+      const degree = degreeMap.get(node.id) || 1
+      const baseSize = 5
+      const size = baseSize + Math.log(degree + 1) * 2
+
+      const angle = (idx / arr.length) * 2 * Math.PI
+      const radius = Math.min(250, Math.sqrt(arr.length) * 40)
+
+      return {
         ...node,
-        name: node.label || node.type,
-        color: getNodeColor(node.type),
-        id: node.id.toString() // Ensure ID is a string
-      })),
-      links: graphData.edges.map(edge => ({
-        ...edge,
-        name: edge.type,
-        source: edge.source.toString(), // Ensure source is a string
-        target: edge.target.toString(), // Ensure target is a string
-        // id: edge.id.toString() // Ensure ID is a string
-      }))
-    }
-  }, [graphData])
+        name: node.properties?.name || node.label || node.type,
+        color: typeColors[nodeType] || SPECIAL_COLORS.default,
+        id: node.id.toString(),
+        val: size,
+        fx: Math.cos(angle) * radius,
+        fy: Math.sin(angle) * radius,
+        x: Math.cos(angle) * radius,
+        y: Math.sin(angle) * radius
+      }
+    })
+
+    const links = graphData.edges.map((edge: any) => ({
+      ...edge,
+      name: edge.type,
+      source: edge.source.toString(),
+      target: edge.target.toString(),
+      id: edge.id.toString()
+    }))
+
+    return { nodes, links }
+  }, [graphData, typeColors])
+
+  const linkForce = useMemo(() => forceLink().distance(120).strength(0.4), [])
+  const chargeForce = useMemo(() => forceManyBody().strength(-400), [])
+  const centerForce = useMemo(() => forceCenter(0, 0).strength(0.08), [])
+
+  const handleNodeClick = (node: ProcessedNode) => {
+    setSelectedElement({ type: 'node', data: node })
+  }
+
+  const handleLinkClick = (link: ProcessedLink) => {
+    setSelectedElement({ type: 'link', data: link })
+  }
+
+  const handleNodeHover = (node: ProcessedNode | null) => {
+    setHoveredNode(node)
+  }
 
   return (
-    <div className="w-full h-full relative">
+    <div className="w-full h-full relative bg-gray-50">
       {/* Graph Controls */}
       <div className="absolute top-4 left-4 z-10">
         <GraphControls
           onReset={async () => {
             try {
-              // First call the parent's reset if provided
               if (onGraphReset) {
                 await onGraphReset()
               }
-              // Then reset the local graph state
               await resetGraph()
             } catch (error) {
               console.error('Error resetting graph:', error)
@@ -205,60 +243,66 @@ export function GraphVisualization({ graphData: initialData, onGraphReset }: Gra
       </div>
 
       {/* Graph Visualization */}
-      <div className="w-full h-full">
+      <div className="w-full h-full" ref={containerRef}>
         <ContextMenu>
           <ContextMenuTrigger>
             <ForceGraph2D
               ref={graphRef}
               graphData={processedData}
+              width={dimensions.width}
+              height={dimensions.height}
               nodeLabel="name"
               nodeColor="color"
               linkColor="#999"
-              linkWidth={4}
-              linkDirectionalArrowLength={10}
+              linkWidth={2}
+              linkDirectionalArrowLength={8}
               linkDirectionalArrowRelPos={1}
               linkLabel="name"
               d3AlphaDecay={0.01}
-              d3VelocityDecay={0.4}
-              cooldownTime={200}
-              onNodeClick={(node: ProcessedNode) => {
-                setSelectedElement({ type: 'node', data: node })
-              }}
-              onLinkClick={(link: ProcessedLink) => {
-                setSelectedElement({ type: 'link', data: link })
-              }}
+              d3VelocityDecay={0.1}
+              cooldownTicks={100}
+              warmupTicks={50}
+              linkForce={linkForce}
+              nodeForce={chargeForce}
+              centerForce={centerForce}
+              onNodeClick={handleNodeClick}
+              onLinkClick={handleLinkClick}
+              onNodeHover={handleNodeHover}
               nodeCanvasObject={(node: ProcessedNode, ctx: CanvasRenderingContext2D, globalScale: number) => {
                 const label = node.properties?.name || node.type
-                const fontSize = 12/globalScale
-                ctx.font = `${fontSize}px Sans-Serif`
-                ctx.textAlign = 'center'
-                ctx.textBaseline = 'middle'
-                
-                // Draw node
+                const fontSize = Math.min(12 / globalScale, 10)
+                const nodeR = node.val || 5
+
                 ctx.beginPath()
-                ctx.arc(node.x!, node.y!, 8, 0, 2 * Math.PI)
+                ctx.arc(node.x || 0, node.y || 0, nodeR, 0, 2 * Math.PI)
                 ctx.fillStyle = node.color
                 ctx.fill()
-                
-                // Draw text below node with background
-                const textWidth = ctx.measureText(label).width
-                const bckgDimensions = [textWidth, fontSize].map(n => n + fontSize * 0.5)
-                const textY = node.y! + 10
-                
-                ctx.fillStyle = 'rgba(255, 255, 255, 0.8)'
-                ctx.fillRect(
-                  node.x! - bckgDimensions[0] / 2,
-                  textY - bckgDimensions[1] / 2,
-                  bckgDimensions[0],
-                  bckgDimensions[1]
-                )
-                
-                ctx.fillStyle = '#000'
-                ctx.fillText(label, node.x!, textY)
+                ctx.strokeStyle = '#e5e7eb'
+                ctx.lineWidth = 0.5
+                ctx.stroke()
+
+                if (globalScale > 1.0) {
+                  ctx.font = `${fontSize}px Sans-Serif`
+                  ctx.textAlign = 'center'
+                  ctx.textBaseline = 'middle'
+                  ctx.fillStyle = '#1f2937'
+                  const displayLabel = label.length > 15 ? `${label.substring(0, 12)}...` : label
+                  ctx.fillText(displayLabel, node.x || 0, (node.y || 0) + nodeR + fontSize + 2)
+                }
               }}
-              width={dimensions.width}
-              height={dimensions.height}
-              
+              onEngineStop={() => {
+                if (graphRef.current && graphRef.current.graphData) {
+                  const { nodes } = graphRef.current.graphData()
+                  nodes.forEach((node: any) => {
+                    if (!node.fx && !node.fy) {
+                      node.fx = node.x
+                      node.fy = node.y
+                    }
+                  })
+                  setTimeout(() => graphRef.current?.refresh(), 100)
+                }
+              }}
+              cooldownTime={0}
             />
           </ContextMenuTrigger>
           <ContextMenuContent>
@@ -268,7 +312,22 @@ export function GraphVisualization({ graphData: initialData, onGraphReset }: Gra
           </ContextMenuContent>
         </ContextMenu>
 
-        {/* Node/Edge Details Dialog - Position it away from the top-left */}
+        {/* Tooltip for hovered node */}
+        {hoveredNode && (
+          <div
+            className="absolute bg-white p-2 rounded-lg shadow-md text-sm border border-gray-200 pointer-events-none z-10"
+            style={{
+              left: (hoveredNode.x || 0) + dimensions.width / 2 + 10,
+              top: (hoveredNode.y || 0) + dimensions.height / 2 - 10,
+              transform: 'translate(-50%, -100%)',
+            }}
+          >
+            <div className="font-medium text-gray-800">{hoveredNode.name}</div>
+            <div className="text-gray-600">Type: {hoveredNode.type}</div>
+          </div>
+        )}
+
+        {/* Node/Edge Details Dialog */}
         {selectedElement && (
           <Dialog open={!!selectedElement} onOpenChange={() => setSelectedElement(null)}>
             <DialogContent className="sm:max-w-[425px] bg-white dark:bg-gray-900">
@@ -289,7 +348,7 @@ export function GraphVisualization({ graphData: initialData, onGraphReset }: Gra
                       value={(selectedElement.data as ProcessedNode).properties?.name || ''}
                       onChange={e => setSelectedElement(prev => prev ? {
                         ...prev,
-                        data: { ...prev.data, name: e.target.value }
+                        data: { ...prev.data, properties: { ...prev.data.properties, name: e.target.value } }
                       } : null)}
                       className="border rounded px-2 py-1"
                     />
@@ -321,7 +380,7 @@ export function GraphVisualization({ graphData: initialData, onGraphReset }: Gra
                             <div className="flex gap-2">
                               <input
                                 className={`flex-1 bg-transparent ${isSystemProperty ? 'text-gray-500 cursor-not-allowed' : ''}`}
-                                value={selectedElement.data.properties[key] ?? ''}
+                                value={(selectedElement.data as ProcessedNode).properties[key] ?? ''}
                                 onChange={e => {
                                   if (isSystemProperty) return
                                   const newProps = { ...(selectedElement.data as ProcessedNode).properties }
@@ -347,7 +406,7 @@ export function GraphVisualization({ graphData: initialData, onGraphReset }: Gra
                                       ...prev,
                                       data: { ...prev.data, properties: {
                                         ...newProps,
-                                        [key]: '' // Use empty string for display
+                                        [key]: ''
                                       }}
                                     } : null)
                                     updateNode((selectedElement.data as ProcessedNode).id, newProps)
@@ -391,7 +450,7 @@ export function GraphVisualization({ graphData: initialData, onGraphReset }: Gra
                               <option key={node.id} value={node.id}>
                                 {node.properties?.name || node.id}
                               </option>
-                          ))}
+                            ))}
                         </select>
                       </div>
                       <Button
@@ -401,12 +460,7 @@ export function GraphVisualization({ graphData: initialData, onGraphReset }: Gra
                           const sourceNode = (selectedElement.data as ProcessedNode).id
                           const targetNode = edgeFormData.targetId
                           if (sourceNode && targetNode) {
-                            addEdge(
-                              sourceNode,
-                              targetNode,
-                              edgeFormData.type,
-                              {}
-                            )
+                            addEdge(sourceNode, targetNode, edgeFormData.type, {})
                             setSelectedElement(null)
                           }
                         }}
@@ -448,7 +502,7 @@ export function GraphVisualization({ graphData: initialData, onGraphReset }: Gra
                           <div className="flex gap-2">
                             <input
                               className={`flex-1 bg-transparent ${isSystemProperty ? 'text-gray-500 cursor-not-allowed' : ''}`}
-                              value={selectedElement.data.properties[key] ?? ''}
+                              value={(selectedElement.data as ProcessedLink).properties[key] ?? ''}
                               onChange={e => {
                                 if (isSystemProperty) return
                                 const newProps = { ...(selectedElement.data as ProcessedLink).properties }
@@ -474,7 +528,7 @@ export function GraphVisualization({ graphData: initialData, onGraphReset }: Gra
                                     ...prev,
                                     data: { ...prev.data, properties: {
                                       ...newProps,
-                                      [key]: '' // Use empty string for display
+                                      [key]: ''
                                     }}
                                   } : null)
                                   updateEdge((selectedElement.data as ProcessedLink).id, newProps)
@@ -516,6 +570,7 @@ export function GraphVisualization({ graphData: initialData, onGraphReset }: Gra
             </DialogContent>
           </Dialog>
         )}
+
         {/* Node Creation Dialog */}
         <Dialog open={showNodeForm} onOpenChange={setShowNodeForm}>
           <DialogContent className="bg-white dark:bg-gray-800">
@@ -526,7 +581,7 @@ export function GraphVisualization({ graphData: initialData, onGraphReset }: Gra
               <div className="grid grid-cols-4 items-center gap-4">
                 <label className="text-right">Type</label>
                 <select
-                  className="col-span-3 bg-white dark:bg-gray-700"
+                  className="col-span-3 bg-white dark:bg-gray-700 border rounded px-2 py-1"
                   value={nodeFormData.type}
                   onChange={e => setNodeFormData(prev => ({ ...prev, type: e.target.value as NodeType }))}
                 >
@@ -538,7 +593,7 @@ export function GraphVisualization({ graphData: initialData, onGraphReset }: Gra
               <div className="grid grid-cols-4 items-center gap-4">
                 <label className="text-right">Name</label>
                 <input
-                  className="col-span-3 bg-white dark:bg-gray-700"
+                  className="col-span-3 bg-white dark:bg-gray-700 border rounded px-2 py-1"
                   value={nodeFormData.properties.name || ''}
                   onChange={e => setNodeFormData(prev => ({
                     ...prev,
@@ -569,7 +624,7 @@ export function GraphVisualization({ graphData: initialData, onGraphReset }: Gra
               <div className="grid grid-cols-4 items-center gap-4">
                 <label className="text-right">Type</label>
                 <select
-                  className="col-span-3 bg-white dark:bg-gray-700"
+                  className="col-span-3 bg-white dark:bg-gray-700 border rounded px-2 py-1"
                   value={edgeFormData.type}
                   onChange={e => setEdgeFormData(prev => ({ ...prev, type: e.target.value as EdgeType }))}
                 >
@@ -581,21 +636,19 @@ export function GraphVisualization({ graphData: initialData, onGraphReset }: Gra
               <div className="grid grid-cols-4 items-center gap-4">
                 <label className="text-right">Target Node</label>
                 <select
-                  className="col-span-3 bg-white dark:bg-gray-700"
+                  className="col-span-3 bg-white dark:bg-gray-700 border rounded px-2 py-1"
                   value={edgeFormData.targetId}
                   onChange={e => setEdgeFormData(prev => ({ ...prev, targetId: e.target.value }))}
                 >
                   {graphData?.nodes.map(node => (
-                    <option key={node.id} value={node.id}>{node.label}</option>
+                    <option key={node.id} value={node.id}>{node.properties?.name || node.label}</option>
                   ))}
                 </select>
               </div>
             </div>
             <DialogFooter>
               <Button onClick={() => {
-                addEdge(edgeFormData.sourceId!, edgeFormData.targetId!, 
-                   edgeFormData.type,
-                   edgeFormData.properties)
+                addEdge(edgeFormData.sourceId!, edgeFormData.targetId!, edgeFormData.type, edgeFormData.properties)
                 setShowEdgeForm(false)
                 setEdgeFormData({ type: EDGE_TYPES[0], properties: {} })
               }}>
@@ -605,12 +658,13 @@ export function GraphVisualization({ graphData: initialData, onGraphReset }: Gra
           </DialogContent>
         </Dialog>
       </div>
+
       {/* Bottom Actions */}
-      <div className="flex justify-end p-4 bg-background border-t">
+      <div className="flex justify-end p-4 bg-white border-t">
         <Button onClick={() => router.push('/merge')}>
           Merge
         </Button>
       </div>
     </div>
   )
-} 
+}
