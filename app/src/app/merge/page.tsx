@@ -629,7 +629,7 @@ function MergePageContent() {
 
       {/* Main Content */}
       <div className="flex-1 min-h-0">
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full bg-white">
           <div className="container py-4">
             <TabsList>
               <TabsTrigger value="progress">

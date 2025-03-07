@@ -132,15 +132,12 @@ export function ConflictList({
     
     const currentIndex = data.conflicts.findIndex(c => c.id === selectedConflictForDetails?.id)
     if (currentIndex === -1 || currentIndex === data.conflicts.length - 1) {
-      // If current conflict is the last one or not found, go back to list
       handleBackToList()
     } else {
-      // Move to next conflict
       setSelectedConflictForDetails(data.conflicts[currentIndex + 1])
     }
   }
 
-  // Handle search input
   const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(event.target.value)
   }
@@ -169,12 +166,9 @@ export function ConflictList({
     }
   }
 
-  // Calculate the resolved and unresolved counts
   const resolvedCount = data?.summary?.resolved || 0
   const unresolvedCount = data?.summary?.unresolved || 0
   const totalCount = data?.summary?.total || 0
-  
-  // Calculate progress percentage
   const progressPercentage = totalCount > 0 ? (resolvedCount / totalCount) * 100 : 0
 
   if (selectedConflictForDetails) {
@@ -185,7 +179,6 @@ export function ConflictList({
         onBack={handleBackToList}
         onNext={data?.conflicts && data.conflicts.length > 1 ? handleNextConflict : undefined}
         onResolve={(resolution) => {
-          // Update local state to reflect resolution
           if (data) {
             const updatedConflicts = data.conflicts.map(c => 
               c.id === selectedConflictForDetails.id
@@ -194,9 +187,7 @@ export function ConflictList({
             )
             setData({ ...data, conflicts: updatedConflicts })
           }
-          // Remove from selected conflicts
           onSelectionChange(selectedConflicts.filter(id => id !== selectedConflictForDetails.id))
-          // Move to next conflict if available
           handleNextConflict()
         }}
       />
@@ -204,10 +195,11 @@ export function ConflictList({
   }
 
   return (
+    <ScrollArea className="h-full p-4 space-y-2">
     <div className={cn("h-full flex flex-col", className)}>
       {/* Auto-Resolve Panel */}
       {summary && (
-        <div className="p-4 border-b">
+        <div className="p-4 border-b bg-white">
           <AutoResolvePanel
             mergeId={mergeId}
             conflictSummary={{
@@ -221,7 +213,7 @@ export function ConflictList({
 
       {/* Summary Header */}
       {summary && (
-        <div className="p-4 border-b">
+        <div className="p-4 border-b bg-white">
           <div className="grid grid-cols-4 gap-4">
             <Card>
               <CardContent className="p-4">
@@ -254,21 +246,21 @@ export function ConflictList({
       )}
 
       {/* Filters */}
-      <div className="p-4 border-b">
+      <div className="p-4 border-b bg-white">
         <div className="flex items-center gap-4">
           <div className="flex-1">
             <Input
               placeholder="Search conflicts..."
               value={searchQuery}
               onChange={handleSearchChange}
-              className="max-w-sm"
+              className="max-w-sm border-gray-300 rounded"
             />
           </div>
           <Select
             value={filters.conflict_type?.[0]}
             onValueChange={(value) => handleFilterChange('conflict_type', [value])}
           >
-            <SelectTrigger className="w-[180px]">
+            <SelectTrigger className="w-[180px] border-gray-300 rounded">
               <SelectValue placeholder="Filter by type" />
             </SelectTrigger>
             <SelectContent>
@@ -283,7 +275,7 @@ export function ConflictList({
             value={filters.severity?.[0]}
             onValueChange={(value) => handleFilterChange('severity', [value])}
           >
-            <SelectTrigger className="w-[180px]">
+            <SelectTrigger className="w-[180px] border-gray-300 rounded">
               <SelectValue placeholder="Filter by severity" />
             </SelectTrigger>
             <SelectContent>
@@ -296,7 +288,7 @@ export function ConflictList({
             value={filters.resolution_status?.[0]}
             onValueChange={(value) => handleFilterChange('resolution_status', [value])}
           >
-            <SelectTrigger className="w-[180px]">
+            <SelectTrigger className="w-[180px] border-gray-300 rounded">
               <SelectValue placeholder="Filter by status" />
             </SelectTrigger>
             <SelectContent>
@@ -309,7 +301,7 @@ export function ConflictList({
             variant="outline"
             size="icon"
             onClick={() => setFilters(defaultFilters)}
-            className="ml-2"
+            className="ml-2 border-gray-300 rounded"
           >
             <Filter className="h-4 w-4" />
           </Button>
@@ -317,7 +309,7 @@ export function ConflictList({
       </div>
 
       {/* Conflict List */}
-      <div className="flex-1 overflow-hidden">
+      <div className="flex-1 overflow-auto">
         {loading ? (
           <div className="h-full flex items-center justify-center">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -330,7 +322,7 @@ export function ConflictList({
               <Button
                 variant="outline"
                 size="sm"
-                className="mt-4"
+                className="mt-4 border-gray-300 rounded"
                 onClick={fetchConflicts}
               >
                 Retry
@@ -345,8 +337,8 @@ export function ConflictList({
             </div>
           </div>
         ) : (
-          <ScrollArea className="h-full">
-            <div className="p-4 space-y-2">
+          <ScrollArea className="h-full p-4 space-y-2">
+            <div>
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
                   <Checkbox
@@ -405,11 +397,8 @@ export function ConflictList({
                         checked={selectedConflicts.includes(conflict.id)}
                         onCheckedChange={(checked) => {
                           handleConflictSelect(conflict.id, !!checked)
-                          // Prevent propagation using a separate onClick handler
                         }}
-                        onClick={(event) => {
-                          event.stopPropagation()
-                        }}
+                        onClick={(event) => event.stopPropagation()}
                       />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
@@ -418,16 +407,17 @@ export function ConflictList({
                           </span>
                           <Badge
                             className={cn(
-                              severityColors[conflict.severity] || 'bg-gray-100'
+                              severityColors[conflict.severity] || 'bg-gray-100',
+                              'rounded-full'
                             )}
                           >
                             {conflict.severity}
                           </Badge>
-                          <Badge variant="outline">
+                          <Badge variant="outline" className="rounded-full">
                             {conflict.conflict_type}
                           </Badge>
                           {conflict.resolution_status === 'auto-resolved' && (
-                            <Badge className="bg-blue-100 text-blue-800 border-blue-200">
+                            <Badge className="bg-blue-100 text-blue-800 border-blue-200 rounded-full">
                               <Wand2 className="h-3 w-3 mr-1" />
                               Auto-resolved
                             </Badge>
@@ -459,7 +449,7 @@ export function ConflictList({
 
       {/* Pagination */}
       {data && data.total_count > filters.limit! && (
-        <div className="p-4 border-t">
+        <div className="p-4 border-t bg-white">
           <div className="flex items-center justify-between">
             <div className="text-sm text-gray-600">
               Showing {filters.offset! + 1} to {Math.min(filters.offset! + filters.limit!, data.total_count)} of {data.total_count} conflicts
@@ -470,6 +460,7 @@ export function ConflictList({
                 size="sm"
                 disabled={filters.offset === 0}
                 onClick={() => handleFilterChange('offset', Math.max(0, filters.offset! - filters.limit!))}
+                className="border-gray-300 rounded"
               >
                 Previous
               </Button>
@@ -478,6 +469,7 @@ export function ConflictList({
                 size="sm"
                 disabled={filters.offset! + filters.limit! >= data.total_count}
                 onClick={() => handleFilterChange('offset', filters.offset! + filters.limit!)}
+                className="border-gray-300 rounded"
               >
                 Next
               </Button>
@@ -486,5 +478,6 @@ export function ConflictList({
         </div>
       )}
     </div>
+    </ScrollArea>
   )
-} 
+}
