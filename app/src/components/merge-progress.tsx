@@ -57,7 +57,7 @@ export function MergeProgress({ mergeId, sessionId, transformId, onViewConflicts
   const [showZeroConflictNotification, setShowZeroConflictNotification] = useState(false);
   const [hasShownNotification, setHasShownNotification] = useState(false);
   const [showConflictTour, setShowConflictTour] = useState(false);
-  const [autoNavigateToConflicts, setAutoNavigateToConflicts] = useLocalStorage('autoNavigateToConflicts', false);
+  const [autoNavigateToConflicts, setAutoNavigateToConflicts] = useState(false); //useLocalStorage('autoNavigateToConflicts', false);
   const [hasShownConflictNotification, setHasShownConflictNotification] = useState(false);
 
   useEffect(() => {
@@ -71,11 +71,15 @@ export function MergeProgress({ mergeId, sessionId, transformId, onViewConflicts
         }
         
         const data = await response.json();
-        console.log('Merge status data:', data);
         setProgress(data);
 
-        data.has_conflicts = data.stages_progress?.conflict_detection?.metrics?.total_conflicts > 0;
+        if(data.stages_progress?.conflict_resolution?.status != 'completed') {
+          data.has_conflicts = data.stages_progress?.conflict_detection?.metrics?.total_conflicts > 0;
+        } else {
+          data.has_conflicts = false;
+        }
         data.conflict_count = data.stages_progress?.conflict_detection?.metrics?.total_conflicts;
+        console.log('Merge status data:', data);
         
         // Handle conflict detection
         if (data.has_conflicts && data.conflict_count > 0 && !hasShownConflictNotification) {
@@ -370,7 +374,11 @@ export function MergeProgress({ mergeId, sessionId, transformId, onViewConflicts
           progress: value?.percentage_complete || 0,
           start_time: value?.start_time,
           end_time: value?.end_time
-        }));
+        })).sort((a, b) => {
+          const aTime = a.end_time ? new Date(a.end_time).getTime() : Number.POSITIVE_INFINITY;
+          const bTime = b.end_time ? new Date(b.end_time).getTime() : Number.POSITIVE_INFINITY;
+          return aTime - bTime;
+        });
       } else if (Array.isArray(progress.stages_progress)) {
         return progress.stages_progress;
       }
@@ -434,11 +442,8 @@ export function MergeProgress({ mergeId, sessionId, transformId, onViewConflicts
   }
 
   const hasConflicts = progress.has_conflicts || progress.overall_status === 'pending';
-  const isReadyToFinalize = (progress.current_stage === 'apply_changes' || 
-                           progress.current_stage === 'merge') && 
-                           !progress.has_conflicts && 
-                           (progress.conflict_count === 0 || !progress.conflict_count) &&
-                           progress.overall_status !== 'completed';
+  const isReadyToFinalize = (progress.current_stage === 'apply_changes' &&
+                           progress.overall_status !== 'completed');
 
   return (
     <Card className="w-full flex flex-col max-h-[calc(100vh-100px)] min-h-[500px]">
@@ -452,7 +457,7 @@ export function MergeProgress({ mergeId, sessionId, transformId, onViewConflicts
           </div>
           <div className="flex flex-wrap items-center gap-2">
             {getStatusBadge(isReadyToFinalize ? 'READY_TO_FINALIZE' : progress.overall_status)}
-            {progress.conflict_count > 0 && (
+            {progress.conflict_count > 0 && progress.current_stage !== 'apply_changes' && (
               <Badge variant="destructive" className="ml-2 animate-pulse">
                 {progress.conflict_count} Conflicts
               </Badge>
@@ -464,7 +469,7 @@ export function MergeProgress({ mergeId, sessionId, transformId, onViewConflicts
             )}
             {progress.overall_status === 'completed' && (
               <Badge variant="success" className="ml-2">
-                All Conflicts Resolved
+                No Conflicts
               </Badge>
             )}
           </div>
@@ -472,7 +477,7 @@ export function MergeProgress({ mergeId, sessionId, transformId, onViewConflicts
       </CardHeader>
       <CardContent className="overflow-y-auto flex-grow">
         {/* Conflict Alert */}
-        {hasConflicts && progress.conflict_count > 0 && (
+        {hasConflicts && progress.conflict_count && progress.current_stage !== 'apply_changes' && ( 
           <Alert className="bg-amber-50 border-amber-200 animate-fadeIn mb-4">
             <AlertTriangle className="h-5 w-5 text-amber-600" />
             <div className="font-medium text-amber-800">Action Required: Conflicts Detected</div>
@@ -607,7 +612,7 @@ export function MergeProgress({ mergeId, sessionId, transformId, onViewConflicts
           )}
         </div>
         <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-          {hasConflicts && onViewConflicts && (
+          {hasConflicts && onViewConflicts && progress.current_stage !== 'apply_changes' && (
             <Button 
               onClick={onViewConflicts} 
               className="w-full sm:w-auto bg-amber-600 hover:bg-amber-700 text-white"

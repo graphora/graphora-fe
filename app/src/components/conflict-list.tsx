@@ -11,6 +11,7 @@ import { type ConflictListItem, type ConflictListFilters, type ConflictListRespo
 import { cn } from '@/lib/utils'
 import { ConflictDetailsView } from '@/components/conflict-details-view'
 import { AutoResolvePanel } from '@/components/auto-resolve-panel'
+import { MergeCompletionBanner } from './merge-completion-banner'
 
 interface ConflictListProps {
   mergeId: string
@@ -19,6 +20,8 @@ interface ConflictListProps {
   onSelectionChange: (selectedIds: string[]) => void
   onAutoResolveComplete?: () => void
   className?: string
+  onViewMergedResults?: () => void
+  onViewFinalGraph?: () => void
 }
 
 const severityColors = {
@@ -40,6 +43,8 @@ export function ConflictList({
   selectedConflicts,
   onSelectionChange,
   onAutoResolveComplete,
+  onViewMergedResults,
+  onViewFinalGraph,
   className
 }: ConflictListProps) {
   const [loading, setLoading] = useState(true)
@@ -166,6 +171,15 @@ export function ConflictList({
 
   return (
     <div className={cn("min-h-screen flex flex-col", className)}>
+      {/* Show MergeCompletionBanner when all conflicts are resolved */}
+      {summary?.unresolved === 0 && summary?.total > 0 && (
+        <div className="p-2 border-b bg-white">
+          <MergeCompletionBanner
+            mergeId={mergeId}
+            onViewFinalGraph={onViewFinalGraph}
+          />
+        </div>
+      )}
       {/* Top Area: Auto-Resolve Panel */}
       {summary && (
         <div className="p-2 border-b bg-white">
@@ -350,6 +364,8 @@ export function ConflictList({
             <ConflictDetailsView
               mergeId={mergeId}
               conflict={selectedConflictForDetails}
+              onViewMergedResults={onViewMergedResults}
+              onViewFinalGraph={onViewFinalGraph}
               onBack={handleBackToList}
               onNext={data?.conflicts && data.conflicts.length > 1 ? handleNextConflict : undefined}
               onResolve={(resolution) => {

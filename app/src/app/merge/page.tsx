@@ -41,6 +41,7 @@ function MergePageContent() {
   const [isCancelling, setIsCancelling] = useState(false)
   const [selectedConflicts, setSelectedConflicts] = useState<string[]>([])
   const [allConflictsResolved, setAllConflictsResolved] = useState(false)
+  const [showMergeCompletionBanner, setShowMergeCompletionBanner] = useState(false)
   const [conflictStats, setConflictStats] = useState<{total: number, resolved: number}>({
     total: 0,
     resolved: 0
@@ -124,6 +125,7 @@ function MergePageContent() {
                   }
                   
                   setAllConflictsResolved(allResolved)
+                  setShowMergeCompletionBanner(allResolved)
                 }
               } catch (err) {
                 console.error('Error fetching conflict stats:', err)
@@ -308,6 +310,7 @@ function MergePageContent() {
               }
               
               setAllConflictsResolved(allResolved)
+              setShowMergeCompletionBanner(allResolved)
             }
           } catch (err) {
             console.error('Error fetching conflict stats:', err)
@@ -536,6 +539,7 @@ function MergePageContent() {
               resolvedCount === conflictData.total_count
             
             setAllConflictsResolved(allResolved)
+            setShowMergeCompletionBanner(allResolved)
             
             // If all conflicts are resolved, show a success toast
             if (allResolved) {
@@ -565,6 +569,10 @@ function MergePageContent() {
     } catch (error) {
       console.error('Error updating status after auto-resolution:', error)
     }
+  }
+
+  const handleViewProgress = () => {
+    setActiveTab('progress')
   }
 
   const handleViewFinalGraph = () => {
@@ -671,7 +679,7 @@ function MergePageContent() {
                 </div>
                 
                 {/* Show the merge completion banner when all conflicts are resolved */}
-                {allConflictsResolved && mergeId && (
+                {showMergeCompletionBanner && mergeId && (
                   <div className="p-4 border-b bg-green-50">
                     <MergeCompletionBanner
                       mergeId={mergeId}
@@ -708,6 +716,8 @@ function MergePageContent() {
                         selectedConflicts={selectedConflicts}
                         onSelectionChange={setSelectedConflicts}
                         onAutoResolveComplete={handleAutoResolveComplete}
+                        onViewMergedResults={() => {/* navigate to results */}}
+                        onViewFinalGraph={handleViewFinalGraph}
                       />
                     ) : (
                       <div className="flex items-center justify-center h-full">
@@ -724,12 +734,13 @@ function MergePageContent() {
                 <div className="absolute top-0 left-0 right-0 z-10 p-4 bg-white bg-opacity-90 border-b">
                   <MergeCompletionBanner
                     mergeId={mergeId}
-                    onViewFinalGraph={handleViewFinalGraph}
+                    onViewProgress={handleViewProgress}
+                    onViewFinalGraph={handleViewProgress}
+                    takeToFinalize={true}
                     className="max-w-3xl mx-auto"
                   />
                 </div>
               )}
-              
               {graphDataMemo ? (
                 <MergeGraphVisualization 
                   transformId={transformId}
