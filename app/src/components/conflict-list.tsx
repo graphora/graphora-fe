@@ -298,6 +298,12 @@ export function ConflictList({
                                 Auto
                               </Badge>
                             )}
+                            {conflict.resolved && (
+                              <span className="flex items-center text-green-600">
+                                <CheckCircle2 className="h-3 w-3 mr-1" />
+                                Resolved
+                              </span>
+                            )}
                           </div>
                         </div>
                       </div>

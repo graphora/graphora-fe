@@ -69,6 +69,20 @@ interface ConflictDetails extends ConflictListItem {
     requires_review: boolean
     auto_resolvable: boolean
   }>
+  resolution?: {
+    id: string
+    description: string
+    resolution_type: string
+    resolution_data: Record<string, any>
+    confidence: number
+    reasoning: string
+    requires_review: boolean
+    auto_resolvable: boolean
+    risks?: string[]
+  }
+  resolved?: boolean
+  resolution_timestamp?: string
+  resolved_by?: string
 }
 
 interface PropertyDiff {
@@ -125,6 +139,10 @@ export function ConflictDetailsView({
 
         const data = await response.json()
         setDetails(data)
+        // If resolved, pre-select the resolution
+        if (data.resolved && data.resolution) {
+          setSelectedResolution(data.resolution.id)
+        }
       } catch (error) {
         setError(error instanceof Error ? error.message : 'An error occurred')
       } finally {
@@ -223,10 +241,10 @@ export function ConflictDetailsView({
     }
   }
 
-  // Use severity from details if available, otherwise use from conflict
   const severityLevel = details?.severity_details?.level || conflict.severity
   const severityStyle = severityColors[severityLevel]
   const severityLabel = details?.severity_details?.label || severityLevel
+  const isResolved = details?.resolved || false
 
   return (
     <div className="h-[calc(100vh-14rem)] flex flex-col overflow-hidden">
@@ -257,21 +275,27 @@ export function ConflictDetailsView({
                 <Badge className={cn(severityStyle.bg, severityStyle.text, severityStyle.border)}>
                   {severityLabel}
                 </Badge>
+                {isResolved && (
+                  <Badge className="bg-green-100 text-green-800 border-green-200">
+                    Resolved
+                  </Badge>
+                )}
               </div>
               <p className="text-sm text-gray-600 mt-1">
                 Detected at: {new Date(conflict.created_at).toLocaleString()}
               </p>
+              {isResolved && details?.resolution_timestamp && (
+                <p className="text-sm text-gray-600">
+                  Resolved at: {new Date(details.resolution_timestamp).toLocaleString()}
+                </p>
+              )}
             </div>
-            {/* <Button variant="outline" size="sm" onClick={onBack}>
-              <ArrowLeft className="h-4 w-2 mr-2" />
-              Back
-            </Button> */}
           </div>
         </div>
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 min-h-0 overflow-y-auto">
+      <div className="flex-1 min-h-0 overflow-y-auto pb-24">
         <div className="p-4 space-y-6 pb-[calc(4rem+1px)]">
           {error && (
             <Alert variant="destructive">
@@ -291,17 +315,16 @@ export function ConflictDetailsView({
                 <>
                   <Separator className="my-4" />
                   <div className="text-sm">
-                    {/* Key-Value Pairs */}
-                    {details.context && Object.keys(details.context).length > 1 && (
+                    {details.context && Object.keys(details.context).length > 0 && (
                       <div className="space-y-2">
                         {Object.entries(details.context)
-                          .filter(([key]) => key !== 'description' && key !== 'analysis') // Exclude description since it's already shown
+                          .filter(([key]) => key !== 'description' && key !== 'analysis')
                           .map(([key, value]) => (
                             <div key={key} className="flex items-start gap-2">
                               <span className="font-medium text-gray-700">{formatLabel(key)}:</span>
                               <span className="text-gray-600">
                                 {typeof value === 'object' && value !== null
-                                  ? JSON.stringify(value) // Handle nested objects
+                                  ? JSON.stringify(value)
                                   : String(value)}
                               </span>
                             </div>
@@ -314,87 +337,142 @@ export function ConflictDetailsView({
             </CardContent>
           </Card>
 
-          {/* Resolution Options */}
-          {details && details.resolution_options && (
+          {/* Resolution Section */}
+          {details && (
             <Card>
               <CardHeader>
-                <CardTitle>Resolution Options</CardTitle>
-                <CardDescription>Select a resolution strategy to apply</CardDescription>
+                <CardTitle>{isResolved ? 'Resolution' : 'Resolution Options'}</CardTitle>
+                <CardDescription>
+                  {isResolved ? 'Selected resolution for this conflict' : 'Select a resolution strategy to apply'}
+                </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4 pb-24">
-                  {details.resolution_options.map((option) => (
-                    <Card 
-                      key={option.id}
-                      className={cn(
-                        "hover:border-blue-300 transition-colors cursor-pointer",
-                        selectedResolution === option.id && "border-blue-500 bg-blue-50",
-                        option.confidence > 0.8 && "ring-2 ring-green-100"
-                      )}
-                      onClick={() => handleResolutionSelect(option.id)}
-                    >
+                {loading ? (
+                  <div className="flex items-center justify-center p-4">
+                    <Loader2 className="h-8 w-8 animate-spin" />
+                  </div>
+                ) : isResolved && details.resolution ? (
+                  <div className="space-y-4 pb-24">
+                    <Card className="border-green-500 bg-green-50">
                       <CardContent className="p-4">
-                        <div className="flex justify-between items-start">
-                          <div className="space-y-1">
-                            <div>
-                              <h5 className="font-medium">{formatLabel(option.resolution_type.toLowerCase())}</h5>
-                              <p className="text-sm text-gray-600">{option.description}</p>
-                              {option.reasoning && (
-                                <p className="text-sm text-gray-500 mt-2">{option.reasoning}</p>
-                              )}
-                            </div>
-                            <div className="flex items-center gap-4">
-                              <div className="flex-1 max-w-[200px]">
-                                <div className="flex items-center justify-between text-xs mb-1">
-                                  <span>Confidence</span>
-                                  <span>{Math.round(option.confidence * 100)}%</span>
-                                </div>
-                                <Progress 
-                                  value={option.confidence * 100} 
-                                  className={cn(
-                                    option.confidence > 0.8 ? "bg-green-100" : "bg-gray-100",
-                                    "h-2"
-                                  )}
-                                  indicatorClassName={
-                                    option.confidence > 0.8 ? "bg-green-500" : "bg-blue-500"
-                                  }
-                                />
-                              </div>
-                              {option.confidence > 0.8 && (
-                                <Badge variant="default" className="bg-green-500 text-xs">
-                                  Recommended
-                                </Badge>
-                              )}
-                              {option.auto_resolvable && (
-                                <Badge variant="outline" className="text-xs">
-                                  Auto-resolvable
-                                </Badge>
-                              )}
-                            </div>
+                        <div className="space-y-2">
+                          <div>
+                            <h5 className="font-medium">{formatLabel(details.resolution.resolution_type.toLowerCase())}</h5>
+                            <p className="text-sm text-gray-600">{details.resolution.description}</p>
+                            {details.resolution.reasoning && (
+                              <p className="text-sm text-gray-500 mt-2">{details.resolution.reasoning}</p>
+                            )}
                           </div>
-                          {selectedResolution === option.id && (
-                            <CheckCircle2 className="h-5 w-5 text-blue-500" />
+                          <div className="flex items-center gap-4">
+                            <div className="flex-1 max-w-[200px]">
+                              <div className="flex items-center justify-between text-xs mb-1">
+                                <span>Confidence</span>
+                                <span>{Math.round(details.resolution.confidence * 100)}%</span>
+                              </div>
+                              <Progress 
+                                value={details.resolution.confidence * 100} 
+                                className={cn(
+                                  details.resolution.confidence > 0.8 ? "bg-green-100" : "bg-gray-100",
+                                  "h-2"
+                                )}
+                                indicatorClassName={
+                                  details.resolution.confidence > 0.8 ? "bg-green-500" : "bg-blue-500"
+                                }
+                              />
+                            </div>
+                            {details.resolution.confidence > 0.8 && (
+                              <Badge variant="default" className="bg-green-500 text-xs">
+                                Recommended
+                              </Badge>
+                            )}
+                            {details.resolution.auto_resolvable && (
+                              <Badge variant="outline" className="text-xs">
+                                Auto-resolved
+                              </Badge>
+                            )}
+                          </div>
+                          {details.resolved_by && (
+                            <p className="text-xs text-gray-500">
+                              Resolved by: {details.resolved_by}
+                            </p>
                           )}
                         </div>
                       </CardContent>
                     </Card>
-                  ))}
-                </div>
+                  </div>
+                ) : details.resolution_options ? (
+                  <div className="space-y-4 pb-24">
+                    {details.resolution_options.map((option) => (
+                      <Card 
+                        key={option.id}
+                        className={cn(
+                          "hover:border-blue-300 transition-colors cursor-pointer",
+                          selectedResolution === option.id && "border-blue-500 bg-blue-50",
+                          option.confidence > 0.8 && "ring-2 ring-green-100"
+                        )}
+                        onClick={() => handleResolutionSelect(option.id)}
+                      >
+                        <CardContent className="p-4">
+                          <div className="flex justify-between items-start">
+                            <div className="space-y-2">
+                              <div>
+                                <h5 className="font-medium">{formatLabel(option.resolution_type.toLowerCase())}</h5>
+                                <p className="text-sm text-gray-600">{option.description}</p>
+                                {option.reasoning && (
+                                  <p className="text-sm text-gray-500 mt-2">{option.reasoning}</p>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-4">
+                                <div className="flex-1 max-w-[200px]">
+                                  <div className="flex items-center justify-between text-xs mb-1">
+                                    <span>Confidence</span>
+                                    <span>{Math.round(option.confidence * 100)}%</span>
+                                  </div>
+                                  <Progress 
+                                    value={option.confidence * 100} 
+                                    className={cn(
+                                      option.confidence > 0.8 ? "bg-green-100" : "bg-gray-100",
+                                      "h-2"
+                                    )}
+                                    indicatorClassName={
+                                      option.confidence > 0.8 ? "bg-green-500" : "bg-blue-500"
+                                    }
+                                  />
+                                </div>
+                                {option.confidence > 0.8 && (
+                                  <Badge variant="default" className="bg-green-500 text-xs">
+                                    Recommended
+                                  </Badge>
+                                )}
+                                {option.auto_resolvable && (
+                                  <Badge variant="outline" className="text-xs">
+                                    Auto-resolvable
+                                  </Badge>
+                                )}
+                              </div>
+                            </div>
+                            {selectedResolution === option.id && (
+                              <CheckCircle2 className="h-5 w-5 text-blue-500" />
+                            )}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-500">No resolution options available.</p>
+                )}
               </CardContent>
             </Card>
           )}
         </div>
       </div>
 
-      {/* Footer Actions */}
-      <div className="flex-none bg-gray-50 border-t shadow-[0_-1px_2px_rgba(0,0,0,0.05)] p-1 fixed bottom-0 left-0 w-full">
-        <div className="">
+      {/* Footer Actions - Only show if not resolved */}
+      {!isResolved && (
+        <div className="flex-none bg-gray-50 border-t shadow-[0_-1px_2px_rgba(0,0,0,0.05)] p-1 fixed bottom-0 left-0 w-full">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              {/* <Button variant="outline" size="sm" onClick={onBack}>
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Back
-              </Button> */}
               {lastAppliedResolution && (
                 <Button 
                   variant="outline" 
@@ -430,7 +508,7 @@ export function ConflictDetailsView({
             </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
   )
-} 
+}
