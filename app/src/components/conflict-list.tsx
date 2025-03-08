@@ -27,7 +27,8 @@ interface ConflictListProps {
 const severityColors = {
   critical: 'text-red-600 bg-red-50 border-red-200',
   major: 'text-orange-600 bg-orange-50 border-orange-200',
-  minor: 'text-yellow-600 bg-yellow-50 border-yellow-200'
+  minor: 'text-yellow-600 bg-yellow-50 border-yellow-200',
+  info: 'text-blue-600 bg-blue-50 border-blue-200'
 }
 
 const defaultFilters: ConflictListFilters = {
@@ -160,7 +161,8 @@ export function ConflictList({
       bySeverity: {
         critical: bySeverity['critical'] || 0,
         major: bySeverity['major'] || 0,
-        minor: bySeverity['minor'] || 0
+        minor: bySeverity['minor'] || 0,
+        info: bySeverity['info'] || 0
       }
     }
   }, [data])
@@ -221,7 +223,8 @@ export function ConflictList({
           style={{ width: `${leftWidth}%` }}
         >
           <div className="h-full flex flex-col">
-            <div className="p-4 border-b bg-white z-10">
+            {/* Filters - Fixed at top */}
+            <div className="p-4 border-b bg-white shrink-0">
               <div className="flex items-center gap-2 flex-wrap">
                 <Input
                   placeholder="Search conflicts..."
@@ -253,6 +256,7 @@ export function ConflictList({
                     <SelectItem value="critical">Critical</SelectItem>
                     <SelectItem value="major">Major</SelectItem>
                     <SelectItem value="minor">Minor</SelectItem>
+                    <SelectItem value="info">Info</SelectItem>
                   </SelectContent>
                 </Select>
                 <Button
@@ -266,96 +270,100 @@ export function ConflictList({
               </div>
             </div>
 
-            <ScrollArea className="flex-1 overflow-auto pb-32">
-              <div className="p-4 min-h-full">
-                {loading ? (
-                  <div className="flex items-center justify-center py-8">
-                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                  </div>
-                ) : error ? (
-                  <div className="flex items-center justify-center py-8">
-                    <div className="text-center">
-                      <AlertCircle className="h-8 w-8 text-red-500 mx-auto mb-2" />
-                      <p className="text-red-500">{error}</p>
-                      <Button variant="outline" size="sm" className="mt-4" onClick={fetchConflicts}>Retry</Button>
+            {/* Scrollable Content */}
+            <div className="flex-1 overflow-hidden pb-8">
+              <ScrollArea className="h-full pb-32">
+                <div className="p-4">
+                  {loading ? (
+                    <div className="flex items-center justify-center py-8">
+                      <Loader2 className="h-8 w-8 animate-spin text-primary" />
                     </div>
-                  </div>
-                ) : data?.conflicts.length === 0 ? (
-                  <div className="flex items-center justify-center py-8">
-                    <div className="text-center">
-                      <CheckCircle2 className="h-8 w-8 text-green-500 mx-auto mb-2" />
-                      <p className="text-gray-500">No conflicts found</p>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-2">
-                        <Checkbox
-                          checked={selectedConflicts.length === data?.conflicts.length}
-                          onCheckedChange={handleSelectAll}
-                        />
-                        <span className="text-xs">{selectedConflicts.length} selected</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Button variant="ghost" size="sm" onClick={() => handleSort('severity')}>
-                          {filters.sort_by === 'severity' && (filters.sort_order === 'asc' ? <SortAsc className="h-4 w-4" /> : <SortDesc className="h-4 w-4" />)}
-                        </Button>
+                  ) : error ? (
+                    <div className="flex items-center justify-center py-8">
+                      <div className="text-center">
+                        <AlertCircle className="h-8 w-8 text-red-500 mx-auto mb-2" />
+                        <p className="text-red-500">{error}</p>
+                        <Button variant="outline" size="sm" className="mt-4" onClick={fetchConflicts}>Retry</Button>
                       </div>
                     </div>
-                    {data?.conflicts.map(conflict => (
-                      <Card
-                        key={conflict.id}
-                        className={cn(
-                          "cursor-pointer hover:bg-gray-50 transition-colors",
-                          selectedConflictForDetails?.id === conflict.id && "bg-gray-100 border-primary"
-                        )}
-                        onClick={() => handleConflictClick(conflict)}
-                      >
-                        <CardContent className="p-3">
-                          <div className="flex items-start gap-2">
-                            <Checkbox
-                              checked={selectedConflicts.includes(conflict.id)}
-                              onCheckedChange={(checked) => handleConflictSelect(conflict.id, !!checked)}
-                              onClick={(e) => e.stopPropagation()}
-                            />
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2 mb-1">
-                                <span className="font-medium text-sm truncate">
-                                  {conflict.entity_name || conflict.entity_id}
-                                </span>
-                                <Badge className={cn(severityColors[conflict.severity], 'rounded-full text-xs')}>
-                                  {conflict.severity}
-                                </Badge>
-                              </div>
-                              <p className="text-xs text-gray-500 truncate">{conflict.description}</p>
-                              <div className="flex items-center gap-2 mt-1 text-xs text-gray-500">
-                                <span>{new Date(conflict.created_at).toLocaleDateString()}</span>
-                                {conflict.resolution_status === 'auto-resolved' && (
-                                  <Badge className="bg-blue-100 text-blue-800 border-blue-200 rounded-full text-xs">
-                                    <Wand2 className="h-3 w-3 mr-1" />
-                                    Auto
-                                  </Badge>
-                                )}
-                                {conflict.resolved && (
-                                  <span className="flex items-center text-green-600">
-                                    <CheckCircle2 className="h-3 w-3 mr-1" />
-                                    Resolved
+                  ) : data?.conflicts.length === 0 ? (
+                    <div className="flex items-center justify-center py-8">
+                      <div className="text-center">
+                        <CheckCircle2 className="h-8 w-8 text-green-500 mx-auto mb-2" />
+                        <p className="text-gray-500">No conflicts found</p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <Checkbox
+                            checked={selectedConflicts.length === data?.conflicts.length}
+                            onCheckedChange={handleSelectAll}
+                          />
+                          <span className="text-xs">{selectedConflicts.length} selected</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Button variant="ghost" size="sm" onClick={() => handleSort('severity')}>
+                            {filters.sort_by === 'severity' && (filters.sort_order === 'asc' ? <SortAsc className="h-4 w-4" /> : <SortDesc className="h-4 w-4" />)}
+                          </Button>
+                        </div>
+                      </div>
+                      {data?.conflicts.map(conflict => (
+                        <Card
+                          key={conflict.id}
+                          className={cn(
+                            "cursor-pointer hover:bg-gray-50 transition-colors",
+                            selectedConflictForDetails?.id === conflict.id && "bg-gray-100 border-primary"
+                          )}
+                          onClick={() => handleConflictClick(conflict)}
+                        >
+                          <CardContent className="p-3">
+                            <div className="flex items-start gap-2">
+                              <Checkbox
+                                checked={selectedConflicts.includes(conflict.id)}
+                                onCheckedChange={(checked) => handleConflictSelect(conflict.id, !!checked)}
+                                onClick={(e) => e.stopPropagation()}
+                              />
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <span className="font-medium text-sm truncate">
+                                    {conflict.entity_name || conflict.entity_id}
                                   </span>
-                                )}
+                                  <Badge className={cn(severityColors[conflict.severity], 'rounded-full text-xs')}>
+                                    {conflict.severity}
+                                  </Badge>
+                                </div>
+                                <p className="text-xs text-gray-500 truncate">{conflict.description}</p>
+                                <div className="flex items-center gap-2 mt-1 text-xs text-gray-500">
+                                  <span>{new Date(conflict.created_at).toLocaleDateString()}</span>
+                                  {conflict.resolution_status === 'auto-resolved' && (
+                                    <Badge className="bg-blue-100 text-blue-800 border-blue-200 rounded-full text-xs">
+                                      <Wand2 className="h-3 w-3 mr-1" />
+                                      Auto
+                                    </Badge>
+                                  )}
+                                  {conflict.resolved && (
+                                    <span className="flex items-center text-green-600">
+                                      <CheckCircle2 className="h-3 w-3 mr-1" />
+                                      Resolved
+                                    </span>
+                                  )}
+                                </div>
                               </div>
                             </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </ScrollArea>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </ScrollArea>
+            </div>
 
-            {data && data.total_count > filters.limit! && (
-              <div className="p-2 border-t bg-white z-10">
+            {/* Pagination - Fixed at bottom */}
+            {data && data.total_count >= filters.limit! && (
+              <div className="p-2 border-t bg-white shrink-0">
                 <div className="flex items-center justify-between text-xs">
                   <span>
                     {filters.offset! + 1} - {Math.min(filters.offset! + filters.limit!, data.total_count)} of {data.total_count}

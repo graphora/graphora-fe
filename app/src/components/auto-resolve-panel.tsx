@@ -218,7 +218,7 @@ export function AutoResolvePanel({
       <CardContent className="p-2">
         <div className="space-y-2">
           {/* Severity Summary */}
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-4 gap-2">
             <Card className="bg-red-50 border-red-200">
               <CardContent className="p-2">
                 <div className="flex items-center justify-between">
@@ -249,6 +249,17 @@ export function AutoResolvePanel({
                     <p className="text-lg font-bold text-yellow-700">{conflictSummary.by_severity.minor}</p>
                   </div>
                   <AlertCircle className="h-4 w-4 text-yellow-500" />
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="bg-blue-50 border-blue-200">
+              <CardContent className="p-2">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs text-blue-700">Info</p>
+                    <p className="text-lg font-bold text-blue-700">{conflictSummary.by_severity.info}</p>
+                  </div>
+                  <AlertCircle className="h-4 w-4 text-blue-500" />
                 </div>
               </CardContent>
             </Card>
