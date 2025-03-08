@@ -22,7 +22,8 @@ import {
   Loader2,
   XCircle,
   CheckCircle2,
-  RefreshCcw
+  RefreshCcw,
+  ThumbsUp
 } from 'lucide-react'
 import { toast } from '@/components/ui/use-toast'
 
@@ -32,6 +33,7 @@ interface ConflictSummary {
     critical: number
     major: number
     minor: number
+    info: number
   }
 }
 
@@ -259,7 +261,7 @@ export function AutoResolvePanel({
                     <p className="text-xs text-blue-700">Info</p>
                     <p className="text-lg font-bold text-blue-700">{conflictSummary.by_severity.info}</p>
                   </div>
-                  <AlertCircle className="h-4 w-4 text-blue-500" />
+                  <ThumbsUp className="h-4 w-4 text-blue-500" />
                 </div>
               </CardContent>
             </Card>
