@@ -296,7 +296,7 @@ export function ConflictDetailsView({
                         <AlertTriangle className="h-4 w-4" />}
                       {conflict.conflict_type}
                     </Badge>
-                    <Badge className={cn(severityStyle.bg, severityStyle.text, severityStyle.border)}>
+                    <Badge className={cn(severityStyle?.bg, severityStyle?.text, severityStyle?.border)}>
                       {severityLabel}
                     </Badge>
                     {isResolved && (
