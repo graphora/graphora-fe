@@ -4,7 +4,7 @@ import { API_BASE_URL } from '@/lib/constants'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { mergeId: string; conflictId: string } }
+  { params }: any
 ) {
   try {
     // Check if user is authenticated
@@ -51,7 +51,7 @@ export async function GET(
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { mergeId: string; conflictId: string } }
+  { params }: any
 ) {
   try {
     // Check if user is authenticated

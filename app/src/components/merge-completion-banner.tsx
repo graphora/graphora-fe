@@ -32,7 +32,7 @@ export function MergeCompletionBanner({
   mergeId,
   onViewFinalGraph,
   onViewProgress,
-  takeToFinalize,
+  takeToFinalize = false,
   className
 }: MergeCompletionBannerProps) {
   const [statistics, setStatistics] = useState<MergeStatistics | null>(null)

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { mergeId: string } }
+  { params }: any
 ) {
   try {
     const { mergeId } = params

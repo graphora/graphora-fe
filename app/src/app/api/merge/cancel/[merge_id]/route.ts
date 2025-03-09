@@ -4,7 +4,7 @@ import { API_BASE_URL } from '@/lib/constants';
 
 export async function POST(
   request: Request,
-  {params}: { params: { mergeId: string } }
+  {params}: any
 ) {
   try {
     const { userId } = await auth();

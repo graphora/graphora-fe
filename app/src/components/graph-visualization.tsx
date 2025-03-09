@@ -204,16 +204,25 @@ export function GraphVisualization({ graphData: initialData, onGraphReset }: Gra
   const chargeForce = useMemo(() => forceManyBody().strength(-400), [])
   const centerForce = useMemo(() => forceCenter(0, 0).strength(0.08), [])
 
-  const handleNodeClick = (node: ProcessedNode) => {
-    setSelectedElement({ type: 'node', data: node })
-  }
+  const handleNodeClick = (node: any, event: MouseEvent) => {
+    const processedNode = node as ProcessedNode;
+    if (processedNode.id && processedNode.name && processedNode.type && processedNode.color) {
+      setSelectedElement({ type: 'node', data: processedNode });
+    }
+  };
 
-  const handleLinkClick = (link: ProcessedLink) => {
-    setSelectedElement({ type: 'link', data: link })
-  }
+  const handleLinkClick = (link: any) => {
+    const processedLink = link as ProcessedLink;
+    if (processedLink.id && processedLink.source && processedLink.target) {
+      setSelectedElement({ type: 'link', data: processedLink });
+    }
+  };
 
-  const handleNodeHover = (node: ProcessedNode | null) => {
-    setHoveredNode(node)
+  const handleNodeHover = (node: any, previousNode: any) => {
+    if (node) {
+      const processedNode = node as ProcessedNode;
+      setHoveredNode(processedNode)
+    }
   }
 
   return (
@@ -262,13 +271,13 @@ export function GraphVisualization({ graphData: initialData, onGraphReset }: Gra
               d3VelocityDecay={0.1}
               cooldownTicks={100}
               warmupTicks={50}
-              linkForce={linkForce}
-              nodeForce={chargeForce}
-              centerForce={centerForce}
+              // linkForce={linkForce}
+              // nodeForce={chargeForce}
+              // centerForce={centerForce}
               onNodeClick={handleNodeClick}
               onLinkClick={handleLinkClick}
               onNodeHover={handleNodeHover}
-              nodeCanvasObject={(node: ProcessedNode, ctx: CanvasRenderingContext2D, globalScale: number) => {
+              nodeCanvasObject={(node: any, ctx: CanvasRenderingContext2D, globalScale: number) => {
                 const label = node.properties?.name || node.type
                 const fontSize = Math.min(12 / globalScale, 10)
                 const nodeR = node.val || 5

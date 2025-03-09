@@ -684,6 +684,8 @@ function MergePageContent() {
                     <MergeCompletionBanner
                       mergeId={mergeId}
                       onViewFinalGraph={handleViewFinalGraph}
+                      onViewProgress={handleViewProgress}
+                      takeToFinalize={false}
                     />
                   </div>
                 )}
@@ -704,6 +706,8 @@ function MergePageContent() {
                       <MergeCompletionBanner
                         mergeId={mergeId}
                         onViewFinalGraph={handleViewFinalGraph}
+                        onViewProgress={handleViewProgress}
+                        takeToFinalize={false}
                       />
                     </div>
                   )}

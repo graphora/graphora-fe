@@ -139,6 +139,7 @@ export interface MergeProgress {
   error_message?: string;
   has_conflicts: boolean;
   conflict_count: number;
+  elapsed_time?: number
 }
 
 export interface ConflictSeverity {
@@ -156,7 +157,7 @@ export interface ConflictListItem {
   conflict_type: string
   severity: 'critical' | 'major' | 'minor'
   description: string
-  resolved: boolean
+  resolved?: boolean
   resolution_status?: 'unresolved' | 'auto-resolved' | 'manually-resolved'
   resolution_confidence?: number
   property_name?: string | null
@@ -171,7 +172,7 @@ export interface ConflictListItem {
     reasoning: string
     requires_review: boolean
     auto_resolvable: boolean
-    risks: string[]
+    risks?: string[]
   }
   resolution_timestamp?: string
   resolved_by?: string

@@ -165,7 +165,7 @@ export function MergeCompletion({ mergeId, onComplete }: MergeCompletionProps) {
         toast({
           title: 'Warning',
           description: 'Merge completed with warnings. Please review the verification results.',
-          variant: 'warning',
+          variant: 'default',
         })
       }
 
@@ -308,7 +308,7 @@ export function MergeCompletion({ mergeId, onComplete }: MergeCompletionProps) {
                       issue.severity === 'high'
                         ? 'destructive'
                         : issue.severity === 'medium'
-                        ? 'warning'
+                        ? 'destructive'
                         : 'default'
                     }
                   >

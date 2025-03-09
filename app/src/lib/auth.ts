@@ -30,7 +30,7 @@ export async function getAuth(request: NextRequest): Promise<AuthUser | null> {
     id: '1',
     name: 'Test User',
     email: 'test@example.com',
-    token: authToken
+    token: authToken || ''
   }
 }
 

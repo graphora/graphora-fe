@@ -86,7 +86,7 @@ export const MergeGraphVisualization = ({
 
   useEffect(() => {
     if (graphData?.nodes) {
-      const types = Array.from(
+      const types: string[] = Array.from(
         new Set(graphData.nodes.map((node: any) => node.type || node.label || 'default'))
       )
       setAvailableTypes(types)
@@ -169,9 +169,9 @@ export const MergeGraphVisualization = ({
         return sourceExists && targetExists
       })
       .map((edge: any) => {
-        let color = SPECIAL_COLORS.default
+        let color = SPECIAL_COLORS.default.valueOf
         if (!isFinalGraph && currentConflict && currentConflict.edgeId === edge.id) {
-          color = SPECIAL_COLORS.conflict
+          color = SPECIAL_COLORS.conflict.valueOf
         }
 
         return {
@@ -333,9 +333,9 @@ export const MergeGraphVisualization = ({
               cooldownTicks={100}
               warmupTicks={50}
               // Configure forces via props
-              linkForce={linkForce}
-              nodeForce={chargeForce}
-              centerForce={centerForce}
+              // linkForce={linkForce}
+              // nodeForce={chargeForce}
+              // centerForce={centerForce}
               nodeCanvasObject={(node, ctx, globalScale) => {
                 const label = node.displayName
                 const fontSize = 12/globalScale

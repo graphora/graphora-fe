@@ -4,7 +4,7 @@ import { API_BASE_URL } from '@/lib/constants';
 
 export async function GET(
   request: Request,
-  { params }: { params: { mergeId: string, transformId: string } }
+  { params }: any
 ) {
   const { userId } = await auth();
   const { mergeId, transformId } = await params;

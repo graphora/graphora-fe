@@ -42,11 +42,10 @@ export function MergeProgress({ mergeId, sessionId, transformId, onViewConflicts
     has_conflicts: false,
     conflict_count: 0,
     start_time: new Date().toISOString(),
-    estimated_completion: null,
-    elapsed_time: 0,
-    remaining_time: null
+    elapsed_time: 0
   });
-  const [elapsedTime, setElapsedTime] = useState<string>('00:00');
+  const [elapsedTime, setElapsedTime] = useState<number>(0);
+  const [elapsedTimeStr, setElapsedTimeStr] = useState<string>('00:00');
   const [showDetails, setShowDetails] = useState(false);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
@@ -163,7 +162,8 @@ export function MergeProgress({ mergeId, sessionId, transformId, onViewConflicts
       const diff = Math.floor((now.getTime() - startTime.getTime()) / 1000);
       const minutes = Math.floor(diff / 60).toString().padStart(2, '0');
       const seconds = (diff % 60).toString().padStart(2, '0');
-      setElapsedTime(`${minutes}:${seconds}`);
+      setElapsedTimeStr(`${minutes}:${seconds}`);
+      setElapsedTime(diff);
     }, 1000);
     
     return () => {
@@ -468,7 +468,7 @@ export function MergeProgress({ mergeId, sessionId, transformId, onViewConflicts
               </Badge>
             )}
             {progress.overall_status === 'completed' && (
-              <Badge variant="success" className="ml-2">
+              <Badge variant="destructive" className="ml-2">
                 No Conflicts
               </Badge>
             )}
@@ -550,7 +550,6 @@ export function MergeProgress({ mergeId, sessionId, transformId, onViewConflicts
             value={progress.overall_progress} 
             className={progress.overall_status === 'completed' ? "bg-green-100" : "bg-gray-100"}
             indicatorClassName={progress.overall_status === 'completed' ? "bg-green-500" : undefined}
-            className="h-2"
           />
         </div>
 
@@ -587,7 +586,7 @@ export function MergeProgress({ mergeId, sessionId, transformId, onViewConflicts
               <span>Elapsed Time</span>
             </div>
             <div className="text-lg font-semibold">
-              {elapsedTime}
+              {elapsedTimeStr}
             </div>
           </div>
           {/* <div>

@@ -45,7 +45,7 @@ export function ConflictList({
   onSelectionChange,
   onAutoResolveComplete,
   onViewMergedResults,
-  onViewFinalGraph,
+  onViewFinalGraph = () => {},
   className
 }: ConflictListProps) {
   const [loading, setLoading] = useState(true)
@@ -204,6 +204,8 @@ export function ConflictList({
           <MergeCompletionBanner
             mergeId={mergeId}
             onViewFinalGraph={onViewFinalGraph}
+            onViewProgress={() => {}}
+            takeToFinalize={false}
           />
         </div>
       )}
@@ -413,7 +415,7 @@ export function ConflictList({
                 if (data) {
                   const updatedConflicts = data.conflicts.map(c => 
                     c.id === selectedConflictForDetails.id
-                      ? { ...c, resolution_status: 'manually-resolved' }
+                      ? { ...c, resolution_status: 'manually-resolved' as const }
                       : c
                   )
                   setData({ ...data, conflicts: updatedConflicts })

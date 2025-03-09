@@ -117,7 +117,7 @@ export function ConflictDetailsView({
   onBack,
   onNext,
   onResolve,
-  onViewFinalGraph,
+  onViewFinalGraph = () => {},
   canSubmit = true
 }: ConflictDetailsViewProps) {
   const [loading, setLoading] = useState(true)
@@ -267,7 +267,9 @@ export function ConflictDetailsView({
         <div className="p-4">
           <MergeCompletionBanner
             mergeId={mergeId}
-            onViewFinalGraph={handleViewFinalGraph}
+            onViewFinalGraph={onViewFinalGraph}
+            onViewProgress={() => {}}
+            takeToFinalize={false}
           />
         </div>
       ) : (

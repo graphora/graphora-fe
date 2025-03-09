@@ -4,7 +4,7 @@ import { API_BASE_URL } from '@/lib/constants'
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { mergeId: string, conflictId: string } }
+  { params }: any
 ) {
   try {
     const { mergeId, conflictId } = await params
