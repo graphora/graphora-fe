@@ -12,7 +12,7 @@ import { GraphView } from './graph-view'
 
 export function VisualEditor() {
   const { ontology, updateFromOntology } = useOntologyEditorStore()
-  const [activeView, setActiveView] = useState('tree')
+  const [activeView, setActiveView] = useState('graph')
   const [isAddEntityOpen, setIsAddEntityOpen] = useState(false)
   const [isAddRelationshipOpen, setIsAddRelationshipOpen] = useState(false)
 

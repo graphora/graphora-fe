@@ -159,18 +159,19 @@ export function GraphDisplay({ className = '' }: GraphDisplayProps) {
     console.log('Drawing relationships:', Object.values(graph.relationships).length)
     
     // Create a map to track multiple relationships between the same nodes
+    // Use directional keys to distinguish relationships in different directions
     const relationshipCounts: Record<string, number> = {}
     const relationshipIndices: Record<string, number> = {}
     
     // First pass: count relationships between each pair of nodes
-    Object.values(graph.relationships).forEach(relationship => {
+    Object.values(graph.relationships).forEach((relationship) => {
       const fromNode = graph.nodes[relationship.from]
       const toNode = graph.nodes[relationship.to]
       if (!fromNode || !toNode) return
       
-      // Create a unique key for this node pair (in both directions)
-      const nodeKey = [fromNode.id, toNode.id].sort().join('-')
-      relationshipCounts[nodeKey] = (relationshipCounts[nodeKey] || 0) + 1
+      // Create a directional key (from -> to)
+      const dirKey = `${relationship.from}->${relationship.to}`
+      relationshipCounts[dirKey] = (relationshipCounts[dirKey] || 0) + 1
     })
     
     // Second pass: draw relationships with appropriate offsets
@@ -179,13 +180,13 @@ export function GraphDisplay({ className = '' }: GraphDisplayProps) {
       const toNode = graph.nodes[relationship.to]
       if (!fromNode || !toNode) return
       
-      // Create a unique key for this node pair
-      const nodeKey = [fromNode.id, toNode.id].sort().join('-')
+      // Create a directional key (from -> to)
+      const dirKey = `${relationship.from}->${relationship.to}`
       
       // Assign an index to this relationship
-      relationshipIndices[nodeKey] = (relationshipIndices[nodeKey] || 0) + 1
-      const index = relationshipIndices[nodeKey]
-      const count = relationshipCounts[nodeKey]
+      relationshipIndices[dirKey] = (relationshipIndices[dirKey] || 0) + 1
+      const index = relationshipIndices[dirKey]
+      const count = relationshipCounts[dirKey]
       
       // Calculate offset based on index and count
       let offset = 0
@@ -195,6 +196,13 @@ export function GraphDisplay({ className = '' }: GraphDisplayProps) {
         const step = totalWidth / (count - 1)
         offset = -totalWidth / 2 + step * (index - 1)
       }
+      
+      // Check if there are relationships in the opposite direction
+      const reverseKey = `${relationship.to}->${relationship.from}`
+      const hasReverseRelationships = relationshipCounts[reverseKey] > 0
+      
+      // Add a curve to the line if there are relationships in both directions
+      const curveOffset = hasReverseRelationships ? 20 : 0
       
       // Calculate direction vector
       const directionVector = new Vector(
@@ -216,6 +224,9 @@ export function GraphDisplay({ className = '' }: GraphDisplayProps) {
       const offsetVector = perpendicularVector.scale(offset)
       const radiusVector = normalizedVector.scale(nodeRadius)
       
+      // Add curve offset if needed
+      const curveOffsetVector = perpendicularVector.scale(curveOffset)
+      
       const startX = fromNode.position.x + offsetVector.dx + radiusVector.dx
       const startY = fromNode.position.y + offsetVector.dy + radiusVector.dy
       const endX = toNode.position.x + offsetVector.dx - radiusVector.dx
@@ -230,24 +241,68 @@ export function GraphDisplay({ className = '' }: GraphDisplayProps) {
       
       // Draw the relationship line
       ctx.beginPath()
-      ctx.moveTo(startPoint.x, startPoint.y)
-      ctx.lineTo(endPoint.x, endPoint.y)
+      
+      if (curveOffset !== 0) {
+        // Draw a curved line for bidirectional relationships
+        const controlPoint1X = startPoint.x + (endPoint.x - startPoint.x) / 3 + curveOffsetVector.dx
+        const controlPoint1Y = startPoint.y + (endPoint.y - startPoint.y) / 3 + curveOffsetVector.dy
+        const controlPoint2X = startPoint.x + 2 * (endPoint.x - startPoint.x) / 3 + curveOffsetVector.dx
+        const controlPoint2Y = startPoint.y + 2 * (endPoint.y - startPoint.y) / 3 + curveOffsetVector.dy
+        
+        ctx.moveTo(startPoint.x, startPoint.y)
+        ctx.bezierCurveTo(
+          controlPoint1X, controlPoint1Y,
+          controlPoint2X, controlPoint2Y,
+          endPoint.x, endPoint.y
+        )
+      } else {
+        // Draw a straight line for unidirectional relationships
+        ctx.moveTo(startPoint.x, startPoint.y)
+        ctx.lineTo(endPoint.x, endPoint.y)
+      }
+      
       ctx.stroke()
       
       // Draw arrow at the end
       const arrowSize = 10
       const arrowAngle = Math.PI / 6 // 30 degrees
       
-      // Calculate arrow points
-      const arrowPoint1X = endPoint.x - normalizedVector.dx * arrowSize + 
-                           perpendicularVector.dx * arrowSize * Math.sin(arrowAngle)
-      const arrowPoint1Y = endPoint.y - normalizedVector.dy * arrowSize + 
-                           perpendicularVector.dy * arrowSize * Math.sin(arrowAngle)
+      // For curved lines, calculate the tangent at the end point
+      let endTangentX, endTangentY
       
-      const arrowPoint2X = endPoint.x - normalizedVector.dx * arrowSize - 
-                           perpendicularVector.dx * arrowSize * Math.sin(arrowAngle)
-      const arrowPoint2Y = endPoint.y - normalizedVector.dy * arrowSize - 
-                           perpendicularVector.dy * arrowSize * Math.sin(arrowAngle)
+      if (curveOffset !== 0) {
+        // For a bezier curve, the tangent at the end point is approximately
+        // the vector from the last control point to the end point
+        const controlPoint2X = startPoint.x + 2 * (endPoint.x - startPoint.x) / 3 + curveOffsetVector.dx
+        const controlPoint2Y = startPoint.y + 2 * (endPoint.y - startPoint.y) / 3 + curveOffsetVector.dy
+        
+        const tangentVector = new Vector(
+          endPoint.x - controlPoint2X,
+          endPoint.y - controlPoint2Y
+        ).normalize()
+        
+        endTangentX = tangentVector.dx
+        endTangentY = tangentVector.dy
+      } else {
+        // For straight lines, use the normalized direction vector
+        endTangentX = normalizedVector.dx
+        endTangentY = normalizedVector.dy
+      }
+      
+      // Calculate perpendicular vector to the tangent
+      const endPerpX = -endTangentY
+      const endPerpY = endTangentX
+      
+      // Calculate arrow points
+      const arrowPoint1X = endPoint.x - endTangentX * arrowSize + 
+                           endPerpX * arrowSize * Math.sin(arrowAngle)
+      const arrowPoint1Y = endPoint.y - endTangentY * arrowSize + 
+                           endPerpY * arrowSize * Math.sin(arrowAngle)
+      
+      const arrowPoint2X = endPoint.x - endTangentX * arrowSize - 
+                           endPerpX * arrowSize * Math.sin(arrowAngle)
+      const arrowPoint2Y = endPoint.y - endTangentY * arrowSize - 
+                           endPerpY * arrowSize * Math.sin(arrowAngle)
       
       const arrowPoint1 = new Point(arrowPoint1X, arrowPoint1Y)
       const arrowPoint2 = new Point(arrowPoint2X, arrowPoint2Y)
@@ -262,8 +317,23 @@ export function GraphDisplay({ className = '' }: GraphDisplayProps) {
       
       // Draw relationship type in the middle
       if (relationship.type) {
-        const midX = (startPoint.x + endPoint.x) / 2
-        const midY = (startPoint.y + endPoint.y) / 2
+        // Calculate the middle point of the line or curve
+        let midX, midY
+        
+        if (curveOffset !== 0) {
+          // For a bezier curve, the middle point is approximately at t=0.5
+          const controlPoint1X = startPoint.x + (endPoint.x - startPoint.x) / 3 + curveOffsetVector.dx
+          const controlPoint1Y = startPoint.y + (endPoint.y - startPoint.y) / 3 + curveOffsetVector.dy
+          const controlPoint2X = startPoint.x + 2 * (endPoint.x - startPoint.x) / 3 + curveOffsetVector.dx
+          const controlPoint2Y = startPoint.y + 2 * (endPoint.y - startPoint.y) / 3 + curveOffsetVector.dy
+          
+          // Bezier curve formula at t=0.5
+          midX = 0.125 * startPoint.x + 0.375 * controlPoint1X + 0.375 * controlPoint2X + 0.125 * endPoint.x
+          midY = 0.125 * startPoint.y + 0.375 * controlPoint1Y + 0.375 * controlPoint2Y + 0.125 * endPoint.y
+        } else {
+          midX = (startPoint.x + endPoint.x) / 2
+          midY = (startPoint.y + endPoint.y) / 2
+        }
         
         // Draw white background for better readability
         ctx.font = `${graph.style['font-size'] || 12}px ${graph.style['font-family'] || 'Arial, sans-serif'}`
@@ -289,8 +359,25 @@ export function GraphDisplay({ className = '' }: GraphDisplayProps) {
         ctx.strokeStyle = '#3182ce' // Highlight color
         ctx.lineWidth = 4
         ctx.beginPath()
-        ctx.moveTo(startPoint.x, startPoint.y)
-        ctx.lineTo(endPoint.x, endPoint.y)
+        
+        if (curveOffset !== 0) {
+          // Draw a curved line for bidirectional relationships
+          const controlPoint1X = startPoint.x + (endPoint.x - startPoint.x) / 3 + curveOffsetVector.dx
+          const controlPoint1Y = startPoint.y + (endPoint.y - startPoint.y) / 3 + curveOffsetVector.dy
+          const controlPoint2X = startPoint.x + 2 * (endPoint.x - startPoint.x) / 3 + curveOffsetVector.dx
+          const controlPoint2Y = startPoint.y + 2 * (endPoint.y - startPoint.y) / 3 + curveOffsetVector.dy
+          
+          ctx.moveTo(startPoint.x, startPoint.y)
+          ctx.bezierCurveTo(
+            controlPoint1X, controlPoint1Y,
+            controlPoint2X, controlPoint2Y,
+            endPoint.x, endPoint.y
+          )
+        } else {
+          ctx.moveTo(startPoint.x, startPoint.y)
+          ctx.lineTo(endPoint.x, endPoint.y)
+        }
+        
         ctx.stroke()
       }
     })
