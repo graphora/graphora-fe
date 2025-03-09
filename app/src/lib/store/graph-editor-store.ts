@@ -101,6 +101,55 @@ const DEFAULT_RELATIONSHIP_STYLE = {
   'arrow-size': 10
 }
 
+// Generate colors dynamically based on entity name
+const getEntityColor = (entityName: string): string => {
+  // Use a hash function to generate a consistent color for each entity name
+  const hash = Array.from(entityName).reduce(
+    (hash, char) => ((hash << 5) - hash) + char.charCodeAt(0), 0
+  );
+  
+  // Generate HSL color with consistent saturation and lightness
+  // but varying hue based on the hash
+  const hue = Math.abs(hash % 360);
+  return `hsl(${hue}, 70%, 65%)`;
+}
+
+// Helper function to adjust color brightness for HSL colors
+const adjustColor = (color: string, amount: number): string => {
+  // Check if it's an HSL color
+  if (color.startsWith('hsl')) {
+    const hslMatch = color.match(/hsl\((\d+),\s*(\d+)%,\s*(\d+)%\)/);
+    if (hslMatch) {
+      const h = parseInt(hslMatch[1], 10);
+      const s = parseInt(hslMatch[2], 10);
+      const l = Math.max(0, Math.min(100, parseInt(hslMatch[3], 10) + amount));
+      return `hsl(${h}, ${s}%, ${l}%)`;
+    }
+  }
+  
+  // For hex colors or if HSL parsing fails
+  if (color.startsWith('#')) {
+    // Remove the # from the beginning
+    let hex = color.replace('#', '');
+    
+    // Parse the hex values
+    let r = parseInt(hex.substring(0, 2), 16);
+    let g = parseInt(hex.substring(2, 4), 16);
+    let b = parseInt(hex.substring(4, 6), 16);
+    
+    // Adjust the values
+    r = Math.max(0, Math.min(255, r + amount));
+    g = Math.max(0, Math.min(255, g + amount));
+    b = Math.max(0, Math.min(255, b + amount));
+    
+    // Convert back to hex
+    return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+  }
+  
+  // Return original color if format not recognized
+  return color;
+}
+
 export const useGraphEditorStore = create<GraphEditorState>((set, get) => ({
   graph: {
     nodes: {},
@@ -124,6 +173,8 @@ export const useGraphEditorStore = create<GraphEditorState>((set, get) => ({
   // Node actions
   addNode: (position, caption = '', labels = []) => {
     const id = uuidv4()
+    const nodeColor = getEntityColor(caption)
+    
     set(state => ({
       graph: {
         ...state.graph,
@@ -135,7 +186,13 @@ export const useGraphEditorStore = create<GraphEditorState>((set, get) => ({
             caption,
             labels,
             properties: {},
-            style: { ...DEFAULT_NODE_STYLE }
+            style: { 
+              ...DEFAULT_NODE_STYLE,
+              'node-color': nodeColor,
+              'border-color': nodeColor === getEntityColor('Company') 
+                ? DEFAULT_NODE_STYLE['border-color'] 
+                : adjustColor(nodeColor, -20) // Darker border
+            }
           }
         }
       }
@@ -148,6 +205,19 @@ export const useGraphEditorStore = create<GraphEditorState>((set, get) => ({
       const node = state.graph.nodes[id]
       if (!node) return state
       
+      // If caption is updated, update the node color
+      let updatedStyle = { ...node.style }
+      if (updates.caption && updates.caption !== node.caption) {
+        const nodeColor = getEntityColor(updates.caption)
+        updatedStyle = {
+          ...updatedStyle,
+          'node-color': nodeColor,
+          'border-color': nodeColor === getEntityColor('Company') 
+            ? DEFAULT_NODE_STYLE['border-color'] 
+            : adjustColor(nodeColor, -20)
+        }
+      }
+      
       return {
         graph: {
           ...state.graph,
@@ -155,7 +225,8 @@ export const useGraphEditorStore = create<GraphEditorState>((set, get) => ({
             ...state.graph.nodes,
             [id]: {
               ...node,
-              ...updates
+              ...updates,
+              style: updates.style ? { ...updatedStyle, ...updates.style } : updatedStyle
             }
           }
         }
@@ -441,7 +512,7 @@ export const useGraphEditorStore = create<GraphEditorState>((set, get) => ({
         // Convert the nested property structure to a flat object
         Object.entries(entityData.properties).forEach(([propName, propData]: [string, any]) => {
           if (propData && typeof propData === 'object') {
-            properties[propName] = propData.type || 'string'
+            properties[propName] = propData.type || 'str'
           } else {
             properties[propName] = String(propData)
           }
@@ -486,7 +557,7 @@ export const useGraphEditorStore = create<GraphEditorState>((set, get) => ({
                 // Convert the nested property structure to a flat object
                 Object.entries(relData.properties).forEach(([propName, propData]: [string, any]) => {
                   if (propData && typeof propData === 'object') {
-                    relProperties[propName] = propData.type || 'string'
+                    relProperties[propName] = propData.type || 'str'
                   } else {
                     relProperties[propName] = String(propData)
                   }
@@ -703,10 +774,6 @@ export const useGraphEditorStore = create<GraphEditorState>((set, get) => ({
         let typeStr: string = typeof propValue
         if (typeStr === 'number') {
           typeStr = Number.isInteger(propValue) ? 'int' : 'float'
-        } else if (typeStr === 'boolean') {
-          typeStr = 'bool'
-        } else {
-          typeStr = 'str'
         }
         
         entity.properties[propName] = {
@@ -747,10 +814,6 @@ export const useGraphEditorStore = create<GraphEditorState>((set, get) => ({
           let typeStr: string = typeof propValue
           if (typeStr === 'number') {
             typeStr = Number.isInteger(propValue) ? 'int' : 'float'
-          } else if (typeStr === 'boolean') {
-            typeStr = 'bool'
-          } else {
-            typeStr = 'str'
           }
           
           entities[fromEntityName].relationships[relType].properties[propName] = {
@@ -771,4 +834,4 @@ export const useGraphEditorStore = create<GraphEditorState>((set, get) => ({
     
     return result
   }
-})) 
+}))

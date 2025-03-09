@@ -138,13 +138,27 @@ export function NodeEditor({ nodeId, onClose }: NodeEditorProps) {
                 
                 {Object.entries(properties).map(([key, value]) => (
                   <div key={key} className="grid grid-cols-[1fr_2fr_auto] gap-2 items-center">
-                    <Input value={key} disabled />
+                    <Input 
+                      value={key} 
+                      onChange={(e) => {
+                        const newKey = e.target.value
+                        if (newKey && newKey !== key) {
+                          const { [key]: value, ...rest } = properties
+                          setProperties({
+                            ...rest,
+                            [newKey]: value
+                          })
+                        }
+                      }}
+                      placeholder="Property name"
+                    />
                     <Input
                       value={value}
                       onChange={(e) => setProperties({
                         ...properties,
                         [key]: e.target.value
                       })}
+                      placeholder="Value"
                     />
                     <Button
                       variant="ghost"
@@ -156,38 +170,17 @@ export function NodeEditor({ nodeId, onClose }: NodeEditorProps) {
                   </div>
                 ))}
                 
-                <div className="grid grid-cols-[1fr_1fr_1fr_auto] gap-2 items-center mt-2">
-                  <Select 
-                    value={newPropertyKey || ''} 
-                    onValueChange={setNewPropertyKey}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select property" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {commonPropertyNames.map(propName => (
-                        <SelectItem key={propName} value={propName}>
-                          {propName}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                <div className="grid grid-cols-[1fr_2fr_auto] gap-2 items-center mt-2">
+                  <Input
+                    placeholder="New property name"
+                    value={newPropertyKey}
+                    onChange={(e) => setNewPropertyKey(e.target.value)}
+                  />
                   <Input
                     placeholder="Value"
                     value={newPropertyValue}
                     onChange={(e) => setNewPropertyValue(e.target.value)}
                   />
-                  <Select value={newPropertyType} onValueChange={setNewPropertyType}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="str">String</SelectItem>
-                      <SelectItem value="int">Integer</SelectItem>
-                      <SelectItem value="float">Float</SelectItem>
-                      <SelectItem value="bool">Boolean</SelectItem>
-                    </SelectContent>
-                  </Select>
                   <Button
                     variant="outline"
                     size="sm"

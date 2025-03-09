@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { useGraphEditorStore, Relationship } from '@/lib/store/graph-editor-store'
+import { useGraphEditorStore } from '@/lib/store/graph-editor-store'
 import { Point } from '@/lib/utils/point'
 import { Vector } from '@/lib/utils/vector'
 import { NodeEditor } from './node-editor'
@@ -25,7 +25,9 @@ export function GraphDisplay({ className = '' }: GraphDisplayProps) {
     setViewTransformation,
     addNode,
     deleteSelection,
-    duplicateSelection
+    duplicateSelection,
+    addRelationship,
+    updateNode
   } = useGraphEditorStore()
 
   const [isDragging, setIsDragging] = useState(false)
@@ -36,6 +38,11 @@ export function GraphDisplay({ className = '' }: GraphDisplayProps) {
   // State for editors
   const [editingNodeId, setEditingNodeId] = useState<string | null>(null)
   const [editingRelationshipId, setEditingRelationshipId] = useState<string | null>(null)
+  
+  // State for relationship creation
+  const [isCreatingRelationship, setIsCreatingRelationship] = useState(false)
+  const [relationshipStartNode, setRelationshipStartNode] = useState<string | null>(null)
+  const [relationshipEndPoint, setRelationshipEndPoint] = useState<Point | null>(null)
 
   // Resize observer to keep canvas size in sync with container
   useEffect(() => {
@@ -151,105 +158,147 @@ export function GraphDisplay({ className = '' }: GraphDisplayProps) {
     // Draw relationships
     console.log('Drawing relationships:', Object.values(graph.relationships).length)
     
-    // Draw each relationship individually for debugging
+    // Create a map to track multiple relationships between the same nodes
+    const relationshipCounts: Record<string, number> = {}
+    const relationshipIndices: Record<string, number> = {}
+    
+    // First pass: count relationships between each pair of nodes
     Object.values(graph.relationships).forEach(relationship => {
       const fromNode = graph.nodes[relationship.from]
       const toNode = graph.nodes[relationship.to]
+      if (!fromNode || !toNode) return
       
-      if (!fromNode || !toNode) {
-        console.warn('Missing node for relationship:', relationship, 
-                    'fromNode:', fromNode ? 'exists' : 'missing', 
-                    'toNode:', toNode ? 'exists' : 'missing')
-        return
+      // Create a unique key for this node pair (in both directions)
+      const nodeKey = [fromNode.id, toNode.id].sort().join('-')
+      relationshipCounts[nodeKey] = (relationshipCounts[nodeKey] || 0) + 1
+    })
+    
+    // Second pass: draw relationships with appropriate offsets
+    Object.values(graph.relationships).forEach((relationship) => {
+      const fromNode = graph.nodes[relationship.from]
+      const toNode = graph.nodes[relationship.to]
+      if (!fromNode || !toNode) return
+      
+      // Create a unique key for this node pair
+      const nodeKey = [fromNode.id, toNode.id].sort().join('-')
+      
+      // Assign an index to this relationship
+      relationshipIndices[nodeKey] = (relationshipIndices[nodeKey] || 0) + 1
+      const index = relationshipIndices[nodeKey]
+      const count = relationshipCounts[nodeKey]
+      
+      // Calculate offset based on index and count
+      let offset = 0
+      if (count > 1) {
+        // Calculate offset perpendicular to the relationship line
+        const totalWidth = 30 // Total width of offset area
+        const step = totalWidth / (count - 1)
+        offset = -totalWidth / 2 + step * (index - 1)
       }
       
-      console.log(`Drawing relationship: ${relationship.id} from ${fromNode.caption} to ${toNode.caption}`)
+      // Calculate direction vector
+      const directionVector = new Vector(
+        toNode.position.x - fromNode.position.x,
+        toNode.position.y - fromNode.position.y
+      )
       
-      const isSelected = selection.relationships.includes(relationship.id)
+      // Normalize direction vector
+      const length = directionVector.magnitude()
+      const normalizedVector = directionVector.normalize()
       
-      // Calculate the direction vector
-      const direction = fromNode.position.vectorTo(toNode.position)
-      const length = direction.magnitude()
-      const normalized = direction.scale(1 / length)
+      // Calculate perpendicular vector for offset
+      const perpendicularVector = normalizedVector.perpendicular()
       
-      // Calculate start and end points (adjusted for node radius)
-      const nodeRadius = graph.style['node-radius'] || 30
-      const startPoint = fromNode.position.translate(normalized.scale(nodeRadius))
-      const endPoint = toNode.position.translate(normalized.scale(-nodeRadius))
+      // Calculate start and end points with offset
+      const nodeRadius = graph.style['node-radius'] || 40
+      
+      // Apply offset and node radius to start and end points
+      const offsetVector = perpendicularVector.scale(offset)
+      const radiusVector = normalizedVector.scale(nodeRadius)
+      
+      const startX = fromNode.position.x + offsetVector.dx + radiusVector.dx
+      const startY = fromNode.position.y + offsetVector.dy + radiusVector.dy
+      const endX = toNode.position.x + offsetVector.dx - radiusVector.dx
+      const endY = toNode.position.y + offsetVector.dy - radiusVector.dy
+      
+      const startPoint = new Point(startX, startY)
+      const endPoint = new Point(endX, endY)
+      
+      // Set relationship style
+      ctx.strokeStyle = relationship.style['stroke'] || '#888'
+      ctx.lineWidth = relationship.style['stroke-width'] || 2
       
       // Draw the relationship line
       ctx.beginPath()
       ctx.moveTo(startPoint.x, startPoint.y)
       ctx.lineTo(endPoint.x, endPoint.y)
-      ctx.strokeStyle = isSelected ? '#ff0000' : (relationship.style['relationship-color'] || '#2d3748')
-      ctx.lineWidth = relationship.style['shaft-width'] || 2
-      if (isSelected) {
-        ctx.lineWidth += 1
-      }
       ctx.stroke()
       
-      // Draw the arrow
-      const arrowSize = relationship.style['arrow-size'] || 10
+      // Draw arrow at the end
+      const arrowSize = 10
       const arrowAngle = Math.PI / 6 // 30 degrees
       
-      const arrowPoint1 = endPoint.translate(
-        normalized.scale(-arrowSize).add(normalized.perpendicular().scale(arrowSize * Math.sin(arrowAngle)))
-      )
-      const arrowPoint2 = endPoint.translate(
-        normalized.scale(-arrowSize).add(normalized.perpendicular().scale(-arrowSize * Math.sin(arrowAngle)))
-      )
+      // Calculate arrow points
+      const arrowPoint1X = endPoint.x - normalizedVector.dx * arrowSize + 
+                           perpendicularVector.dx * arrowSize * Math.sin(arrowAngle)
+      const arrowPoint1Y = endPoint.y - normalizedVector.dy * arrowSize + 
+                           perpendicularVector.dy * arrowSize * Math.sin(arrowAngle)
+      
+      const arrowPoint2X = endPoint.x - normalizedVector.dx * arrowSize - 
+                           perpendicularVector.dx * arrowSize * Math.sin(arrowAngle)
+      const arrowPoint2Y = endPoint.y - normalizedVector.dy * arrowSize - 
+                           perpendicularVector.dy * arrowSize * Math.sin(arrowAngle)
+      
+      const arrowPoint1 = new Point(arrowPoint1X, arrowPoint1Y)
+      const arrowPoint2 = new Point(arrowPoint2X, arrowPoint2Y)
       
       ctx.beginPath()
       ctx.moveTo(endPoint.x, endPoint.y)
       ctx.lineTo(arrowPoint1.x, arrowPoint1.y)
       ctx.lineTo(arrowPoint2.x, arrowPoint2.y)
       ctx.closePath()
-      ctx.fillStyle = isSelected ? '#ff0000' : (relationship.style['relationship-color'] || '#2d3748')
+      ctx.fillStyle = relationship.style['stroke'] || '#888'
       ctx.fill()
       
-      // Draw the relationship type
+      // Draw relationship type in the middle
       if (relationship.type) {
-        const midPoint = new Point(
-          (startPoint.x + endPoint.x) / 2,
-          (startPoint.y + endPoint.y) / 2
+        const midX = (startPoint.x + endPoint.x) / 2
+        const midY = (startPoint.y + endPoint.y) / 2
+        
+        // Draw white background for better readability
+        ctx.font = `${graph.style['font-size'] || 12}px ${graph.style['font-family'] || 'Arial, sans-serif'}`
+        const textMetrics = ctx.measureText(relationship.type)
+        const padding = 4
+        
+        ctx.fillStyle = 'white'
+        ctx.fillRect(
+          midX - textMetrics.width / 2 - padding,
+          midY - textMetrics.actualBoundingBoxAscent - padding,
+          textMetrics.width + padding * 2,
+          textMetrics.actualBoundingBoxAscent + textMetrics.actualBoundingBoxDescent + padding * 2
         )
         
-        // Use a larger font size for better readability
-        const fontSize = Math.max(14, graph.style['font-size'] || 12)
-        ctx.font = `bold ${fontSize}px ${graph.style['font-family'] || 'Arial, sans-serif'}`
+        ctx.fillStyle = '#000'
         ctx.textAlign = 'center'
         ctx.textBaseline = 'middle'
-        
-        // Draw a white background for the text
-        const textMetrics = ctx.measureText(relationship.type)
-        const padding = 6
-        ctx.fillStyle = '#ffffff'
-        ctx.fillRect(
-          midPoint.x - textMetrics.width / 2 - padding,
-          midPoint.y - fontSize / 2 - padding,
-          textMetrics.width + padding * 2,
-          fontSize + padding * 2
-        )
-        
-        // Draw a border around the text
-        ctx.strokeStyle = '#e2e8f0'
-        ctx.lineWidth = 1
-        ctx.strokeRect(
-          midPoint.x - textMetrics.width / 2 - padding,
-          midPoint.y - fontSize / 2 - padding,
-          textMetrics.width + padding * 2,
-          fontSize + padding * 2
-        )
-        
-        ctx.fillStyle = '#000000' // Use black for better readability
-        ctx.fillText(relationship.type, midPoint.x, midPoint.y)
+        ctx.fillText(relationship.type, midX, midY)
+      }
+      
+      // Highlight selected relationships
+      if (selection.relationships.includes(relationship.id)) {
+        ctx.strokeStyle = '#3182ce' // Highlight color
+        ctx.lineWidth = 4
+        ctx.beginPath()
+        ctx.moveTo(startPoint.x, startPoint.y)
+        ctx.lineTo(endPoint.x, endPoint.y)
+        ctx.stroke()
       }
     })
 
     // Draw nodes
     Object.values(graph.nodes).forEach(node => {
       const isSelected = selection.nodes.includes(node.id)
-      const nodeRadius = graph.style['node-radius'] || 30
+      const nodeRadius = graph.style['node-radius'] || 40
 
       // Draw shadow (like arrows_app)
       ctx.shadowColor = 'rgba(0, 0, 0, 0.2)'
@@ -395,33 +444,153 @@ export function GraphDisplay({ className = '' }: GraphDisplayProps) {
           }
         }
       }
+      
+      // Draw relationship creation handle if node is selected
+      if (isSelected && !isCreatingRelationship) {
+        const handleRadius = 10
+        const handleOffset = nodeRadius + 5
+        
+        // Handle is positioned on the right side of the node
+        const handleX = node.position.x + handleOffset
+        const handleY = node.position.y
+        
+        // Draw handle circle
+        ctx.beginPath()
+        ctx.arc(handleX, handleY, handleRadius, 0, Math.PI * 2)
+        ctx.fillStyle = '#3182ce' // Blue color
+        ctx.fill()
+        ctx.strokeStyle = '#2c5282' // Darker blue
+        ctx.lineWidth = 2
+        ctx.stroke()
+        
+        // Draw plus sign
+        ctx.beginPath()
+        ctx.moveTo(handleX - 5, handleY)
+        ctx.lineTo(handleX + 5, handleY)
+        ctx.moveTo(handleX, handleY - 5)
+        ctx.lineTo(handleX, handleY + 5)
+        ctx.strokeStyle = 'white'
+        ctx.lineWidth = 2
+        ctx.stroke()
+      }
     })
 
-    ctx.restore()
-  }, [graph, selection, viewTransformation, canvasSize])
+    // Draw relationship being created
+    if (isCreatingRelationship && relationshipStartNode && relationshipEndPoint) {
+      const startNode = graph.nodes[relationshipStartNode]
+      if (startNode) {
+        const nodeRadius = graph.style['node-radius'] || 40
+        const handleOffset = nodeRadius + 5
+        
+        // Start point is the handle position
+        const startX = startNode.position.x + handleOffset
+        const startY = startNode.position.y
+        
+        // Draw dashed line
+        ctx.beginPath()
+        ctx.setLineDash([5, 3])
+        ctx.moveTo(startX, startY)
+        ctx.lineTo(relationshipEndPoint.x, relationshipEndPoint.y)
+        ctx.strokeStyle = '#3182ce'
+        ctx.lineWidth = 2
+        ctx.stroke()
+        ctx.setLineDash([])
+        
+        // Draw arrow at the end
+        const directionVector = new Vector(
+          relationshipEndPoint.x - startX,
+          relationshipEndPoint.y - startY
+        )
+        
+        if (directionVector.magnitude() > 0) {
+          const normalizedVector = directionVector.normalize()
+          const arrowSize = 10
+          const arrowAngle = Math.PI / 6 // 30 degrees
+          
+          const perpendicularVector = normalizedVector.perpendicular()
+          
+          const arrowPoint1X = relationshipEndPoint.x - normalizedVector.dx * arrowSize + 
+                              perpendicularVector.dx * arrowSize * Math.sin(arrowAngle)
+          const arrowPoint1Y = relationshipEndPoint.y - normalizedVector.dy * arrowSize + 
+                              perpendicularVector.dy * arrowSize * Math.sin(arrowAngle)
+          
+          const arrowPoint2X = relationshipEndPoint.x - normalizedVector.dx * arrowSize - 
+                              perpendicularVector.dx * arrowSize * Math.sin(arrowAngle)
+          const arrowPoint2Y = relationshipEndPoint.y - normalizedVector.dy * arrowSize - 
+                              perpendicularVector.dy * arrowSize * Math.sin(arrowAngle)
+          
+          ctx.beginPath()
+          ctx.moveTo(relationshipEndPoint.x, relationshipEndPoint.y)
+          ctx.lineTo(arrowPoint1X, arrowPoint1Y)
+          ctx.lineTo(arrowPoint2X, arrowPoint2Y)
+          ctx.closePath()
+          ctx.fillStyle = '#3182ce'
+          ctx.fill()
+        }
+      }
+    }
 
-  // Handle mouse events
+    ctx.restore()
+  }, [graph, selection, viewTransformation, canvasSize, isCreatingRelationship, relationshipStartNode, relationshipEndPoint])
+
+  // Helper function to check if a point is inside a relationship creation handle
+  const isPointInRelationshipHandle = (point: Point, nodeId: string): boolean => {
+    const node = graph.nodes[nodeId]
+    if (!node) return false
+    
+    const nodeRadius = graph.style['node-radius'] || 40
+    const handleRadius = 10
+    const handleOffset = nodeRadius + 5
+    
+    // Handle is positioned on the right side of the node
+    const handleX = node.position.x + handleOffset
+    const handleY = node.position.y
+    
+    // Calculate distance from point to handle center
+    const distance = Math.sqrt(
+      Math.pow(point.x - handleX, 2) + 
+      Math.pow(point.y - handleY, 2)
+    )
+    
+    return distance <= handleRadius
+  }
+
+  // Handle mouse down event
   const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current
     if (!canvas) return
-
+    
     const rect = canvas.getBoundingClientRect()
     const x = e.clientX - rect.left
     const y = e.clientY - rect.top
     const point = new Point(x, y)
-
+    
     // Transform the point to graph coordinates
     const graphPoint = new Point(
       (point.x - viewTransformation.translate.dx) / viewTransformation.scale,
       (point.y - viewTransformation.translate.dy) / viewTransformation.scale
     )
-
+    
+    // Check if we clicked on a relationship handle
+    if (selection.nodes.length === 1) {
+      const selectedNodeId = selection.nodes[0]
+      const selectedNode = graph.nodes[selectedNodeId]
+      
+      if (selectedNode && isPointInRelationshipHandle(graphPoint, selectedNodeId)) {
+        console.log('Starting relationship creation')
+        setIsCreatingRelationship(true)
+        setRelationshipStartNode(selectedNodeId)
+        setRelationshipEndPoint(graphPoint)
+        return
+      }
+    }
+    
     setIsDragging(true)
     setDragStart(point)
     setInitialTranslate(viewTransformation.translate)
 
     // Check if we clicked on a node
-    const nodeRadius = graph.style['node-radius'] || 25
+    const nodeRadius = graph.style['node-radius'] || 40
     let clickedOnNode = false
 
     for (const node of Object.values(graph.nodes)) {
@@ -455,7 +624,7 @@ export function GraphDisplay({ className = '' }: GraphDisplayProps) {
         const normalized = direction.scale(1 / length)
 
         // Calculate start and end points (adjusted for node radius)
-        const nodeRadius = graph.style['node-radius'] || 25
+        const nodeRadius = graph.style['node-radius'] || 40
         const startPoint = fromNode.position.translate(normalized.scale(nodeRadius))
         const endPoint = toNode.position.translate(normalized.scale(-nodeRadius))
 
@@ -490,16 +659,29 @@ export function GraphDisplay({ className = '' }: GraphDisplayProps) {
     }
   }
 
+  // Handle mouse move event
   const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (!isDragging || !dragStart) return
-
     const canvas = canvasRef.current
     if (!canvas) return
-
+    
     const rect = canvas.getBoundingClientRect()
     const x = e.clientX - rect.left
     const y = e.clientY - rect.top
     const point = new Point(x, y)
+    
+    // Transform the point to graph coordinates
+    const graphPoint = new Point(
+      (point.x - viewTransformation.translate.dx) / viewTransformation.scale,
+      (point.y - viewTransformation.translate.dy) / viewTransformation.scale
+    )
+    
+    // Handle relationship creation
+    if (isCreatingRelationship && relationshipStartNode) {
+      setRelationshipEndPoint(graphPoint)
+      return
+    }
+
+    if (!isDragging || !dragStart) return
 
     if (draggedNode) {
       // Move the selected nodes
@@ -514,7 +696,7 @@ export function GraphDisplay({ className = '' }: GraphDisplayProps) {
             node.position.x + dx,
             node.position.y + dy
           )
-          useGraphEditorStore.getState().updateNode(nodeId, { position: newPosition })
+          updateNode(nodeId, { position: newPosition })
         }
       })
 
@@ -531,7 +713,64 @@ export function GraphDisplay({ className = '' }: GraphDisplayProps) {
     }
   }
 
-  const handleMouseUp = () => {
+  // Handle mouse up event
+  const handleMouseUp = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    const canvas = canvasRef.current
+    if (!canvas) return
+    
+    const rect = canvas.getBoundingClientRect()
+    const x = e.clientX - rect.left
+    const y = e.clientY - rect.top
+    const point = new Point(x, y)
+    
+    // Transform the point to graph coordinates
+    const graphPoint = new Point(
+      (point.x - viewTransformation.translate.dx) / viewTransformation.scale,
+      (point.y - viewTransformation.translate.dy) / viewTransformation.scale
+    )
+    
+    // Handle relationship creation completion
+    if (isCreatingRelationship && relationshipStartNode) {
+      console.log('Completing relationship creation')
+      
+      // Check if we released on a node
+      const nodeRadius = graph.style['node-radius'] || 40
+      let targetNodeId = null
+      
+      for (const nodeId in graph.nodes) {
+        if (nodeId !== relationshipStartNode) {
+          const node = graph.nodes[nodeId]
+          const distance = Math.sqrt(
+            Math.pow(graphPoint.x - node.position.x, 2) + 
+            Math.pow(graphPoint.y - node.position.y, 2)
+          )
+          
+          if (distance <= nodeRadius) {
+            targetNodeId = nodeId
+            break
+          }
+        }
+      }
+      
+      if (targetNodeId) {
+        console.log(`Creating relationship from ${relationshipStartNode} to ${targetNodeId}`)
+        // Create the relationship
+        const relId = addRelationship(relationshipStartNode, targetNodeId, 'RELATES_TO')
+        
+        // Select the new relationship
+        selectRelationship(relId)
+        
+        // Open the relationship editor
+        setEditingRelationshipId(relId)
+      }
+      
+      // Reset relationship creation state
+      setIsCreatingRelationship(false)
+      setRelationshipStartNode(null)
+      setRelationshipEndPoint(null)
+      return
+    }
+    
     setIsDragging(false)
     setDragStart(null)
     setDraggedNode(null)
@@ -541,72 +780,42 @@ export function GraphDisplay({ className = '' }: GraphDisplayProps) {
   const handleDoubleClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current
     if (!canvas) return
-
+    
     const rect = canvas.getBoundingClientRect()
     const x = e.clientX - rect.left
     const y = e.clientY - rect.top
     const point = new Point(x, y)
-
+    
     // Transform the point to graph coordinates
     const graphPoint = new Point(
       (point.x - viewTransformation.translate.dx) / viewTransformation.scale,
       (point.y - viewTransformation.translate.dy) / viewTransformation.scale
     )
-
+    
     // Check if we double-clicked on a node
-    const nodeRadius = graph.style['node-radius'] || 25
+    const nodeRadius = graph.style['node-radius'] || 40
     let clickedOnNode = false
-
-    for (const node of Object.values(graph.nodes)) {
-      if (node.position.distanceTo(graphPoint) <= nodeRadius) {
-        // Open the node editor
-        setEditingNodeId(node.id)
+    
+    for (const nodeId in graph.nodes) {
+      const node = graph.nodes[nodeId]
+      const distance = Math.sqrt(
+        Math.pow(graphPoint.x - node.position.x, 2) + 
+        Math.pow(graphPoint.y - node.position.y, 2)
+      )
+      
+      if (distance <= nodeRadius) {
         clickedOnNode = true
+        selectNode(nodeId)
+        setEditingNodeId(nodeId)
         break
       }
     }
-
-    // If we didn't double-click on a node, check if we double-clicked on a relationship
+    
+    // If we didn't click on a node, create a new one
     if (!clickedOnNode) {
-      const threshold = 5 // Distance threshold for clicking on a relationship
-      
-      for (const relationship of Object.values(graph.relationships)) {
-        const fromNode = graph.nodes[relationship.from]
-        const toNode = graph.nodes[relationship.to]
-
-        if (!fromNode || !toNode) continue
-
-        // Calculate the direction vector
-        const direction = fromNode.position.vectorTo(toNode.position)
-        const length = direction.magnitude()
-        const normalized = direction.scale(1 / length)
-
-        // Calculate start and end points (adjusted for node radius)
-        const nodeRadius = graph.style['node-radius'] || 25
-        const startPoint = fromNode.position.translate(normalized.scale(nodeRadius))
-        const endPoint = toNode.position.translate(normalized.scale(-nodeRadius))
-
-        // Calculate distance from point to line segment
-        const lineVector = startPoint.vectorTo(endPoint)
-        const pointVector = startPoint.vectorTo(graphPoint)
-
-        const lineLength = lineVector.magnitude()
-        const projection = (pointVector.dx * lineVector.dx + pointVector.dy * lineVector.dy) / lineLength
-
-        if (projection < 0 || projection > lineLength) continue
-
-        const projectionPoint = startPoint.translate(lineVector.scale(projection / lineLength))
-        const distance = graphPoint.distanceTo(projectionPoint)
-
-        if (distance <= threshold) {
-          // Open the relationship editor
-          setEditingRelationshipId(relationship.id)
-          return
-        }
-      }
-
-      // If we didn't double-click on a node or relationship, add a new node
-      addNode(graphPoint, 'New Entity')
+      // Create a new node at the clicked position
+      const nodeId = addNode(graphPoint, 'New Entity', [])
+      setEditingNodeId(nodeId)
     }
   }
 
