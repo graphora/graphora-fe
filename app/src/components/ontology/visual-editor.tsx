@@ -8,14 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Plus } from 'lucide-react'
 import { AddEntityModal } from './add-entity-modal'
 import { AddRelationshipModal } from './add-relationship-modal'
-
-function GraphView({ ontology }: { ontology: any }) {
-  return (
-    <div className="h-full flex items-center justify-center text-muted-foreground">
-      Graph view coming soon...
-    </div>
-  )
-}
+import { GraphView } from './graph-view'
 
 export function VisualEditor() {
   const { ontology, updateFromOntology } = useOntologyEditorStore()
@@ -63,7 +56,10 @@ export function VisualEditor() {
           </TabsContent>
           
           <TabsContent value="graph" className="h-full m-0">
-            <GraphView ontology={ontology} />
+            <GraphView 
+              ontology={ontology}
+              onChange={updateFromOntology}
+            />
           </TabsContent>
         </div>
       </Tabs>
