@@ -5,7 +5,8 @@ import { useDropzone } from 'react-dropzone'
 import { 
   Loader2, X, Upload, FileText, 
   ChevronLeft, ChevronRight, GitMerge,
-  Database, Settings2
+  Database, Settings2,
+  Monitor
 } from 'lucide-react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
@@ -368,6 +369,15 @@ function TransformPageContent() {
       icon: <Settings2 className="h-4 w-4" />,
       label: 'Settings',
       action: () => {}
+    },
+    {
+      id: 'viewStatus',
+      icon: <Monitor className="h-4 w-4" />,
+      label: 'View Status',
+      disabled: !file,
+      action: () => {
+        window.open(`http://35.188.198.7:4200/flows/flow/52af21a8-571e-49d8-8325-2e503b0969fe`, '_blank')
+      }
     }
   ]
 
