@@ -187,9 +187,10 @@ export function ConflictDetailsView({
       }
   
       // Check remaining conflicts
-      const conflictsResponse = await fetch(`/api/merge/${mergeId}/conflicts?limit=1&offset=0`)
+      const conflictsResponse = await fetch(`/api/merge/${mergeId}/conflicts`)
       if (conflictsResponse.ok) {
         const conflictData = await conflictsResponse.json()
+        console.log(conflictData)
         const unresolvedCount = conflictData.summary?.unresolved || 0
         if (unresolvedCount === 0) {
           setIsLastConflictResolved(true)

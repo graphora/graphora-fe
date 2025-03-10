@@ -95,7 +95,7 @@ export function AutoResolvePanel({
 
       const startData = await startResponse.json()
       
-      if (startData.manual_required == 0) {
+      if (startData.auto_resolved > 0) {
         toast({
           title: "Auto-Resolution Complete",
           description: `Resolved ${startData.auto_resolved} / ${startData.total} conflicts.`,

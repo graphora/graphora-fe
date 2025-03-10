@@ -155,7 +155,7 @@ export interface ConflictListItem {
   entity_name?: string
   entity_type: string
   conflict_type: string
-  severity: 'critical' | 'major' | 'minor'
+  severity: 'critical' | 'major' | 'minor' | 'info'
   description: string
   resolved?: boolean
   resolution_status?: 'unresolved' | 'auto-resolved' | 'manually-resolved'

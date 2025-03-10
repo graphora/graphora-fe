@@ -145,6 +145,7 @@ export function ConflictList({
     } else {
       setSelectedConflictForDetails(data.conflicts[currentIndex + 1])
     }
+    fetchConflicts()
   }
 
   const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -407,6 +408,7 @@ export function ConflictList({
             <ConflictDetailsView
               mergeId={mergeId}
               conflict={selectedConflictForDetails}
+              canSubmit={selectedConflictForDetails.severity !== 'info'}
               onViewMergedResults={onViewMergedResults}
               onViewFinalGraph={onViewFinalGraph}
               onBack={handleBackToList}
