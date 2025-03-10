@@ -333,8 +333,8 @@ export function ConflictList({
                                   <span className="font-medium text-sm truncate">
                                     {conflict.entity_name || conflict.entity_id}
                                   </span>
-                                  <Badge className={cn(severityColors[conflict.severity], 'rounded-full text-xs')}>
-                                    {conflict.severity}
+                                  <Badge className={cn(severityColors[conflict.severity.level], 'rounded-full text-xs')}>
+                                    {conflict.severity.level}
                                   </Badge>
                                 </div>
                                 <p className="text-xs text-gray-500 truncate">{conflict.description}</p>
@@ -408,7 +408,7 @@ export function ConflictList({
             <ConflictDetailsView
               mergeId={mergeId}
               conflict={selectedConflictForDetails}
-              canSubmit={selectedConflictForDetails.severity !== 'info'}
+              canSubmit={selectedConflictForDetails.severity.level !== 'info'}
               onViewMergedResults={onViewMergedResults}
               onViewFinalGraph={onViewFinalGraph}
               onBack={handleBackToList}

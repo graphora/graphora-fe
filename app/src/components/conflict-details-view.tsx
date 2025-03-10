@@ -58,7 +58,7 @@ interface ConflictDetails extends ConflictListItem {
     }
   }
   severity_details?: {
-    level: 'critical' | 'major' | 'minor'
+    level: 'critical' | 'major' | 'minor' | 'info'
     label: string
   }
   properties_affected?: Record<string, PropertyDiff>
@@ -102,7 +102,8 @@ interface ResolutionPreview {
 const severityColors: Record<ConflictSeverity['level'], { bg: string, text: string, border: string }> = {
   critical: { bg: 'bg-red-50', text: 'text-red-700', border: 'border-red-200' },
   major: { bg: 'bg-orange-50', text: 'text-orange-700', border: 'border-orange-200' },
-  minor: { bg: 'bg-yellow-50', text: 'text-yellow-700', border: 'border-yellow-200' }
+  minor: { bg: 'bg-yellow-50', text: 'text-yellow-700', border: 'border-yellow-200' },
+  info: { bg: 'bg-blue-50', text: 'text-blue-700', border: 'border-blue-200' }
 }
 
 const conflictTypeIcons: Record<string, React.ReactNode> = {
@@ -257,7 +258,7 @@ export function ConflictDetailsView({
     }
   }
 
-  const severityLevel = details?.severity_details?.level || conflict.severity
+  const severityLevel = details?.severity_details?.level || conflict.severity.level
   const severityStyle = severityColors[severityLevel]
   const severityLabel = details?.severity_details?.label || severityLevel
   const isResolved = details?.resolved || false

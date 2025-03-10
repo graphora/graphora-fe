@@ -143,7 +143,7 @@ export interface MergeProgress {
 }
 
 export interface ConflictSeverity {
-  level: 'critical' | 'major' | 'minor'
+  level: 'critical' | 'major' | 'minor' | 'info'
   label: string
   color: string
 }
@@ -155,7 +155,7 @@ export interface ConflictListItem {
   entity_name?: string
   entity_type: string
   conflict_type: string
-  severity: 'critical' | 'major' | 'minor' | 'info'
+  severity: ConflictSeverity
   description: string
   resolved?: boolean
   resolution_status?: 'unresolved' | 'auto-resolved' | 'manually-resolved'
