@@ -164,6 +164,9 @@ function MergePageContent() {
           if (payload.currentStep) {
             setCurrentStep(payload.currentStep)
           }
+          if(payload.progress === 100) {
+            setCanSubmit(true)
+          }
         })
 
         ws.on('ERROR', (payload: any) => {
