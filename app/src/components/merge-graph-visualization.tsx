@@ -86,8 +86,14 @@ export const MergeGraphVisualization = ({
 
   useEffect(() => {
     if (graphData?.nodes) {
+      // Filter out internal types (starting with __) from available types
       const types: string[] = Array.from(
-        new Set(graphData.nodes.map((node: any) => node.type || node.label || 'default'))
+        new Set(graphData.nodes
+          .filter((node: any) => {
+            const nodeType = node.type || node.label || 'default';
+            return !nodeType.startsWith('__');
+          })
+          .map((node: any) => node.type || node.label || 'default'))
       )
       setAvailableTypes(types)
 
@@ -120,9 +126,16 @@ export const MergeGraphVisualization = ({
 
     const nodesMap = new Map()
 
+    // Filter out internal nodes like __Checkpoint__
     const nodes = (graphData.nodes || [])
       .filter((node: any) => {
         if (!node) return false
+        
+        // Skip internal nodes (__Checkpoint__ and other internal node types)
+        if (node.type === '__Checkpoint__' || node.type?.startsWith('__') || node.label?.startsWith('__')) {
+          return false
+        }
+        
         const nodeType = node.type || node.label || 'default'
         if (!filters[`show${nodeType}`]) return false
 
@@ -406,7 +419,7 @@ export const MergeGraphVisualization = ({
       </div>
 
       <Dialog open={showPropertiesModal} onOpenChange={setShowPropertiesModal}>
-        <DialogContent>
+        <DialogContent className="max-w-3xl">
           <DialogHeader>
             <DialogTitle>Node Properties</DialogTitle>
           </DialogHeader>
@@ -422,9 +435,35 @@ export const MergeGraphVisualization = ({
               </div>
               <div>
                 <Label>Properties</Label>
-                <pre className="text-sm bg-gray-50 p-2 rounded">
-                  {JSON.stringify(selectedNode.properties, null, 2)}
-                </pre>
+                <div className="overflow-auto max-h-96">
+                  <table className="w-full border-collapse">
+                    <thead>
+                      <tr className="border-b border-gray-200">
+                        <th className="text-left py-2 px-4 bg-gray-50 font-medium text-gray-600">Property</th>
+                        <th className="text-left py-2 px-4 bg-gray-50 font-medium text-gray-600">Value</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {selectedNode.properties && Object.entries(selectedNode.properties).map(([key, value]) => (
+                        <tr key={key} className="border-b border-gray-100">
+                          <td className="py-2 px-4 font-medium">{key}</td>
+                          <td className="py-2 px-4 break-words">
+                            {typeof value === 'object' 
+                              ? (value === null 
+                                  ? 'null' 
+                                  : Array.isArray(value)
+                                    ? <div className="max-h-32 overflow-y-auto whitespace-pre-wrap">{JSON.stringify(value, null, 2)}</div>
+                                    : <div className="max-h-32 overflow-y-auto whitespace-pre-wrap">{JSON.stringify(value, null, 2)}</div>)
+                              : typeof value === 'string' && value.length > 100
+                                ? <div className="max-h-32 overflow-y-auto whitespace-pre-wrap">{String(value)}</div>
+                                : String(value)
+                            }
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
           )}
