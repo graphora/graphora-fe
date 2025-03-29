@@ -1,23 +1,30 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 
-export async function POST(request: Request) {
+export async function POST(
+  request: Request,
+  { params }: { params: { sessionId: string; transformId: string } }
+) {
   try {
     const { userId } = await auth();
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Get the full request body
-    const body = await request.json().catch(() => ({}));
-    const { sessionId, transformId, mergeId } = body;
+    const { sessionId, transformId } = params;
 
     if (!transformId || !sessionId) {
       return NextResponse.json(
-        { error: 'Missing required fields: sessionId and transformId are required' },
+        { error: 'Missing required parameters' },
         { status: 400 }
       );
     }
+
+    // Get the merge_id query parameter if provided
+    const url = new URL(request.url);
+    const mergeIdParam = url.searchParams.get('merge_id');
+    const requestBody = await request.json().catch(() => ({}));
+    const mergeId = requestBody.merge_id || mergeIdParam || null;
 
     // Construct the API URL
     const apiUrl = `${process.env.BACKEND_API_URL}/api/v1/merge/${sessionId}/${transformId}/start`;
@@ -25,20 +32,18 @@ export async function POST(request: Request) {
     // Add merge_id query parameter if provided
     const finalUrl = mergeId ? `${apiUrl}?merge_id=${mergeId}` : apiUrl;
 
-    // Forward the request to the backend with the complete body
     const response = await fetch(finalUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(body) // Pass the entire body to the backend
+      }
     });
 
     if (!response.ok) {
       const error = await response.json();
       console.error('Backend error:', error);
       return NextResponse.json(
-        error,  // Return the full error object from the backend
+        { error: error.message || 'Failed to start merge' },
         { status: response.status }
       );
     }

@@ -44,7 +44,7 @@ export function MergeCompletionBanner({
     const fetchStatistics = async () => {
       try {
         setLoading(true)
-        const response = await fetch(`/api/merge/${mergeId}/statistics`)
+        const response = await fetch(`/api/merge/merges/${mergeId}/statistics`)
         
         if (!response.ok) {
           throw new Error(`Failed to fetch merge statistics: ${response.statusText}`)

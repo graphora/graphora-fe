@@ -12,6 +12,7 @@ import { cn } from '@/lib/utils'
 import { ConflictDetailsView } from '@/components/conflict-details-view'
 import { AutoResolvePanel } from '@/components/auto-resolve-panel'
 import { MergeCompletionBanner } from './merge-completion-banner'
+import { ChangeLog } from '@/types/merge'
 
 interface ConflictListProps {
   mergeId: string
@@ -50,13 +51,16 @@ export function ConflictList({
 }: ConflictListProps) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [data, setData] = useState<ConflictListResponse | null>(null)
+  const [conflicts, setConflicts] = useState<ChangeLog[]>([])
+  const [convertedConflicts, setConvertedConflicts] = useState<ConflictListItem[]>([])
   const [filters, setFilters] = useState<ConflictListFilters>(defaultFilters)
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedConflictForDetails, setSelectedConflictForDetails] = useState<ConflictListItem | null>(null)
   const [leftWidth, setLeftWidth] = useState(33)
   const containerRef = useRef<HTMLDivElement>(null)
   const isResizing = useRef(false)
+  const [conflictTypes, setConflictTypes] = useState<string[]>([])
+  const [allResolved, setAllResolved] = useState(false)
 
   const fetchConflicts = async () => {
     try {
@@ -76,18 +80,70 @@ export function ConflictList({
         queryParams.append('search', searchQuery)
       }
 
-      const response = await fetch(`/api/merge/${mergeId}/conflicts?${queryParams.toString()}`)
+      const response = await fetch(`/api/merge/merges/${mergeId}/conflicts?${queryParams.toString()}`)
       
       if (!response.ok) {
         throw new Error('Failed to fetch conflicts')
       }
 
+      // The new API returns an array of ChangeLog objects
       const data = await response.json()
-      setData(data)
+      
+      // Handle both array format and old format for backward compatibility
+      if (Array.isArray(data)) {
+        setConflicts(data)
+        
+        // Convert ChangeLog objects to ConflictListItems for compatibility with existing code
+        const convertedItems = data.map((conflict: ChangeLog) => convertChangeLogToConflictItem(conflict))
+        setConvertedConflicts(convertedItems)
+        
+        // Extract unique conflict types
+        const types = [...new Set(convertedItems.map(item => item.conflict_type))]
+        setConflictTypes(types)
+        
+        // Check if all conflicts are resolved (for now, we'll assume none are resolved in the new format)
+        setAllResolved(false)
+      } else {
+        // Handle old format
+        setConvertedConflicts(data.conflicts || [])
+        if (data.summary) {
+          const types = data.summary.by_type ? Object.keys(data.summary.by_type) : []
+          setConflictTypes(types)
+          setAllResolved(data.summary.unresolved === 0 && data.summary.total > 0)
+        }
+      }
     } catch (error) {
       setError(error instanceof Error ? error.message : 'An error occurred')
     } finally {
       setLoading(false)
+    }
+  }
+
+  // Function to convert ChangeLog to ConflictListItem
+  const convertChangeLogToConflictItem = (changeLog: ChangeLog): ConflictListItem => {
+    // Determine the severity based on the number of property changes
+    const propCount = Object.keys(changeLog.prop_changes).length;
+    const severity = propCount > 5 ? 'critical' : propCount > 2 ? 'major' : 'minor';
+  
+    return {
+      id: changeLog.id,
+      merge_id: mergeId,
+      entity_id: changeLog.staging_node.id,
+      entity_name: changeLog.staging_node.properties.name || changeLog.staging_node.id,
+      entity_type: changeLog.staging_node.type,
+      conflict_type: 'property_conflict', // Default type
+      severity: {
+        level: severity as 'critical' | 'major' | 'minor' | 'info',
+        label: severity.charAt(0).toUpperCase() + severity.slice(1),
+        color: severity === 'critical' ? 'red' : severity === 'major' ? 'orange' : 'yellow'
+      },
+      description: `${Object.keys(changeLog.prop_changes).length} properties have conflicting values`,
+      resolved: false,
+      resolution_status: 'unresolved',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      // Store the original changelog data to use in conflict resolution
+      raw_changelog: changeLog
     }
   }
 
@@ -112,8 +168,8 @@ export function ConflictList({
   }
 
   const handleSelectAll = (checked: boolean) => {
-    if (checked && data) {
-      onSelectionChange(data.conflicts.map(c => c.id))
+    if (checked) {
+      onSelectionChange(convertedConflicts.map(c => c.id))
     } else {
       onSelectionChange([])
     }
@@ -137,13 +193,13 @@ export function ConflictList({
   }
 
   const handleNextConflict = () => {
-    if (!data?.conflicts || data.conflicts.length <= 1) return
+    if (convertedConflicts.length <= 1) return
     
-    const currentIndex = data.conflicts.findIndex(c => c.id === selectedConflictForDetails?.id)
-    if (currentIndex === -1 || currentIndex === data.conflicts.length - 1) {
+    const currentIndex = convertedConflicts.findIndex(c => c.id === selectedConflictForDetails?.id)
+    if (currentIndex === -1 || currentIndex === convertedConflicts.length - 1) {
       handleBackToList()
     } else {
-      setSelectedConflictForDetails(data.conflicts[currentIndex + 1])
+      setSelectedConflictForDetails(convertedConflicts[currentIndex + 1])
     }
     fetchConflicts()
   }
@@ -153,20 +209,25 @@ export function ConflictList({
   }
 
   const summary = useMemo(() => {
-    if (!data?.summary) return null
-    const bySeverity = data.summary.by_severity || {}
-    return {
-      total: data.summary.total || 0,
-      resolved: data.summary.resolved || 0,
-      unresolved: data.summary.unresolved || 0,
-      bySeverity: {
-        critical: bySeverity['critical'] || 0,
-        major: bySeverity['major'] || 0,
-        minor: bySeverity['minor'] || 0,
-        info: bySeverity['info'] || 0
-      }
+    // Create a summary from the converted conflicts
+    const total = convertedConflicts.length
+    const resolved = convertedConflicts.filter(c => c.resolved).length
+    
+    // Count by severity
+    const bySeverity = {
+      critical: convertedConflicts.filter(c => c.severity.level === 'critical').length,
+      major: convertedConflicts.filter(c => c.severity.level === 'major').length,
+      minor: convertedConflicts.filter(c => c.severity.level === 'minor').length,
+      info: convertedConflicts.filter(c => c.severity.level === 'info').length
     }
-  }, [data])
+    
+    return {
+      total,
+      resolved,
+      unresolved: total - resolved,
+      bySeverity
+    }
+  }, [convertedConflicts])
 
   const handleAutoResolveComplete = () => {
     fetchConflicts()
@@ -235,19 +296,21 @@ export function ConflictList({
                   onChange={handleSearchChange}
                   className="max-w-sm border-gray-300 rounded"
                 />
-                <Select
-                  value={filters.conflict_type?.[0]}
-                  onValueChange={(value) => handleFilterChange('conflict_type', [value])}
-                >
-                  <SelectTrigger className="w-[140px] border-gray-300 rounded">
-                    <SelectValue placeholder="Type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {data?.summary.by_type && Object.keys(data.summary.by_type).map(type => (
-                      <SelectItem key={type} value={type}>{type}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                {conflictTypes.length > 0 && (
+                  <Select
+                    value={filters.conflict_type?.[0]}
+                    onValueChange={(value) => handleFilterChange('conflict_type', [value])}
+                  >
+                    <SelectTrigger className="w-[140px] border-gray-300 rounded">
+                      <SelectValue placeholder="Type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {conflictTypes.map(type => (
+                        <SelectItem key={type} value={type}>{type}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
                 <Select
                   value={filters.severity?.[0]}
                   onValueChange={(value) => handleFilterChange('severity', [value])}
@@ -289,7 +352,7 @@ export function ConflictList({
                         <Button variant="outline" size="sm" className="mt-4" onClick={fetchConflicts}>Retry</Button>
                       </div>
                     </div>
-                  ) : data?.conflicts.length === 0 ? (
+                  ) : convertedConflicts.length === 0 ? (
                     <div className="flex items-center justify-center py-8">
                       <div className="text-center">
                         <CheckCircle2 className="h-8 w-8 text-green-500 mx-auto mb-2" />
@@ -301,7 +364,7 @@ export function ConflictList({
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-2">
                           <Checkbox
-                            checked={selectedConflicts.length === data?.conflicts.length}
+                            checked={selectedConflicts.length === convertedConflicts.length}
                             onCheckedChange={handleSelectAll}
                           />
                           <span className="text-xs">{selectedConflicts.length} selected</span>
@@ -312,7 +375,7 @@ export function ConflictList({
                           </Button>
                         </div>
                       </div>
-                      {data?.conflicts.map(conflict => (
+                      {convertedConflicts.map(conflict => (
                         <Card
                           key={conflict.id}
                           className={cn(
@@ -365,11 +428,11 @@ export function ConflictList({
             </div>
 
             {/* Pagination - Fixed at bottom */}
-            {data && data.total_count >= filters.limit! && (
+            {convertedConflicts.length >= filters.limit! && (
               <div className="p-2 border-t bg-white shrink-0">
                 <div className="flex items-center justify-between text-xs">
                   <span>
-                    {filters.offset! + 1} - {Math.min(filters.offset! + filters.limit!, data.total_count)} of {data.total_count}
+                    {filters.offset! + 1} - {Math.min(filters.offset! + filters.limit!, convertedConflicts.length)} of {convertedConflicts.length}
                   </span>
                   <div className="flex gap-1">
                     <Button
@@ -383,7 +446,7 @@ export function ConflictList({
                     <Button
                       variant="outline"
                       size="sm"
-                      disabled={filters.offset! + filters.limit! >= data.total_count}
+                      disabled={filters.offset! + filters.limit! >= convertedConflicts.length}
                       onClick={() => handleFilterChange('offset', filters.offset! + filters.limit!)}
                     >
                       Next
@@ -412,16 +475,15 @@ export function ConflictList({
               onViewMergedResults={onViewMergedResults}
               onViewFinalGraph={onViewFinalGraph}
               onBack={handleBackToList}
-              onNext={data?.conflicts && data.conflicts.length > 1 ? handleNextConflict : undefined}
+              onNext={convertedConflicts.length > 1 ? handleNextConflict : undefined}
               onResolve={(resolution) => {
-                if (data) {
-                  const updatedConflicts = data.conflicts.map(c => 
-                    c.id === selectedConflictForDetails.id
-                      ? { ...c, resolution_status: 'manually-resolved' as const }
-                      : c
-                  )
-                  setData({ ...data, conflicts: updatedConflicts })
-                }
+                // Mark the conflict as resolved
+                const updatedConflicts = convertedConflicts.map(c => 
+                  c.id === selectedConflictForDetails.id
+                    ? { ...c, resolution_status: 'manually-resolved' as const, resolved: true }
+                    : c
+                )
+                setConvertedConflicts(updatedConflicts)
                 onSelectionChange(selectedConflicts.filter(id => id !== selectedConflictForDetails.id))
                 handleNextConflict()
               }}

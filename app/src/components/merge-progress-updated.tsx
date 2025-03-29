@@ -3,15 +3,12 @@ import { Progress } from './ui/progress';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from './ui/card';
-import { Separator } from './ui/separator';
-import { Clock, AlertCircle, CheckCircle, XCircle, Loader2, Info, Calendar, ArrowRight, CheckCircle2, AlertTriangle, ExternalLink } from 'lucide-react';
+import { Clock, AlertCircle, CheckCircle, XCircle, Loader2, ArrowRight, CheckCircle2, AlertTriangle, ExternalLink } from 'lucide-react';
 import { MergeProgress as MergeProgressType, MergeStage, MergeStageStatus, MergeStatus } from '@/types/merge';
 import { format } from 'date-fns';
-import { Tooltip } from './ui/tooltip';
 import { Alert, AlertDescription } from './ui/alert';
 import { toast } from './ui/use-toast';
 import { Checkbox } from './ui/checkbox';
-import { useLocalStorage } from '../hooks/use-local-storage';
 
 interface MergeProgressProps {
   mergeId: string;
@@ -53,6 +50,7 @@ export function MergeProgress({ mergeId, sessionId, transformId, onViewConflicts
         return 0;
     }
   };
+  
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [progress, setProgress] = useState<MergeProgressType>({
@@ -75,11 +73,9 @@ export function MergeProgress({ mergeId, sessionId, transformId, onViewConflicts
   const maxRetries = 3;
   const [isFinalizingMerge, setIsFinalizingMerge] = useState(false);
   const [verificationResult, setVerificationResult] = useState<VerificationResult | null>(null);
-  const [showZeroConflictNotification, setShowZeroConflictNotification] = useState(false);
-  const [hasShownNotification, setHasShownNotification] = useState(false);
-  const [showConflictTour, setShowConflictTour] = useState(false);
-  const [autoNavigateToConflicts, setAutoNavigateToConflicts] = useState(false); //useLocalStorage('autoNavigateToConflicts', false);
+  const [autoNavigateToConflicts, setAutoNavigateToConflicts] = useState(false);
   const [hasShownConflictNotification, setHasShownConflictNotification] = useState(false);
+  const [isFirstStatusCheck, setIsFirstStatusCheck] = useState(true);
 
   useEffect(() => {
     const fetchStatus = async () => {
@@ -87,11 +83,19 @@ export function MergeProgress({ mergeId, sessionId, transformId, onViewConflicts
         setLoading(true);
         const response = await fetch(`/api/merge/merges/${mergeId}/status`);
         
+        // Don't show 404 errors during initial polling
+        if (response.status === 404 && isFirstStatusCheck) {
+          console.log('Status not available yet, will retry...');
+          setIsFirstStatusCheck(false);
+          return;
+        }
+        
         if (!response.ok) {
           throw new Error(`Failed to fetch merge status: ${response.status}`);
         }
         
         const data = await response.json();
+        setIsFirstStatusCheck(false);
         
         // Adapt the data to our MergeProgressType
         const adaptedProgress: MergeProgressType = {
@@ -122,13 +126,15 @@ export function MergeProgress({ mergeId, sessionId, transformId, onViewConflicts
         console.log('Merge status data:', adaptedProgress);
         
         // Handle conflict detection
-        if (data.has_conflicts && data.conflict_count > 0 && !hasShownConflictNotification) {
+        if (adaptedProgress.has_conflicts && 
+            adaptedProgress.conflict_count > 0 && 
+            !hasShownConflictNotification) {
           setHasShownConflictNotification(true);
           
           // Show conflict notification
           toast({
             title: "Conflicts Detected",
-            description: `${data.conflict_count} conflicts need to be resolved before proceeding.`,
+            description: `${adaptedProgress.conflict_count} conflicts need to be resolved before proceeding.`,
             variant: "destructive",
             action: (
               <Button 
@@ -145,28 +151,24 @@ export function MergeProgress({ mergeId, sessionId, transformId, onViewConflicts
           if (autoNavigateToConflicts && onViewConflicts) {
             onViewConflicts();
           }
-
-          // Show conflict tour for first-time users
-          const hasSeenTour = localStorage.getItem('hasSeenConflictTour');
-          if (!hasSeenTour) {
-            setShowConflictTour(true);
-            localStorage.setItem('hasSeenConflictTour', 'true');
-          }
         }
         
-        // Check for zero conflicts scenario
-        if (!data.has_conflicts && 
-            (data.conflict_count === 0 || !data.conflict_count) &&
-            data.overall_status !== 'completed' &&
-            data.current_stage == 'apply_changes' &&
-            !hasShownNotification) {
-          setShowZeroConflictNotification(true);
-          setHasShownNotification(true);
-          
-          // Show toast notification
+        // If status changes to READY_TO_MERGE, show notification
+        if (data.status === MergeStatus.READY_TO_MERGE && 
+            progress.overall_status !== MergeStatus.READY_TO_MERGE) {
           toast({
-            title: "No Conflicts Detected",
-            description: "Your merge has no conflicts and is ready to finalize.",
+            title: "Ready to Merge",
+            description: "All conflicts have been resolved. The merge is ready to be finalized.",
+            variant: "default",
+          });
+        }
+        
+        // If status changes to COMPLETED, show notification
+        if (data.status === MergeStatus.COMPLETED && 
+            progress.overall_status !== MergeStatus.COMPLETED) {
+          toast({
+            title: "Merge Completed",
+            description: "The merge process has been completed successfully.",
             variant: "default",
           });
         }
@@ -175,7 +177,11 @@ export function MergeProgress({ mergeId, sessionId, transformId, onViewConflicts
         setRetryCount(0); // Reset retry count on successful fetch
       } catch (err) {
         console.error('Error fetching merge status:', err);
-        setError(err instanceof Error ? err.message : 'Failed to fetch merge status');
+        
+        // Don't show error during first status check
+        if (!isFirstStatusCheck) {
+          setError(err instanceof Error ? err.message : 'Failed to fetch merge status');
+        }
         
         // Implement exponential backoff for retries
         if (retryCount < maxRetries) {
@@ -190,28 +196,31 @@ export function MergeProgress({ mergeId, sessionId, transformId, onViewConflicts
       }
     };
 
-    // Fetch immediately
-    fetchStatus();
-    
-    // Start polling
-    intervalRef.current = setInterval(fetchStatus, 5000);
-    
-    // Start timer for elapsed time
-    timerRef.current = setInterval(() => {
-      const startTime = new Date(progress.start_time);
-      const now = new Date();
-      const diff = Math.floor((now.getTime() - startTime.getTime()) / 1000);
-      const minutes = Math.floor(diff / 60).toString().padStart(2, '0');
-      const seconds = (diff % 60).toString().padStart(2, '0');
-      setElapsedTimeStr(`${minutes}:${seconds}`);
-      setElapsedTime(diff);
-    }, 1000);
+    // Only fetch if we have a mergeId
+    if (mergeId) {
+      // Fetch immediately
+      fetchStatus();
+      
+      // Start polling
+      intervalRef.current = setInterval(fetchStatus, 10000); // Poll every 10 seconds
+      
+      // Start timer for elapsed time
+      timerRef.current = setInterval(() => {
+        const startTime = new Date(progress.start_time);
+        const now = new Date();
+        const diff = Math.floor((now.getTime() - startTime.getTime()) / 1000);
+        const minutes = Math.floor(diff / 60).toString().padStart(2, '0');
+        const seconds = (diff % 60).toString().padStart(2, '0');
+        setElapsedTimeStr(`${minutes}:${seconds}`);
+        setElapsedTime(diff);
+      }, 1000);
+    }
     
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [mergeId, retryCount, hasShownConflictNotification, autoNavigateToConflicts, onViewConflicts]);
+  }, [mergeId, retryCount, hasShownConflictNotification, autoNavigateToConflicts, onViewConflicts, progress.overall_status, progress.start_time, isFirstStatusCheck]);
 
   const handleFinalizeMerge = async () => {
     if (!mergeId) return;
@@ -293,41 +302,6 @@ export function MergeProgress({ mergeId, sessionId, transformId, onViewConflicts
       setIsFinalizingMerge(false);
     }
   };
-  
-  const finaliseMerge = async () => {
-    try {
-      const response = await fetch(`/api/merge/merges/${mergeId}/${sessionId}/${transformId}/finalise`);
-      
-      if (!response.ok) {
-        throw new Error(`Failed to verify merge: ${response.status}`);
-      }
-      
-      const data = await response.json();
-      console.log('Verification result:', data);
-      
-      // Format the verification result
-      const formattedResult: VerificationResult = {
-        status: data.status == 'false' ? 'error' : 'success',
-        data: data,
-        issues: data.checks || []
-      };
-      
-      setVerificationResult(formattedResult);
-      return formattedResult;
-    } catch (error) {
-      console.error('Error verifying merge:', error);
-      
-      // Set error verification result
-      const errorResult: VerificationResult = {
-        status: 'error',
-        message: error instanceof Error ? error.message : 'Unknown error occurred during verification',
-        issues: []
-      };
-      
-      setVerificationResult(errorResult);
-      return errorResult;
-    }
-  };
 
   const formatTime = (seconds: number): string => {
     const hours = Math.floor(seconds / 3600);
@@ -347,25 +321,6 @@ export function MergeProgress({ mergeId, sessionId, transformId, onViewConflicts
     } catch (e) {
       return 'Invalid date';
     }
-  };
-
-  const getEstimatedTimeRemaining = (): string => {
-    if (!progress || progress.overall_progress >= 100) return '0:00';
-    
-    // If API provides estimated_end_time, use it
-    if (progress.estimated_end_time) {
-      const estimatedEnd = new Date(progress.estimated_end_time);
-      const now = new Date();
-      const remainingMs = Math.max(0, estimatedEnd.getTime() - now.getTime());
-      return formatTime(Math.round(remainingMs / 1000));
-    }
-    
-    // Otherwise, calculate based on elapsed time and progress
-    if (progress.overall_progress <= 0) return '--:--';
-    
-    const totalEstimatedTime = (elapsedTime / progress.overall_progress) * 100;
-    const remainingTime = Math.max(0, totalEstimatedTime - elapsedTime);
-    return formatTime(Math.round(remainingTime));
   };
 
   const getStatusBadge = (status: string) => {
@@ -408,19 +363,15 @@ export function MergeProgress({ mergeId, sessionId, transformId, onViewConflicts
     }
   };
 
-  // Add a safe access helper function
-  const safeValue = (value: any, defaultValue: any) => {
-    return value !== undefined && value !== null ? value : defaultValue;
-  };
-
   // Add a helper function to convert stages_progress object to array if needed
   const getStagesArray = (): MergeStage[] => {
-    // Default stages in order
+    // Default stages in order based on MergeStatus
     const defaultStages = [
       'analyze',
-      'conflict_detection',
-      'merge',
-      'verification'
+      'auto_resolve',
+      'human_review',
+      'verification',
+      'final_merge'
     ];
 
     if (Array.isArray(progress?.stages) && progress?.stages.length > 0) {
@@ -448,22 +399,40 @@ export function MergeProgress({ mergeId, sessionId, transformId, onViewConflicts
     
     // Return default stages with appropriate status based on current stage
     return defaultStages.map(stageName => {
-      const isCurrent = progress?.current_stage === stageName;
-      const stageIndex = defaultStages.indexOf(stageName);
-      const currentIndex = defaultStages.indexOf(progress?.current_stage || '');
+      const statusMap: Record<string, MergeStatus> = {
+        'analyze': MergeStatus.STARTED,
+        'auto_resolve': MergeStatus.AUTO_RESOLVE,
+        'human_review': MergeStatus.HUMAN_REVIEW,
+        'verification': MergeStatus.READY_TO_MERGE,
+        'final_merge': MergeStatus.MERGE_IN_PROGRESS
+      };
       
+      const stageStatus = statusMap[stageName];
       let status: MergeStageStatus = 'pending';
-      if (stageIndex < currentIndex) {
+      
+      if (progress.overall_status === MergeStatus.COMPLETED) {
         status = 'completed';
-      } else if (isCurrent) {
+      } else if (progress.overall_status === stageStatus) {
         status = 'running';
+      } else if (progress.overall_status === MergeStatus.FAILED || 
+                progress.overall_status === MergeStatus.CANCELLED) {
+        status = 'failed';
+      } else {
+        const allStatuses = Object.values(MergeStatus);
+        const currentIndex = allStatuses.indexOf(progress.overall_status);
+        const stageIndex = allStatuses.indexOf(stageStatus);
+        
+        if (stageIndex < currentIndex) {
+          status = 'completed';
+        }
       }
 
       return {
         name: stageName,
         status,
-        progress: status === 'completed' ? 100 : isCurrent ? progress?.overall_progress || 0 : 0,
-        start_time: isCurrent ? progress?.start_time : undefined,
+        progress: status === 'completed' ? 100 : 
+                 status === 'running' ? calculateProgressFromStatus(progress.overall_status) : 0,
+        start_time: status === 'running' || status === 'completed' ? progress?.start_time : undefined,
         end_time: status === 'completed' ? progress?.start_time : undefined
       };
     });
@@ -482,7 +451,7 @@ export function MergeProgress({ mergeId, sessionId, transformId, onViewConflicts
     );
   }
 
-  if (error) {
+  if (error && !isFirstStatusCheck) {
     return (
       <Card className="w-full border-red-200">
         <CardHeader>
@@ -605,12 +574,11 @@ export function MergeProgress({ mergeId, sessionId, transformId, onViewConflicts
           <div className="flex justify-between text-sm">
             <span>Overall Progress</span>
             <span>{progress.overall_status}</span>
-            {/* <span>{Math.round(progress.overall_progress)}%</span> */}
           </div>
           <Progress 
             value={progress.overall_progress} 
-            className={progress.overall_status === 'completed' ? "bg-green-100" : "bg-gray-100"}
-            indicatorClassName={progress.overall_status === 'completed' ? "bg-green-500" : undefined}
+            className={progress.overall_status === MergeStatus.COMPLETED ? "bg-green-100" : "bg-gray-100"}
+            indicatorClassName={progress.overall_status === MergeStatus.COMPLETED ? "bg-green-500" : undefined}
           />
         </div>
 
@@ -650,15 +618,6 @@ export function MergeProgress({ mergeId, sessionId, transformId, onViewConflicts
               {elapsedTimeStr}
             </div>
           </div>
-          {/* <div>
-            <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
-              <Calendar className="h-4 w-4" />
-              <span>Estimated Remaining</span>
-            </div>
-            <div className="text-lg font-semibold">
-              {getEstimatedTimeRemaining()}
-            </div>
-          </div> */}
         </div>
       </CardContent>
       

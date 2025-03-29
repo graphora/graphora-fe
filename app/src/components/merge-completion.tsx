@@ -68,7 +68,7 @@ export function MergeCompletion({ mergeId, onComplete }: MergeCompletionProps) {
   // Fetch initial statistics
   const fetchStatistics = useCallback(async () => {
     try {
-      const response = await fetch(`/api/merge/${mergeId}/statistics`)
+      const response = await fetch(`/api/merge/merges/${mergeId}/statistics`)
       if (!response.ok) throw new Error('Failed to fetch statistics')
       const data = await response.json()
       setStatistics(data)
@@ -89,7 +89,7 @@ export function MergeCompletion({ mergeId, onComplete }: MergeCompletionProps) {
   // Verify merge
   const verifyMerge = async () => {
     try {
-      const response = await fetch(`/api/merge/${mergeId}/verify`)
+      const response = await fetch(`/api/merge/merges/${mergeId}/verify`)
       if (!response.ok) throw new Error('Verification failed')
       const data = await response.json()
       setVerificationResult(data)
@@ -121,7 +121,7 @@ export function MergeCompletion({ mergeId, onComplete }: MergeCompletionProps) {
   // Apply resolution strategies
   const applyStrategies = async () => {
     try {
-      const response = await fetch(`/api/merge/${mergeId}/apply-strategies`, {
+      const response = await fetch(`/api/merge/merges/${mergeId}/apply-strategies`, {
         method: 'POST'
       })
       if (!response.ok) throw new Error('Failed to apply strategies')
@@ -135,7 +135,7 @@ export function MergeCompletion({ mergeId, onComplete }: MergeCompletionProps) {
   // Submit feedback
   const submitFeedback = async (rating: number) => {
     try {
-      await fetch(`/api/merge/${mergeId}/feedback`, {
+      await fetch(`/api/merge/merges/${mergeId}/feedback`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ rating })

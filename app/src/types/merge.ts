@@ -2,7 +2,16 @@ import { Node, Edge } from "./graph";
 
 export type MergeStrategy = 'SAFE' | 'FORCE' | 'INTERACTIVE';
 
-export type MergeStatus = 'pending' | 'running' | 'rolled_back' | 'completed' | 'failed' | 'cancelled';
+export enum MergeStatus {
+  STARTED = "started",
+  AUTO_RESOLVE = "auto_resolve",
+  HUMAN_REVIEW = "human_review",
+  READY_TO_MERGE = "ready_to_merge",
+  MERGE_IN_PROGRESS = "merge_in_progress",
+  COMPLETED = "completed",
+  FAILED = "failed",
+  CANCELLED = "cancelled"
+}
 
 export interface MergeInitRequest {
   sourceGraphId: string;
@@ -38,6 +47,13 @@ export interface Suggestion {
   description: string
   confidence: number
   affected_properties: string[]
+}
+
+export interface ChangeLog {
+  id: string;
+  prop_changes: Record<string, [any, any]>; // [previousValue, newValue]
+  staging_node: Node;
+  prod_node: Node;
 }
 
 export interface ConflictMessage {
@@ -174,6 +190,7 @@ export interface ConflictListItem {
     auto_resolvable: boolean
     risks?: string[]
   }
+  raw_changelog: ChangeLog
   resolution_timestamp?: string
   resolved_by?: string
   requires_review?: boolean

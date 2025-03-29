@@ -31,7 +31,7 @@ export function useGraphData({
 
     try {
       // Fetch graph data
-      const graphResponse = await fetch(`/api/merge/${mergeId}/graph/${transformId}`)
+      const graphResponse = await fetch(`/api/merge/merges/${mergeId}/graph/${transformId}`)
 
       if (!graphResponse.ok) {
         throw new Error(`Failed to fetch graph data: ${graphResponse.status}`)
@@ -42,7 +42,7 @@ export function useGraphData({
 
       // If we have a mergeId, fetch and merge conflict data
       if (mergeId) {
-        const conflictsResponse = await fetch(`/api/merge/${mergeId}/conflicts`)
+        const conflictsResponse = await fetch(`/api/merge/merges/${mergeId}/conflicts`)
         if (!conflictsResponse.ok) {
           throw new Error(`Failed to fetch conflicts: ${conflictsResponse.status}`)
         }

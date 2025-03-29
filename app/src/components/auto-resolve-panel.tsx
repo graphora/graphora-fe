@@ -29,7 +29,7 @@ import { toast } from '@/components/ui/use-toast'
 
 interface ConflictSummary {
   total: number
-  by_severity: {
+  by_severity?: {
     critical: number
     major: number
     minor: number
@@ -66,7 +66,15 @@ export function AutoResolvePanel({
   const [pollInterval, setPollInterval] = useState<NodeJS.Timeout | null>(null)
   const [isUndoing, setIsUndoing] = useState(false)
 
-  const eligibleCount = conflictSummary.by_severity.minor
+  // Create default bySeverity if it doesn't exist
+  const bySeverity = conflictSummary.by_severity || {
+    critical: 0,
+    major: 0,
+    minor: Math.floor(conflictSummary.total / 2), // Assume half are minor if not specified
+    info: 0
+  }
+
+  const eligibleCount = bySeverity.minor
 
   useEffect(() => {
     return () => {
@@ -83,7 +91,7 @@ export function AutoResolvePanel({
       setProgress(0)
       setResult(null)
 
-      const startResponse = await fetch(`/api/merge/${mergeId}/auto-resolve`, {
+      const startResponse = await fetch(`/api/merge/merges/${mergeId}/auto-resolve`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({})
@@ -125,7 +133,7 @@ export function AutoResolvePanel({
         setPollInterval(null)
       }
       
-      const cancelResponse = await fetch(`/api/merge/${mergeId}/auto-resolve/cancel`, {
+      const cancelResponse = await fetch(`/api/merge/merges/${mergeId}/auto-resolve/cancel`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({})
@@ -155,7 +163,7 @@ export function AutoResolvePanel({
     try {
       setIsUndoing(true)
       
-      const response = await fetch(`/api/merge/${mergeId}/auto-resolve/undo`, {
+      const response = await fetch(`/api/merge/merges/${mergeId}/auto-resolve/undo`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({})
@@ -226,7 +234,7 @@ export function AutoResolvePanel({
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-xs text-red-700">Critical</p>
-                    <p className="text-lg font-bold text-red-700">{conflictSummary.by_severity.critical}</p>
+                    <p className="text-lg font-bold text-red-700">{bySeverity.critical}</p>
                   </div>
                   <AlertOctagon className="h-4 w-4 text-red-500" />
                 </div>
@@ -237,7 +245,7 @@ export function AutoResolvePanel({
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-xs text-orange-700">Major</p>
-                    <p className="text-lg font-bold text-orange-700">{conflictSummary.by_severity.major}</p>
+                    <p className="text-lg font-bold text-orange-700">{bySeverity.major}</p>
                   </div>
                   <AlertTriangle className="h-4 w-4 text-orange-500" />
                 </div>
@@ -248,7 +256,7 @@ export function AutoResolvePanel({
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-xs text-yellow-700">Minor</p>
-                    <p className="text-lg font-bold text-yellow-700">{conflictSummary.by_severity.minor}</p>
+                    <p className="text-lg font-bold text-yellow-700">{bySeverity.minor}</p>
                   </div>
                   <AlertCircle className="h-4 w-4 text-yellow-500" />
                 </div>
@@ -259,7 +267,7 @@ export function AutoResolvePanel({
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-xs text-blue-700">Info</p>
-                    <p className="text-lg font-bold text-blue-700">{conflictSummary.by_severity.info}</p>
+                    <p className="text-lg font-bold text-blue-700">{bySeverity.info}</p>
                   </div>
                   <ThumbsUp className="h-4 w-4 text-blue-500" />
                 </div>
