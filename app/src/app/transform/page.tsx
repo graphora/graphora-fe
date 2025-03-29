@@ -510,12 +510,14 @@ function TransformPageContent() {
               <AlertDialogTitle>Merge to Production Database</AlertDialogTitle>
               <AlertDialogDescription>
                 This will start the process of merging your transformed graph into the production database.
-                <ul className="mt-2 list-disc pl-5 space-y-1">
+              </AlertDialogDescription>
+              <div className="mt-2 text-sm text-muted-foreground">
+                <ul className="list-disc pl-5 space-y-1">
                   <li>The merge process will start automatically</li>
                   <li>You'll be guided through any conflicts that need resolution</li>
                   <li>No additional input is required to begin the process</li>
                 </ul>
-              </AlertDialogDescription>
+              </div>
             </AlertDialogHeader>
             <AlertDialogFooter>
               <AlertDialogCancel>Cancel</AlertDialogCancel>
