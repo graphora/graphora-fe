@@ -34,6 +34,13 @@ export async function GET(
       }
 
       const data = await response.json();
+      
+      // Ensure we always return a consistent JSON structure
+      // If the backend returns a string, convert it to an object
+      if (typeof data === 'string') {
+        return NextResponse.json({ status: data });
+      }
+      
       return NextResponse.json(data);
     } catch (error) {
       console.error('Error fetching from backend:', error);

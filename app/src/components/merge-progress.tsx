@@ -98,11 +98,13 @@ export function MergeProgress({ mergeId, sessionId, transformId, onViewConflicts
           merge_id: mergeId,
           overall_status: data.status,
           overall_progress: calculateProgressFromStatus(data.status),
-          current_stage: data.status,
+          current_stage: data.current_stage || data.status,
           has_conflicts: data.status === MergeStatus.HUMAN_REVIEW,
-          conflict_count: 0, // Will be updated if needed
+          conflict_count: data.conflict_count || 0,
           start_time: data.start_time || new Date().toISOString(),
-          elapsed_time: 0
+          elapsed_time: 0,
+          // For COMPLETED status, ensure we have empty stages that will be filled by getStagesArray
+          stages: data.status === MergeStatus.COMPLETED ? [] : data.stages || []
         };
         
         // Check if we need to fetch conflicts count
@@ -418,10 +420,23 @@ export function MergeProgress({ mergeId, sessionId, transformId, onViewConflicts
     // Default stages in order
     const defaultStages = [
       'analyze',
-      'conflict_detection',
-      'merge',
-      'verification'
+      'auto_resolve',
+      'human_review',
+      'verification',
+      'final_merge'
     ];
+
+    // If the merge is completed, mark all stages as completed regardless of what's in progress.stages
+    if (progress.overall_status === MergeStatus.COMPLETED) {
+      console.log('Merge is COMPLETED, marking all stages as completed');
+      return defaultStages.map(stageName => ({
+        name: stageName,
+        status: 'completed' as MergeStageStatus,
+        progress: 100,
+        start_time: progress.start_time,
+        end_time: new Date().toISOString()
+      }));
+    }
 
     if (Array.isArray(progress?.stages) && progress?.stages.length > 0) {
       return progress.stages;
