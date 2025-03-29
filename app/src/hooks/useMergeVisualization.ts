@@ -63,7 +63,7 @@ export function useMergeVisualization(mergeId: string, transformId: string) {
 
       const responseData = await response.json()
       
-      if (!responseData || !responseData.data) {
+      if (!responseData) {
         throw new Error('Invalid response format')
       }
 
@@ -87,15 +87,6 @@ export function useMergeVisualization(mergeId: string, transformId: string) {
   useEffect(() => {
     if (mergeId && transformId) {
       fetchData()
-      
-      // // Set up polling for visualization updates
-      // const intervalId = setInterval(() => {
-      //   fetchData()
-      // }, 5000) // Poll every 5 seconds
-      
-      // return () => {
-      //   clearInterval(intervalId)
-      // }
     }
   }, [mergeId, transformId, fetchData])
 

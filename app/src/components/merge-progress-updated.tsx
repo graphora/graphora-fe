@@ -374,6 +374,17 @@ export function MergeProgress({ mergeId, sessionId, transformId, onViewConflicts
       'final_merge'
     ];
 
+    // If the overall status is COMPLETED, mark all stages as completed
+    if (progress.overall_status === MergeStatus.COMPLETED) {
+      return defaultStages.map(stageName => ({
+        name: stageName,
+        status: 'completed' as MergeStageStatus,
+        progress: 100,
+        start_time: progress.start_time,
+        end_time: progress.start_time // Use start_time as a placeholder since we don't have actual end times
+      }));
+    }
+
     if (Array.isArray(progress?.stages) && progress?.stages.length > 0) {
       return progress.stages;
     } 
@@ -410,9 +421,7 @@ export function MergeProgress({ mergeId, sessionId, transformId, onViewConflicts
       const stageStatus = statusMap[stageName];
       let status: MergeStageStatus = 'pending';
       
-      if (progress.overall_status === MergeStatus.COMPLETED) {
-        status = 'completed';
-      } else if (progress.overall_status === stageStatus) {
+      if (progress.overall_status === stageStatus) {
         status = 'running';
       } else if (progress.overall_status === MergeStatus.FAILED || 
                 progress.overall_status === MergeStatus.CANCELLED) {

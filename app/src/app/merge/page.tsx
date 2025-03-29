@@ -63,9 +63,9 @@ function MergePageContent() {
   } = useMergeVisualization(initialMergeId, transformId)
 
   const graphDataMemo = useMemo(() => {
-    if (!mergeVisualization?.data) return null
-    return mergeVisualization.data
-  }, [mergeVisualization?.data])
+    if (!mergeVisualization) return null
+    return mergeVisualization
+  }, [mergeVisualization])
 
   useEffect(() => {
     if (isLoaded && !user) {
