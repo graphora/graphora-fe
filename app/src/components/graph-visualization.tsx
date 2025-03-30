@@ -275,7 +275,6 @@ export function GraphVisualization({ graphData: initialData, onGraphReset }: Gra
               graphData={processedData}
               width={dimensions.width}
               height={dimensions.height}
-              nodeLabel={null}
               nodeColor="color"
               linkColor="#999"
               linkWidth={2}
@@ -292,7 +291,7 @@ export function GraphVisualization({ graphData: initialData, onGraphReset }: Gra
               onNodeClick={handleNodeClick}
               onLinkClick={handleLinkClick}
               onNodeHover={handleNodeHover}
-              onNodeCanvasObject={(node: any, ctx: CanvasRenderingContext2D, globalScale: number) => {
+              nodeCanvasObject={(node: any, ctx: CanvasRenderingContext2D, globalScale: number) => {
                 const nodeR = node.val || 5
 
                 ctx.beginPath()
@@ -349,7 +348,7 @@ export function GraphVisualization({ graphData: initialData, onGraphReset }: Gra
               textAlign: 'center',
             }}
           >
-            <div className="font-medium text-gray-800">{hoveredNode.name || hoveredNode.label || hoveredNode.type || `Node ${hoveredNode.id}`}</div>
+            <div className="font-medium text-gray-800">{hoveredNode.name || hoveredNode.type || `Node ${hoveredNode.id}`}</div>
             <div className="text-gray-600">Type: {hoveredNode.type || 'Unknown'}</div>
           </div>
         )}
