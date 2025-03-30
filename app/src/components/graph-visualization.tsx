@@ -126,7 +126,7 @@ export function GraphVisualization({ graphData: initialData, onGraphReset }: Gra
   const [showNodeForm, setShowNodeForm] = useState(false)
   const [showEdgeForm, setShowEdgeForm] = useState(false)
   const [nodeFormData, setNodeFormData] = useState<NodeFormData>({ type: NODE_TYPES[0], properties: {} })
-  const [edgeFormData, setEdgeFormData] = useState<EdgeFormData>({ type: EDGE_TYPES[0], properties: {} })
+  const [edgeFormData, setEdgeFormData] = useState<EdgeFormData>({ type: '', properties: {} })
   const [hoveredNode, setHoveredNode] = useState<ProcessedNode | null>(null)
   const graphRef = useRef<any>(null)
   const containerRef = useRef<HTMLDivElement>(null)
@@ -260,7 +260,7 @@ export function GraphVisualization({ graphData: initialData, onGraphReset }: Gra
               graphData={processedData}
               width={dimensions.width}
               height={dimensions.height}
-              nodeLabel="name"
+              nodeLabel={null}
               nodeColor="color"
               linkColor="#999"
               linkWidth={2}
@@ -277,9 +277,7 @@ export function GraphVisualization({ graphData: initialData, onGraphReset }: Gra
               onNodeClick={handleNodeClick}
               onLinkClick={handleLinkClick}
               onNodeHover={handleNodeHover}
-              nodeCanvasObject={(node: any, ctx: CanvasRenderingContext2D, globalScale: number) => {
-                const label = node.properties?.name || node.type
-                const fontSize = Math.min(12 / globalScale, 10)
+              onNodeCanvasObject={(node: any, ctx: CanvasRenderingContext2D, globalScale: number) => {
                 const nodeR = node.val || 5
 
                 ctx.beginPath()
@@ -290,7 +288,10 @@ export function GraphVisualization({ graphData: initialData, onGraphReset }: Gra
                 ctx.lineWidth = 0.5
                 ctx.stroke()
 
-                if (globalScale > 1.0) {
+                // Only render text when not hovering - remove duplication with tooltip
+                if (globalScale > 1.0 && hoveredNode?.id !== node.id) {
+                  const label = node.properties?.name || node.type
+                  const fontSize = Math.min(12 / globalScale, 10)
                   ctx.font = `${fontSize}px Sans-Serif`
                   ctx.textAlign = 'center'
                   ctx.textBaseline = 'middle'
@@ -324,11 +325,13 @@ export function GraphVisualization({ graphData: initialData, onGraphReset }: Gra
         {/* Tooltip for hovered node */}
         {hoveredNode && (
           <div
-            className="absolute bg-white p-2 rounded-lg shadow-md text-sm border border-gray-200 pointer-events-none z-10"
+            className="absolute bg-white p-3 rounded-lg shadow-md text-sm border-2 border-gray-200 pointer-events-none z-10"
             style={{
-              left: (hoveredNode.x || 0) + dimensions.width / 2 + 10,
-              top: (hoveredNode.y || 0) + dimensions.height / 2 - 10,
+              left: (hoveredNode.x || 0) + dimensions.width / 2,
+              top: (hoveredNode.y || 0) + dimensions.height / 2 - 40, // Position further above the node
               transform: 'translate(-50%, -100%)',
+              minWidth: '120px',
+              textAlign: 'center',
             }}
           >
             <div className="font-medium text-gray-800">{hoveredNode.name}</div>
@@ -474,15 +477,12 @@ export function GraphVisualization({ graphData: initialData, onGraphReset }: Gra
                     <div className="space-y-2">
                       <div className="grid grid-cols-4 items-center gap-2">
                         <label className="text-sm">Type:</label>
-                        <select
-                          className="col-span-3 border rounded px-2 py-1"
+                        <input
+                          className="col-span-3 border rounded px-3 py-2"
+                          placeholder="Enter relationship type"
                           value={edgeFormData.type}
                           onChange={e => setEdgeFormData(prev => ({ ...prev, type: e.target.value as EdgeType }))}
-                        >
-                          {EDGE_TYPES.map(type => (
-                            <option key={type} value={type}>{type}</option>
-                          ))}
-                        </select>
+                        />
                       </div>
                       <div className="grid grid-cols-4 items-center gap-2">
                         <label className="text-sm">Target:</label>
