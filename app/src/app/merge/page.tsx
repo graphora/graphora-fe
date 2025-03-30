@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useMemo, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { Loader2, PauseCircle, PlayCircle, AlertCircle, CheckCircle2, RefreshCcw} from 'lucide-react'
+import { Loader2, PauseCircle, PlayCircle, AlertCircle, CheckCircle2, RefreshCcw, Monitor, Clock, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { MergeGraphVisualization } from '@/components/merge-graph-visualization'
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable'
@@ -19,6 +19,18 @@ import { ConflictList } from '@/components/conflict-list'
 import { MergeCompletionBanner } from '@/components/merge-completion-banner'
 import { Activity, AlertTriangle, Network, BarChart3 } from 'lucide-react'
 import { WorkflowLayout } from '@/components/workflow-layout'
+import { AlertDialog, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogCancel, AlertDialogAction } from '@/components/ui/alert-dialog'
+import { buttonVariants } from '@/components/ui/button'
+
+function formatElapsedTime(seconds: number): string {
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  const secs = Math.floor(seconds % 60);
+
+  const pad = (num: number) => num.toString().padStart(2, '0');
+
+  return `${pad(hours)}:${pad(minutes)}:${pad(secs)}`;
+}
 
 function MergePageContent() {
   const router = useRouter()
@@ -50,6 +62,9 @@ function MergePageContent() {
   })
   const [isLoadingGraph, setIsLoadingGraph] = useState(false)
   const [isFirstStatusCheck, setIsFirstStatusCheck] = useState(true)
+  const [startTime, setStartTime] = useState<number | null>(null);
+  const [elapsedTime, setElapsedTime] = useState<number>(0); // in seconds
+  const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const sessionId = searchParams.get('session_id') || ''
   const transformId = searchParams.get('transform_id') || ''
@@ -92,6 +107,39 @@ function MergePageContent() {
       })
     }
   }, [status, refreshVisualization])
+
+  // Timer effect
+  useEffect(() => {
+    // Function to clear the interval
+    const clearTimerInterval = () => {
+      if (timerIntervalRef.current) {
+        clearInterval(timerIntervalRef.current);
+        timerIntervalRef.current = null;
+        console.log("Timer interval cleared.");
+      }
+    };
+
+    // Start timer only if startTime is set and status is not terminal
+    if (startTime && 
+        status !== MergeStatus.COMPLETED && 
+        status !== MergeStatus.FAILED && 
+        status !== MergeStatus.CANCELLED) {
+      console.log("Starting timer interval (not in terminal state).");
+      // Clear any existing interval first
+      clearTimerInterval(); 
+      
+      timerIntervalRef.current = setInterval(() => {
+        setElapsedTime(Math.floor((Date.now() - startTime) / 1000));
+      }, 1000);
+    } else {
+      // Stop timer if status is terminal or startTime is null
+      console.log("Timer should stop or not start. Status:", status, "Start time:", startTime);
+      clearTimerInterval();
+    }
+
+    // Cleanup on component unmount or when dependencies change causing timer to stop
+    return clearTimerInterval;
+  }, [startTime, status]);
 
   useEffect(() => {
     // Consolidated effect to handle initial status check and polling
@@ -651,6 +699,17 @@ function MergePageContent() {
     })
   }
 
+  const handleViewStatus = () => {
+    const url = process.env.NEXT_PUBLIC_MERGE_PREFECT_STATUS_URL;
+    if (url) {
+      window.open(url, '_blank');
+    } else {
+      console.warn('NEXT_PUBLIC_MERGE_PREFECT_STATUS_URL is not defined.');
+      // Optionally show a toast or alert to the user
+      // toast({ title: "Configuration Error", description: "Status URL is not configured.", variant: "destructive" });
+    }
+  };
+
   useEffect(() => {
     // This effect now only starts the merge process if no initial merge ID is provided.
     // Polling is handled by the effect hook dependent on `currentMergeId`.
@@ -699,7 +758,7 @@ function MergePageContent() {
       {/* Main Content */}
       <div className="flex-1 min-h-0">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full bg-white">
-          <div className="container py-4">
+          <div className="container py-4 flex items-center justify-between border-b">
             <TabsList>
               <TabsTrigger value="progress">
                 <Activity className="h-4 w-4 mr-2" />
@@ -724,6 +783,58 @@ function MergePageContent() {
                 )}
               </TabsTrigger>
             </TabsList>
+            <div className="flex items-center space-x-2 flex-shrink-0">
+               {/* Timer Display */}
+               {startTime && 
+                 status !== MergeStatus.COMPLETED && 
+                 status !== MergeStatus.FAILED && 
+                 status !== MergeStatus.CANCELLED && (
+                 <div className="flex items-center text-sm text-gray-600 bg-gray-100 px-2 py-1 rounded" title="Elapsed Time">
+                   <Clock className="h-4 w-4 mr-1 text-gray-500" />
+                   <span>{formatElapsedTime(elapsedTime)}</span>
+                 </div>
+               )}
+               {/* View Status Button */}
+               <Button 
+                 variant="outline" 
+                 size="sm" 
+                 onClick={handleViewStatus}
+                 disabled={!currentMergeId} // Only enable if merge has started/loaded
+                 title="View detailed execution status in Prefect"
+               >
+                 <Monitor className="h-4 w-4 mr-1" />
+                 View Status
+               </Button>
+                {/* Pause/Resume Button - Condition checks non-terminal states */}
+                {status !== MergeStatus.COMPLETED && 
+                 status !== MergeStatus.FAILED && 
+                 status !== MergeStatus.CANCELLED && 
+                 !isCancelling && (
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => setIsPaused(!isPaused)}
+                    title={isPaused ? "Resume Merge Process" : "Pause Merge Process"}
+                  >
+                    {isPaused ? <PlayCircle className="h-4 w-4 text-green-600" /> : <PauseCircle className="h-4 w-4 text-orange-600" />}
+                  </Button>
+                )}
+                 {/* Cancel Button - Condition checks non-terminal states */}
+                 {status !== MergeStatus.COMPLETED && 
+                  status !== MergeStatus.FAILED && 
+                  status !== MergeStatus.CANCELLED && (
+                   <Button 
+                     variant="destructive" 
+                     size="sm" 
+                     onClick={() => setIsCancelling(true)} // Open confirmation dialog
+                     disabled={isCancelling}
+                     title="Cancel Merge Process"
+                   >
+                     {isCancelling ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <X className="h-4 w-4 mr-1" />}
+                     Cancel
+                   </Button>
+                 )}
+            </div>
           </div>
           <TabsContent value="progress" className="flex-1 p-4">
             {currentMergeId ? (

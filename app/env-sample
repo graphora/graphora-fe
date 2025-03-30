@@ -4,3 +4,5 @@ NEXT_PUBLIC_CLERK_SIGN_IN_URL=/sign-in
 NEXT_PUBLIC_CLERK_SIGN_UP_URL=/sign-up
 NEXT_PUBLIC_WS_URL=ws://localhost:8000
 BACKEND_API_URL=http://localhost:8000
+NEXT_PUBLIC_TRANSFORM_PREFECT_STATUS_URL=http://your-prefect-instance/flows/flow/52af21a8-571e-49d8-8325-2e503b0969fe
+NEXT_PUBLIC_MERGE_PREFECT_STATUS_URL=http://your-prefect-instance/flows/flow/e2e4b0e4-7c1d-47fb-97de-7e79cb76025b

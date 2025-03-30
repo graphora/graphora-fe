@@ -414,6 +414,17 @@ function TransformPageContent() {
     }
   }
 
+  const handleViewTransformStatus = () => {
+    const url = process.env.NEXT_PUBLIC_TRANSFORM_PREFECT_STATUS_URL;
+    if (url) {
+      window.open(url, '_blank');
+    } else {
+      console.warn('NEXT_PUBLIC_TRANSFORM_PREFECT_STATUS_URL is not defined.');
+      // Optionally show a toast or alert to the user
+      // toast({ title: "Configuration Error", description: "Status URL is not configured.", variant: "destructive" });
+    }
+  };
+
   const tools = [
     {
       id: 'upload',
@@ -444,9 +455,7 @@ function TransformPageContent() {
       icon: <Monitor className="h-4 w-4" />,
       label: 'View Status',
       disabled: !file,
-      action: () => {
-        window.open(`http://35.188.198.7:4200/flows/flow/52af21a8-571e-49d8-8325-2e503b0969fe`, '_blank')
-      }
+      action: handleViewTransformStatus
     }
   ]
 
