@@ -71,7 +71,7 @@ export function WelcomeScreen() {
         <div className="bg-white rounded-2xl p-4 shadow-xl">
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold mb-4">
-              Welcome to Graph-it
+              Welcome to Graphora
             </h1>
             <p className="text-xl text-gray-600">
               Choose Your Path to Knowledge Graph Creation

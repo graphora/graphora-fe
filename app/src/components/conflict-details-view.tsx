@@ -347,7 +347,7 @@ export function ConflictDetailsView({
                     <CardHeader>
                       <CardTitle>Learning Comment</CardTitle>
                       <CardDescription>
-                        Add a comment to help the system learn from this resolution
+                        Add a comment / rule to help the system learn from this resolution
                       </CardDescription>
                     </CardHeader>
                     <CardContent>

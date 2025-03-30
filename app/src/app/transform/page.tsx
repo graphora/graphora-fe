@@ -4,9 +4,10 @@ import { useState, useCallback, useEffect, Suspense } from 'react'
 import { useDropzone } from 'react-dropzone'
 import { 
   Loader2, X, Upload, FileText, 
-  ChevronLeft, ChevronRight, GitMerge,
+  GitMerge,
   Database, Settings2,
-  Monitor
+  Monitor,
+  Rocket
 } from 'lucide-react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
@@ -351,10 +352,12 @@ function TransformPageContent() {
   const tools = [
     {
       id: 'upload',
-      icon: <Upload className="h-4 w-4" />,
-      label: 'Upload',
+      icon: <Rocket className="h-4 w-4" />,
+      label: 'Transform',
       action: handleExtract,
-      disabled: !file || isProcessing
+      disabled: !file || isProcessing,
+      primary: true,
+      className: "mr-4"
     },
     {
       id: 'merge',
@@ -362,7 +365,8 @@ function TransformPageContent() {
       label: 'Merge',
       action: () => setShowMergeConfirm(true),
       disabled: !graphData || isProcessing,
-      primary: true // Mark this as a primary action
+      primary: true,
+      className: "bg-green-500 hover:bg-green-600 text-white"
     },
     {
       id: 'settings',
@@ -480,6 +484,11 @@ function TransformPageContent() {
                   graphData={graphData} 
                   onGraphReset={handleGraphReset}
                 />
+              ) : isProcessing ? (
+                <div className="h-full flex flex-col items-center justify-center text-gray-500">
+                  <Loader2 className="h-10 w-10 animate-spin mb-3" />
+                  <p>Processing document...</p>
+                </div>
               ) : (
                 <div className="h-full flex items-center justify-center text-gray-500">
                   <p>Upload a document to begin transformation</p>
@@ -501,7 +510,7 @@ function TransformPageContent() {
         <CommandPalette
           open={isCommandPaletteOpen}
           onOpenChange={setIsCommandPaletteOpen}
-          commands={tools}
+          commands={tools.map(({ id, label, action }) => ({ id, label, action }))}
         />
 
         <AlertDialog open={showMergeConfirm} onOpenChange={setShowMergeConfirm}>

@@ -10,7 +10,6 @@ import { Loader2, AlertCircle, CheckCircle2, Filter, SortAsc, SortDesc, Wand2 } 
 import { type ConflictListItem, type ConflictListFilters, type ConflictListResponse } from '@/types/merge'
 import { cn } from '@/lib/utils'
 import { ConflictDetailsView } from '@/components/conflict-details-view'
-import { AutoResolvePanel } from '@/components/auto-resolve-panel'
 import { MergeCompletionBanner } from './merge-completion-banner'
 import { ChangeLog } from '@/types/merge'
 
@@ -268,15 +267,6 @@ export function ConflictList({
             onViewFinalGraph={onViewFinalGraph}
             onViewProgress={() => {}}
             takeToFinalize={false}
-          />
-        </div>
-      )}
-      {summary && (
-        <div className="p-2 border-b bg-white">
-          <AutoResolvePanel
-            mergeId={mergeId}
-            conflictSummary={{ total: summary.total, by_severity: summary.bySeverity }}
-            onResolutionComplete={handleAutoResolveComplete}
           />
         </div>
       )}

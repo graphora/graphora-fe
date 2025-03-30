@@ -34,9 +34,9 @@ export function MainHeader({ hasUnsavedChanges }: MainHeaderProps) {
           disabled={isNavigating}
         >
           <Home className="w-5 h-5" />
-          <span className="font-medium">Graph-It</span>
+          <span className="font-medium">Graphora</span>
         </Button>
-        {/* <div className="text-xl font-semibold text-gray-800">Graph-it</div> */}
+        {/* <div className="text-xl font-semibold text-gray-800">Graphora</div> */}
       </div>
 
       <div className="flex items-center gap-3">

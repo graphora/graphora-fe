@@ -12,6 +12,7 @@ export interface ToolbarItem {
   shortcut?: string
   disabled?: boolean
   primary?: boolean
+  className?: string
 }
 
 export interface CommandCenterLayout {
