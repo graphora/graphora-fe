@@ -178,7 +178,7 @@ export function GraphVisualization({ graphData: initialData, onGraphReset }: Gra
 
       return {
         ...node,
-        name: node.properties?.name || node.label || node.type,
+        name: node.properties?.name || node.label || node.type || `Node ${node.id}`,
         color: typeColors[nodeType] || SPECIAL_COLORS.default,
         id: node.id.toString(),
         val: size,
@@ -222,8 +222,23 @@ export function GraphVisualization({ graphData: initialData, onGraphReset }: Gra
     if (node) {
       const processedNode = node as ProcessedNode;
       setHoveredNode(processedNode)
+    } else {
+      setHoveredNode(null)
     }
   }
+  
+  // Add click listener to dismiss the tooltip
+  useEffect(() => {
+    const handleClick = () => {
+      setHoveredNode(null);
+    };
+    
+    document.addEventListener('click', handleClick);
+    
+    return () => {
+      document.removeEventListener('click', handleClick);
+    };
+  }, []);
 
   return (
     <div className="w-full h-full relative bg-gray-50">
@@ -290,7 +305,7 @@ export function GraphVisualization({ graphData: initialData, onGraphReset }: Gra
 
                 // Only render text when not hovering - remove duplication with tooltip
                 if (globalScale > 1.0 && hoveredNode?.id !== node.id) {
-                  const label = node.properties?.name || node.type
+                  const label = node.properties?.name || node.label || node.type || `Node ${node.id}`
                   const fontSize = Math.min(12 / globalScale, 10)
                   ctx.font = `${fontSize}px Sans-Serif`
                   ctx.textAlign = 'center'
@@ -334,14 +349,14 @@ export function GraphVisualization({ graphData: initialData, onGraphReset }: Gra
               textAlign: 'center',
             }}
           >
-            <div className="font-medium text-gray-800">{hoveredNode.name}</div>
-            <div className="text-gray-600">Type: {hoveredNode.type}</div>
+            <div className="font-medium text-gray-800">{hoveredNode.name || hoveredNode.label || hoveredNode.type || `Node ${hoveredNode.id}`}</div>
+            <div className="text-gray-600">Type: {hoveredNode.type || 'Unknown'}</div>
           </div>
         )}
 
         {/* Node/Edge Details Dialog */}
         {selectedElement && (
-          <Dialog open={!!selectedElement} onOpenChange={() => setSelectedElement(null)}>
+          <Dialog open={!!selectedElement} onOpenChange={() => setSelectedElement(null)} modal={true}>
             <DialogContent className="sm:max-w-[700px] max-h-[80vh] overflow-y-auto bg-white dark:bg-gray-900">
               <DialogHeader>
                 <DialogTitle>
@@ -659,7 +674,7 @@ export function GraphVisualization({ graphData: initialData, onGraphReset }: Gra
         )}
 
         {/* Node Creation Dialog */}
-        <Dialog open={showNodeForm} onOpenChange={setShowNodeForm}>
+        <Dialog open={showNodeForm} onOpenChange={setShowNodeForm} modal={true}>
           <DialogContent className="bg-white dark:bg-gray-800">
             <DialogHeader>
               <DialogTitle>Create New Node</DialogTitle>
@@ -702,7 +717,7 @@ export function GraphVisualization({ graphData: initialData, onGraphReset }: Gra
         </Dialog>
 
         {/* Edge Creation Dialog */}
-        <Dialog open={showEdgeForm} onOpenChange={setShowEdgeForm}>
+        <Dialog open={showEdgeForm} onOpenChange={setShowEdgeForm} modal={true}>
           <DialogContent className="bg-white dark:bg-gray-800">
             <DialogHeader>
               <DialogTitle>Create New Relationship</DialogTitle>
