@@ -36,7 +36,7 @@ function MergePageContent() {
   const [isRetrying, setIsRetrying] = useState(false)
   const [currentConflict, setCurrentConflict] = useState<any>(null)
   const [mergeStarted, setMergeStarted] = useState(false)
-  const [mergeId, setMergeId] = useState<string | null>(null)
+  const [currentMergeId, setCurrentMergeId] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<string>('visualization')
   const statusIntervalRef = useRef<NodeJS.Timeout | null>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
@@ -86,118 +86,80 @@ function MergePageContent() {
   }, [status, refreshVisualization])
 
   useEffect(() => {
-    // If merge_id is provided in URL, use it
-    if (initialMergeId) {
-      setMergeId(initialMergeId)
+    // Consolidated effect to handle initial status check and polling
+    if (currentMergeId) {
       setMergeStarted(true)
 
-      // Set active tab to progress by default
-      setActiveTab('progress')
+      const checkAndPollStatus = async () => {
+        if (!currentMergeId || (statusIntervalRef.current !== null)) {
+             // Don't start if no ID or already polling
+             console.log("Polling check: No merge ID or polling already active.");
+             return;
+         }
 
-      // Start polling for status updates
-      const pollStatus = async () => {
-        if (!initialMergeId) return
-
+        console.log(`Checking initial status for merge ID: ${currentMergeId}`);
         try {
-          const response = await fetch(`/api/merge/merges/${initialMergeId}/status`)
-          if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`)
-          }
+          const response = await fetch(`/api/merge/merges/${currentMergeId}/status`)
+          if (response.ok) {
+            const data = await response.json()
+            const statusValue = typeof data === 'string' ? data : data.status as MergeStatus
 
-          const data = await response.json()
+            console.log(`Initial status for ${currentMergeId}: ${statusValue}`);
 
-          if (data) {
-            // Handle both formats: direct status string or object with status property
-            const statusValue = typeof data === 'string' ? data : data.status
-            setStatus(statusValue as MergeStatus)
-            
+            setStatus(statusValue) // Update status immediately
+
             if (statusValue === MergeStatus.COMPLETED) {
-              console.log('Merge completed, stopping polling and loading graph view')
-
-              // Stop polling immediately
-              if (statusIntervalRef.current) {
-                console.log('Clearing status polling interval')
-                clearInterval(statusIntervalRef.current)
-                statusIntervalRef.current = null
-              }
-
-              // Force graph view
-              setIsLoadingGraph(true)
+              console.log('Merge already completed, setting graph view.')
               setActiveTab('visualization')
-
-              // Force graph refresh
-              refreshVisualization().finally(() => {
-                setIsLoadingGraph(false)
-                console.log('Graph data load attempt completed')
-              })
-
-              return // Exit the function early
+              setIsLoadingGraph(true)
+              refreshVisualization().finally(() => setIsLoadingGraph(false))
+              // Don't start polling for completed merges
+              return
+            } else if (statusValue === MergeStatus.FAILED || statusValue === MergeStatus.CANCELLED) {
+              console.log(`Merge already in terminal state (${statusValue}), not polling.`);
+               // Update progress/step if available
+               if (typeof data === 'object' && data.progress !== undefined) setProgress(data.progress);
+               if (typeof data === 'object' && data.currentStep) setCurrentStep(data.currentStep);
+              // Don't start polling for failed/cancelled merges
+              return
             }
+
+            // If not in a terminal state, start polling
+            console.log(`Merge status is ${statusValue}, starting regular polling.`);
+            startStatusPolling(currentMergeId)
+
+          } else {
+            console.warn(`Initial status check failed (${response.status}), starting polling anyway.`);
+            // If status check fails initially, start polling to potentially recover
+            startStatusPolling(currentMergeId)
           }
         } catch (error) {
-          console.error('Error polling merge status:', error)
+          console.error('Error checking initial status:', error)
+          // Start polling even if initial check fails
+          startStatusPolling(currentMergeId)
         }
       }
 
-      // Poll immediately and then at intervals
-      pollStatus()
-      statusIntervalRef.current = setInterval(pollStatus, 15000) // Poll every 15 seconds
+      checkAndPollStatus()
 
+      // Cleanup function for this effect
       return () => {
+        console.log("Cleaning up polling interval due to mergeId change or unmount.");
         if (statusIntervalRef.current) {
           clearInterval(statusIntervalRef.current)
           statusIntervalRef.current = null
         }
       }
-    }
-  }, [initialMergeId, refreshVisualization])
-
-  useEffect(() => {
-    // If merge_id is provided in URL, use it
-    if (initialMergeId) {
-      setMergeId(initialMergeId)
-      setMergeStarted(true)
-
-      // Check initial status
-      const checkInitialStatus = async () => {
-        try {
-          const response = await fetch(`/api/merge/merges/${initialMergeId}/status`)
-          if (response.ok) {
-            const data = await response.json()
-
-            // Handle both direct string or object format
-            const statusValue = typeof data === 'string' ? data : data.status
-            
-            // CRITICAL: Special handling for initially completed merges
-            if (statusValue === MergeStatus.COMPLETED) {
-              console.log('Merge already completed, going to graph view')
-              setStatus(MergeStatus.COMPLETED)
-              setActiveTab('visualization')
-
-              // Don't start polling, but load graph once
-              setIsLoadingGraph(true)
-              refreshVisualization().finally(() => {
-                setIsLoadingGraph(false)
-              })
-
-              return // Don't start polling
-            }
-
-            // Only start polling if not completed
-            startStatusPolling(initialMergeId)
-          } else {
-            // If status check fails, start polling anyway
-            startStatusPolling(initialMergeId)
-          }
-        } catch (error) {
-          console.error('Error checking initial status:', error)
-          startStatusPolling(initialMergeId)
-        }
-      }
-
-      checkInitialStatus()
-    }
-  }, [initialMergeId, refreshVisualization])
+    } else {
+         // Explicitly stop polling if mergeId becomes null
+         console.log("Merge ID is null, ensuring polling is stopped.");
+         if (statusIntervalRef.current) {
+             clearInterval(statusIntervalRef.current);
+             statusIntervalRef.current = null;
+         }
+         setMergeStarted(false); // Reset merge started flag
+     }
+  }, [currentMergeId, refreshVisualization]) // Depend only on currentMergeId and refreshVisualization
 
   const startMergeProcess = async () => {
     if (!sessionId || !transformId) {
@@ -241,24 +203,25 @@ function MergePageContent() {
       console.log('Merge process started successfully:', data)
 
       if (data.merge_id) {
-        setMergeId(data.merge_id)
+        // Set the state, which will trigger the useEffect hook to handle polling
+        setCurrentMergeId(data.merge_id)
 
         // Update URL with merge_id without navigation
         const newUrl = new URL(window.location.href)
         newUrl.searchParams.set('merge_id', data.merge_id)
         window.history.pushState({}, '', newUrl.toString())
+
+         // Add success message
+         setMessages(prev => [...prev, {
+           type: 'status',
+           role: 'system',
+           content: `Merge process started successfully (ID: ${data.merge_id}).`,
+           timestamp: new Date().toISOString()
+         }])
+         // No need to call startStatusPolling here, the useEffect will handle it
+      } else {
+         throw new Error("Merge started but no merge_id received.");
       }
-
-      // Add success message
-      setMessages(prev => [...prev, {
-        type: 'status',
-        role: 'system',
-        content: 'Merge process started successfully.',
-        timestamp: new Date().toISOString()
-      }])
-
-      // Start polling for status updates
-      startStatusPolling()
 
     } catch (error) {
       console.error('Error starting merge process:', error)
@@ -273,17 +236,37 @@ function MergePageContent() {
         timestamp: new Date().toISOString()
       }])
 
-      setStatus('failed')
+      setStatus(MergeStatus.FAILED) // Use Enum
     }
   }
 
-  const startStatusPolling = (id = mergeId) => {
+  const startStatusPolling = (id: string | null) => {
+     // Ensure ID is valid before proceeding
+     if (!id) {
+         console.log("Attempted to start polling with null ID, aborting.");
+         return;
+     }
+
+    // Clear any potentially existing interval *before* starting a new one
     if (statusIntervalRef.current) {
+      console.log("Clearing existing polling interval before starting new one.");
       clearInterval(statusIntervalRef.current)
+      statusIntervalRef.current = null; // Explicitly set to null
     }
 
+    console.log(`Starting status polling for merge ID: ${id}`);
+
     const pollStatus = async () => {
-      if (!id) return
+       // Double check id inside the interval function closure
+       if (!id) {
+         console.warn("Polling function called with null ID, stopping interval.");
+         if (statusIntervalRef.current) {
+           clearInterval(statusIntervalRef.current);
+           statusIntervalRef.current = null;
+         }
+         return;
+       }
+      console.log(`Polling status for merge ID: ${id}`) // Added logging
 
       try {
         const response = await fetch(`/api/merge/merges/${id}/status`)
@@ -294,8 +277,8 @@ function MergePageContent() {
         const data = await response.json()
 
         // Update status - handle both response formats
-        const statusValue = typeof data === 'string' ? data : data.status
-        setStatus(statusValue as MergeStatus)
+        const statusValue = typeof data === 'string' ? data : data.status as MergeStatus
+        setStatus(statusValue)
 
         // Update progress if available (for object response format)
         if (typeof data === 'object' && data.progress !== undefined) {
@@ -316,6 +299,7 @@ function MergePageContent() {
         if (statusValue === MergeStatus.COMPLETED) {
           // Stop polling
           if (statusIntervalRef.current) {
+            console.log(`Merge ${id} completed, stopping polling.`); // Added logging
             clearInterval(statusIntervalRef.current)
             statusIntervalRef.current = null
           }
@@ -329,6 +313,7 @@ function MergePageContent() {
 
         // Check if all conflicts are resolved
         if (typeof data === 'object' && data.has_conflicts && data.conflict_count > 0) {
+          console.log(`Polling check for conflicts for merge ID: ${id}`);
           // Fetch conflict stats to check if all are resolved
           try {
             const conflictResponse = await fetch(`/api/merge/merges/${id}/conflicts?limit=1&offset=0`)
@@ -365,19 +350,25 @@ function MergePageContent() {
         }
 
         // If merge is completed or failed, stop polling
-        if (statusValue === MergeStatus.COMPLETED || statusValue === MergeStatus.FAILED) {
+        if (statusValue === MergeStatus.COMPLETED || statusValue === MergeStatus.FAILED || statusValue === MergeStatus.CANCELLED) {
           if (statusIntervalRef.current) {
+            console.log(`Merge ${id} reached terminal state (${statusValue}), stopping polling.`); // Added logging
             clearInterval(statusIntervalRef.current)
             statusIntervalRef.current = null
           }
         }
       } catch (error) {
-        console.error('Error polling merge status:', error)
+        console.error(`Error polling merge status for ${id}:`, error) // Added logging
+        // Optionally stop polling on error, or let it retry
+        // if (statusIntervalRef.current) {
+        //   clearInterval(statusIntervalRef.current);
+        //   statusIntervalRef.current = null;
+        // }
       }
     }
 
     // Poll immediately and then at intervals
-    pollStatus()
+    pollStatus() // Perform initial poll immediately after starting
     statusIntervalRef.current = setInterval(pollStatus, 5000) // Poll every 5 seconds
   }
 
@@ -458,29 +449,31 @@ function MergePageContent() {
       setError(null)
 
       // Reset state
-      setStatus('running')
+      setStatus(MergeStatus.RUNNING) // Use Enum
       setProgress(0)
       setCurrentStep('')
       setMessages([])
       setCurrentConflict(null)
+      setCurrentMergeId(null); // Reset merge ID to trigger potential restart
 
-      // Start the merge process again
+      // Start the merge process again (which will set a new mergeId and trigger polling via useEffect)
       await startMergeProcess()
 
     } catch (error) {
       console.error('Error retrying merge:', error)
       setError(error instanceof Error ? error.message : 'Failed to retry merge')
+      setStatus(MergeStatus.FAILED); // Set status to failed on retry error
     } finally {
       setIsRetrying(false)
     }
   }
 
   const handleCancelMerge = async () => {
-    if (!mergeId) return;
+    if (!currentMergeId) return; // Use state variable
 
     try {
       setIsCancelling(true);
-      const response = await fetch(`/api/merge/merges/${mergeId}/cancel`, {
+      const response = await fetch(`/api/merge/merges/${currentMergeId}/cancel`, { // Use state variable
         method: 'POST',
       });
 
@@ -489,10 +482,11 @@ function MergePageContent() {
       }
 
       // Update status to cancelled
-      setStatus('cancelled');
+      setStatus(MergeStatus.CANCELLED); // Use Enum
 
-      // Stop polling
+      // Stop polling - Explicitly clear here as well for immediate effect
       if (statusIntervalRef.current) {
+        console.log(`Merge ${currentMergeId} cancelled, stopping polling.`); // Added logging
         clearInterval(statusIntervalRef.current);
         statusIntervalRef.current = null;
       }
@@ -555,13 +549,16 @@ function MergePageContent() {
   }
 
   const handleAutoResolveComplete = async () => {
-    // Refresh the conflict list
+    if (!currentMergeId) return; // Use state variable
+    console.log(`Handling auto-resolve completion for merge ID: ${currentMergeId}`); // Added logging
+    // Refresh the conflict list and status
     try {
-      const response = await fetch(`/api/merge/merges/${mergeId}/status`)
+      const response = await fetch(`/api/merge/merges/${currentMergeId}/status`) // Use state variable
       if (response.ok) {
         const data = await response.json()
-        const statusValue = typeof data === 'string' ? data : data.status
-        setStatus(statusValue as MergeStatus)
+        const statusValue = typeof data === 'string' ? data : data.status as MergeStatus
+        console.log(`Status after auto-resolve for ${currentMergeId}: ${statusValue}`); // Added logging
+        setStatus(statusValue)
         
         // If status is object format
         if (typeof data === 'object') {
@@ -575,7 +572,7 @@ function MergePageContent() {
 
         // Check if all conflicts are resolved
         try {
-          const conflictResponse = await fetch(`/api/merge/merges/${mergeId}/conflicts?limit=1&offset=0`)
+          const conflictResponse = await fetch(`/api/merge/merges/${currentMergeId}/conflicts?limit=1&offset=0`) // Use state variable
           if (conflictResponse.ok) {
             const conflictData = await conflictResponse.json()
 
@@ -647,27 +644,26 @@ function MergePageContent() {
   }
 
   useEffect(() => {
+    // This effect now only starts the merge process if no initial merge ID is provided.
+    // Polling is handled by the effect hook dependent on `currentMergeId`.
     if (!sessionId || !transformId) {
       setError('Missing required parameters')
       return
     }
 
-    // If we already have a merge_id, don't start a new merge
-    if (initialMergeId) {
-      return
+    // If we already have an initial merge_id, polling is handled by the other useEffect.
+    // If not, start a new merge process.
+    if (!initialMergeId && !currentMergeId && !mergeStarted) { // Ensure we only start once
+       console.log("No initial merge ID found, starting new merge process.");
+      // Start the merge process when the component mounts without an initial mergeId
+      startMergeProcess()
+    } else {
+        console.log("Initial merge ID exists or merge already started, skipping automatic start.");
     }
 
-    // Start the merge process when the component mounts
-    startMergeProcess()
-
-    return () => {
-      // Clean up interval on unmount
-      if (statusIntervalRef.current) {
-        clearInterval(statusIntervalRef.current)
-        statusIntervalRef.current = null
-      }
-    }
-  }, [sessionId, transformId, initialMergeId])
+    // Cleanup is handled by the other useEffect hook tied to currentMergeId
+    // No return function needed here anymore for interval cleanup.
+  }, [sessionId, transformId, initialMergeId, currentMergeId, mergeStarted]) // Added dependencies
 
   // Scroll to bottom of messages when new ones are added
   useEffect(() => {
@@ -722,11 +718,11 @@ function MergePageContent() {
             </TabsList>
           </div>
           <TabsContent value="progress" className="flex-1 p-4">
-            {mergeId ? (
+            {currentMergeId ? (
               <div className="h-full flex flex-col">
                 <div className="p-4 border-b">
                   <MergeProgress
-                    mergeId={mergeId || ''}
+                    mergeId={currentMergeId || ''}
                     sessionId={sessionId}
                     transformId={transformId}
                     onViewConflicts={handleViewConflicts}
@@ -736,10 +732,10 @@ function MergePageContent() {
                 </div>
 
                 {/* Show the merge completion banner when all conflicts are resolved */}
-                {showMergeCompletionBanner && mergeId && (
+                {showMergeCompletionBanner && currentMergeId && (
                   <div className="p-4 border-b bg-green-50">
                     <MergeCompletionBanner
-                      mergeId={mergeId}
+                      mergeId={currentMergeId}
                       onViewFinalGraph={handleViewFinalGraph}
                       onViewProgress={handleViewProgress}
                       takeToFinalize={false}
@@ -758,10 +754,10 @@ function MergePageContent() {
                 <div className="h-full flex flex-col">
 
                   {/* Show the merge completion banner when all conflicts are resolved */}
-                  {allConflictsResolved && mergeId && (
+                  {allConflictsResolved && currentMergeId && (
                     <div className="p-4 border-b">
                       <MergeCompletionBanner
-                        mergeId={mergeId}
+                        mergeId={currentMergeId}
                         onViewFinalGraph={handleViewFinalGraph}
                         onViewProgress={handleViewProgress}
                         takeToFinalize={false}
@@ -770,9 +766,9 @@ function MergePageContent() {
                   )}
 
                   <div className="h-[calc(100vh-14rem)] overflow-hidden">
-                    {mergeId ? (
+                    {currentMergeId ? (
                       <ConflictList
-                        mergeId={mergeId}
+                        mergeId={currentMergeId}
                         onConflictSelect={handleConflictSelect}
                         selectedConflicts={selectedConflicts}
                         onSelectionChange={setSelectedConflicts}
@@ -791,10 +787,10 @@ function MergePageContent() {
           <TabsContent value="visualization" className="flex-1 p-0 h-full">
             <div className="h-full relative">
               {/* Show the merge completion banner at the top of the visualization when all conflicts are resolved */}
-              {allConflictsResolved && mergeId && (
+              {allConflictsResolved && currentMergeId && (
                 <div className="absolute top-0 left-0 right-0 z-10 p-4 bg-white bg-opacity-90 border-b">
                   <MergeCompletionBanner
-                    mergeId={mergeId}
+                    mergeId={currentMergeId}
                     onViewProgress={handleViewProgress}
                     onViewFinalGraph={handleViewProgress}
                     takeToFinalize={true}
@@ -813,7 +809,7 @@ function MergePageContent() {
               {graphDataMemo ? (
                 <MergeGraphVisualization
                   transformId={transformId}
-                  mergeId={mergeId || undefined}
+                  mergeId={currentMergeId || undefined}
                   currentConflict={currentConflict}
                   graphData={graphDataMemo}
                 />

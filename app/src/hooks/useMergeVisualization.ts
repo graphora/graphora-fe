@@ -67,7 +67,7 @@ export function useMergeVisualization(mergeId: string, transformId: string) {
         throw new Error('Invalid response format')
       }
 
-      const currentDataString = JSON.stringify(responseData.data)
+      const currentDataString = JSON.stringify(responseData)
       if (currentDataString === prevDataRef.current) {
         return // Data hasn't changed, no need to update
       }
