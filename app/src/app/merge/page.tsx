@@ -26,7 +26,7 @@ function MergePageContent() {
   const searchParams = useSearchParams()
 
   const [isPaused, setIsPaused] = useState(false)
-  const [status, setStatus] = useState<MergeStatus>(MergeStatus.RUNNING)
+  const [status, setStatus] = useState<MergeStatus>(MergeStatus.STARTED)
   const [progress, setProgress] = useState(0)
   const [currentStep, setCurrentStep] = useState('')
   const [messages, setMessages] = useState<ChatMessage[]>([])
@@ -37,7 +37,7 @@ function MergePageContent() {
   const [currentConflict, setCurrentConflict] = useState<any>(null)
   const [mergeStarted, setMergeStarted] = useState(false)
   const [currentMergeId, setCurrentMergeId] = useState<string | null>(null)
-  const [activeTab, setActiveTab] = useState<string>('visualization')
+  const [activeTab, setActiveTab] = useState<string>('progress')
   const statusIntervalRef = useRef<NodeJS.Timeout | null>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
   const [isCancelling, setIsCancelling] = useState(false)
@@ -54,6 +54,14 @@ function MergePageContent() {
   const sessionId = searchParams.get('session_id') || ''
   const transformId = searchParams.get('transform_id') || ''
   const initialMergeId = searchParams.get('merge_id') || ''
+
+  // Set currentMergeId from initialMergeId immediately on component mount
+  useEffect(() => {
+    if (initialMergeId) {
+      console.log(`Setting initial merge ID: ${initialMergeId}`)
+      setCurrentMergeId(initialMergeId)
+    }
+  }, [initialMergeId])
 
   const {
     data: mergeVisualization,
@@ -106,7 +114,7 @@ function MergePageContent() {
 
             console.log(`Initial status for ${currentMergeId}: ${statusValue}`);
 
-            setStatus(statusValue) // Update status immediately
+            setStatus(statusValue as MergeStatus) // Cast to MergeStatus
 
             if (statusValue === MergeStatus.COMPLETED) {
               console.log('Merge already completed, setting graph view.')
@@ -278,7 +286,7 @@ function MergePageContent() {
 
         // Update status - handle both response formats
         const statusValue = typeof data === 'string' ? data : data.status as MergeStatus
-        setStatus(statusValue)
+        setStatus(statusValue as MergeStatus) // Cast to MergeStatus
 
         // Update progress if available (for object response format)
         if (typeof data === 'object' && data.progress !== undefined) {
@@ -449,7 +457,7 @@ function MergePageContent() {
       setError(null)
 
       // Reset state
-      setStatus(MergeStatus.RUNNING) // Use Enum
+      setStatus(MergeStatus.STARTED) // Use MergeStatus.STARTED
       setProgress(0)
       setCurrentStep('')
       setMessages([])
@@ -558,7 +566,7 @@ function MergePageContent() {
         const data = await response.json()
         const statusValue = typeof data === 'string' ? data : data.status as MergeStatus
         console.log(`Status after auto-resolve for ${currentMergeId}: ${statusValue}`); // Added logging
-        setStatus(statusValue)
+        setStatus(statusValue as MergeStatus) // Cast to MergeStatus
         
         // If status is object format
         if (typeof data === 'object') {
