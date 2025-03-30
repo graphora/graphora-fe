@@ -56,9 +56,9 @@ const SAMPLE_FILES = [
   },
   { 
     id: 'sample3',
-    name: 'Unum Form-10K.txt', 
-    description: 'Unum Form 10K financial report',
-    path: '/samples/Unum-Form10K.txt'
+    name: 'Howmet Aerospace Form-10K.txt', 
+    description: 'Howmet Aerospace Form 10K financial report',
+    path: '/samples/HowmetAero-Form10K.txt'
   }
 ]
 

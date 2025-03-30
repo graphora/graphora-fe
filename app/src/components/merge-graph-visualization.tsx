@@ -337,6 +337,7 @@ export const MergeGraphVisualization = ({
               nodeColor={node => node.color}
               linkColor={link => link.color}
               nodeVal={node => node.val || 1}
+              nodeRelSize={15}
               linkWidth={1}
               linkDirectionalParticles={4}
               linkDirectionalParticleWidth={2}
