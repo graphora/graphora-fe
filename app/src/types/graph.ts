@@ -79,4 +79,4 @@ export type NodeType = typeof NODE_TYPES[number];
 
 // Edge types from ontology (mock for now)
 export const EDGE_TYPES = ['WORKS_AT', 'MANAGES', 'CONTAINS', 'OWNS'] as const;
-export type EdgeType = typeof EDGE_TYPES[number];
+export type EdgeType = string;

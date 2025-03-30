@@ -3,7 +3,7 @@ import { auth } from '@clerk/nextjs/server';
 
 export async function POST(
   request: Request,
-  { params }: { params: { mergeId: string; conflictId: string } }
+  { params }: any
 ) {
   try {
     const { userId } = await auth();

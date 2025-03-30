@@ -48,7 +48,7 @@ interface NodeFormData {
 }
 
 interface EdgeFormData {
-  type: EdgeType
+  type: string
   sourceId?: string
   targetId?: string
   properties: Record<string, any>
@@ -724,15 +724,12 @@ export function GraphVisualization({ graphData: initialData, onGraphReset }: Gra
             <div className="grid gap-4 py-4">
               <div className="grid grid-cols-4 items-center gap-4">
                 <label className="text-right">Type</label>
-                <select
+                <input
                   className="col-span-3 bg-white dark:bg-gray-700 border rounded px-2 py-1"
                   value={edgeFormData.type}
                   onChange={e => setEdgeFormData(prev => ({ ...prev, type: e.target.value as EdgeType }))}
                 >
-                  {EDGE_TYPES.map(type => (
-                    <option key={type} value={type}>{type}</option>
-                  ))}
-                </select>
+                </input>
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
                 <label className="text-right">Target Node</label>
@@ -751,7 +748,7 @@ export function GraphVisualization({ graphData: initialData, onGraphReset }: Gra
               <Button onClick={() => {
                 addEdge(edgeFormData.sourceId!, edgeFormData.targetId!, edgeFormData.type, edgeFormData.properties)
                 setShowEdgeForm(false)
-                setEdgeFormData({ type: EDGE_TYPES[0], properties: {} })
+                setEdgeFormData({ type: '', properties: {} })
               }}>
                 Create
               </Button>
