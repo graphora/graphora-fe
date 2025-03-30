@@ -7,7 +7,8 @@ import {
   GitMerge,
   Database, Settings2,
   Monitor,
-  Rocket
+  Rocket,
+  FileSymlink
 } from 'lucide-react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
@@ -36,9 +37,30 @@ import { type AIAssistantState } from '@/lib/types/ai-assistant'
 const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB
 const ACCEPTED_FILE_TYPES = {
   'application/pdf': ['.pdf'],
-  'text/plain': ['.txt'],
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx']
+  'text/plain': ['.txt']
 }
+
+// Sample files array
+const SAMPLE_FILES = [
+  { 
+    id: 'sample1',
+    name: 'APPLE Form-10K.pdf', 
+    description: 'Apple Form 10K financial report',
+    path: '/samples/APPL-Form10K.pdf'
+  },
+  { 
+    id: 'sample2',
+    name: 'Adams Form-10K.txt', 
+    description: 'Adams Form 10K financial report',
+    path: '/samples/Adams-Form10K.txt'
+  },
+  { 
+    id: 'sample3',
+    name: 'Unum Form-10K.txt', 
+    description: 'Unum Form 10K financial report',
+    path: '/samples/Unum-Form10K.txt'
+  }
+]
 
 function TransformPageContent() {
   const router = useRouter()
@@ -349,6 +371,49 @@ function TransformPageContent() {
     console.log('Customizing suggestion:', id)
   }, [])
 
+  const handleSampleFileSelect = async (sampleFile: typeof SAMPLE_FILES[0]) => {
+    try {
+      setError(null)
+      
+      // Fetch the sample file
+      const response = await fetch(sampleFile.path)
+      if (!response.ok) {
+        throw new Error(`Failed to load sample file: ${sampleFile.name}`)
+      }
+      
+      // Get the blob data
+      const blob = await response.blob()
+      
+      // Determine the MIME type based on file extension
+      let mimeType = 'text/plain'
+      if (sampleFile.name.endsWith('.pdf')) {
+        mimeType = 'application/pdf'
+      } else if (sampleFile.name.endsWith('.docx')) {
+        mimeType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+      }
+      
+      // Create a File object from the blob
+      const file = new File([blob], sampleFile.name, { type: mimeType })
+      
+      // Set the file as if it was uploaded normally
+      setFile(Object.assign(file, {
+        preview: URL.createObjectURL(file)
+      }))
+      
+      // Auto-process the sample file after a short delay
+      // This gives time for the UI to update and show the selected file
+      setTimeout(() => {
+        if (sessionId) {
+          handleExtract()
+        }
+      }, 500)
+      
+    } catch (err) {
+      console.error('Error loading sample file:', err)
+      setError(err instanceof Error ? err.message : 'Failed to load sample file')
+    }
+  }
+
   const tools = [
     {
       id: 'upload',
@@ -407,7 +472,7 @@ function TransformPageContent() {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <FileText className="h-4 w-4" />
-                        <span className="text-sm truncate">{file.name}</span>
+                        <span className="text-sm truncate">{file.name.length > 10 ? `${file.name.substring(0, 10)}...` : file.name}</span>
                       </div>
                       <Button
                         variant="ghost"
@@ -442,12 +507,48 @@ function TransformPageContent() {
                 </div>
               </div>
 
+              {/* Sample files section */}
+              <div className="mt-6">
+                <h3 className="text-sm font-medium mb-3">Try with sample data</h3>
+                <div className="flex items-center gap-2 mb-2 text-xs text-gray-500">
+                  <FileSymlink className="h-3.5 w-3.5" />
+                  <span>Click any sample to automatically process it</span>
+                </div>
+                <div className="grid gap-2">
+                  {SAMPLE_FILES.map((sampleFile) => (
+                    <button
+                      key={sampleFile.id}
+                      onClick={() => handleSampleFileSelect(sampleFile)}
+                      className="flex items-start gap-2 p-2 text-left border border-gray-200 rounded-md hover:bg-blue-50 hover:border-blue-200 transition-colors"
+                      disabled={isProcessing}
+                    >
+                      <FileText className="h-4 w-4 mt-0.5 text-blue-500 flex-shrink-0" />
+                      <div className="overflow-hidden w-full">
+                        <p className="text-sm font-medium text-blue-600 truncate">{sampleFile.name}</p>
+                        <div className="flex items-center justify-between w-full">
+                          <p className="text-xs text-gray-500 truncate max-w-[70%]">{sampleFile.description}</p>
+                          <a 
+                            href={sampleFile.path} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="text-xs font-medium text-blue-500 hover:text-blue-700 hover:underline ml-2 flex-shrink-0"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            Preview
+                          </a>
+                        </div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               {file && !isProcessing && (
                 <Button
                   onClick={handleExtract}
                   className="w-full mt-4"
                 >
-                  Process Document
+                  Transform Document
                 </Button>
               )}
 
