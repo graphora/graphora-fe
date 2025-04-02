@@ -19,7 +19,7 @@ const cards = [
       "Visual Building",
       "Auto-suggestions"
     ],
-    ctaText: "Start Easy Mode"
+    ctaText: "Coming Soon"
   },
   {
     title: "Graph Ninja",

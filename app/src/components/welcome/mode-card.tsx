@@ -81,11 +81,12 @@ export function ModeCard({
       <button 
         className={cn(
           "mt-6 w-full py-2 px-4 rounded-lg",
-          "bg-blue-500 text-white",
-          "hover:bg-blue-600",
+          ctaText === "Coming Soon" ? "bg-gray-300 text-gray-500 cursor-not-allowed" : "bg-blue-500 text-white",
+          ctaText === "Coming Soon" ? "hover:bg-gray-300" : "hover:bg-blue-600",
           "transition-colors duration-200",
           "focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
         )}
+        disabled={ctaText === "Coming Soon"}
       >
         {ctaText}
       </button>
