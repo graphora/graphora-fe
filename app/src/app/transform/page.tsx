@@ -14,7 +14,7 @@ import { useRouter, useSearchParams, usePathname } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Progress } from '@/components/ui/progress'
-import { GraphVisualization } from '@/components/graph-visualization'
+import { GraphVisualization } from '@/components/graph-viz'
 import { type FileWithPreview, type GraphData, type TransformResponse } from '@/types/graph'
 import {
   AlertDialog,
@@ -67,7 +67,7 @@ function TransformPageContent() {
   const searchParams = useSearchParams()
   const pathname = usePathname()
   const sessionId = searchParams.get('session_id')
-  const urlTransformId = searchParams.get('transform_id') // Get transform_id from URL
+  const urlTransformId = searchParams.get('transform_id')
 
   const [file, setFile] = useState<FileWithPreview | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -77,7 +77,7 @@ function TransformPageContent() {
   const [graphData, setGraphData] = useState<GraphData | null>(null)
   const [isUploadPanelExpanded, setIsUploadPanelExpanded] = useState(true)
   const [showMergeConfirm, setShowMergeConfirm] = useState(false)
-  const [transformId, setTransformId] = useState<string | null>(urlTransformId) // Initialize with URL value
+  const [transformId, setTransformId] = useState<string | null>(urlTransformId)
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false)
   const [sidebarWidth, setSidebarWidth] = useState(320)
   const [aiAssistantState, setAiAssistantState] = useState<AIAssistantState>({
@@ -126,18 +126,16 @@ function TransformPageContent() {
   })
 
   useEffect(() => {
-    // Redirect back to ontology if no session_id is present
     if (!sessionId) {
       router.push('/ontology')
     }
   }, [sessionId, router])
 
-  // Effect to load state based on URL transform_id on initial mount
   useEffect(() => {
     const loadStateFromUrl = async () => {
-      if (urlTransformId && !graphData && !isProcessing && !error) { // Only run if transformId from URL exists and state isn't already set
+      if (urlTransformId && !graphData && !isProcessing && !error) {
         console.log('Loading state from URL transform_id:', urlTransformId)
-        setTransformId(urlTransformId) // Ensure state matches URL
+        setTransformId(urlTransformId)
         
         try {
           const response = await fetch(`/api/transform/status/${urlTransformId}`)
@@ -145,8 +143,7 @@ function TransformPageContent() {
           if (!response.ok) {
             if (response.status === 404) {
               setError('Transform process not found for the provided ID.')
-              setTransformId(null) // Clear invalid ID
-              // Optionally, clear the URL parameter
+              setTransformId(null)
               const newSearchParams = new URLSearchParams(searchParams.toString())
               newSearchParams.delete('transform_id')
               router.replace(`${pathname}?${newSearchParams.toString()}`)
@@ -167,23 +164,20 @@ function TransformPageContent() {
           } else if (data.status === 'failed') {
             setIsProcessing(false)
             setError(data.message || 'Processing failed for this transform ID')
-            setIsUploadPanelExpanded(true) // Allow user to try again maybe?
+            setIsUploadPanelExpanded(true)
           } else {
-            // Still processing
             setIsProcessing(true)
-            setIsUploadPanelExpanded(false) // Hide upload while processing continues
+            setIsUploadPanelExpanded(false)
             const progressStatus: Record<string, number> = {
               "upload": 10, "parse": 20, "chunk": 30, "transform": 50, "load": 90
             }
             setProgress(Math.max(10, progressStatus[data.current_stage] || 10))
-            // The status check interval effect will now pick this up
           }
         } catch (err) {
           console.error('Error loading state from URL:', err)
           setError(err instanceof Error ? err.message : 'Failed to load state from transform ID')
           setIsProcessing(false)
-          setTransformId(null) // Clear invalid ID on error
-          // Optionally, clear the URL parameter
+          setTransformId(null)
           const newSearchParams = new URLSearchParams(searchParams.toString())
           newSearchParams.delete('transform_id')
           router.replace(`${pathname}?${newSearchParams.toString()}`)
@@ -191,17 +185,14 @@ function TransformPageContent() {
       }
     }
 
-    if (sessionId) { // Ensure session ID is present before trying to load state
+    if (sessionId) {
       loadStateFromUrl()
     }
-    // Run only once on mount based on initial URL params
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [urlTransformId, sessionId]) // Re-run if session ID or transform ID changes in URL
+  }, [urlTransformId, sessionId])
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     setError(null)
     
-    // Prevent upload if already processing or loaded from URL
     if (isProcessing || transformId) {
       setError('A transform process is already active or loaded. Please clear or wait for completion.')
       return
@@ -223,7 +214,6 @@ function TransformPageContent() {
     accept: ACCEPTED_FILE_TYPES,
     maxFiles: 1,
     multiple: false,
-    disabled: !!transformId || isProcessing // Disable dropzone if transformId exists or processing
   })
 
   const handleRemoveFile = () => {
@@ -233,24 +223,23 @@ function TransformPageContent() {
     setFile(null)
     setError(null)
     setGraphData(null)
-    setTransformId(null) // Clear transform ID
+    setTransformId(null)
     setProgress(0)
     setIsProcessing(false)
     setIsUploadPanelExpanded(true)
-    // Clear the transform_id from the URL
     const newSearchParams = new URLSearchParams(searchParams.toString())
     newSearchParams.delete('transform_id')
     router.push(`${pathname}?${newSearchParams.toString()}`)
   }
 
   const handleExtract = async () => {
-    if (!file || !sessionId || isProcessing || transformId) return // Prevent if already processing or has ID
+    if (!file || !sessionId || isProcessing || transformId) return
 
     setIsProcessing(true)
     setError(null)
     setProgress(0)
     setTransformId(null)
-    setGraphData(null)  // Reset graph data when starting new transform
+    setGraphData(null)
 
     try {
       const formData = new FormData()
@@ -272,19 +261,17 @@ function TransformPageContent() {
         throw new Error(data.message || 'Failed to process file')
       }
 
-      // Store transform ID and start status checking
       if (!data.id) {
         throw new Error('No transform ID received from server')
       }
       
       const newTransformId = data.id
-      setTransformId(newTransformId) // Set state
+      setTransformId(newTransformId)
       setProgress(10)
 
-      // Update URL with the new transform_id
       const newSearchParams = new URLSearchParams(searchParams.toString())
       newSearchParams.set('transform_id', newTransformId)
-      router.push(`${pathname}?${newSearchParams.toString()}`) // Use push to add to history
+      router.push(`${pathname}?${newSearchParams.toString()}`)
 
     } catch (err) {
       console.error('Error processing file:', err)
@@ -361,12 +348,11 @@ function TransformPageContent() {
 
   useEffect(() => {
     let statusInterval: NodeJS.Timeout | null = null
-    const STATUS_CHECK_INTERVAL = 5000 // Check every 5 secs (reduced from 10)
+    const STATUS_CHECK_INTERVAL = 5000
 
     const checkStatus = async () => {
-      // Ensure transformId is set and we are marked as processing
       if (!transformId || !isProcessing) {
-        if (statusInterval) clearInterval(statusInterval) // Stop interval if conditions no longer met
+        if (statusInterval) clearInterval(statusInterval)
         return
       }
 
@@ -391,7 +377,6 @@ function TransformPageContent() {
           setIsUploadPanelExpanded(false)
           console.log('Transform completed, loading graph data')
           
-          // Load graph data immediately after completion
           await loadGraphData(transformId)
 
           if (statusInterval) {
@@ -404,7 +389,6 @@ function TransformPageContent() {
             clearInterval(statusInterval)
           }
         } else {
-          // Update progress only if we have a valid number
           const progressStatus: Record<string, number> = {
             "upload": 10,
             "parse": 20,
@@ -421,28 +405,24 @@ function TransformPageContent() {
 
     if (transformId && isProcessing) {
       console.log('Starting status check interval for transform:', transformId)
-      checkStatus() // Initial check
+      checkStatus()
       statusInterval = setInterval(checkStatus, STATUS_CHECK_INTERVAL)
     }
 
-    // Cleanup function
     return () => {
       if (statusInterval) {
         console.log('Clearing status check interval for transform:', transformId)
         clearInterval(statusInterval)
       }
     }
-    // Ensure dependencies are correct: re-run if transformId or isProcessing changes.
-  }, [transformId, isProcessing, loadGraphData]) // Added loadGraphData as it's used inside
+  }, [transformId, isProcessing, loadGraphData])
 
   const handleMergeConfirm = () => {
     setShowMergeConfirm(false)
     
-    // Show a loading state before navigating
     setIsProcessing(true)
     setCurrentStep('Initializing merge process...')
     
-    // Navigate to the merge page with required parameters
     router.push(`/merge?session_id=${sessionId}&transform_id=${transformId}`)
   }
 
@@ -472,16 +452,13 @@ function TransformPageContent() {
     try {
       setError(null)
       
-      // Fetch the sample file
       const response = await fetch(sampleFile.path)
       if (!response.ok) {
         throw new Error(`Failed to load sample file: ${sampleFile.name}`)
       }
       
-      // Get the blob data
       const blob = await response.blob()
       
-      // Determine the MIME type based on file extension
       let mimeType = 'text/plain'
       if (sampleFile.name.endsWith('.pdf')) {
         mimeType = 'application/pdf'
@@ -489,16 +466,12 @@ function TransformPageContent() {
         mimeType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
       }
       
-      // Create a File object from the blob
       const file = new File([blob], sampleFile.name, { type: mimeType })
       
-      // Set the file as if it was uploaded normally
       setFile(Object.assign(file, {
         preview: URL.createObjectURL(file)
       }))
       
-      // Auto-process the sample file after a short delay
-      // This gives time for the UI to update and show the selected file
       setTimeout(() => {
         if (sessionId) {
           handleExtract()
@@ -517,8 +490,6 @@ function TransformPageContent() {
       window.open(url, '_blank');
     } else {
       console.warn('NEXT_PUBLIC_TRANSFORM_PREFECT_STATUS_URL is not defined.');
-      // Optionally show a toast or alert to the user
-      // toast({ title: "Configuration Error", description: "Status URL is not configured.", variant: "destructive" });
     }
   };
 
@@ -528,7 +499,7 @@ function TransformPageContent() {
       icon: <Rocket className="h-4 w-4" />,
       label: 'Transform',
       action: handleExtract,
-      disabled: !file || isProcessing || !!transformId, // Disable if file exists and transformId is set
+      disabled: !file || isProcessing || !!transformId,
       primary: true,
       className: "mr-4"
     },
@@ -558,167 +529,174 @@ function TransformPageContent() {
 
   return (
     <WorkflowLayout progress={progress} currentStep={isProcessing ? 'Processing Document...' : undefined}>
-      <div className="command-center">
-        <ResizablePanel
-          defaultWidth={320}
-          onResize={setSidebarWidth}
-        >
-          <div className="h-full bg-white text-gray-800">
-            <div className="panel-header">
-              <span>Document Explorer</span>
-            </div>
-            <div className="p-4">
-              <div className="control-group">
-                <div className="flex items-center gap-2 text-sm">
-                  <Database className="h-4 w-4" />
-                  <span>Documents</span>
-                </div>
-                {file && (
-                  <div className="mt-2 p-2 rounded-md bg-white">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <FileText className="h-4 w-4" />
-                        <span className="text-sm truncate">{file.name.length > 10 ? `${file.name.substring(0, 10)}...` : file.name}</span>
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={handleRemoveFile}
-                        disabled={isProcessing} // Disable remove while processing
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                )}
+      <div className="command-center grid h-full grid-cols-[auto_1fr_auto] grid-rows-[auto_1fr] gap-0">
+        {/* Left Sidebar (Upload Menu) */}
+        <div className="row-span-2">
+          <ResizablePanel
+            defaultWidth={320}
+            minWidth={250}
+            maxWidth={500}
+            onResize={setSidebarWidth}
+          >
+            <div className="h-full bg-white text-gray-800">
+              <div className="panel-header">
+                <span>Document Explorer</span>
               </div>
-
-              <div {...getRootProps()} className="mt-4">
-                <input {...getInputProps()} />
-                <div
-                  className={cn(
-                    'border-2 border-dashed rounded-lg p-4 text-center',
-                    'transition-colors duration-200',
-                    (isProcessing || !!transformId) // Check if processing or transformId exists
-                      ? 'cursor-not-allowed bg-gray-100 border-gray-300 text-gray-400' // Disabled appearance
-                      : isDragActive 
-                        ? 'border-blue-500 bg-blue-500/10 cursor-pointer' 
-                        : 'border-gray-200 hover:border-gray-400 cursor-pointer'
+              <div className="p-4">
+                <div className="control-group">
+                  <div className="flex items-center gap-2 text-sm">
+                    <Database className="h-4 w-4" />
+                    <span>Documents</span>
+                  </div>
+                  {file && (
+                    <div className="mt-2 p-2 rounded-md bg-white">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <FileText className="h-4 w-4" />
+                          <span className="text-sm truncate">{file.name.length > 10 ? `${file.name.substring(0, 10)}...` : file.name}</span>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={handleRemoveFile}
+                          disabled={isProcessing}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
                   )}
-                >
-                  <Upload className="h-6 w-6 mx-auto mb-2" />
-                  <p className="text-sm">
-                    {(isProcessing || !!transformId) // Check if disabled
-                      ? 'Transform in progress or loaded'
-                      : isDragActive
+                </div>
+
+                <div {...getRootProps()} className="mt-4">
+                  <input {...getInputProps()} />
+                  <div
+                    className={cn(
+                      'border-2 border-dashed rounded-lg p-4 text-center',
+                      'transition-colors duration-200',
+                      (isProcessing || !!transformId)
+                        ? 'bg-gray-100 border-gray-300 text-gray-400'
+                        : isDragActive
+                          ? 'border-blue-500 bg-blue-500/10 cursor-pointer'
+                          : 'border-gray-200 hover:border-gray-400 cursor-pointer'
+                    )}
+                  >
+                    <Upload className="h-6 w-6 mx-auto mb-2" />
+                    <p className="text-sm">
+                      {isDragActive
                         ? 'Drop the file here'
                         : 'Drag & drop a file here, or click to select'}
-                  </p>
-                  <p className="text-xs text-gray-500 mt-1">
-                    PDF, TXT (max 10MB)
-                  </p>
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      PDF, TXT (max 10MB)
+                    </p>
+                  </div>
                 </div>
-              </div>
 
-              {/* Sample files section */}
-              <div className="mt-6">
-                <h3 className="text-sm font-medium mb-3">Try with sample data</h3>
-                <div className="flex items-center gap-2 mb-2 text-xs text-gray-500">
-                  <FileSymlink className="h-3.5 w-3.5" />
-                  <span>Click any sample to automatically process it</span>
-                </div>
-                <div className="grid gap-2">
-                  {SAMPLE_FILES.map((sampleFile) => (
-                    <button
-                      key={sampleFile.id}
-                      onClick={() => handleSampleFileSelect(sampleFile)}
-                      className="flex items-start gap-2 p-2 text-left border border-gray-200 rounded-md hover:bg-blue-50 hover:border-blue-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent"
-                      disabled={isProcessing || !!transformId} // Disable sample selection too
-                    >
-                      <FileText className="h-4 w-4 mt-0.5 text-blue-500 flex-shrink-0" />
-                      <div className="overflow-hidden w-full">
-                        <p className="text-sm font-medium text-blue-600 truncate">{sampleFile.name}</p>
-                        <div className="flex items-center justify-between w-full">
-                          <p className="text-xs text-gray-500 truncate max-w-[70%]">{sampleFile.description}</p>
-                          <a 
-                            href={sampleFile.path} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="text-xs font-medium text-blue-500 hover:text-blue-700 hover:underline ml-2 flex-shrink-0"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            Preview
-                          </a>
+                <div className="mt-6">
+                  <h3 className="text-sm font-medium mb-3">Try with sample data</h3>
+                  <div className="flex items-center gap-2 mb-2 text-xs text-gray-500">
+                    <FileSymlink className="h-3.5 w-3.5" />
+                    <span>Click any sample to automatically process it</span>
+                  </div>
+                  <div className="grid gap-2">
+                    {SAMPLE_FILES.map((sampleFile) => (
+                      <button
+                        key={sampleFile.id}
+                        onClick={() => handleSampleFileSelect(sampleFile)}
+                        className="flex items-start gap-2 p-2 text-left border border-gray-200 rounded-md hover:bg-blue-50 hover:border-blue-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+                      >
+                        <FileText className="h-4 w-4 mt-0.5 text-blue-500 flex-shrink-0" />
+                        <div className="overflow-hidden w-full">
+                          <p className="text-sm font-medium text-blue-600 truncate">{sampleFile.name}</p>
+                          <div className="flex items-center justify-between w-full">
+                            <p className="text-xs text-gray-500 truncate max-w-[70%]">{sampleFile.description}</p>
+                            <a 
+                              href={sampleFile.path} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="text-xs font-medium text-blue-500 hover:text-blue-700 hover:underline ml-2 flex-shrink-0"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              Preview
+                            </a>
+                          </div>
                         </div>
-                      </div>
-                    </button>
-                  ))}
+                      </button>
+                    ))}
+                  </div>
                 </div>
+
+                {file && !isProcessing && !transformId && (
+                  <Button
+                    onClick={handleExtract}
+                    className="w-full mt-4"
+                  >
+                    Transform Document
+                  </Button>
+                )}
+
+                {isProcessing ? (
+                  <div className="h-full flex flex-col items-center justify-center text-gray-500">
+                    <Loader2 className="h-10 w-10 animate-spin mb-3" />
+                    <p>Processing document...</p>
+                    {transformId && <p className="text-sm mt-1">Transform ID: {transformId}</p>}
+                  </div>
+                ) : !transformId ? (
+                  <div className="h-full flex items-center justify-center text-gray-500">
+                    <p>Upload a document to begin transformation</p>
+                  </div>
+                ) : null}
               </div>
-
-              {file && !isProcessing && !transformId && ( // Only show if no active transformId
-                <Button
-                  onClick={handleExtract}
-                  className="w-full mt-4"
-                >
-                  Transform Document
-                </Button>
-              )}
-
-              {isProcessing ? (
-                <div className="h-full flex flex-col items-center justify-center text-gray-500">
-                  <Loader2 className="h-10 w-10 animate-spin mb-3" />
-                  <p>Processing document...</p>
-                  {transformId && <p className="text-sm mt-1">Transform ID: {transformId}</p>}
-                </div>
-              ) : !transformId ? ( // Check if transformId is null here as well
-                <div className="h-full flex items-center justify-center text-gray-500">
-                  <p>Upload a document to begin transformation</p>
-                </div>
-              ) : null /* Or a placeholder if graphData is null but transformId exists and not processing */ }
             </div>
-          </div>
-        </ResizablePanel>
+          </ResizablePanel>
+        </div>
 
-        <div className="flex-1 flex flex-col min-w-0">
+        {/* Toolbar */}
+        <div className="col-span-2">
           <Toolbar tools={tools} />
+        </div>
 
-          <div className="flex-1 p-4 bg-gray-50">
-            {error && (
-              <Alert variant="destructive" className="mb-4">
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
+        {/* Center Graph Panel */}
+        <div className="p-4 bg-gray-50 overflow-auto">
+          {error && (
+            <Alert variant="destructive" className="mb-4">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+
+          <div className="h-full">
+            {graphData ? (
+              <GraphVisualization 
+                key={`${transformId}-${graphData._reset}`}
+                graphData={graphData} 
+                onGraphReset={handleGraphReset}
+                sidebarWidth={sidebarWidth} // Pass sidebar width to GraphVisualization
+              />
+            ) : isProcessing ? (
+              <div className="h-full flex flex-col items-center justify-center text-gray-500">
+                <Loader2 className="h-10 w-10 animate-spin mb-3" />
+                <p>Processing document...</p>
+              </div>
+            ) : (
+              <div className="h-full flex items-center justify-center text-gray-500">
+                <p>Upload a document to begin transformation</p>
+              </div>
             )}
-
-            <div className="h-full">
-              {graphData ? (
-                <GraphVisualization 
-                  key={`${transformId}-${graphData._reset}`}
-                  graphData={graphData} 
-                  onGraphReset={handleGraphReset}
-                />
-              ) : isProcessing ? (
-                <div className="h-full flex flex-col items-center justify-center text-gray-500">
-                  <Loader2 className="h-10 w-10 animate-spin mb-3" />
-                  <p>Processing document...</p>
-                </div>
-              ) : (
-                <div className="h-full flex items-center justify-center text-gray-500">
-                  <p>Upload a document to begin transformation</p>
-                </div>
-              )}
-            </div>
           </div>
         </div>
 
-        <AIAssistantPanel
-          state={aiAssistantState}
-          onStateChange={(changes) => setAiAssistantState(prev => ({ ...prev, ...changes }))}
-          onApplySuggestion={handleApplySuggestion}
-          onDismissSuggestion={handleDismissSuggestion}
-          onExplainSuggestion={handleExplainSuggestion}
-          onCustomizeSuggestion={handleCustomizeSuggestion}
-        />
+        {/* Right AI Assistant Panel */}
+        <div className="row-span-2">
+          <AIAssistantPanel
+            state={aiAssistantState}
+            onStateChange={(changes) => setAiAssistantState(prev => ({ ...prev, ...changes }))}
+            onApplySuggestion={handleApplySuggestion}
+            onDismissSuggestion={handleDismissSuggestion}
+            onExplainSuggestion={handleExplainSuggestion}
+            onCustomizeSuggestion={handleCustomizeSuggestion}
+          />
+        </div>
 
         <CommandPalette
           open={isCommandPaletteOpen}
@@ -750,6 +728,68 @@ function TransformPageContent() {
           </AlertDialogContent>
         </AlertDialog>
       </div>
+
+      {/* Add CSS for responsive layout */}
+      <style jsx>{`
+        .command-center {
+          height: 100vh; /* Ensure full height */
+          overflow: hidden;
+        }
+
+        /* Ensure the center panel doesn't overlap with the sidebar */
+        .command-center > div:nth-child(3) {
+          position: relative;
+          min-width: 0;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 1024px) {
+          .command-center {
+            grid-template-columns: auto 1fr; /* Hide AI assistant panel on smaller screens */
+            grid-template-rows: auto 1fr auto;
+          }
+
+          .command-center > div:nth-child(1) {
+            grid-row: 1 / 4;
+          }
+
+          .command-center > div:nth-child(2) {
+            grid-column: 2 / 3;
+            grid-row: 1 / 2;
+          }
+
+          .command-center > div:nth-child(3) {
+            grid-column: 2 / 3;
+            grid-row: 2 / 3;
+          }
+
+          .command-center > div:nth-child(4) {
+            display: none; /* Hide AI assistant panel */
+          }
+        }
+
+        @media (max-width: 640px) {
+          .command-center {
+            grid-template-columns: 1fr;
+            grid-template-rows: auto auto 1fr auto;
+          }
+
+          .command-center > div:nth-child(1) {
+            grid-column: 1 / 2;
+            grid-row: 2 / 3;
+          }
+
+          .command-center > div:nth-child(2) {
+            grid-column: 1 / 2;
+            grid-row: 1 / 2;
+          }
+
+          .command-center > div:nth-child(3) {
+            grid-column: 1 / 2;
+            grid-row: 3 / 4;
+          }
+        }
+      `}</style>
     </WorkflowLayout>
   )
 }
