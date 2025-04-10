@@ -10,7 +10,7 @@ import {
   Rocket,
   FileSymlink
 } from 'lucide-react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useRouter, useSearchParams, usePathname } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Progress } from '@/components/ui/progress'
@@ -65,7 +65,10 @@ const SAMPLE_FILES = [
 function TransformPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
+  const pathname = usePathname()
   const sessionId = searchParams.get('session_id')
+  const urlTransformId = searchParams.get('transform_id') // Get transform_id from URL
+
   const [file, setFile] = useState<FileWithPreview | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [isProcessing, setIsProcessing] = useState(false)
@@ -74,7 +77,7 @@ function TransformPageContent() {
   const [graphData, setGraphData] = useState<GraphData | null>(null)
   const [isUploadPanelExpanded, setIsUploadPanelExpanded] = useState(true)
   const [showMergeConfirm, setShowMergeConfirm] = useState(false)
-  const [transformId, setTransformId] = useState<string | null>(null)
+  const [transformId, setTransformId] = useState<string | null>(urlTransformId) // Initialize with URL value
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false)
   const [sidebarWidth, setSidebarWidth] = useState(320)
   const [aiAssistantState, setAiAssistantState] = useState<AIAssistantState>({
@@ -129,8 +132,80 @@ function TransformPageContent() {
     }
   }, [sessionId, router])
 
+  // Effect to load state based on URL transform_id on initial mount
+  useEffect(() => {
+    const loadStateFromUrl = async () => {
+      if (urlTransformId && !graphData && !isProcessing && !error) { // Only run if transformId from URL exists and state isn't already set
+        console.log('Loading state from URL transform_id:', urlTransformId)
+        setTransformId(urlTransformId) // Ensure state matches URL
+        
+        try {
+          const response = await fetch(`/api/transform/status/${urlTransformId}`)
+          
+          if (!response.ok) {
+            if (response.status === 404) {
+              setError('Transform process not found for the provided ID.')
+              setTransformId(null) // Clear invalid ID
+              // Optionally, clear the URL parameter
+              const newSearchParams = new URLSearchParams(searchParams.toString())
+              newSearchParams.delete('transform_id')
+              router.replace(`${pathname}?${newSearchParams.toString()}`)
+            } else {
+              throw new Error('Failed to fetch transform status')
+            }
+            return
+          }
+
+          const data = await response.json()
+
+          if (data.overall_status === 'completed') {
+            setProgress(100)
+            setIsProcessing(false)
+            setIsUploadPanelExpanded(false)
+            console.log('Transform already completed, loading graph data')
+            await loadGraphData(urlTransformId)
+          } else if (data.status === 'failed') {
+            setIsProcessing(false)
+            setError(data.message || 'Processing failed for this transform ID')
+            setIsUploadPanelExpanded(true) // Allow user to try again maybe?
+          } else {
+            // Still processing
+            setIsProcessing(true)
+            setIsUploadPanelExpanded(false) // Hide upload while processing continues
+            const progressStatus: Record<string, number> = {
+              "upload": 10, "parse": 20, "chunk": 30, "transform": 50, "load": 90
+            }
+            setProgress(Math.max(10, progressStatus[data.current_stage] || 10))
+            // The status check interval effect will now pick this up
+          }
+        } catch (err) {
+          console.error('Error loading state from URL:', err)
+          setError(err instanceof Error ? err.message : 'Failed to load state from transform ID')
+          setIsProcessing(false)
+          setTransformId(null) // Clear invalid ID on error
+          // Optionally, clear the URL parameter
+          const newSearchParams = new URLSearchParams(searchParams.toString())
+          newSearchParams.delete('transform_id')
+          router.replace(`${pathname}?${newSearchParams.toString()}`)
+        }
+      }
+    }
+
+    if (sessionId) { // Ensure session ID is present before trying to load state
+      loadStateFromUrl()
+    }
+    // Run only once on mount based on initial URL params
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [urlTransformId, sessionId]) // Re-run if session ID or transform ID changes in URL
+
   const onDrop = useCallback((acceptedFiles: File[]) => {
     setError(null)
+    
+    // Prevent upload if already processing or loaded from URL
+    if (isProcessing || transformId) {
+      setError('A transform process is already active or loaded. Please clear or wait for completion.')
+      return
+    }
     
     const file = acceptedFiles[0]
     if (file.size > MAX_FILE_SIZE) {
@@ -147,7 +222,8 @@ function TransformPageContent() {
     onDrop,
     accept: ACCEPTED_FILE_TYPES,
     maxFiles: 1,
-    multiple: false
+    multiple: false,
+    disabled: !!transformId || isProcessing // Disable dropzone if transformId exists or processing
   })
 
   const handleRemoveFile = () => {
@@ -157,10 +233,18 @@ function TransformPageContent() {
     setFile(null)
     setError(null)
     setGraphData(null)
+    setTransformId(null) // Clear transform ID
+    setProgress(0)
+    setIsProcessing(false)
+    setIsUploadPanelExpanded(true)
+    // Clear the transform_id from the URL
+    const newSearchParams = new URLSearchParams(searchParams.toString())
+    newSearchParams.delete('transform_id')
+    router.push(`${pathname}?${newSearchParams.toString()}`)
   }
 
   const handleExtract = async () => {
-    if (!file || !sessionId) return
+    if (!file || !sessionId || isProcessing || transformId) return // Prevent if already processing or has ID
 
     setIsProcessing(true)
     setError(null)
@@ -193,8 +277,14 @@ function TransformPageContent() {
         throw new Error('No transform ID received from server')
       }
       
-      setTransformId(data.id)
+      const newTransformId = data.id
+      setTransformId(newTransformId) // Set state
       setProgress(10)
+
+      // Update URL with the new transform_id
+      const newSearchParams = new URLSearchParams(searchParams.toString())
+      newSearchParams.set('transform_id', newTransformId)
+      router.push(`${pathname}?${newSearchParams.toString()}`) // Use push to add to history
 
     } catch (err) {
       console.error('Error processing file:', err)
@@ -271,10 +361,14 @@ function TransformPageContent() {
 
   useEffect(() => {
     let statusInterval: NodeJS.Timeout | null = null
-    const STATUS_CHECK_INTERVAL = 10000 // Check every 10 secs
+    const STATUS_CHECK_INTERVAL = 5000 // Check every 5 secs (reduced from 10)
 
     const checkStatus = async () => {
-      if (!transformId || !isProcessing) return
+      // Ensure transformId is set and we are marked as processing
+      if (!transformId || !isProcessing) {
+        if (statusInterval) clearInterval(statusInterval) // Stop interval if conditions no longer met
+        return
+      }
 
       try {
         console.log('Checking transform status:', transformId)
@@ -327,16 +421,19 @@ function TransformPageContent() {
 
     if (transformId && isProcessing) {
       console.log('Starting status check interval for transform:', transformId)
-      checkStatus()
+      checkStatus() // Initial check
       statusInterval = setInterval(checkStatus, STATUS_CHECK_INTERVAL)
     }
 
+    // Cleanup function
     return () => {
       if (statusInterval) {
+        console.log('Clearing status check interval for transform:', transformId)
         clearInterval(statusInterval)
       }
     }
-  }, [transformId, isProcessing])
+    // Ensure dependencies are correct: re-run if transformId or isProcessing changes.
+  }, [transformId, isProcessing, loadGraphData]) // Added loadGraphData as it's used inside
 
   const handleMergeConfirm = () => {
     setShowMergeConfirm(false)
@@ -431,7 +528,7 @@ function TransformPageContent() {
       icon: <Rocket className="h-4 w-4" />,
       label: 'Transform',
       action: handleExtract,
-      disabled: !file || isProcessing,
+      disabled: !file || isProcessing || !!transformId, // Disable if file exists and transformId is set
       primary: true,
       className: "mr-4"
     },
@@ -487,6 +584,7 @@ function TransformPageContent() {
                         variant="ghost"
                         size="sm"
                         onClick={handleRemoveFile}
+                        disabled={isProcessing} // Disable remove while processing
                       >
                         <X className="h-4 w-4" />
                       </Button>
@@ -499,19 +597,25 @@ function TransformPageContent() {
                 <input {...getInputProps()} />
                 <div
                   className={cn(
-                    'border-2 border-dashed rounded-lg p-4 text-center cursor-pointer',
+                    'border-2 border-dashed rounded-lg p-4 text-center',
                     'transition-colors duration-200',
-                    isDragActive ? 'border-blue-500 bg-blue-500/10' : 'border-gray-200 hover:border-gray-400'
+                    (isProcessing || !!transformId) // Check if processing or transformId exists
+                      ? 'cursor-not-allowed bg-gray-100 border-gray-300 text-gray-400' // Disabled appearance
+                      : isDragActive 
+                        ? 'border-blue-500 bg-blue-500/10 cursor-pointer' 
+                        : 'border-gray-200 hover:border-gray-400 cursor-pointer'
                   )}
                 >
                   <Upload className="h-6 w-6 mx-auto mb-2" />
                   <p className="text-sm">
-                    {isDragActive
-                      ? 'Drop the file here'
-                      : 'Drag & drop a file here, or click to select'}
+                    {(isProcessing || !!transformId) // Check if disabled
+                      ? 'Transform in progress or loaded'
+                      : isDragActive
+                        ? 'Drop the file here'
+                        : 'Drag & drop a file here, or click to select'}
                   </p>
                   <p className="text-xs text-gray-500 mt-1">
-                    PDF, TXT, DOCX (max 10MB)
+                    PDF, TXT (max 10MB)
                   </p>
                 </div>
               </div>
@@ -528,8 +632,8 @@ function TransformPageContent() {
                     <button
                       key={sampleFile.id}
                       onClick={() => handleSampleFileSelect(sampleFile)}
-                      className="flex items-start gap-2 p-2 text-left border border-gray-200 rounded-md hover:bg-blue-50 hover:border-blue-200 transition-colors"
-                      disabled={isProcessing}
+                      className="flex items-start gap-2 p-2 text-left border border-gray-200 rounded-md hover:bg-blue-50 hover:border-blue-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+                      disabled={isProcessing || !!transformId} // Disable sample selection too
                     >
                       <FileText className="h-4 w-4 mt-0.5 text-blue-500 flex-shrink-0" />
                       <div className="overflow-hidden w-full">
@@ -552,7 +656,7 @@ function TransformPageContent() {
                 </div>
               </div>
 
-              {file && !isProcessing && (
+              {file && !isProcessing && !transformId && ( // Only show if no active transformId
                 <Button
                   onClick={handleExtract}
                   className="w-full mt-4"
@@ -561,18 +665,17 @@ function TransformPageContent() {
                 </Button>
               )}
 
-              {isProcessing && (
-                <div className="mt-4 space-y-2">
-                  <div className="flex items-center justify-center gap-2">
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    <span className="text-sm text-gray-500">Processing document...</span>
-                  </div>
-                  <div className="w-full">
-                    <Progress value={progress} className="h-1" />
-                    <p className="mt-1 text-xs text-center text-gray-500">{progress}%</p>
-                  </div>
+              {isProcessing ? (
+                <div className="h-full flex flex-col items-center justify-center text-gray-500">
+                  <Loader2 className="h-10 w-10 animate-spin mb-3" />
+                  <p>Processing document...</p>
+                  {transformId && <p className="text-sm mt-1">Transform ID: {transformId}</p>}
                 </div>
-              )}
+              ) : !transformId ? ( // Check if transformId is null here as well
+                <div className="h-full flex items-center justify-center text-gray-500">
+                  <p>Upload a document to begin transformation</p>
+                </div>
+              ) : null /* Or a placeholder if graphData is null but transformId exists and not processing */ }
             </div>
           </div>
         </ResizablePanel>
