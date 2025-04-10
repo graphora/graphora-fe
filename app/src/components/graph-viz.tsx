@@ -4,6 +4,8 @@ import React, { useRef, useState, useEffect, useCallback } from 'react';
 import dynamic from 'next/dynamic';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { type Node, type Edge, type GraphData, type GraphOperation } from '@/types/graph';
+import { toast } from 'react-hot-toast';
 
 const hslToRgb = (h: number, s: number, l: number): [number, number, number] => {
   s /= 100;
@@ -72,19 +74,6 @@ const InteractiveNvlWrapper: any = dynamic(
   }
 );
 
-interface Node {
-  id: string;
-  label?: string;
-  caption?: string;
-  name?: string;
-  type?: string;
-  color?: string;
-  size?: number;
-  properties?: Record<string, any>;
-  x?: number;
-  y?: number;
-}
-
 interface ProcessedNode {
   id: string;
   label: string;
@@ -97,14 +86,6 @@ interface ProcessedNode {
   y?: number;
 }
 
-interface Link {
-  source: string | Node;
-  target: string | Node;
-  label?: string;
-  type?: string;
-  properties?: Record<string, any>;
-}
-
 interface ProcessedRel {
   id: string;
   from: string;
@@ -114,25 +95,16 @@ interface ProcessedRel {
   properties: Record<string, any>;
 }
 
-export interface GraphData {
-  nodes: Node[];
-  edges: Link[];
-  total_nodes?: number;
-  total_edges?: number;
-  id?: string;
-  _reset?: number;
-}
-
 interface GraphVisualizationProps {
   graphData: GraphData;
   onGraphReset?: () => void;
-  onGraphDataUpdate?: (updatedGraphData: GraphData) => void;
+  onGraphOperation?: (operation: GraphOperation) => void | Promise<void>;
   sidebarWidth?: number;
 }
 
 interface SelectedElement {
   type: 'node' | 'link';
-  data: Node | Link;
+  data: Node | Edge;
 }
 
 class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean; error: any }> {
@@ -162,7 +134,7 @@ class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { has
 export const GraphVisualization: React.FC<GraphVisualizationProps> = ({
   graphData,
   onGraphReset,
-  onGraphDataUpdate,
+  onGraphOperation,
   sidebarWidth = 320,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -200,7 +172,7 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({
         color: stringToColor(nodeType.toLowerCase()),
         size: node.size || 40,
         type: nodeType,
-        properties: { ...(node.properties || {}), name: node.name },
+        properties: { ...(node.properties || {}) },
         x: node.x,
         y: node.y
       };
@@ -211,8 +183,8 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({
 
     const rels: ProcessedRel[] = graphData.edges
       .map((edge, index) => {
-        const sourceId = typeof edge.source === 'string' ? edge.source : edge.source?.id;
-        const targetId = typeof edge.target === 'string' ? edge.target : edge.target?.id;
+        const sourceId = edge.source;
+        const targetId = edge.target;
 
         if (!sourceId) {
           console.warn(`Edge ${index} has invalid source (sourceId: ${sourceId}), skipping:`, edge);
@@ -231,8 +203,10 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({
           return null;
         }
 
+        const edgeId = edge.id || `${sourceId}-${targetId}-${edge.label || 'rel'}-${index}`;
+
         return {
-          id: `${sourceId}-${targetId}-${index}`,
+          id: edgeId,
           from: sourceId,
           to: targetId,
           label: edge.label || edge.type || 'Relationship',
@@ -309,7 +283,7 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({
       const originalNode = graphData.nodes.find(n => n.id === node.id);
       if (originalNode) {
         setSelectedElement({ type: 'node', data: originalNode });
-        setEditedProperties({ ...originalNode.properties });
+        setEditedProperties({ name: originalNode.properties?.name, ...originalNode.properties });
       } else {
         console.warn("Clicked node not found in original graphData:", node);
       }
@@ -317,17 +291,15 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({
       setHoveredLink(null);
     },
     onRelationshipClick: (rel: ProcessedRel) => {
-      const originalLink = graphData.edges.find(edge => {
-        const sourceId = typeof edge.source === 'string' ? edge.source : edge.source?.id;
-        const targetId = typeof edge.target === 'string' ? edge.target : edge.target?.id;
-        return sourceId === rel.from && targetId === rel.to;
+      const originalEdge = graphData.edges.find(edge => {
+        return edge.source === rel.from && edge.target === rel.to && (edge.label || edge.type) === rel.label;
       });
 
-      if (originalLink) {
-        setSelectedElement({ type: 'link', data: originalLink });
-        setEditedProperties({ ...originalLink.properties });
+      if (originalEdge) {
+        setSelectedElement({ type: 'link', data: originalEdge });
+        setEditedProperties({ ...originalEdge.properties });
       } else {
-        console.warn("Clicked relationship not found in original graphData:", rel);
+        console.warn("Clicked relationship not found in original graphData edges based on ProcessedRel:", rel);
       }
       setHoveredNode(null);
       setHoveredLink(null);
@@ -364,42 +336,39 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({
 
   const handleSaveChanges = async () => {
     if (selectedElement) {
-      const updatedData = {
-        ...selectedElement.data,
-        properties: editedProperties
-      };
+      let operation: GraphOperation | null = null;
+
+      if (selectedElement.type === 'node') {
+        const node = selectedElement.data as Node;
+        operation = {
+          type: 'UPDATE_NODE',
+          payload: {
+            id: node.id,
+            properties: editedProperties
+          }
+        };
+      } else {
+        const edge = selectedElement.data as Edge;
+        const edgeId = edge.id || `${edge.source}-${edge.target}-${edge.label || 'rel'}`;
+        if (!edgeId) {
+            console.error("Cannot save edge changes: Edge ID is missing or cannot be constructed.", edge);
+            toast.error("Cannot save edge changes: Edge ID missing.");
+            return;
+        }
+        operation = {
+          type: 'UPDATE_EDGE',
+          payload: {
+            id: edgeId,
+            properties: editedProperties
+          }
+        };
+      }
 
       try {
-        const updatedGraphData = { ...graphData };
-
-        if (selectedElement.type === 'node') {
-          const nodeIndex = updatedGraphData.nodes.findIndex(n => n.id === (selectedElement.data as Node).id);
-          if (nodeIndex !== -1) {
-            updatedGraphData.nodes[nodeIndex] = updatedData as Node;
-          }
+        if (onGraphOperation && operation) {
+          await onGraphOperation(operation);
         } else {
-          const getId = (sourceOrTarget: string | Node | undefined): string | undefined => {
-            if (typeof sourceOrTarget === 'string') return sourceOrTarget;
-            return sourceOrTarget?.id;
-          };
-
-          const selectedSourceId = getId((selectedElement.data as Link).source);
-          const selectedTargetId = getId((selectedElement.data as Link).target);
-
-          if (selectedSourceId && selectedTargetId) {
-            const edgeIndex = updatedGraphData.edges.findIndex(e => {
-              const sourceId = typeof e.source === 'string' ? e.source : e.source?.id;
-              const targetId = typeof e.target === 'string' ? e.target : e.target?.id;
-              return sourceId === selectedSourceId && targetId === selectedTargetId;
-            });
-            if (edgeIndex !== -1) {
-              updatedGraphData.edges[edgeIndex] = updatedData as Link;
-            }
-          }
-        }
-
-        if (onGraphDataUpdate) {
-          onGraphDataUpdate(updatedGraphData);
+          console.warn('onGraphOperation prop not provided to GraphVisualization.');
         }
 
         if (selectedElement.type === 'node') {
@@ -408,8 +377,8 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({
             const updatedNode = {
               ...internalNodes[nodeIndex],
               properties: editedProperties,
-              label: editedProperties.name || (selectedElement.data as Node).label || (selectedElement.data as Node).type || (selectedElement.data as Node).id?.toString() || `Node_${nodeIndex}`,
-              caption: editedProperties.name || (selectedElement.data as Node).label || (selectedElement.data as Node).type || (selectedElement.data as Node).id?.toString() || `Node_${nodeIndex}`,
+              label: editedProperties.name || internalNodes[nodeIndex].label,
+              caption: editedProperties.name || internalNodes[nodeIndex].caption,
             };
             setInternalNodes(prevNodes => [
               ...prevNodes.slice(0, nodeIndex),
@@ -418,29 +387,22 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({
             ]);
           }
         } else {
-          const getId = (sourceOrTarget: string | Node | undefined): string | undefined => {
-            if (typeof sourceOrTarget === 'string') return sourceOrTarget;
-            return sourceOrTarget?.id;
-          };
-
-          const selectedSourceId = getId((selectedElement.data as Link).source);
-          const selectedTargetId = getId((selectedElement.data as Link).target);
-
-          if (selectedSourceId && selectedTargetId) {
-            const edgeIndex = internalRels.findIndex(r => 
-              r.from === selectedSourceId && r.to === selectedTargetId
-            );
-            if (edgeIndex !== -1) {
-              const updatedRel = {
-                ...internalRels[edgeIndex],
-                properties: editedProperties,
-              };
-              setInternalRels(prevRels => [
-                ...prevRels.slice(0, edgeIndex),
-                updatedRel,
-                ...prevRels.slice(edgeIndex + 1),
-              ]);
-            }
+          const originalEdge = selectedElement.data as Edge;
+          const edgeIndex = internalRels.findIndex(r =>
+            r.from === originalEdge.source &&
+            r.to === originalEdge.target &&
+            r.label === (originalEdge.label || originalEdge.type || 'Relationship')
+          );
+          if (edgeIndex !== -1) {
+            const updatedRel = {
+              ...internalRels[edgeIndex],
+              properties: editedProperties,
+            };
+            setInternalRels(prevRels => [
+              ...prevRels.slice(0, edgeIndex),
+              updatedRel,
+              ...prevRels.slice(edgeIndex + 1),
+            ]);
           }
         }
 
@@ -569,7 +531,7 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({
               {selectedElement.type === 'link' && (
                 <div className="grid grid-cols-4 gap-2">
                   <span className="font-medium text-gray-700">Type:</span>
-                  <span className="col-span-3">{(selectedElement.data as Link).label || 'Link'}</span>
+                  <span className="col-span-3">{(selectedElement.data as Edge).label || (selectedElement.data as Edge).type || 'Link'}</span>
                 </div>
               )}
               <div className="mt-4">

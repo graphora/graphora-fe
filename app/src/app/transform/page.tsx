@@ -15,7 +15,7 @@ import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Progress } from '@/components/ui/progress'
 import { GraphVisualization } from '@/components/graph-viz'
-import { type FileWithPreview, type GraphData, type TransformResponse } from '@/types/graph'
+import { type FileWithPreview, type GraphData, type TransformResponse, type GraphOperation, type Node, type Edge } from '@/types/graph'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -33,6 +33,7 @@ import { ResizablePanel } from '@/components/command-center/resizable-panel'
 import { CommandPalette } from '@/components/command-center/command-palette'
 import { AIAssistantPanel } from '@/components/ai-assistant/ai-assistant-panel'
 import { type AIAssistantState } from '@/lib/types/ai-assistant'
+import { toast } from 'sonner'
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB
 const ACCEPTED_FILE_TYPES = {
@@ -527,6 +528,122 @@ function TransformPageContent() {
     }
   ]
 
+  const handleGraphOperation = async (operation: GraphOperation) => {
+    console.log("Graph operation requested:", operation);
+    if (!transformId) {
+      console.error("Cannot save graph changes: transformId is missing.");
+      toast.error("Cannot save changes: No active transform ID.");
+      return;
+    }
+    if (!graphData) {
+      console.error("Cannot save graph changes: graphData is missing.");
+      toast.error("Cannot save changes: Graph data not loaded.");
+      return;
+    }
+
+    // --- Optimistic UI Update --- (More complex now)
+    let originalGraphData = JSON.parse(JSON.stringify(graphData)); // Deep copy for potential revert
+    let updatedGraphData = JSON.parse(JSON.stringify(graphData)); // Deep copy to modify
+
+    try {
+      if (operation.type === 'UPDATE_NODE') {
+        const nodeIndex = updatedGraphData.nodes.findIndex((n: Node) => n.id === operation.payload.id);
+        if (nodeIndex !== -1) {
+          const currentProps = updatedGraphData.nodes[nodeIndex].properties || {};
+          updatedGraphData.nodes[nodeIndex].properties = { ...currentProps, ...operation.payload.properties };
+          // Also update label if name property changed
+          if (operation.payload.properties?.hasOwnProperty('name')) {
+              updatedGraphData.nodes[nodeIndex].label = operation.payload.properties.name || updatedGraphData.nodes[nodeIndex].label || updatedGraphData.nodes[nodeIndex].type || updatedGraphData.nodes[nodeIndex].id;
+          }
+        } else {
+            throw new Error("Node not found for optimistic update.");
+        }
+      } else if (operation.type === 'UPDATE_EDGE') {
+        // Finding the edge requires the ID used in the operation payload.
+        const edgeIndex = updatedGraphData.edges.findIndex((e: Edge) => e.id === operation.payload.id);
+        if (edgeIndex !== -1) {
+            const currentProps = updatedGraphData.edges[edgeIndex].properties || {};
+            updatedGraphData.edges[edgeIndex].properties = { ...currentProps, ...operation.payload.properties };
+            // Optionally update edge label if relevant properties changed
+        } else {
+            // Attempt fallback find if ID match failed (e.g., ID constructed differently)
+            // This part might be brittle and depends on how edge IDs are handled.
+            console.warn(`Edge ID ${operation.payload.id} not found directly, attempting fallback find.`);
+            // Add fallback logic if needed, otherwise throw.
+            throw new Error("Edge not found for optimistic update.");
+        }
+      }
+      // Add other operation types (CREATE, DELETE) if needed
+
+      setGraphData({ ...updatedGraphData, _reset: (graphData._reset || 0) + 1 });
+    } catch(error) {
+        console.error("Error during optimistic update:", error);
+        toast.error("Error updating graph visually.");
+        // Don't proceed with API call if optimistic update failed
+        return;
+    }
+    // --- End Optimistic UI Update ---
+
+    // --- Construct Backend Request Body (matching SaveGraphRequest) ---
+    let requestBody: { nodes?: { updated?: any[] }, edges?: { updated?: any[] } } = {};
+
+    if (operation.type === 'UPDATE_NODE') {
+      requestBody = {
+        nodes: {
+          updated: [operation.payload] // Put payload in nodes.updated list
+        }
+      };
+    } else if (operation.type === 'UPDATE_EDGE') {
+      requestBody = {
+        edges: {
+          updated: [operation.payload] // Put payload in edges.updated list
+        }
+      };
+    } else {
+      console.error("Unsupported graph operation type for save:", operation.type);
+      toast.error("Cannot save: Unsupported operation type.");
+      // Revert optimistic update if we can't save
+      setGraphData({ ...originalGraphData, _reset: (originalGraphData._reset || 0) + 1 });
+      return;
+    }
+    // --- End Construct Backend Request Body ---
+
+    try {
+      // Ensure API path includes /v1/
+      const response = await fetch(`/api/v1/graph/${transformId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody), // Send the correctly structured body
+      });
+
+      if (!response.ok) {
+        console.error("Failed to save graph changes:", response.status, await response.text());
+        toast.error("Failed to save changes to the server. Reverting local changes.");
+        // Revert optimistic update on failure
+        setGraphData({ ...originalGraphData, _reset: (originalGraphData._reset || 0) + 1 });
+        return;
+      }
+
+      const result = await response.json();
+      console.log("Graph changes saved successfully:", result);
+      toast.success("Graph changes saved successfully.");
+
+      // Optionally update state based on `result.data` if the backend returns the full updated graph
+      // or specific confirmation. For now, the optimistic update stands.
+      // if (result.data) {
+      //   setGraphData({ ...result.data, _reset: (graphData._reset || 0) + 1 });
+      // }
+
+    } catch (error) {
+      console.error("Error saving graph data:", error);
+      toast.error(`An error occurred while saving changes: ${error instanceof Error ? error.message : 'Unknown error'}. Reverting local changes.`);
+      // Revert optimistic update on exception
+      setGraphData({ ...originalGraphData, _reset: (originalGraphData._reset || 0) + 1 });
+    }
+  };
+
   return (
     <WorkflowLayout progress={progress} currentStep={isProcessing ? 'Processing Document...' : undefined}>
       <div className="command-center grid h-full grid-cols-[auto_1fr_auto] grid-rows-[auto_1fr] gap-0">
@@ -667,11 +784,12 @@ function TransformPageContent() {
 
           <div className="h-full">
             {graphData ? (
-              <GraphVisualization 
+              <GraphVisualization
                 key={`${transformId}-${graphData._reset}`}
-                graphData={graphData} 
+                graphData={graphData}
                 onGraphReset={handleGraphReset}
-                sidebarWidth={sidebarWidth} // Pass sidebar width to GraphVisualization
+                onGraphOperation={handleGraphOperation}
+                sidebarWidth={sidebarWidth}
               />
             ) : isProcessing ? (
               <div className="h-full flex flex-col items-center justify-center text-gray-500">
