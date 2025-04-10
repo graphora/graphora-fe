@@ -519,6 +519,7 @@ export const MergeGraphVisualization: React.FC<MergeGraphVisualizationProps> = (
                   nodeDistance: 100,
                   nodeRepulsion: 5000,
                 },
+                availableLayouts: ['forceDirected'],
                 renderer: 'canvas',
                 nodeLabelsVisible: true,
                 nodeLabelKey: 'label',

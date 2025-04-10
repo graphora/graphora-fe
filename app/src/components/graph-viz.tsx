@@ -454,6 +454,7 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({
                 nodeDistance: 100,
                 nodeRepulsion: 5000,
               },
+              availableLayouts: ['forceDirected'],
               renderer: 'canvas',
               nodeLabelsVisible: true,
               nodeLabelKey: 'label',
