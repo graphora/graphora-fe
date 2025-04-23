@@ -9,12 +9,12 @@ import { YAMLEditor } from '@/components/ontology/yaml-editor'
 import { EntityList } from '@/components/ontology/entity-list'
 import { useOntologyEditorStore } from '@/lib/store/ontology-editor-store'
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable'
-import { WorkflowLayout } from '@/components/workflow-layout'
+import { WorkflowLayout, WorkflowStep } from '@/components/workflow-layout'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Search, Upload, Play, Save, Code2, Grid2x2, SplitSquareVertical, Settings } from 'lucide-react'
-import { AIAssistantPanel } from '@/components/ai-assistant/ai-assistant-panel'
 import { VisualEditor } from '@/components/ontology/visual-editor'
 import { type AIAssistantState } from '@/lib/types/ai-assistant'
+import { cn } from '@/lib/utils'
 
 type ViewMode = 'code' | 'visual' | 'split'
 
@@ -359,13 +359,6 @@ export default function OntologyPage() {
       shortcut: '⌘R'
     },
     {
-      id: 'save',
-      icon: <Save className="h-4 w-4" />,
-      label: 'Save',
-      action: handleSave,
-      shortcut: '⌘S'
-    },
-    {
       id: 'code',
       icon: <Code2 className="h-4 w-4" />,
       label: 'Code View',
@@ -391,107 +384,185 @@ export default function OntologyPage() {
     }
   ]
 
+  // Define workflow steps
+  const workflowSteps: WorkflowStep[] = [
+    { id: 'ontology', title: 'Ontology Entry', description: 'Define your graph structure' },
+    { id: 'upload', title: 'Document Upload', description: 'Upload documents to process' },
+    { id: 'edit', title: 'Graph Editing', description: 'Refine extracted graph' },
+    { id: 'merge', title: 'Merge Process', description: 'Combine data into final graph' }
+  ]
+
   return (
-    <WorkflowLayout hasUnsavedChanges={hasUnsavedChanges}>
-      <div className="flex-1 flex">
-        <div className="flex-1 flex flex-col">
-          <div className="h-14 flex items-center justify-between px-4 border-b">
-            <div className="font-medium">Ontology Editor</div>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleSave}
-                className="gap-2"
-              >
-                <Save className="h-4 w-4" />
-                Save
-              </Button>
-              <Button
-                variant="default"
-                size="sm"
-                onClick={handleSubmit}
-                disabled={isSubmitting}
-                className="gap-2"
-              >
-                {isSubmitting ? (
-                  <>Loading...</>
-                ) : (
-                  <>
-                    <Play className="h-4 w-4" />
-                    Submit Ontology
-                  </>
-                )}
-              </Button>
+    <WorkflowLayout 
+      steps={workflowSteps} 
+      currentStepId="ontology"
+      hasUnsavedChanges={hasUnsavedChanges}
+    >
+      <div className="flex-1 flex flex-col h-full">
+        {/* Top Header Bar - Remove sticky class */}
+        <div className="h-16 flex items-center justify-between px-6 border-b bg-background z-10 shadow-sm">
+          <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2.5 text-lg font-semibold">
+              <div className="bg-primary/10 w-9 h-9 rounded-md flex items-center justify-center text-primary">
+                <svg width="22" height="22" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M5 2V1H10V2H5ZM4.75 0C4.33579 0 4 0.335786 4 0.75V1H3.5C2.67157 1 2 1.67157 2 2.5V12.5C2 13.3284 2.67157 14 3.5 14H11.5C12.3284 14 13 13.3284 13 12.5V2.5C13 1.67157 12.3284 1 11.5 1H11V0.75C11 0.335786 10.6642 0 10.25 0H4.75ZM3 2.5C3 2.22386 3.22386 2 3.5 2H4V2.25C4 2.66421 4.33579 3 4.75 3H10.25C10.6642 3 11 2.66421 11 2.25V2H11.5C11.7761 2 12 2.22386 12 2.5V12.5C12 12.7761 11.7761 13 11.5 13H3.5C3.22386 13 3 12.7761 3 12.5V2.5Z" fill="currentColor" fillRule="evenodd" clipRule="evenodd"></path>
+                </svg>
+              </div>
+              <span>Ontology Editor</span>
             </div>
           </div>
-          {error && (
-            <Alert variant="destructive" className="m-4">
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
-          <div className="flex-1 flex">
-            <ResizablePanelGroup direction="horizontal">
-              <ResizablePanel
-                defaultSize={25}
-                minSize={20}
-                maxSize={40}
-                className="min-w-[250px]"
+
+          <div className="flex items-center space-x-3">
+            <div className="hidden sm:flex border rounded-md overflow-hidden shadow-sm">
+              <Button 
+                variant={viewMode === 'code' ? "default" : "ghost"} 
+                size="sm" 
+                className={cn(
+                  "h-9 rounded-none px-3 font-medium transition-all duration-200",
+                  viewMode === 'code' 
+                    ? "bg-primary text-primary-foreground shadow-[inset_0_-2px_0_0] shadow-primary" 
+                    : "hover:bg-muted/60"
+                )}
+                onClick={() => setViewMode('code')}
               >
-                <div className="h-full border-r">
-                  <div className="h-14 flex items-center justify-between px-4 border-b">
-                    <div className="font-medium">Entities</div>
-                    <Button variant="ghost" size="icon" onClick={() => setIsCommandPaletteOpen(true)}>
-                      <Search className="h-4 w-4" />
+                <Code2 className="h-4 w-4 mr-1.5" />
+                Code
+              </Button>
+              <Button 
+                variant={viewMode === 'visual' ? "default" : "ghost"} 
+                size="sm" 
+                className={cn(
+                  "h-9 rounded-none px-3 font-medium transition-all duration-200",
+                  viewMode === 'visual' 
+                    ? "bg-primary text-primary-foreground shadow-[inset_0_-2px_0_0] shadow-primary" 
+                    : "hover:bg-muted/60"
+                )}
+                onClick={() => setViewMode('visual')}
+              >
+                <Grid2x2 className="h-4 w-4 mr-1.5" />
+                Visual
+              </Button>
+              <Button 
+                variant={viewMode === 'split' ? "default" : "ghost"} 
+                size="sm" 
+                className={cn(
+                  "h-9 rounded-none px-3 font-medium transition-all duration-200", 
+                  viewMode === 'split' 
+                    ? "bg-primary text-primary-foreground shadow-[inset_0_-2px_0_0] shadow-primary" 
+                    : "hover:bg-muted/60"
+                )}
+                onClick={() => setViewMode('split')}
+              >
+                <SplitSquareVertical className="h-4 w-4 mr-1.5" />
+                Split
+              </Button>
+            </div>
+            
+            <Button
+              variant="default"
+              size="sm"
+              onClick={handleSubmit}
+              disabled={isSubmitting}
+              className="gap-1.5 font-medium shadow-sm"
+            >
+              <Play className="h-4 w-4" />
+              <span className="hidden md:inline">Submit Ontology</span>
+              <span className="inline md:hidden">Submit</span>
+            </Button>
+          </div>
+        </div>
+
+        {/* Error Alert */}
+        {error && (
+          <Alert variant="destructive" className="m-4">
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+
+        {/* Main Content Area - Make it scrollable */}
+        <div className="flex-1 overflow-auto">
+          <ResizablePanelGroup direction="horizontal">
+            <ResizablePanel
+              defaultSize={25}
+              minSize={20}
+              maxSize={40}
+              className="min-w-[250px]"
+            >
+              <div className="h-full border-r flex flex-col">
+                <div className="h-10 flex items-center justify-between px-3 border-b bg-muted/30 sticky top-0 z-10">
+                  <div className="flex items-center gap-1.5">
+                    <div className="bg-primary/5 w-5 h-5 rounded flex items-center justify-center">
+                      <svg width="14" height="14" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M1.40594 0C0.629627 0 0 0.629627 0 1.40594V13.5941C0 14.3704 0.629627 15 1.40594 15H3.2013C3.97761 15 4.60724 14.3704 4.60724 13.5941V1.40594C4.60724 0.629627 3.97761 0 3.2013 0H1.40594ZM3.45161 1.64516C3.45161 1.75305 3.36434 1.84032 3.25645 1.84032H1.35079C1.24289 1.84032 1.15563 1.75305 1.15563 1.64516V1.29563C1.15563 1.18774 1.24289 1.10047 1.35079 1.10047H3.25645C3.36434 1.10047 3.45161 1.18774 3.45161 1.29563V1.64516ZM3.25645 2.94079H1.35079C1.24289 2.94079 1.15563 3.02805 1.15563 3.13595V3.48547C1.15563 3.59337 1.24289 3.68063 1.35079 3.68063H3.25645C3.36434 3.68063 3.45161 3.59337 3.45161 3.48547V3.13595C3.45161 3.02805 3.36434 2.94079 3.25645 2.94079ZM3.25645 4.78111H1.35079C1.24289 4.78111 1.15563 4.86837 1.15563 4.97626V5.32579C1.15563 5.43368 1.24289 5.52095 1.35079 5.52095H3.25645C3.36434 5.52095 3.45161 5.43368 3.45161 5.32579V4.97626C3.45161 4.86837 3.36434 4.78111 3.25645 4.78111ZM13.5941 0C14.3704 0 15 0.629627 15 1.40594V13.5941C15 14.3704 14.3704 15 13.5941 15H6.95161C6.17529 15 5.54567 14.3704 5.54567 13.5941V1.40594C5.54567 0.629627 6.17529 0 6.95161 0H13.5941ZM10.9695 7.50047C12.0816 7.50047 12.9853 6.59677 12.9853 5.48453C12.9853 4.37229 12.0816 3.46859 10.9695 3.46859C9.85724 3.46859 8.95354 4.37229 8.95354 5.48453C8.95354 6.59677 9.85724 7.50047 10.9695 7.50047ZM13.3226 9.92905C13.3226 9.17811 12.6083 8.46374 11.8574 8.46374H10.0816C9.33066 8.46374 8.61629 9.17811 8.61629 9.92905V13.9839H13.3226V9.92905Z" fill="currentColor"/>
+                      </svg>
+                    </div>
+                    <span className="text-xs font-medium">Entities</span>
+                  </div>
+                  <div className="flex gap-1 absolute right-3 top-[58px] z-20">
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="h-6 w-6 bg-background/80 backdrop-blur-sm hover:bg-background shadow-sm"
+                      onClick={loadSampleYaml}
+                      title="Load Sample Ontology"
+                    >
+                      <svg width="14" height="14" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M7.49991 0.876892C3.84222 0.876892 0.877075 3.84204 0.877075 7.49972C0.877075 11.1574 3.84222 14.1226 7.49991 14.1226C11.1576 14.1226 14.1227 11.1574 14.1227 7.49972C14.1227 3.84204 11.1576 0.876892 7.49991 0.876892ZM1.82707 7.49972C1.82707 4.36671 4.36689 1.82689 7.49991 1.82689C10.6329 1.82689 13.1727 4.36671 13.1727 7.49972C13.1727 10.6327 10.6329 13.1726 7.49991 13.1726C4.36689 13.1726 1.82707 10.6327 1.82707 7.49972ZM7.50003 4C7.77617 4 8.00003 4.22386 8.00003 4.5V7H10.5C10.7762 7 11 7.22386 11 7.5C11 7.77614 10.7762 8 10.5 8H7.50003C7.22389 8 7.00003 7.77614 7.00003 7.5V4.5C7.00003 4.22386 7.22389 4 7.50003 4Z" fill="currentColor" fillRule="evenodd" clipRule="evenodd"/>
+                      </svg>
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="h-6 w-6 bg-background/80 backdrop-blur-sm hover:bg-background shadow-sm"
+                      onClick={() => setIsCommandPaletteOpen(true)}
+                      title="Search Entities"
+                    >
+                      <Search className="h-3.5 w-3.5" />
                     </Button>
                   </div>
-                  <ScrollArea className="h-[calc(100%-3.5rem)]">
-                    <div className="p-4 space-y-4">
-                      <EntityList onLoadSample={loadSampleYaml} />
-                    </div>
-                  </ScrollArea>
                 </div>
-              </ResizablePanel>
-              <ResizableHandle />
-              <ResizablePanel defaultSize={75}>
-                <div className="h-full">
-                  <div className="h-14 flex items-center justify-between px-4 border-b">
-                    <div className="font-medium">Schema Editor</div>
-                    <div className="flex items-center gap-2">
-                      <label>
-                        <Button variant="ghost" size="sm">
-                          <div className="flex items-center gap-2">
-                            <Upload className="h-4 w-4" />
-                            Import
-                          </div>
-                        </Button>
-                        <input
-                          type="file"
-                          accept=".yaml,.yml"
-                          className="hidden"
-                          onChange={handleFileUpload}
-                        />
-                      </label>
-                    </div>
+                <ScrollArea className="flex-1">
+                  <div className="p-4 space-y-4">
+                    <EntityList onLoadSample={loadSampleYaml} />
                   </div>
-                  <div className="h-[calc(100%-3.5rem)]">
-                    {viewMode === 'split' ? (
-                      <div className="grid grid-cols-2 h-full">
-                        <div className="h-full p-4 border-r">
-                          <YAMLEditor 
-                            value={yaml} 
-                            onChange={(value) => {
-                              updateFromYaml(value)
-                              setHasUnsavedChanges(true)
-                            }} 
-                          />
-                        </div>
-                        <div className="h-full p-4">
-                          <VisualEditor />
-                        </div>
-                      </div>
-                    ) : viewMode === 'code' ? (
-                      <div className="h-full p-4">
+                </ScrollArea>
+              </div>
+            </ResizablePanel>
+            <ResizableHandle />
+            <ResizablePanel defaultSize={75}>
+              <div className="h-full flex flex-col">
+                <div className="h-10 flex items-center justify-between px-3 border-b bg-muted/30 sticky top-0 z-10">
+                  <div className="flex items-center gap-1.5">
+                    <div className="bg-primary/5 w-5 h-5 rounded flex items-center justify-center">
+                      <svg width="14" height="14" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M3.94993 2.95002L3.94993 4.49998C3.94993 4.74851 3.74845 4.94998 3.49993 4.94998C3.2514 4.94998 3.04993 4.74851 3.04993 4.49998V2.49998C3.04993 2.45565 3.05698 2.41268 3.06997 2.37194C3.09608 2.28868 3.1462 2.21526 3.21386 2.15795C3.23285 2.14099 3.25313 2.12618 3.27449 2.11351C3.32415 2.08558 3.38185 2.06943 3.44214 2.06595C3.4609 2.06489 3.47993 2.06489 3.49993 2.06595C3.51993 2.06489 3.53896 2.06489 3.55772 2.06595C3.61802 2.06943 3.67571 2.08558 3.72537 2.11351C3.74673 2.12618 3.76701 2.14099 3.786 2.15795C3.85366 2.21526 3.90378 2.28868 3.92989 2.37194C3.94288 2.41268 3.94993 2.45565 3.94993 2.49998V2.95002ZM3.94993 4.49998V2.95002L3.94993 4.49998ZM1.99993 2.49998C1.99993 1.94769 2.44764 1.49998 2.99993 1.49998H11.9999C12.5522 1.49998 12.9999 1.94769 12.9999 2.49998V12.5C12.9999 13.0522 12.5522 13.5 11.9999 13.5H2.99993C2.44764 13.5 1.99993 13.0522 1.99993 12.5V2.49998ZM2.99993 2.49998L2.94993 2.49998C2.9222 2.49998 2.89993 2.52224 2.89993 2.54998L2.89993 12.45C2.89993 12.4777 2.9222 12.5 2.94993 12.5H11.9999C12.0277 12.5 12.0499 12.4777 12.0499 12.45V2.54998C12.0499 2.52224 12.0277 2.49998 11.9999 2.49998H10.4999C10.2514 2.49998 10.0499 2.2985 10.0499 2.04998C10.0499 1.80146 10.2514 1.59998 10.4999 1.59998H11.9999C12.5522 1.59998 12.9999 2.04769 12.9999 2.59998V12.4C12.9999 12.9522 12.5522 13.4 11.9999 13.4H2.99993C2.44764 13.4 1.99993 12.9522 1.99993 12.4V2.59998C1.99993 2.04769 2.44764 1.59998 2.99993 1.59998H4.49993C4.74845 1.59998 4.94993 1.80146 4.94993 2.04998C4.94993 2.2985 4.74845 2.49998 4.49993 2.49998H2.99993ZM6.82899 5.12621L5.12434 10.1281C5.04468 10.3637 4.78353 10.4996 4.54797 10.4199C4.31241 10.3403 4.17654 10.0791 4.2562 9.84357L5.96085 4.84167C6.04051 4.60611 6.30165 4.47024 6.53721 4.5499C6.77277 4.62956 6.90865 4.89071 6.82899 5.12621ZM8.31378 9.4394L10.1566 7.50002L8.31378 5.56063C8.13641 5.37325 8.1455 5.0803 8.33288 4.90293C8.52026 4.72556 8.81321 4.73465 8.99058 4.92202L11.1906 7.23072C11.3638 7.41434 11.3638 7.58569 11.1906 7.76931L8.99058 10.078C8.81321 10.2654 8.52026 10.2745 8.33288 10.0971C8.1455 9.91974 8.13641 9.62678 8.31378 9.4394Z" fill="currentColor" fillRule="evenodd" clipRule="evenodd"/>
+                      </svg>
+                    </div>
+                    <span className="text-xs font-medium">Editor</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <label>
+                      <Button 
+                        variant="ghost" 
+                        size="icon"
+                        className="h-6 w-6 hover:bg-background"
+                        title="Upload YAML File"
+                      >
+                        <Upload className="h-3.5 w-3.5" />
+                      </Button>
+                      <input
+                        type="file"
+                        accept=".yaml,.yml"
+                        className="hidden"
+                        onChange={handleFileUpload}
+                      />
+                    </label>
+                  </div>
+                </div>
+                <div className="flex-1 overflow-auto">
+                  {viewMode === 'split' ? (
+                    <div className="grid grid-cols-2 h-full">
+                      <div className="h-full p-4 border-r overflow-auto">
                         <YAMLEditor 
                           value={yaml} 
                           onChange={(value) => {
@@ -500,30 +571,30 @@ export default function OntologyPage() {
                           }} 
                         />
                       </div>
-                    ) : (
-                      <div className="h-full p-4">
+                      <div className="h-full p-4 overflow-auto">
                         <VisualEditor />
                       </div>
-                    )}
-                  </div>
+                    </div>
+                  ) : viewMode === 'code' ? (
+                    <div className="h-full p-4 overflow-auto">
+                      <YAMLEditor 
+                        value={yaml} 
+                        onChange={(value) => {
+                          updateFromYaml(value)
+                          setHasUnsavedChanges(true)
+                        }} 
+                      />
+                    </div>
+                  ) : (
+                    <div className="h-full p-4 overflow-auto">
+                      <VisualEditor />
+                    </div>
+                  )}
                 </div>
-              </ResizablePanel>
-            </ResizablePanelGroup>
-          </div>
+              </div>
+            </ResizablePanel>
+          </ResizablePanelGroup>
         </div>
-        <AIAssistantPanel
-          state={aiAssistantState}
-          onStateChange={(newState) => {
-            setAiAssistantState(prev => ({
-              ...prev,
-              ...newState
-            }))
-          }}
-          onApplySuggestion={handleApplySuggestion}
-          onDismissSuggestion={handleDismissSuggestion}
-          onExplainSuggestion={handleExplainSuggestion}
-          onCustomizeSuggestion={handleCustomizeSuggestion}
-        />
       </div>
     </WorkflowLayout>
   )

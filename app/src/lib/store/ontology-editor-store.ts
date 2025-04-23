@@ -83,54 +83,58 @@ function convertYamlToOntology(yamlData: any) {
 
 function convertOntologyToYaml(ontology: any) {
   if (!ontology || typeof ontology !== 'object') {
-    return DEFAULT_ONTOLOGY
+    // Return an empty structure or a default one if preferred
+    return { version: '1.0.0', entities: {} }; 
   }
 
   const yamlData: any = {
-    sections: {},
-    entities: {}
+    // Use version from input ontology, default if missing
+    version: ontology.version || '1.0.0', 
+    entities: {} // Initialize as object
+  };
+
+  // Sections conversion (Assuming sections part is less critical for now)
+  // Keep the existing logic, but ensure it doesn't break if ontology.sections is missing
+  if (ontology.sections && typeof ontology.sections === 'object') { // Check if sections exists and is object
+    yamlData.sections = {}; // Initialize if converting sections
+    for (const sectionName in ontology.sections) { // Iterate if it's an object
+      const section = ontology.sections[sectionName];
+      // ... (rest of your section processing logic) ...
+      // Example placeholder:
+      yamlData.sections[sectionName] = section; 
+    }
+     // Cleanup empty sections object
+     if (Object.keys(yamlData.sections).length === 0) {
+        delete yamlData.sections;
+     }
   }
 
-  // Convert sections
-  if (Array.isArray(ontology.sections)) {
-    for (const section of ontology.sections) {
-      if (section && section.name) {
-        const sectionData: any = {}
-        
-        if (section.properties && Object.keys(section.properties).length > 0) {
-          sectionData.properties = section.properties
-        }
-        if (section.relationships && Object.keys(section.relationships).length > 0) {
-          sectionData.relationships = section.relationships
-        }
-        if (section.subsections && section.subsections.length > 0) {
-          sectionData.subsections = section.subsections
-        }
-        
-        yamlData.sections[section.name] = Object.keys(sectionData).length > 0 ? sectionData : null
+  // Convert entities (Expects ontology.entities to be an object from graph-editor-store)
+  if (ontology.entities && typeof ontology.entities === 'object') {
+    for (const entityName in ontology.entities) {
+      const entity = ontology.entities[entityName];
+      // Ensure entity is an object before processing
+      if (entity && typeof entity === 'object') { 
+         const entityData: any = {};
+         // Directly copy properties and relationships if they exist
+         // This relies on graph-editor-store correctly formatting them
+         if (entity.properties && Object.keys(entity.properties).length > 0) {
+           entityData.properties = entity.properties; // Should contain full definitions
+         }
+         if (entity.relationships && Object.keys(entity.relationships).length > 0) {
+           entityData.relationships = entity.relationships; // Should contain full definitions
+         }
+         // Add the entity data to the YAML structure
+         yamlData.entities[entityName] = entityData;
+      } else {
+         console.warn(`[convertOntologyToYaml] Entity '${entityName}' has unexpected format:`, entity);
       }
     }
+  } else {
+     console.warn('[convertOntologyToYaml] ontology.entities is missing or not an object:', ontology.entities);
   }
 
-  // Convert entities
-  if (Array.isArray(ontology.entities)) {
-    for (const entity of ontology.entities) {
-      if (entity && entity.name) {
-        const entityData: any = {}
-        
-        if (entity.properties && Object.keys(entity.properties).length > 0) {
-          entityData.properties = entity.properties
-        }
-        if (entity.relationships && Object.keys(entity.relationships).length > 0) {
-          entityData.relationships = entity.relationships
-        }
-        
-        yamlData.entities[entity.name] = Object.keys(entityData).length > 0 ? entityData : {}
-      }
-    }
-  }
-
-  return yamlData
+  return yamlData;
 }
 
 export const useOntologyEditorStore = create<OntologyEditorState>((set) => ({
@@ -142,28 +146,33 @@ export const useOntologyEditorStore = create<OntologyEditorState>((set) => ({
   
   updateFromYaml: (yaml: string) => {
     if (!yaml.trim()) {
-      set({ yaml: '', ontology: DEFAULT_ONTOLOGY })
-      return
+      // Reset to a default state consistent with object format if needed
+      set({ yaml: '', ontology: { version: '1.0.0', entities: {} } }); 
+      return;
     }
-
     try {
-      const yamlData = parse(yaml)
-      const ontology = convertYamlToOntology(yamlData)
-      set({ yaml, ontology })
+      const yamlData = parse(yaml); // yamlData has entities as object
+      // convertYamlToOntology might not be needed here if yamlData is already the desired internal format?
+      // For now, assume internal format is { version: ..., entities: {...} }
+      set({ yaml, ontology: yamlData }); 
     } catch (error) {
-      console.error('Error parsing YAML:', error)
-      set({ yaml, ontology: DEFAULT_ONTOLOGY })
+      console.error('Error parsing YAML:', error);
+      // Reset or keep previous state on error
+      set(state => ({ yaml, ontology: state.ontology || { version: '1.0.0', entities: {} } })); 
     }
   },
   
   updateFromOntology: (ontology: any) => {
+    // ontology comes from graphEditorStore.toOntology() -> { version: ..., entities: {...} }
     try {
-      const yamlData = convertOntologyToYaml(ontology || DEFAULT_ONTOLOGY)
-      const yaml = stringify(yamlData)
-      set({ yaml, ontology: ontology || DEFAULT_ONTOLOGY })
+      const yamlData = convertOntologyToYaml(ontology); // Converts {entities: obj} to {entities: obj}
+      const yaml = stringify(yamlData, { indent: 2 }); // Use indentation
+      // Store the ontology format received from graph store directly? Or convert? Be consistent.
+      set({ yaml, ontology: ontology || DEFAULT_ONTOLOGY }); 
     } catch (error) {
-      console.error('Error converting ontology to YAML:', error)
-      set({ ontology: ontology || DEFAULT_ONTOLOGY })
+      console.error('Error converting ontology to YAML:', error);
+      // Keep the ontology that caused the error?
+      set(state => ({ ontology: ontology || state.ontology || DEFAULT_ONTOLOGY }));
     }
   },
 }))

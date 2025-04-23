@@ -1,9 +1,12 @@
 import { type ClassValue, clsx } from "clsx"
 import { twMerge } from "tailwind-merge"
 
+/**
+ * Combines multiple class names with intelligent Tailwind CSS merging
+ */
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
-} 
+}
 
 export function formatLabel(key: string) {
   // Handle snake_case: replace underscores with spaces

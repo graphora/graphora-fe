@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react'
 import { GraphDisplay } from './graph-display'
 import { useGraphEditorStore } from '@/lib/store/graph-editor-store'
-import { useOntologyEditorStore } from '@/lib/store/ontology-editor-store'
 import { Button } from '@/components/ui/button'
 import {
   ArrowLeftRight,
@@ -13,13 +12,13 @@ import {
   Copy,
   Plus,
   Save,
-  RotateCcw,
   Edit,
   Download,
   Upload,
   Maximize,
   Minimize,
-  Menu
+  Menu,
+  Group
 } from 'lucide-react'
 import { Point } from '@/lib/utils/point'
 import { Vector } from '@/lib/utils/vector'
@@ -27,7 +26,7 @@ import { NodeEditor } from './node-editor'
 import { RelationshipEditor } from './relationship-editor'
 import { Tooltip } from '@/components/ui/tooltip'
 import { Separator } from '@/components/ui/separator'
-import { Dialog, DialogContent } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -360,7 +359,7 @@ export function GraphView({ ontology, onChange }: GraphViewProps) {
               onClick={handleResetView}
               className="flex-shrink-0"
             >
-              <RotateCcw className="h-4 w-4" />
+              <Group className="h-4 w-4" />
             </Button>
           </Tooltip>
 
@@ -516,9 +515,18 @@ export function GraphView({ ontology, onChange }: GraphViewProps) {
 
   return isFullScreen ? (
     <Dialog open={isFullScreen} onOpenChange={setIsFullScreen}>
-      <DialogContent className="max-w-[95vw] max-h-[95vh] w-[95vw] h-[95vh]">
-        {graphEditor}
+      <DialogContent className="max-w-[95vw] max-h-[95vh] w-[95vw] h-[95vh] flex flex-col p-0">
+        <DialogHeader className="p-4 border-b">
+           <DialogTitle>Graph Editor (Full Screen)</DialogTitle>
+        </DialogHeader>
+        <div className="flex-1 overflow-auto">
+           {graphEditor}
+        </div>
       </DialogContent>
     </Dialog>
-  ) : graphEditor
+  ) : (
+     <div className="h-full w-full">
+        {graphEditor}
+     </div>
+  )
 }

@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { useGraphEditorStore } from '@/lib/store/graph-editor-store'
+import { useGraphEditorStore, PropertyDefinition } from '@/lib/store/graph-editor-store'
 import { Point } from '@/lib/utils/point'
 import { Vector } from '@/lib/utils/vector'
 import { NodeEditor } from './node-editor'
@@ -472,66 +472,6 @@ export function GraphDisplay({ className = '' }: GraphDisplayProps) {
         ctx.fillText(displayText, node.position.x, node.position.y)
       }
 
-      // Draw node properties (like arrows_app)
-      if (Object.keys(node.properties).length > 0) {
-        const propertyKeys = Object.keys(node.properties)
-        const displayCount = Math.min(propertyKeys.length, 2) // Show at most 2 properties
-        
-        if (displayCount > 0) {
-          const propertyY = node.position.y + nodeRadius + 5
-          
-          // Use a slightly larger font for properties
-          const propFontSize = Math.max(12, (graph.style['font-size'] || 12) - 2)
-          ctx.font = `${propFontSize}px ${graph.style['font-family'] || 'Arial, sans-serif'}`
-          ctx.textAlign = 'center'
-          ctx.textBaseline = 'top'
-          ctx.fillStyle = '#000000' // Use black for better readability
-          
-          // Draw white background for property text
-          for (let i = 0; i < displayCount; i++) {
-            const propKey = propertyKeys[i]
-            const propValue = node.properties[propKey]
-            const propText = `${propKey}: ${propValue}`
-            const textMetrics = ctx.measureText(propText)
-            const padding = 4
-            
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.9)'
-            ctx.fillRect(
-              node.position.x - textMetrics.width / 2 - padding,
-              propertyY + i * (propFontSize + 4) - 2,
-              textMetrics.width + padding * 2,
-              propFontSize + 4
-            )
-          }
-          
-          // Draw property text
-          ctx.fillStyle = '#000000'
-          for (let i = 0; i < displayCount; i++) {
-            const propKey = propertyKeys[i]
-            const propValue = node.properties[propKey]
-            ctx.fillText(`${propKey}: ${propValue}`, node.position.x, propertyY + i * (propFontSize + 4))
-          }
-          
-          // Show count of additional properties
-          if (propertyKeys.length > 2) {
-            const moreText = `+${propertyKeys.length - 2} more`
-            const textMetrics = ctx.measureText(moreText)
-            const padding = 4
-            
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.9)'
-            ctx.fillRect(
-              node.position.x - textMetrics.width / 2 - padding,
-              propertyY + displayCount * (propFontSize + 4) - 2,
-              textMetrics.width + padding * 2,
-              propFontSize + 4
-            )
-            
-            ctx.fillStyle = '#000000'
-            ctx.fillText(moreText, node.position.x, propertyY + displayCount * (propFontSize + 4))
-          }
-        }
-      }
-      
       // Draw relationship creation handle if node is selected
       if (isSelected && !isCreatingRelationship) {
         const handleRadius = 10
@@ -873,37 +813,71 @@ export function GraphDisplay({ className = '' }: GraphDisplayProps) {
     const y = e.clientY - rect.top
     const point = new Point(x, y)
     
-    // Transform the point to graph coordinates
     const graphPoint = new Point(
       (point.x - viewTransformation.translate.dx) / viewTransformation.scale,
       (point.y - viewTransformation.translate.dy) / viewTransformation.scale
     )
     
-    // Check if we double-clicked on a node
+    // 1. Check if we double-clicked on a node
     const nodeRadius = graph.style['node-radius'] || 40
-    let clickedOnNode = false
-    
     for (const nodeId in graph.nodes) {
       const node = graph.nodes[nodeId]
-      const distance = Math.sqrt(
-        Math.pow(graphPoint.x - node.position.x, 2) + 
-        Math.pow(graphPoint.y - node.position.y, 2)
-      )
-      
-      if (distance <= nodeRadius) {
-        clickedOnNode = true
-        selectNode(nodeId)
+      if (node.position.distanceTo(graphPoint) <= nodeRadius) {
+        console.log('Double clicked node:', nodeId);
+        selectNode(nodeId) 
         setEditingNodeId(nodeId)
-        break
+        setEditingRelationshipId(null) // Close relationship editor if open
+        return // Found a node, stop here
       }
     }
     
-    // If we didn't click on a node, create a new one
-    if (!clickedOnNode) {
-      // Create a new node at the clicked position
-      const nodeId = addNode(graphPoint, 'New Entity', [])
-      setEditingNodeId(nodeId)
+    // 2. If not on a node, check if we double-clicked on a relationship
+    const threshold = 5 / viewTransformation.scale; // Adjust threshold based on zoom
+    for (const relationship of Object.values(graph.relationships)) {
+      const fromNode = graph.nodes[relationship.from]
+      const toNode = graph.nodes[relationship.to]
+      if (!fromNode || !toNode) continue
+
+      // --- Distance to line segment calculation (simplified) ---
+      // Calculate approximate midpoint for simple check (more accurate check needed for curves/offsets)
+      const midX = (fromNode.position.x + toNode.position.x) / 2;
+      const midY = (fromNode.position.y + toNode.position.y) / 2;
+      const midpoint = new Point(midX, midY);
+      
+      // Check distance to midpoint (simple check, might need refinement)
+      if (graphPoint.distanceTo(midpoint) < (fromNode.position.distanceTo(toNode.position) / 2) + threshold) {
+           // A more accurate check: distance from point to the line segment
+           const lineVec = fromNode.position.vectorTo(toNode.position);
+           const pointVec = fromNode.position.vectorTo(graphPoint);
+           const lineLen = lineVec.magnitude(); // Use magnitude
+           const lineLenSq = lineLen * lineLen; // Calculate square
+           
+           if (lineLenSq === 0) continue; // Avoid division by zero for self-loops
+           
+           const t = (pointVec.dx * lineVec.dx + pointVec.dy * lineVec.dy) / lineLenSq;
+           const clampedT = Math.max(0, Math.min(1, t)); // Clamp projection onto the segment
+           
+           const closestPoint = fromNode.position.translate(lineVec.scale(clampedT));
+           const distance = graphPoint.distanceTo(closestPoint); // Use distanceTo
+           const distanceSq = distance * distance; // Calculate square
+
+           if (distanceSq <= threshold * threshold) {
+              console.log('Double clicked relationship:', relationship.id);
+              selectRelationship(relationship.id)
+              setEditingRelationshipId(relationship.id)
+              setEditingNodeId(null) // Close node editor if open
+              return // Found a relationship, stop here
+           }
+      }
+      // --- End Distance Calculation ---
     }
+
+    // 3. If not on a node or relationship, create a new node
+    console.log('Double click on empty space, creating node.');
+    const newNodeId = addNode(graphPoint, 'New Entity', [])
+    selectNode(newNodeId) // Select the new node
+    setEditingNodeId(newNodeId)
+    setEditingRelationshipId(null)
   }
 
   const handleWheel = (e: React.WheelEvent<HTMLCanvasElement>) => {
@@ -923,9 +897,26 @@ export function GraphDisplay({ className = '' }: GraphDisplayProps) {
       (point.y - viewTransformation.translate.dy) / viewTransformation.scale
     )
 
-    // Update the scale
-    const delta = e.deltaY < 0 ? 1.1 : 0.9
-    const newScale = viewTransformation.scale * delta
+    // Reduce sensitivity by 50% by using a smaller delta
+    // Original: const delta = e.deltaY < 0 ? 1.1 : 0.9
+    const delta = e.deltaY < 0 ? 1.05 : 0.95 // Reduced sensitivity by 50%
+    
+    // Calculate new scale with min/max limits
+    const MIN_SCALE = 0.2 // Prevent zooming out too far
+    const MAX_SCALE = 3.0 // Prevent excessive zooming in
+    
+    let newScale = viewTransformation.scale * delta
+    
+    // Apply scale limits
+    newScale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, newScale))
+    
+    // Don't update if we're at the limits
+    if (
+      (newScale === MIN_SCALE && delta < 1.0) || 
+      (newScale === MAX_SCALE && delta > 1.0)
+    ) {
+      return
+    }
 
     // Calculate the point in graph coordinates after scaling
     const graphPointAfter = new Point(
