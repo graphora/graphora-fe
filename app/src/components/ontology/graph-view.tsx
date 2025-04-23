@@ -5,21 +5,21 @@ import { GraphDisplay } from './graph-display'
 import { useGraphEditorStore } from '@/lib/store/graph-editor-store'
 import { useOntologyEditorStore } from '@/lib/store/ontology-editor-store'
 import { Button } from '@/components/ui/button'
-import { 
-  ArrowLeftRight, 
-  ZoomIn, 
-  ZoomOut, 
-  Trash, 
-  Copy, 
+import {
+  ArrowLeftRight,
+  ZoomIn,
+  ZoomOut,
+  Trash,
+  Copy,
   Plus,
   Save,
   RotateCcw,
   Edit,
-  Grid,
   Download,
   Upload,
   Maximize,
-  Minimize
+  Minimize,
+  Menu
 } from 'lucide-react'
 import { Point } from '@/lib/utils/point'
 import { Vector } from '@/lib/utils/vector'
@@ -28,6 +28,15 @@ import { RelationshipEditor } from './relationship-editor'
 import { Tooltip } from '@/components/ui/tooltip'
 import { Separator } from '@/components/ui/separator'
 import { Dialog, DialogContent } from '@/components/ui/dialog'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger
+} from '@/components/ui/dropdown-menu'
 
 interface GraphViewProps {
   ontology: any
@@ -44,8 +53,10 @@ export function GraphView({ ontology, onChange }: GraphViewProps) {
     duplicateSelection,
     addNode,
     clearSelection,
+    selectNode,
     graph,
-    selection
+    selection,
+    canvasSize
   } = useGraphEditorStore()
 
   // State for editors
@@ -55,62 +66,127 @@ export function GraphView({ ontology, onChange }: GraphViewProps) {
 
   // Initialize the graph from the ontology
   useEffect(() => {
-    console.log('Initializing graph from ontology:', ontology)
-    
-    if (ontology && ontology.entities) {
-      // Count the relationships in the ontology for debugging
-      let relationshipCount = 0
-      Object.values(ontology.entities).forEach((entity: any) => {
-        if (entity.relationships) {
-          relationshipCount += Object.keys(entity.relationships).length
-        }
-      })
-      console.log(`Ontology has ${Object.keys(ontology.entities).length} entities and approximately ${relationshipCount} relationships`)
+    console.log('Initializing graph from ontology:', ontology);
+
+    if (!ontology || !ontology.entities) {
+      console.warn('Invalid ontology data:', ontology);
+      return;
     }
     
-    fromOntology(ontology)
-  }, [ontology, fromOntology])
+    try {
+      // Convert ontology to graph
+      fromOntology(ontology);
+      console.log('Successfully converted ontology to graph');
+      
+      // Wait a bit for the graph to fully render
+      setTimeout(() => {
+        handleResetView();
+      }, 300);
+    } catch (error) {
+      console.error('Error converting ontology to graph:', error);
+      alert('Error initializing the graph. Please check the console for details.');
+    }
+  }, [ontology, fromOntology]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Handle saving the graph to the ontology
   const handleSave = () => {
-    const newOntology = toOntology()
-    onChange(newOntology)
-  }
+    try {
+      const newOntology = toOntology();
+      console.log('Converted graph to ontology:', newOntology);
+      onChange(newOntology);
+    } catch (error) {
+      console.error('Error converting graph to ontology:', error);
+      alert('There was an error saving the graph. Please check the console for details.');
+    }
+  };
 
-  // Handle zooming in
+  // Handle zooming in with stronger zoom
   const handleZoomIn = () => {
     setViewTransformation({
-      scale: viewTransformation.scale * 1.2
-    })
-  }
+      scale: viewTransformation.scale * 1.5
+    });
+  };
 
-  // Handle zooming out
+  // Handle zooming out with stronger zoom
   const handleZoomOut = () => {
     setViewTransformation({
-      scale: viewTransformation.scale / 1.2
-    })
-  }
+      scale: viewTransformation.scale / 1.5
+    });
+  };
 
-  // Handle resetting the view
+  // Handle resetting the view to fit all nodes
   const handleResetView = () => {
+    const nodes = Object.values(graph.nodes);
+    if (nodes.length === 0) {
+      // If no nodes, just reset to default
+      setViewTransformation({
+        scale: 1,
+        translate: new Vector(0, 0)
+      });
+      return;
+    }
+    
+    // Find bounds of all nodes
+    let minX = Infinity;
+    let minY = Infinity;
+    let maxX = -Infinity;
+    let maxY = -Infinity;
+    
+    nodes.forEach(node => {
+      minX = Math.min(minX, node.position.x);
+      minY = Math.min(minY, node.position.y);
+      maxX = Math.max(maxX, node.position.x);
+      maxY = Math.max(maxY, node.position.y);
+    });
+    
+    // Add padding
+    const padding = 100;
+    minX -= padding;
+    minY -= padding;
+    maxX += padding;
+    maxY += padding;
+    
+    // Calculate center point
+    const centerX = (minX + maxX) / 2;
+    const centerY = (minY + maxY) / 2;
+    
+    // Calculate width and height of node area
+    const width = maxX - minX;
+    const height = maxY - minY;
+    
+    // Calculate scale to fit all nodes
+    const scaleX = canvasSize.width / width;
+    const scaleY = canvasSize.height / height;
+    const scale = Math.min(scaleX, scaleY, 1.0); // Cap at 1.0 to avoid excessive zoom
+    
+    // Update view transformation
     setViewTransformation({
-      scale: 1,
-      translate: new Vector(0, 0)
-    })
-  }
+      scale: scale,
+      translate: new Vector(
+        canvasSize.width / 2 - centerX * scale,
+        canvasSize.height / 2 - centerY * scale
+      )
+    });
+  };
 
-  // Handle adding a new node
+  // Handle adding a new node at the center of the view
   const handleAddNode = () => {
-    // Add a node in the center of the view
-    const centerX = 400 / viewTransformation.scale - viewTransformation.translate.dx / viewTransformation.scale
-    const centerY = 300 / viewTransformation.scale - viewTransformation.translate.dy / viewTransformation.scale
-    addNode(new Point(centerX, centerY), 'New Entity')
-  }
+    // Add a node in the center of the visible area
+    const centerX = (canvasSize.width / 2 - viewTransformation.translate.dx) / viewTransformation.scale;
+    const centerY = (canvasSize.height / 2 - viewTransformation.translate.dy) / viewTransformation.scale;
+    
+    const nodeId = addNode(new Point(centerX, centerY), 'New Entity');
+    
+    // Select and open editor for the new node
+    clearSelection();
+    selectNode(nodeId);
+    setEditingNodeId(nodeId);
+  };
 
   // Handle creating a relationship between selected nodes
   const handleCreateRelationship = () => {
     const { selection, addRelationship } = useGraphEditorStore.getState()
-    
+
     if (selection.nodes.length === 2) {
       const [fromId, toId] = selection.nodes
       addRelationship(fromId, toId, 'RELATES_TO')
@@ -134,12 +210,12 @@ export function GraphView({ ontology, onChange }: GraphViewProps) {
       relationships: graph.relationships,
       style: graph.style
     }
-    
+
     const dataStr = JSON.stringify(graphData, null, 2)
     const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr)
-    
+
     const exportFileDefaultName = 'graph.json'
-    
+
     const linkElement = document.createElement('a')
     linkElement.setAttribute('href', dataUri)
     linkElement.setAttribute('download', exportFileDefaultName)
@@ -151,16 +227,16 @@ export function GraphView({ ontology, onChange }: GraphViewProps) {
     const input = document.createElement('input')
     input.type = 'file'
     input.accept = '.json'
-    
+
     input.onchange = (e: any) => {
       const file = e.target.files[0]
       if (!file) return
-      
+
       const reader = new FileReader()
       reader.onload = (event) => {
         try {
           const graphData = JSON.parse(event.target?.result as string)
-          
+
           // Update the graph with the imported data
           useGraphEditorStore.setState({
             graph: {
@@ -175,7 +251,7 @@ export function GraphView({ ontology, onChange }: GraphViewProps) {
       }
       reader.readAsText(file)
     }
-    
+
     input.click()
   }
 
@@ -187,136 +263,216 @@ export function GraphView({ ontology, onChange }: GraphViewProps) {
   const graphEditor = (
     <div className="h-full flex flex-col">
       <div className="border-b p-2 flex justify-between items-center">
-        <div className="flex gap-1">
-          <Tooltip content="Add Node">
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={handleAddNode}
-            >
-              <Plus className="h-4 w-4" />
-            </Button>
-          </Tooltip>
-          
-          <Tooltip content="Create Relationship (select 2 nodes)">
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={handleCreateRelationship}
-              disabled={selection.nodes.length !== 2}
-            >
-              <ArrowLeftRight className="h-4 w-4" />
-            </Button>
-          </Tooltip>
-          
-          <Tooltip content="Edit Selected">
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={handleEdit}
-              disabled={selection.nodes.length !== 1 && selection.relationships.length !== 1}
-            >
-              <Edit className="h-4 w-4" />
-            </Button>
-          </Tooltip>
-          
-          <Separator orientation="vertical" className="mx-1 h-8" />
-          
-          <Tooltip content="Duplicate Selection">
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={duplicateSelection}
-              disabled={selection.nodes.length === 0 && selection.relationships.length === 0}
-            >
-              <Copy className="h-4 w-4" />
-            </Button>
-          </Tooltip>
-          
-          <Tooltip content="Delete Selection">
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={deleteSelection}
-              disabled={selection.nodes.length === 0 && selection.relationships.length === 0}
-            >
-              <Trash className="h-4 w-4" />
-            </Button>
-          </Tooltip>
-        </div>
-        
-        <div className="flex gap-1">
+        <div className="flex gap-1 pr-2 flex-nowrap">
+          {/* Hamburger menu only in standard view (not full screen) */}
+          <div className={!isFullScreen ? 'block' : 'hidden'}>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="icon" className="flex-shrink-0">
+                  <Menu className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-56">
+                <DropdownMenuLabel>Node Operations</DropdownMenuLabel>
+                <DropdownMenuGroup>
+                  <DropdownMenuItem onClick={handleAddNode}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Node
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={handleCreateRelationship}
+                    disabled={selection.nodes.length !== 2}
+                  >
+                    <ArrowLeftRight className="h-4 w-4 mr-2" />
+                    Create Relationship
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={handleEdit}
+                    disabled={selection.nodes.length !== 1 && selection.relationships.length !== 1}
+                  >
+                    <Edit className="h-4 w-4 mr-2" />
+                    Edit Selected
+                  </DropdownMenuItem>
+                </DropdownMenuGroup>
+
+                <DropdownMenuSeparator />
+                <DropdownMenuLabel>Selection</DropdownMenuLabel>
+                <DropdownMenuGroup>
+                  <DropdownMenuItem
+                    onClick={duplicateSelection}
+                    disabled={selection.nodes.length === 0 && selection.relationships.length === 0}
+                  >
+                    <Copy className="h-4 w-4 mr-2" />
+                    Duplicate Selection
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={deleteSelection}
+                    disabled={selection.nodes.length === 0 && selection.relationships.length === 0}
+                  >
+                    <Trash className="h-4 w-4 mr-2" />
+                    Delete Selection
+                  </DropdownMenuItem>
+                </DropdownMenuGroup>
+
+                <DropdownMenuSeparator />
+                <DropdownMenuLabel>File Operations</DropdownMenuLabel>
+                <DropdownMenuGroup>
+                  <DropdownMenuItem onClick={handleExportGraph}>
+                    <Download className="h-4 w-4 mr-2" />
+                    Export Graph
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleImportGraph}>
+                    <Upload className="h-4 w-4 mr-2" />
+                    Import Graph
+                  </DropdownMenuItem>
+                </DropdownMenuGroup>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+
+          {/* Essential view controls - always visible */}
           <Tooltip content="Zoom In">
             <Button
               variant="outline"
               size="icon"
               onClick={handleZoomIn}
+              className="flex-shrink-0 ml-2"
             >
               <ZoomIn className="h-4 w-4" />
             </Button>
           </Tooltip>
-          
+
           <Tooltip content="Zoom Out">
             <Button
               variant="outline"
               size="icon"
               onClick={handleZoomOut}
+              className="flex-shrink-0"
             >
               <ZoomOut className="h-4 w-4" />
             </Button>
           </Tooltip>
-          
+
           <Tooltip content="Reset View">
             <Button
               variant="outline"
               size="icon"
               onClick={handleResetView}
+              className="flex-shrink-0"
             >
-              <Grid className="h-4 w-4" />
+              <RotateCcw className="h-4 w-4" />
             </Button>
           </Tooltip>
-          
-          <Separator orientation="vertical" className="mx-1 h-8" />
-          
-          <Tooltip content="Export Graph">
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={handleExportGraph}
-            >
-              <Download className="h-4 w-4" />
-            </Button>
-          </Tooltip>
-          
-          <Tooltip content="Import Graph">
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={handleImportGraph}
-            >
-              <Upload className="h-4 w-4" />
-            </Button>
-          </Tooltip>
-          
-          <Separator orientation="vertical" className="mx-1 h-8" />
-          
+
+          <Separator orientation="vertical" className="mx-1 h-8 flex-shrink-0" />
+
+          {/* Visible only in full screen mode */}
+          {isFullScreen && (
+            <>
+              <Tooltip content="Add Node">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={handleAddNode}
+                  className="flex-shrink-0"
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </Tooltip>
+
+              <Tooltip content="Create Relationship (select 2 nodes)">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={handleCreateRelationship}
+                  disabled={selection.nodes.length !== 2}
+                  className="flex-shrink-0"
+                >
+                  <ArrowLeftRight className="h-4 w-4" />
+                </Button>
+              </Tooltip>
+
+              <Tooltip content="Edit Selected">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={handleEdit}
+                  disabled={selection.nodes.length !== 1 && selection.relationships.length !== 1}
+                  className="flex-shrink-0"
+                >
+                  <Edit className="h-4 w-4" />
+                </Button>
+              </Tooltip>
+
+              <Tooltip content="Duplicate Selection">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={duplicateSelection}
+                  disabled={selection.nodes.length === 0 && selection.relationships.length === 0}
+                  className="flex-shrink-0"
+                >
+                  <Copy className="h-4 w-4" />
+                </Button>
+              </Tooltip>
+
+              <Tooltip content="Delete Selection">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={deleteSelection}
+                  disabled={selection.nodes.length === 0 && selection.relationships.length === 0}
+                  className="flex-shrink-0"
+                >
+                  <Trash className="h-4 w-4" />
+                </Button>
+              </Tooltip>
+
+              <Tooltip content="Export Graph">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={handleExportGraph}
+                  className="flex-shrink-0"
+                >
+                  <Download className="h-4 w-4" />
+                </Button>
+              </Tooltip>
+
+              <Tooltip content="Import Graph">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={handleImportGraph}
+                  className="flex-shrink-0"
+                >
+                  <Upload className="h-4 w-4" />
+                </Button>
+              </Tooltip>
+            </>
+          )}
+        </div>
+
+        <div className="flex gap-1 items-center">
+          {/* Full screen button - always visible */}
           <Tooltip content={isFullScreen ? "Exit Full Screen" : "Full Screen"}>
             <Button
               variant="outline"
               size="icon"
               onClick={toggleFullScreen}
+              className="flex-shrink-0"
             >
               {isFullScreen ? <Minimize className="h-4 w-4" /> : <Maximize className="h-4 w-4" />}
             </Button>
           </Tooltip>
-          
-          <Separator orientation="vertical" className="mx-1 h-8" />
-          
+
+          {/* Save to YAML button - always visible */}
           <Tooltip content="Save graph to YAML format">
             <Button
               variant="default"
               size="sm"
               onClick={handleSave}
+              className="flex-shrink-0 ml-2"
             >
               <Save className="h-4 w-4 mr-1" />
               Save to YAML
@@ -324,15 +480,15 @@ export function GraphView({ ontology, onChange }: GraphViewProps) {
           </Tooltip>
         </div>
       </div>
-      
+
       <div className="flex-1 relative">
         <GraphDisplay className="absolute inset-0" />
       </div>
-      
+
       <div className="border-t p-2 text-xs text-muted-foreground">
         <div className="flex justify-between">
           <div>
-            <strong>Nodes:</strong> {Object.keys(graph.nodes).length} | 
+            <strong>Nodes:</strong> {Object.keys(graph.nodes).length} |
             <strong> Relationships:</strong> {Object.keys(graph.relationships).length}
           </div>
           <div>
@@ -343,17 +499,17 @@ export function GraphView({ ontology, onChange }: GraphViewProps) {
           <strong>Tip:</strong> Double-click to add a node. Double-click on a node or relationship to edit it.
         </div>
       </div>
-      
+
       {/* Node Editor */}
-      <NodeEditor 
-        nodeId={editingNodeId} 
-        onClose={() => setEditingNodeId(null)} 
+      <NodeEditor
+        nodeId={editingNodeId}
+        onClose={() => setEditingNodeId(null)}
       />
-      
+
       {/* Relationship Editor */}
-      <RelationshipEditor 
-        relationshipId={editingRelationshipId} 
-        onClose={() => setEditingRelationshipId(null)} 
+      <RelationshipEditor
+        relationshipId={editingRelationshipId}
+        onClose={() => setEditingRelationshipId(null)}
       />
     </div>
   )

@@ -35,17 +35,26 @@ export function YAMLEditor({ value, onChange, onValidYamlChange }: YAMLEditorPro
   }, [])
 
   return (
-    <div className="h-full border rounded-md">
-      <CodeMirror
-        value={value}
-        height="595px"
-        theme="dark"
-        extensions={[
-          StreamLanguage.define(yaml),
-          EditorView.lineWrapping,
-        ]}
-        onChange={handleChange}
-      />
+    <div className="h-full border rounded-md relative overflow-hidden">
+      <div style={{
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        overflow: 'auto'
+      }}>
+        <CodeMirror
+          value={value}
+          height="100%"
+          theme="dark"
+          extensions={[
+            StreamLanguage.define(yaml),
+            EditorView.lineWrapping,
+          ]}
+          onChange={handleChange}
+        />
+      </div>
     </div>
   )
 }
