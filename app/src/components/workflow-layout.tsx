@@ -62,7 +62,7 @@ export function WorkflowLayout({
   }, [hasUnsavedChanges])
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="h-screen flex flex-col">
       <div className="bg-background border-b px-6 py-5 shadow-sm">
         <div className="flex items-center justify-between max-w-screen-xl mx-auto relative">
           <div className="absolute left-0 top-1/2 transform -translate-y-1/2">
@@ -147,7 +147,7 @@ export function WorkflowLayout({
         </div>
       )} */}
       
-      <main className="flex-1 overflow-auto">
+      <main className="flex-1 flex flex-col overflow-hidden">
         {children}
       </main>
     </div>
