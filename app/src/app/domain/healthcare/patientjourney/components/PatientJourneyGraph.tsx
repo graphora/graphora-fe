@@ -173,49 +173,82 @@ export function PatientJourneyGraph({ patientData }: PatientJourneyGraphProps) {
   // Create a timeline visualization using HTML/CSS instead of Neo4j NVL
   // This is a fallback since we're having issues with the Neo4j NVL library
   return (
-    <div className="w-full h-full overflow-auto">
-      <div className="relative w-full min-w-[1200px] p-8">
-        {/* Timeline line */}
-        <div className="absolute left-0 right-0 h-1 bg-gray-200 top-1/2 transform -translate-y-1/2"></div>
-        
-        {/* Timeline nodes */}
-        <div className="relative">
-          {graphData.nodes.map((node, index) => (
-            <div 
-              key={`timeline-node-${node.id}-${index}`}
-              className="absolute rounded-lg p-4 shadow-lg border border-gray-200 w-64 bg-white"
-              style={{
-                left: `${index * 180}px`,
-                top: index % 2 === 0 ? '20px' : '200px',
-                borderLeftColor: node.color,
-                borderLeftWidth: '4px'
-              }}
-            >
-              <div className="absolute w-1 h-16 bg-gray-200" style={{
-                left: '50%',
-                top: index % 2 === 0 ? '100%' : '-64px'
-              }}></div>
-              <div className="absolute w-3 h-3 rounded-full bg-white border-2 border-primary" style={{
-                left: '50%',
-                top: index % 2 === 0 ? 'calc(100% + 64px)' : '-8px',
-                transform: 'translateX(-50%)'
-              }}></div>
-              <div className="flex items-start mb-2">
-                <div 
-                  className="w-3 h-3 rounded-full mr-2 mt-1 flex-shrink-0" 
-                  style={{ backgroundColor: node.color }}
-                ></div>
-                <h4 className="font-medium text-sm">{node.label}</h4>
-              </div>
-              <div className="text-xs text-gray-500 mb-1">{node.properties.date}</div>
-              <div className="text-xs">{node.properties.details}</div>
-              <div className="mt-2">
-                <span className="inline-flex items-center rounded-full bg-gray-100 px-2 py-1 text-xs">
-                  {node.type}
-                </span>
-              </div>
-            </div>
-          ))}
+    <div className="w-full h-full">
+      {/* Timeline container */}
+      <div className="relative p-4 pt-10">
+        {/* Timeline events */}
+        <div className="relative mt-8">
+          {/* Main timeline line */}
+          <div className="absolute h-1 bg-gray-300 left-0 right-0" style={{ top: '20px' }}></div>
+          
+          {/* Timeline nodes with dots, lines and cards */}
+          <div className="flex justify-between">
+            {graphData.nodes.map((node, index) => {
+              const isTop = index % 2 === 0;
+              const verticalLineHeight = isTop ? 40 : 100;
+              
+              return (
+                <div key={`node-${node.id}`} className="relative" style={{ width: `${100 / graphData.nodes.length}%` }}>
+                  {/* Date label */}
+                  <div className="absolute text-xs font-medium text-gray-600 whitespace-nowrap" 
+                    style={{ 
+                      top: '0px',
+                      left: '50%',
+                      transform: 'translateX(-50%)'
+                    }}>
+                    {node.properties.date}
+                  </div>
+                  
+                  {/* Timeline dot - positioned exactly on the line */}
+                  <div className="absolute rounded-full z-10" 
+                    style={{ 
+                      backgroundColor: node.color,
+                      width: '8px',
+                      height: '8px',
+                      top: '20px',
+                      left: '50%',
+                      transform: 'translate(-50%, -50%)',
+                      border: '1px solid white'
+                    }}>
+                  </div>
+                  
+                  {/* Vertical connecting line - starts from the dot */}
+                  <div 
+                    style={{
+                      position: 'absolute',
+                      top: '20px',
+                      left: '50%',
+                      width: '2px',
+                      height: `${verticalLineHeight}px`,
+                      backgroundColor: node.color,
+                      transform: 'translateX(-50%)'
+                    }}>
+                  </div>
+                  
+                  {/* Event card */}
+                  <div className="absolute border border-gray-200 rounded p-3 bg-white shadow-sm"
+                    style={{
+                      borderLeftColor: node.color,
+                      borderLeftWidth: '3px',
+                      maxWidth: '180px',
+                      width: '90%',
+                      top: `${20 + verticalLineHeight}px`,
+                      left: '50%',
+                      transform: 'translateX(-50%)'
+                    }}>
+                    <div className="flex items-center mb-1">
+                      <div className="w-2 h-2 rounded-full mr-2" style={{ backgroundColor: node.color }}></div>
+                      <h4 className="font-medium text-sm">{node.label}</h4>
+                    </div>
+                    <div className="text-xs">{node.properties.details}</div>
+                    <div className="mt-2">
+                      <span className="text-xs bg-gray-100 px-2 py-0.5 rounded-full">{node.type}</span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
     </div>
