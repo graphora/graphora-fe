@@ -56,7 +56,6 @@ function MergePageContent() {
   const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>({})
   const [isRetrying, setIsRetrying] = useState(false)
   const [currentConflict, setCurrentConflict] = useState<any>(null)
-  const [mergeStarted, setMergeStarted] = useState(false)
   const [currentMergeId, setCurrentMergeId] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<string>('progress')
   const statusIntervalRef = useRef<NodeJS.Timeout | null>(null)
@@ -74,6 +73,7 @@ function MergePageContent() {
   const [startTime, setStartTime] = useState<number | null>(null);
   const [elapsedTime, setElapsedTime] = useState<number>(0); // in seconds
   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const hasStartedMergeProcess = useRef<boolean>(false);
 
   const sessionId = searchParams.get('session_id') || ''
   const transformId = searchParams.get('transform_id') || ''
@@ -178,8 +178,6 @@ function MergePageContent() {
   useEffect(() => {
     // Consolidated effect to handle initial status check and polling
     if (currentMergeId) {
-      setMergeStarted(true)
-
       const checkAndPollStatus = async () => {
         if (!currentMergeId || (statusIntervalRef.current !== null)) {
              // Don't start if no ID or already polling
@@ -247,7 +245,6 @@ function MergePageContent() {
              clearInterval(statusIntervalRef.current);
              statusIntervalRef.current = null;
          }
-         setMergeStarted(false); // Reset merge started flag
      }
   }, [currentMergeId, refreshVisualization]) // Depend only on currentMergeId and refreshVisualization
 
@@ -261,7 +258,6 @@ function MergePageContent() {
 
     try {
       setError(null)
-      setMergeStarted(true)
 
       // Add initial status message
       setMessages(prev => [...prev, {
@@ -545,6 +541,7 @@ function MergePageContent() {
       setMessages([])
       setCurrentConflict(null)
       setCurrentMergeId(null); // Reset merge ID to trigger potential restart
+      hasStartedMergeProcess.current = false;
 
       // Start the merge process again (which will set a new mergeId and trigger polling via useEffect)
       await startMergeProcess()
@@ -754,17 +751,18 @@ function MergePageContent() {
 
     // If we already have an initial merge_id, polling is handled by the other useEffect.
     // If not, start a new merge process.
-    if (!initialMergeId && !currentMergeId && !mergeStarted) { // Ensure we only start once
-       console.log("No initial merge ID found, starting new merge process.");
+    if (!initialMergeId && !hasStartedMergeProcess.current) { 
+      console.log("No initial merge ID found, starting new merge process.");
       // Start the merge process when the component mounts without an initial mergeId
+      hasStartedMergeProcess.current = true; 
       startMergeProcess()
     } else {
-        console.log("Initial merge ID exists or merge already started, skipping automatic start.");
+        console.log("Initial merge ID exists or merge already started/loaded, skipping automatic start.");
     }
 
     // Cleanup is handled by the other useEffect hook tied to currentMergeId
     // No return function needed here anymore for interval cleanup.
-  }, [sessionId, transformId, initialMergeId, currentMergeId, mergeStarted]) // Added dependencies
+  }, [sessionId, transformId, initialMergeId]) // Remove currentMergeId from dependencies
 
   // Scroll to bottom of messages when new ones are added
   useEffect(() => {
