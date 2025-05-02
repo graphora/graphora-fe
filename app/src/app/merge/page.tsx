@@ -28,7 +28,8 @@ const workflowSteps = [
   { id: 'ontology', title: 'Ontology Entry', description: 'Define your graph structure' },
   { id: 'upload', title: 'Document Upload', description: 'Upload documents to process' },
   { id: 'edit', title: 'Graph Editing', description: 'Refine extracted graph' },
-  { id: 'merge', title: 'Merge Process', description: 'Combine data into final graph' }
+  { id: 'merge', title: 'Merge Process', description: 'Combine data into final graph' },
+  { id: 'domain-apps', title: 'Domain Apps', description: 'Visualize patient pathways' }
 ]
 
 function formatElapsedTime(seconds: number): string {
@@ -952,7 +953,7 @@ function MergePageContent() {
                   </div>
             </TabsContent>
             <TabsContent value="visualization" className="flex-1 p-0 h-full">
-              <div className="h-full relative">
+              <div className="relative h-full flex flex-col">
                 {/* Show the merge completion banner at the top of the visualization when all conflicts are resolved */}
                 {allConflictsResolved && currentMergeId && (
                   <div className="absolute top-0 left-0 right-0 z-10 p-4 bg-white bg-opacity-90 border-b">
@@ -1000,6 +1001,18 @@ function MergePageContent() {
                     )}
                   </div>
                 )}
+                {/* Domain Apps Navigation Button */}
+                <div className="absolute top-4 right-4 z-10 flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => router.push('/domain-apps')}
+                    className="flex items-center gap-1"
+                  >
+                    <Network className="h-4 w-4" />
+                    <span>Domain Apps</span>
+                  </Button>
+                </div>
               </div>
             </TabsContent>
           </Tabs>
