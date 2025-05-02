@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -14,7 +14,8 @@ import { Button } from '@/components/ui/button'
 import { ChevronLeft } from 'lucide-react'
 import Link from 'next/link'
 
-export default function PatientJourneyPage() {
+// Create a client component that uses useSearchParams
+function PatientJourneyContent() {
   const searchParams = useSearchParams()
   const [patientId, setPatientId] = useState<string>(searchParams.get('patientId') || '')
   const [patients, setPatients] = useState<Array<{ id: string, name: string }>>([])
@@ -231,5 +232,24 @@ export default function PatientJourneyPage() {
         )
       )}
     </div>
+  )
+}
+
+// Main page component with Suspense boundary
+export default function PatientJourneyPage() {
+  return (
+    <Suspense fallback={
+      <div className="container mx-auto py-6">
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold tracking-tight">Patient Journey Timeline</h1>
+          <p className="text-muted-foreground">Loading patient data...</p>
+        </div>
+        <div className="grid gap-6">
+          <Skeleton className="h-[400px] w-full" />
+        </div>
+      </div>
+    }>
+      <PatientJourneyContent />
+    </Suspense>
   )
 }

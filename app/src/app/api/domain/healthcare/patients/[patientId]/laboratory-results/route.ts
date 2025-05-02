@@ -3,10 +3,10 @@ import { NextRequest, NextResponse } from 'next/server'
 // This API route will fetch laboratory results for a specific patient
 export async function GET(
   request: NextRequest,
-  { params }: { params: { patientId: string } }
+  { params }: any
 ) {
   try {
-    const { patientId } = params
+    const { patientId } = await params
     
     const response = await fetch(`${process.env.BACKEND_API_URL}/api/v1/domain/healthcare/patients/${patientId}/laboratory-results`, {
       method: 'GET',
