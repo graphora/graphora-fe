@@ -20,6 +20,7 @@ export default function DomainAppsPage() {
         const response = await fetch('/api/domain/apps')
         const data = await response.json()
         
+        // Make sure we're setting the domains array from the response
         setDomainApps(data.domains || [])
       } catch (err) {
         console.error('Error fetching domain apps:', err)
@@ -94,7 +95,11 @@ export default function DomainAppsPage() {
           <Card key={domain.id} className="overflow-hidden">
             <CardHeader className={`text-white ${domain.color}`}>
               <div className="flex items-center gap-2">
-                <domain.icon className="h-6 w-6" />
+                {domain.icon === 'Activity' && <Activity className="h-6 w-6" />}
+                {domain.icon === 'ChartBar' && <ChartBar className="h-6 w-6" />}
+                {domain.icon === 'FileText' && <FileText className="h-6 w-6" />}
+                {domain.icon === 'Building' && <Building className="h-6 w-6" />}
+                {domain.icon === 'Brain' && <Brain className="h-6 w-6" />}
                 <CardTitle>{domain.title}</CardTitle>
               </div>
               <CardDescription className="text-white/80">
@@ -103,26 +108,23 @@ export default function DomainAppsPage() {
             </CardHeader>
             <CardContent className="p-6">
               <div className="space-y-4">
-                {domain.apps.map((app: any) => (
-                  <div key={app.id} className="flex items-start gap-4">
-                    <div className={`p-2 rounded-md ${domain.color} bg-opacity-10 text-${domain.color.split('-')[1]}-600`}>
-                      <app.icon className="h-5 w-5" />
-                    </div>
+                {domain.enabled ? (
+                  <div className="flex items-start gap-4">
                     <div>
-                      <h3 className="font-medium">{app.title}</h3>
-                      <p className="text-sm text-muted-foreground">{app.description}</p>
-                      {app.comingSoon ? (
-                        <span className="inline-flex items-center mt-2 rounded-full bg-gray-100 px-2 py-1 text-xs">
-                          Coming Soon
-                        </span>
-                      ) : (
-                        <Link href={app.path} className="inline-flex items-center mt-2 text-sm font-medium text-primary hover:underline">
-                          Open App <ArrowRight className="ml-1 h-3 w-3" />
-                        </Link>
-                      )}
+                      <Link href={domain.path} className="inline-flex items-center mt-2 text-sm font-medium text-primary hover:underline">
+                        Open App <ArrowRight className="ml-1 h-3 w-3" />
+                      </Link>
                     </div>
                   </div>
-                ))}
+                ) : (
+                  <div className="flex items-start gap-4">
+                    <div>
+                      <span className="inline-flex items-center mt-2 rounded-full bg-gray-100 px-2 py-1 text-xs">
+                        Coming Soon
+                      </span>
+                    </div>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
