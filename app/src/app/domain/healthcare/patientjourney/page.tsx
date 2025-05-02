@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { PatientJourneyGraph } from '@/app/domain/healthcare/patientjourney/components/PatientJourneyGraph'
 import { PatientMedicalReport } from '@/app/domain/healthcare/patientjourney/components/PatientMedicalReport'
 import { PatientSankeyChart } from '@/app/domain/healthcare/patientjourney/components/PatientSankeyChart'
+import { PatientLabResults } from '@/app/domain/healthcare/patientjourney/components/PatientLabResults'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Button } from '@/components/ui/button'
 import { ChevronLeft } from 'lucide-react'
@@ -52,7 +53,15 @@ export default function PatientJourneyPage() {
         const response = await fetch(`/api/domain/healthcare/patients/${patientId}/journey`)
         const data = await response.json()
         
-        setPatientData(data)
+        // Fetch laboratory results separately
+        const labResponse = await fetch(`/api/domain/healthcare/patients/${patientId}/laboratory-results`)
+        const labData = await labResponse.json()
+        
+        // Combine the data
+        setPatientData({
+          ...data,
+          laboratoryResults: labData.laboratoryResults || []
+        })
       } catch (err) {
         console.error('Error fetching patient journey:', err)
         setError('Failed to load patient journey data')
@@ -152,6 +161,7 @@ export default function PatientJourneyPage() {
                   <TabsTrigger value="timeline">Timeline Graph</TabsTrigger>
                   <TabsTrigger value="reports">Medical Reports</TabsTrigger>
                   <TabsTrigger value="sankey">Treatment Flow</TabsTrigger>
+                  <TabsTrigger value="labresults">Lab Results</TabsTrigger>
                 </TabsList>
                 
                 <TabsContent value="timeline" className="space-y-4">
@@ -192,6 +202,20 @@ export default function PatientJourneyPage() {
                     </CardHeader>
                     <CardContent className="h-[500px]">
                       <PatientSankeyChart patientData={patientData} />
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+                
+                <TabsContent value="labresults" className="space-y-4">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Laboratory Results Analysis</CardTitle>
+                      <CardDescription>
+                        Insights from laboratory test results and abnormality detection
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <PatientLabResults patientData={patientData} />
                     </CardContent>
                   </Card>
                 </TabsContent>
