@@ -11,7 +11,7 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { mergeId } = params;
+    const { mergeId } = await params;
 
     if (!mergeId) {
       return NextResponse.json(

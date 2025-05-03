@@ -23,6 +23,7 @@ export async function POST(
     // Get the learning comment from query parameter
     const url = new URL(request.url);
     const learningComment = url.searchParams.get('learning_comment');
+    const resolution = url.searchParams.get('resolution');
 
     if (!learningComment) {
       return NextResponse.json(
@@ -36,7 +37,7 @@ export async function POST(
 
     try {
       // Construct the URL with the learning_comment query parameter
-      const apiUrl = `${process.env.BACKEND_API_URL}/api/v1/merge/${mergeId}/conflicts/${conflictId}/resolve?learning_comment=${encodeURIComponent(learningComment)}`;
+      const apiUrl = `${process.env.BACKEND_API_URL}/api/v1/merge/${mergeId}/conflicts/${conflictId}/resolve?resolution=${resolution}&learning_comment=${encodeURIComponent(learningComment)}`;
 
       const response = await fetch(apiUrl, {
         method: 'POST',

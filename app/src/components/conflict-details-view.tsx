@@ -136,11 +136,13 @@ export function ConflictDetailsView({
           } else if (selectedResolution === 'custom' && customValues[prop]) {
             // Use custom value
             changedProps[prop] = customValues[prop]
+          } else if (selectedResolution === 'both') {
+            //do nothing
           }
         })
       }
       
-      if (Object.keys(changedProps).length === 0) {
+      if (Object.keys(changedProps).length === 0 && selectedResolution !== 'both') {
         throw new Error('No properties to change')
       }
       
@@ -148,7 +150,7 @@ export function ConflictDetailsView({
       const comment = learningComment.trim() || 'Conflict resolved manually'
       
       const response = await fetch(
-        `/api/merge/merges/${mergeId}/conflicts/${conflict.id}/resolve?learning_comment=${encodeURIComponent(comment)}`,
+        `/api/merge/merges/${mergeId}/conflicts/${conflict.id}/resolve?resolution=${selectedResolution}&learning_comment=${encodeURIComponent(comment)}`,
         {
           method: 'POST',
           headers: {
@@ -308,6 +310,10 @@ export function ConflictDetailsView({
                           <div className="flex items-center space-x-2">
                             <RadioGroupItem value="custom" id="custom" />
                             <Label htmlFor="custom" className="font-medium">Provide Custom Values</Label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="both" id="both" />
+                            <Label htmlFor="both" className="font-medium">Keep both</Label>
                           </div>
                         </div>
                       </RadioGroup>
