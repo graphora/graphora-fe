@@ -5,6 +5,13 @@ import { useRouter } from 'next/navigation'
 import { Home, ChevronDown, Settings, LogOut, User } from 'lucide-react'
 import { useUser, UserButton } from '@clerk/nextjs'
 import { Button } from '@/components/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 
 interface MainHeaderProps {
   hasUnsavedChanges?: boolean
@@ -22,6 +29,10 @@ export function MainHeader({ hasUnsavedChanges }: MainHeaderProps) {
     }
     setIsNavigating(true)
     router.push('/')
+  }
+
+  const handleConfigClick = () => {
+    router.push('/config')
   }
 
   return (
@@ -42,15 +53,27 @@ export function MainHeader({ hasUnsavedChanges }: MainHeaderProps) {
       <div className="flex items-center gap-3">
         {user && (
           <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-600">{user.fullName}</span>
-            <UserButton 
-              afterSignOutUrl="/sign-in"
-              appearance={{
-                elements: {
-                  avatarBox: "w-8 h-8 rounded-full border-2 border-white",
-                }
-              }}
-            />
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleConfigClick}
+              className="flex items-center gap-2 text-gray-600 hover:text-gray-900"
+            >
+              <Settings className="w-4 h-4" />
+              <span className="hidden sm:inline">Settings</span>
+            </Button>
+            
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-600 hidden sm:inline">{user.fullName}</span>
+              <UserButton 
+                afterSignOutUrl="/sign-in"
+                appearance={{
+                  elements: {
+                    avatarBox: "w-8 h-8 rounded-full border-2 border-white",
+                  }
+                }}
+              />
+            </div>
           </div>
         )}
       </div>
