@@ -3,9 +3,28 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { DashboardLayout } from '@/components/layouts/dashboard-layout'
+import { PageHeader } from '@/components/layouts/page-header'
+import { StatusIndicator } from '@/components/ui/status-indicator'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { ChevronLeft, Activity, FileText, Building, Brain, ChartBar, ArrowRight, Database, Network } from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
+import { Loader2 } from 'lucide-react'
+import { 
+  Activity, 
+  FileText, 
+  Building, 
+  Brain, 
+  ChartBar, 
+  ArrowRight, 
+  Database, 
+  Network,
+  BarChart3,
+  Heart,
+  TrendingUp,
+  Shield,
+  Zap
+} from 'lucide-react'
 
 export default function DomainAppsPage() {
   const router = useRouter()
@@ -33,122 +52,193 @@ export default function DomainAppsPage() {
     fetchDomainApps()
   }, [])
 
+  // Sample domain apps for demonstration
+  const sampleDomainApps = [
+    {
+      id: 'healthcare',
+      name: 'Healthcare Analytics',
+      description: 'Analyze patient pathways, treatment outcomes, and medical relationships',
+      icon: <Heart className="h-6 w-6" />,
+      path: '/domain-apps/healthcare',
+      enabled: true,
+      status: 'active',
+      color: 'bg-red-50 text-red-600',
+      features: ['Patient Journey Mapping', 'Treatment Analysis', 'Outcome Prediction']
+    },
+    {
+      id: 'financial',
+      name: 'Financial Networks',
+      description: 'Map financial relationships, detect fraud patterns, and analyze risk',
+      icon: <TrendingUp className="h-6 w-6" />,
+      path: '/domain-apps/financial',
+      enabled: true,
+      status: 'active',
+      color: 'bg-emerald-50 text-emerald-600',
+      features: ['Risk Assessment', 'Fraud Detection', 'Portfolio Analysis']
+    },
+    {
+      id: 'cybersecurity',
+      name: 'Cybersecurity Intelligence',
+      description: 'Visualize threat landscapes and security incident relationships',
+      icon: <Shield className="h-6 w-6" />,
+      path: '/domain-apps/cybersecurity',
+      enabled: false,
+      status: 'coming-soon',
+      color: 'bg-purple-50 text-purple-600',
+      features: ['Threat Analysis', 'Incident Correlation', 'Attack Vector Mapping']
+    },
+    {
+      id: 'supply-chain',
+      name: 'Supply Chain Optimization',
+      description: 'Optimize logistics networks and supplier relationships',
+      icon: <Network className="h-6 w-6" />,
+      path: '/domain-apps/supply-chain',
+      enabled: false,
+      status: 'coming-soon',
+      color: 'bg-blue-50 text-blue-600',
+      features: ['Supplier Mapping', 'Route Optimization', 'Risk Assessment']
+    }
+  ]
+
   if (loading) {
     return (
-      <div className="container mx-auto py-8">
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-4">
-            <Button variant="outline" size="icon" onClick={() => router.back()}>
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <h1 className="text-3xl font-bold">Domain Applications</h1>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
-          <div className="animate-pulse flex space-x-4">
-            <div className="flex-1 space-y-4 py-1">
-              <div className="h-4 bg-gray-400 rounded w-3/4"></div>
-              <div className="space-y-2">
-                <div className="h-4 bg-gray-400 rounded"></div>
-                <div className="h-4 bg-gray-400 rounded w-5/6"></div>
-              </div>
+      <DashboardLayout>
+        <div className="flex-1 flex flex-col overflow-hidden">
+          <PageHeader
+            title="Domain Applications"
+            description="Specialized applications for different industries and use cases"
+            icon={<BarChart3 className="h-6 w-6" />}
+          />
+          <div className="flex-1 overflow-auto p-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="enhanced-card animate-pulse">
+                  <div className="enhanced-card-header">
+                    <div className="w-8 h-8 bg-slate-200 rounded-lg" />
+                    <div className="w-32 h-4 bg-slate-200 rounded" />
+                  </div>
+                  <div className="enhanced-card-content space-y-3">
+                    <div className="w-full h-3 bg-slate-200 rounded" />
+                    <div className="w-3/4 h-3 bg-slate-200 rounded" />
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </div>
-      </div>
+      </DashboardLayout>
     )
   }
 
-  if (error) {
-    return (
-      <div className="container mx-auto py-8">
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-4">
-            <Button variant="outline" size="icon" onClick={() => router.back()}>
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <h1 className="text-3xl font-bold">Domain Applications</h1>
-          </div>
-        </div>
-
-        <div className="text-center">
-          <h2 className="text-lg font-medium">{error}</h2>
-        </div>
-      </div>
-    )
-  }
+  // Use sample data if API doesn't return data
+  const displayApps = domainApps.length > 0 ? domainApps : sampleDomainApps
 
   return (
-    <div className="container mx-auto py-8">
-      <div className="flex items-center justify-between mb-8">
-        <div className="flex items-center gap-4">
-          <Button variant="outline" size="icon" onClick={() => router.back()}>
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <h1 className="text-3xl font-bold">Domain Applications</h1>
-        </div>
-      </div>
+    <DashboardLayout>
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <PageHeader
+          title="Domain Applications"
+          description="Specialized applications for different industries and use cases"
+          icon={<BarChart3 className="h-6 w-6" />}
+          actions={
+            <div className="flex items-center space-x-3">
+              <Button variant="outline" size="sm">
+                Request Custom App
+              </Button>
+            </div>
+          }
+        />
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
-        {domainApps.map((domain) => (
-          <Card key={domain.id} className="overflow-hidden">
-            <CardHeader className={`text-white ${domain.color}`}>
-              <div className="flex items-center gap-2">
-                {domain.icon === 'Activity' && <Activity className="h-6 w-6" />}
-                {domain.icon === 'ChartBar' && <ChartBar className="h-6 w-6" />}
-                {domain.icon === 'FileText' && <FileText className="h-6 w-6" />}
-                {domain.icon === 'Building' && <Building className="h-6 w-6" />}
-                {domain.icon === 'Brain' && <Brain className="h-6 w-6" />}
-                <CardTitle>{domain.title}</CardTitle>
-              </div>
-              <CardDescription className="text-white/80">
-                {domain.description}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="p-6">
-              <div className="space-y-4">
-                {domain.enabled ? (
-                  <div className="flex items-start gap-4">
-                    <div>
-                      <Link href={domain.path} className="inline-flex items-center mt-2 text-sm font-medium text-primary hover:underline">
-                        Open App <ArrowRight className="ml-1 h-3 w-3" />
-                      </Link>
+        <div className="flex-1 overflow-auto p-6 space-y-8">
+          {error && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+              <p className="text-red-700">{error}</p>
+            </div>
+          )}
+
+          {/* Domain Apps Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {displayApps.map((domain) => (
+              <Card key={domain.id} className="enhanced-card group hover:shadow-lg transition-all duration-200">
+                <CardHeader className="enhanced-card-header">
+                  <div className="flex items-center justify-between">
+                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${domain.color}`}>
+                      {domain.icon}
                     </div>
+                    <StatusIndicator 
+                      status={domain.enabled ? 'success' : 'pending'} 
+                      label={domain.enabled ? 'Active' : 'Coming Soon'}
+                      size="sm"
+                    />
                   </div>
-                ) : (
-                  <div className="flex items-start gap-4">
-                    <div>
-                      <span className="inline-flex items-center mt-2 rounded-full bg-gray-100 px-2 py-1 text-xs">
-                        Coming Soon
-                      </span>
+                  <CardTitle className="text-lg group-hover:text-blue-600 transition-colors">
+                    {domain.name}
+                  </CardTitle>
+                </CardHeader>
+                
+                <CardContent className="enhanced-card-content space-y-4">
+                  <CardDescription className="text-slate-600 leading-relaxed">
+                    {domain.description}
+                  </CardDescription>
+                  
+                  {domain.features && (
+                    <div className="space-y-2">
+                      <h4 className="text-sm font-medium text-slate-900">Key Features:</h4>
+                      <ul className="text-sm text-slate-600 space-y-1">
+                        {domain.features.map((feature: string, index: number) => (
+                          <li key={index} className="flex items-center space-x-2">
+                            <div className="w-1.5 h-1.5 bg-blue-500 rounded-full" />
+                            <span>{feature}</span>
+                          </li>
+                        ))}
+                      </ul>
                     </div>
-                  </div>
-                )}
+                  )}
+                </CardContent>
+
+                <CardFooter className="pt-0">
+                  {domain.enabled ? (
+                    <Link href={domain.path} className="w-full">
+                      <Button className="w-full group-hover:bg-blue-600 transition-colors">
+                        Open Application
+                        <ArrowRight className="h-4 w-4 ml-2 group-hover:translate-x-1 transition-transform" />
+                      </Button>
+                    </Link>
+                  ) : (
+                    <Button variant="outline" className="w-full" disabled>
+                      <Loader2 className="h-4 w-4 mr-2" />
+                      Coming Soon
+                    </Button>
+                  )}
+                </CardFooter>
+              </Card>
+            ))}
+          </div>
+
+          {/* Custom Domain App CTA */}
+          <Card className="enhanced-card bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200">
+            <CardContent className="enhanced-card-content">
+              <div className="flex flex-col md:flex-row items-center gap-6">
+                <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
+                  <Zap className="h-8 w-8 text-white" />
+                </div>
+                <div className="flex-1 text-center md:text-left space-y-2">
+                  <h3 className="text-xl font-bold text-slate-900">
+                    Need a Custom Domain Application?
+                  </h3>
+                  <p className="text-slate-600 leading-relaxed">
+                    We can build specialized graph visualization applications tailored to your industry or specific use case. 
+                    Get in touch to discuss your requirements.
+                  </p>
+                </div>
+                <Button className="bg-blue-600 hover:bg-blue-700">
+                  Contact Our Team
+                </Button>
               </div>
             </CardContent>
           </Card>
-        ))}
+        </div>
       </div>
-
-      <Card className="bg-gray-50 border-dashed">
-        <CardContent className="p-6">
-          <div className="flex flex-col md:flex-row items-center gap-4">
-            <div className="p-3 rounded-full bg-primary/10 text-primary">
-              <Database className="h-6 w-6" />
-            </div>
-            <div className="flex-1 text-center md:text-left">
-              <h3 className="text-lg font-medium">Need a Custom Domain Application?</h3>
-              <p className="text-muted-foreground">
-                We can build specialized graph visualization applications for your industry or use case.
-              </p>
-            </div>
-            <Button variant="outline">
-              Contact Us
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
+    </DashboardLayout>
   )
 }

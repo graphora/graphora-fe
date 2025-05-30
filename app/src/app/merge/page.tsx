@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useMemo, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { Loader2, PauseCircle, PlayCircle, AlertCircle, CheckCircle2, RefreshCcw, Monitor, Clock, X } from 'lucide-react'
+import { Loader2, PauseCircle, PlayCircle, AlertCircle, CheckCircle2, RefreshCcw, Monitor, Clock, X, GitMerge } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { MergeGraphVisualization } from '@/components/merge-graph-viz'
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable'
@@ -18,18 +18,49 @@ import { toast } from '@/components/ui/use-toast'
 import { ConflictList } from '@/components/conflict-list'
 import { MergeCompletionBanner } from '@/components/merge-completion-banner'
 import { Activity, AlertTriangle, Network, BarChart3 } from 'lucide-react'
-import { WorkflowLayout } from '@/components/workflow-layout'
+import { EnhancedWorkflowLayout, WorkflowStep } from '@/components/enhanced-workflow-layout'
+import { PageHeader } from '@/components/layouts/page-header'
 import { AlertDialog, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogCancel, AlertDialogAction } from '@/components/ui/alert-dialog'
 import { buttonVariants } from '@/components/ui/button'
 import type { GraphData } from '@/types/graph'
 
 // Define workflow steps for merge page
-const workflowSteps = [
-  { id: 'ontology', title: 'Ontology Entry', description: 'Define your graph structure' },
-  { id: 'upload', title: 'Document Upload', description: 'Upload documents to process' },
-  { id: 'edit', title: 'Graph Editing', description: 'Refine extracted graph' },
-  { id: 'merge', title: 'Merge Process', description: 'Combine data into final graph' },
-  { id: 'domain-apps', title: 'Domain Apps', description: 'Visualize patient pathways' }
+const workflowSteps: WorkflowStep[] = [
+  { 
+    id: 'ontology', 
+    title: 'Ontology Entry', 
+    description: 'Define your graph structure',
+    estimatedTime: '15-30 min',
+    status: 'completed'
+  },
+  { 
+    id: 'upload', 
+    title: 'Document Upload', 
+    description: 'Upload documents to process',
+    estimatedTime: '5-10 min',
+    status: 'completed'
+  },
+  { 
+    id: 'edit', 
+    title: 'Graph Editing', 
+    description: 'Refine extracted graph',
+    estimatedTime: '20-45 min',
+    status: 'completed'
+  },
+  { 
+    id: 'merge', 
+    title: 'Merge Process', 
+    description: 'Combine data into final graph',
+    estimatedTime: '10-20 min',
+    status: 'current'
+  },
+  { 
+    id: 'domain-apps', 
+    title: 'Domain Apps', 
+    description: 'Visualize domain-specific insights',
+    estimatedTime: '5-15 min',
+    status: 'upcoming'
+  }
 ]
 
 function formatElapsedTime(seconds: number): string {
@@ -353,6 +384,7 @@ function MergePageContent() {
          }
          return;
        }
+      
       console.log(`Polling status for merge ID: ${id}`) // Added logging
 
       try {
@@ -365,6 +397,23 @@ function MergePageContent() {
 
         // Update status - handle both response formats
         const statusValue = typeof data === 'string' ? data : data.status as MergeStatus
+        
+        // Check if we're in a terminal state BEFORE updating React state
+        const isTerminalState = statusValue === MergeStatus.COMPLETED || 
+                               statusValue === MergeStatus.FAILED || 
+                               statusValue === MergeStatus.CANCELLED;
+        
+        console.log(`Status for ${id}: ${statusValue}, Terminal: ${isTerminalState}`);
+        
+        // If we're in a terminal state, stop polling immediately
+        if (isTerminalState) {
+          console.log(`Merge ${id} reached terminal state (${statusValue}), stopping polling immediately.`);
+          if (statusIntervalRef.current) {
+            clearInterval(statusIntervalRef.current);
+            statusIntervalRef.current = null;
+          }
+        }
+        
         setStatus(statusValue as MergeStatus) // Cast to MergeStatus
 
         // Update progress if available (for object response format)
@@ -384,13 +433,6 @@ function MergePageContent() {
 
         // If merge is completed, refresh visualization and switch to graph tab
         if (statusValue === MergeStatus.COMPLETED) {
-          // Stop polling
-          if (statusIntervalRef.current) {
-            console.log(`Merge ${id} completed, stopping polling.`); // Added logging
-            clearInterval(statusIntervalRef.current)
-            statusIntervalRef.current = null
-          }
-          
           // Switch to graph tab
           setActiveTab('visualization')
           
@@ -398,8 +440,8 @@ function MergePageContent() {
           refreshVisualization()
         }
 
-        // Check if all conflicts are resolved
-        if (typeof data === 'object' && data.has_conflicts && data.conflict_count > 0) {
+        // Check if all conflicts are resolved (only for non-terminal states)
+        if (!isTerminalState && typeof data === 'object' && data.has_conflicts && data.conflict_count > 0) {
           console.log(`Polling check for conflicts for merge ID: ${id}`);
           // Fetch conflict stats to check if all are resolved
           try {
@@ -436,21 +478,16 @@ function MergePageContent() {
           }
         }
 
-        // If merge is completed or failed, stop polling
-        if (statusValue === MergeStatus.COMPLETED || statusValue === MergeStatus.FAILED || statusValue === MergeStatus.CANCELLED) {
-          if (statusIntervalRef.current) {
-            console.log(`Merge ${id} reached terminal state (${statusValue}), stopping polling.`); // Added logging
-            clearInterval(statusIntervalRef.current)
-            statusIntervalRef.current = null
-          }
-        }
       } catch (error) {
         console.error(`Error polling merge status for ${id}:`, error) // Added logging
-        // Optionally stop polling on error, or let it retry
-        // if (statusIntervalRef.current) {
-        //   clearInterval(statusIntervalRef.current);
-        //   statusIntervalRef.current = null;
-        // }
+        // On error, continue polling unless it's a 404 (merge not found)
+        if (error instanceof Error && error.message.includes('404')) {
+          console.log(`Merge ${id} not found (404), stopping polling.`);
+          if (statusIntervalRef.current) {
+            clearInterval(statusIntervalRef.current);
+            statusIntervalRef.current = null;
+          }
+        }
       }
     }
 
@@ -772,6 +809,34 @@ function MergePageContent() {
     }
   }, [messages])
 
+  // Cleanup effect to ensure polling stops on unmount or terminal states
+  useEffect(() => {
+    return () => {
+      console.log("Component unmounting or cleanup triggered, stopping all intervals");
+      if (statusIntervalRef.current) {
+        clearInterval(statusIntervalRef.current);
+        statusIntervalRef.current = null;
+      }
+      if (timerIntervalRef.current) {
+        clearInterval(timerIntervalRef.current);
+        timerIntervalRef.current = null;
+      }
+    };
+  }, []);
+
+  // Effect to stop polling when status reaches terminal state
+  useEffect(() => {
+    const isTerminalState = status === MergeStatus.COMPLETED || 
+                           status === MergeStatus.FAILED || 
+                           status === MergeStatus.CANCELLED;
+    
+    if (isTerminalState && statusIntervalRef.current) {
+      console.log(`Status is terminal (${status}), stopping polling interval`);
+      clearInterval(statusIntervalRef.current);
+      statusIntervalRef.current = null;
+    }
+  }, [status]);
+
   if (!isLoaded) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -785,155 +850,121 @@ function MergePageContent() {
   }
 
   return (
-    <div className="h-full flex flex-col relative">
-      {/* Alert Dialog for Cancellation Confirmation */}
-      <AlertDialog open={isCancelling} onOpenChange={setIsCancelling}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Confirm Cancellation</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to cancel the merge process? This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={handleCancelMerge}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleCancelMerge}>Continue</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+    <div className="flex flex-col h-screen bg-slate-50 overflow-hidden">
+      <PageHeader
+        title="Graph Merge Process"
+        description="Merge your transformed graphs and resolve any conflicts"
+        icon={<GitMerge className="h-6 w-6" />}
+        actions={
+          <div className="flex items-center space-x-3">
+            {currentMergeId && (
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={handleCancelMerge}
+                disabled={isCancelling}
+              >
+                {isCancelling ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Cancelling...
+                  </>
+                ) : (
+                  'Cancel Merge'
+                )}
+              </Button>
+            )}
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => router.push('/domain-apps')}
+            >
+              <Network className="h-4 w-4 mr-2" />
+              Domain Apps
+            </Button>
+          </div>
+        }
+      />
 
-      <div className="h-full flex flex-col">
+      <div className="flex-1 min-h-0 overflow-hidden">
+        <div className="p-6 h-full flex flex-col">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
+            <TabsList className="grid w-full grid-cols-3 mb-6 bg-slate-100 p-1 rounded-lg h-12 flex-shrink-0">
+              <TabsTrigger 
+                value="progress" 
+                className="flex items-center gap-2 font-medium data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-sm rounded-md"
+              >
+                <Activity className="h-4 w-4" />
+                Progress
+              </TabsTrigger>
+              <TabsTrigger 
+                value="conflicts" 
+                className="flex items-center gap-2 font-medium data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-sm rounded-md"
+              >
+                <AlertTriangle className="h-4 w-4" />
+                Conflicts
+              </TabsTrigger>
+              <TabsTrigger 
+                value="visualization" 
+                className="flex items-center gap-2 font-medium data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-sm rounded-md"
+              >
+                <Network className="h-4 w-4" />
+                Graph View
+              </TabsTrigger>
+            </TabsList>
 
-        {/* Main Content */}
-        <div className="flex-1 min-h-0">
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full bg-white">
-            <div className="container py-4 flex items-center justify-between border-b">
-              <TabsList>
-                <TabsTrigger value="progress">
-                  <Activity className="h-4 w-4 mr-2" />
-                  Progress
-                </TabsTrigger>
-                <TabsTrigger value="conflicts">
-                  <AlertTriangle className="h-4 w-4 mr-2" />
-                  Conflicts
-                  {conflictStats.total > 0 && (
-                    <Badge variant="secondary" className="ml-2">
-                      {conflictStats.resolved}/{conflictStats.total}
-                    </Badge>
-                  )}
-                </TabsTrigger>
-                <TabsTrigger value="visualization">
-                  <Network className="h-4 w-4 mr-2" />
-                  Graph View
-                  {allConflictsResolved && (
-                    <Badge variant="outline" className="ml-2 bg-green-100 text-green-800">
-                      <CheckCircle2 className="h-3 w-3" />
-                    </Badge>
-                  )}
-                </TabsTrigger>
-              </TabsList>
-              <div className="flex items-center space-x-2 flex-shrink-0">
-                 {/* Timer Display */}
-                 {startTime && 
-                   status !== MergeStatus.COMPLETED && 
-                   status !== MergeStatus.FAILED && 
-                   status !== MergeStatus.CANCELLED && (
-                   <div className="flex items-center text-sm text-gray-600 bg-gray-100 px-2 py-1 rounded" title="Elapsed Time">
-                     <Clock className="h-4 w-4 mr-1 text-gray-500" />
-                     <span>{formatElapsedTime(elapsedTime)}</span>
-                   </div>
-                 )}
-                 {/* View Status Button */}
-                 <Button 
-                   variant="outline" 
-                   size="sm" 
-                   onClick={handleViewStatus}
-                   disabled={!currentMergeId} // Only enable if merge has started/loaded
-                   title="View detailed execution status in Prefect"
-                 >
-                   <Monitor className="h-4 w-4 mr-1" />
-                   View Status
-                 </Button>
-                  {/* Pause/Resume Button - Condition checks non-terminal states */}
-                  {status !== MergeStatus.COMPLETED && 
-                   status !== MergeStatus.FAILED && 
-                   status !== MergeStatus.CANCELLED && 
-                   !isCancelling && (
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      onClick={() => setIsPaused(!isPaused)}
-                      title={isPaused ? "Resume Merge Process" : "Pause Merge Process"}
-                    >
-                      {isPaused ? <PlayCircle className="h-4 w-4 text-green-600" /> : <PauseCircle className="h-4 w-4 text-orange-600" />}
-                    </Button>
-                  )}
-                   {/* Cancel Button - Condition checks non-terminal states */}
-                   {status !== MergeStatus.COMPLETED && 
-                    status !== MergeStatus.FAILED && 
-                    status !== MergeStatus.CANCELLED && (
-                     <Button 
-                       variant="destructive" 
-                       size="sm" 
-                       onClick={() => setIsCancelling(true)} // Open confirmation dialog
-                       disabled={isCancelling}
-                       title="Cancel Merge Process"
-                     >
-                       {isCancelling ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <X className="h-4 w-4 mr-1" />}
-                       Cancel
-                     </Button>
-                   )}
-              </div>
-            </div>
-            <TabsContent value="progress" className="flex-1 p-4">
-              {currentMergeId ? (
-                <div className="h-full flex flex-col">
-                  <div className="p-4 border-b">
-                    <MergeProgress
-                      mergeId={currentMergeId || ''}
-                      sessionId={sessionId}
-                      transformId={transformId}
-                      onViewConflicts={handleViewConflicts}
-                      onCancel={handleCancelMerge}
-                      onFinalize={handleAutoResolveComplete}
-                    />
-                  </div>
+            <div className="flex-1 min-h-0 overflow-hidden">
+              <TabsContent value="progress" className="h-full overflow-hidden">
+                <div className="h-full overflow-y-auto space-y-6 pr-2">
+                  {currentMergeId ? (
+                    <div className="enhanced-card">
+                      <div className="enhanced-card-header">
+                        <h3 className="text-lg font-semibold text-slate-900">Merge Progress</h3>
+                      </div>
+                      <div className="enhanced-card-content">
+                        <MergeProgress
+                          mergeId={currentMergeId || ''}
+                          sessionId={sessionId}
+                          transformId={transformId}
+                          onViewConflicts={handleViewConflicts}
+                          onCancel={handleCancelMerge}
+                          onFinalize={handleAutoResolveComplete}
+                        />
 
-                  {/* Show the merge completion banner when all conflicts are resolved */}
-                  {showMergeCompletionBanner && currentMergeId && (
-                    <div className="p-4 border-b bg-green-50">
-                      <MergeCompletionBanner
-                        mergeId={currentMergeId}
-                        onViewFinalGraph={handleViewFinalGraph}
-                        onViewProgress={handleViewProgress}
-                        takeToFinalize={false}
-                      />
+                        {/* Show the merge completion banner when all conflicts are resolved */}
+                        {showMergeCompletionBanner && currentMergeId && (
+                          <div className="mt-6 p-4 border rounded-lg bg-emerald-50 border-emerald-200">
+                            <MergeCompletionBanner
+                              mergeId={currentMergeId}
+                              onViewFinalGraph={handleViewFinalGraph}
+                              onViewProgress={handleViewProgress}
+                              takeToFinalize={false}
+                            />
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="enhanced-card">
+                      <div className="enhanced-card-content">
+                        <div className="flex flex-col items-center justify-center py-12">
+                          <Loader2 className="h-8 w-8 animate-spin mb-4 text-blue-600" />
+                          <p className="text-slate-600">Initializing merge process...</p>
+                        </div>
+                      </div>
                     </div>
                   )}
                 </div>
-              ) : (
-                <div className="flex flex-col items-center justify-center h-full">
-                  <Loader2 className="h-8 w-8 animate-spin mb-4" />
-                  <p>Initializing merge process...</p>
-                </div>
-              )}
-            </TabsContent>
-            <TabsContent value="conflicts" className="flex-1 p-0 h-full">
-                  <div className="h-full flex flex-col">
+              </TabsContent>
 
-                    {/* Show the merge completion banner when all conflicts are resolved */}
-                    {allConflictsResolved && currentMergeId && (
-                      <div className="p-4 border-b">
-                        <MergeCompletionBanner
-                          mergeId={currentMergeId}
-                          onViewFinalGraph={handleViewFinalGraph}
-                          onViewProgress={handleViewProgress}
-                          takeToFinalize={false}
-                        />
-                      </div>
-                    )}
-
-                    <div className="h-[calc(100vh-14rem)] overflow-hidden">
+              <TabsContent value="conflicts" className="h-full overflow-hidden">
+                <div className="h-full flex flex-col min-h-0">
+                  <div className="enhanced-card flex-1 flex flex-col min-h-0">
+                    <div className="enhanced-card-header flex-shrink-0">
+                      <h3 className="text-lg font-semibold text-slate-900">Conflict Resolution</h3>
+                      <p className="text-sm text-slate-600">Review and resolve any conflicts in your graph merge</p>
+                    </div>
+                    <div className="enhanced-card-content flex-1 min-h-0 overflow-y-auto">
                       {currentMergeId ? (
                         <ConflictList
                           mergeId={currentMergeId}
@@ -941,80 +972,73 @@ function MergePageContent() {
                           selectedConflicts={selectedConflicts}
                           onSelectionChange={setSelectedConflicts}
                           onAutoResolveComplete={handleAutoResolveComplete}
-                          onViewMergedResults={() => {/* navigate to results */}}
                           onViewFinalGraph={handleViewFinalGraph}
                         />
                       ) : (
-                        <div className="flex items-center justify-center h-full">
-                          <Loader2 className="h-8 w-8 animate-spin" />
+                        <div className="text-center py-8 text-slate-500">
+                          <p>No merge process active</p>
                         </div>
                       )}
                     </div>
                   </div>
-            </TabsContent>
-            <TabsContent value="visualization" className="flex-1 p-0 h-full">
-              <div className="relative h-full flex flex-col">
-                {/* Show the merge completion banner at the top of the visualization when all conflicts are resolved */}
-                {allConflictsResolved && currentMergeId && (
-                  <div className="absolute top-0 left-0 right-0 z-10 p-4 bg-white bg-opacity-90 border-b">
-                    <MergeCompletionBanner
-                      mergeId={currentMergeId}
-                      onViewProgress={handleViewProgress}
-                      onViewFinalGraph={handleViewProgress}
-                      takeToFinalize={true}
-                      className="max-w-3xl mx-auto"
-                    />
-                  </div>
-                )}
-                {isLoadingGraph && (
-                  <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-80 z-20">
-                    <div className="text-center">
-                      <Loader2 className="h-8 w-8 animate-spin mx-auto mb-2" />
-                      <p>Loading graph...</p>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="visualization" className="h-full overflow-hidden">
+                <div className="h-full overflow-y-auto">
+                  <div className="enhanced-card">
+                    <div className="enhanced-card-header">
+                      <h3 className="text-lg font-semibold text-slate-900">Graph Visualization</h3>
+                      <p className="text-sm text-slate-600">Interactive view of your merged knowledge graph</p>
+                    </div>
+                    <div className="enhanced-card-content h-[600px] relative">
+                      {graphDataMemo ? (
+                        <MergeGraphVisualization
+                          transformId={transformId}
+                          mergeId={currentMergeId || undefined}
+                          currentConflict={currentConflict}
+                          graphData={graphDataMemo}
+                        />
+                      ) : visualizationLoading ? (
+                        <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-blue-50 to-purple-50">
+                          <div className="text-center space-y-6 max-w-md">
+                            <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center mx-auto shadow-lg border border-blue-100">
+                              <Loader2 className="h-10 w-10 animate-spin text-blue-600" />
+                            </div>
+                            <div className="space-y-3">
+                              <h3 className="text-xl font-semibold text-slate-900">Loading Graph</h3>
+                              <p className="text-sm text-slate-600">Preparing your merged knowledge graph...</p>
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-blue-50 to-purple-50">
+                          <div className="text-center space-y-4">
+                            <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto">
+                              <AlertCircle className="h-8 w-8 text-amber-500" />
+                            </div>
+                            <div>
+                              <p className="text-lg font-medium text-slate-900">No Graph Data</p>
+                              <p className="text-sm text-slate-500">Complete the merge process to view your knowledge graph</p>
+                            </div>
+                            {(status === MergeStatus.COMPLETED) && (
+                              <Button
+                                onClick={refreshVisualization}
+                                variant="outline"
+                                className="mt-4"
+                              >
+                                <RefreshCcw className="h-4 w-4 mr-2" />
+                                Refresh Graph
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
-                )}
-                {graphDataMemo ? (
-                  <MergeGraphVisualization
-                    transformId={transformId}
-                    mergeId={currentMergeId || undefined}
-                    currentConflict={currentConflict}
-                    graphData={graphDataMemo}
-                  />
-                ) : visualizationLoading ? (
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <Loader2 className="h-8 w-8 animate-spin" />
-                  </div>
-                ) : (
-                  <div className="absolute inset-0 flex items-center justify-center flex-col">
-                    <AlertCircle className="h-10 w-10 text-amber-500 mb-2" />
-                    <p className="text-sm text-gray-500">No graph data available yet</p>
-                    {(status === MergeStatus.COMPLETED) && (
-                      <Button
-                        onClick={refreshVisualization}
-                        variant="outline"
-                        className="mt-4"
-                      >
-                        <RefreshCcw className="h-4 w-4 mr-2" />
-                        Refresh Graph
-                      </Button>
-                    )}
-                  </div>
-                )}
-                {/* Domain Apps Navigation Button */}
-                <div className="absolute top-4 right-4 z-10 flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => router.push('/domain-apps')}
-                    className="flex items-center gap-1"
-                  >
-                    <Network className="h-4 w-4" />
-                    <span>Domain Apps</span>
-                  </Button>
                 </div>
-              </div>
-            </TabsContent>
+              </TabsContent>
+            </div>
           </Tabs>
         </div>
       </div>
@@ -1023,22 +1047,30 @@ function MergePageContent() {
 }
 
 export default function MergePage() {
+  const handleStepNavigation = (stepId: string) => {
+    const routes: Record<string, string> = {
+      'ontology': '/ontology',
+      'upload': '/transform',
+      'edit': '/transform',
+      'merge': '/merge',
+      'domain-apps': '/domain-apps'
+    }
+    
+    if (routes[stepId] && typeof window !== 'undefined') {
+      window.location.href = routes[stepId]
+    }
+  }
+
   return (
-    <WorkflowLayout 
+    <EnhancedWorkflowLayout 
       steps={workflowSteps}
       currentStepId="merge"
-      hasUnsavedChanges={false}
+      projectTitle="Graph Merge Process"
+      onStepClick={handleStepNavigation}
     >
-      <Suspense fallback={
-        <div className="flex items-center justify-center h-full">
-          <div className="text-center">
-            <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-            <p className="text-gray-600">Initializing merge process...</p>
-          </div>
-        </div>
-      }>
+      <Suspense fallback={<div>Loading...</div>}>
         <MergePageContent />
       </Suspense>
-    </WorkflowLayout>
+    </EnhancedWorkflowLayout>
   )
 }

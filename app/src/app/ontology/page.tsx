@@ -9,9 +9,10 @@ import { YAMLEditor } from '@/components/ontology/yaml-editor'
 import { EntityList } from '@/components/ontology/entity-list'
 import { useOntologyEditorStore } from '@/lib/store/ontology-editor-store'
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable'
-import { WorkflowLayout, WorkflowStep } from '@/components/workflow-layout'
+import { EnhancedWorkflowLayout, WorkflowStep } from '@/components/enhanced-workflow-layout'
+import { PageHeader } from '@/components/layouts/page-header'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { Search, Upload, Play, Save, Code2, Grid2x2, SplitSquareVertical, Settings } from 'lucide-react'
+import { Search, Upload, Play, Code2, Grid2x2, SplitSquareVertical, Settings, Database } from 'lucide-react'
 import { VisualEditor } from '@/components/ontology/visual-editor'
 import { type AIAssistantState } from '@/lib/types/ai-assistant'
 import { cn } from '@/lib/utils'
@@ -257,7 +258,7 @@ export default function OntologyPage() {
 
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
 
-  const handleSubmit = async () => {
+  const handleContinue = async () => {
     if (!yaml.trim()) {
       setError('Please define your ontology before proceeding')
       return
@@ -279,31 +280,46 @@ export default function OntologyPage() {
       })
 
       if (!response.ok) {
-        throw new Error('Failed to create ontology session')
+        throw new Error('Failed to submit ontology')
       }
 
-      const { id } = await response.json()
+      const data = await response.json()
+      console.log('Ontology API response:', data) // Debug log
       
-      // Redirect to transform page with session_id
-      router.push(`/transform?session_id=${id}`)
-    } catch (error) {
-      console.error('Error creating ontology session:', error)
-      setError('Failed to create ontology session. Please try again.')
+      // Check if the backend returned an error
+      if (data.status === 'error') {
+        throw new Error(data.error || data.message || 'Failed to process ontology')
+      }
+      
+      // The backend returns 'id' field, use that as session ID
+      const sessionId = data.id
+      
+      console.log('Extracted session ID:', sessionId) // Debug log
+      
+      // Ensure we have a session ID
+      if (!sessionId) {
+        console.error('No session ID found in response. Available fields:', Object.keys(data))
+        throw new Error(`No session ID received from server. Response: ${JSON.stringify(data)}`)
+      }
+      
+      // Navigate to transform page with session ID
+      router.push(`/transform?session_id=${sessionId}`)
+    } catch (err) {
+      console.error('Error submitting ontology:', err)
+      setError(err instanceof Error ? err.message : 'An error occurred')
     } finally {
       setIsSubmitting(false)
     }
   }
 
+  const handleSubmit = async () => {
+    await handleContinue()
+  }
+
   const loadSampleYaml = useCallback(() => {
     updateFromYaml(SAMPLE_YAML)
-    setHasUnsavedChanges(true)
+    setHasUnsavedChanges(false) // Reset unsaved changes when loading sample
   }, [updateFromYaml])
-
-  const handleSave = useCallback(() => {
-    // TODO: Implement save
-    console.log('Saving...')
-    setHasUnsavedChanges(false)
-  }, [])
 
   const handleFileUpload = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -314,7 +330,6 @@ export default function OntologyPage() {
       const content = e.target?.result as string
       if (content) {
         updateFromYaml(content)
-        setHasUnsavedChanges(true)
       }
     }
     reader.readAsText(file)
@@ -386,91 +401,114 @@ export default function OntologyPage() {
 
   // Define workflow steps
   const workflowSteps: WorkflowStep[] = [
-    { id: 'ontology', title: 'Ontology Entry', description: 'Define your graph structure' },
-    { id: 'upload', title: 'Document Upload', description: 'Upload documents to process' },
-    { id: 'edit', title: 'Graph Editing', description: 'Refine extracted graph' },
-    { id: 'merge', title: 'Merge Process', description: 'Combine data into final graph' }
+    { 
+      id: 'ontology', 
+      title: 'Ontology Entry', 
+      description: 'Define your graph structure',
+      estimatedTime: '15-30 min',
+      status: 'current'
+    },
+    { 
+      id: 'upload', 
+      title: 'Document Upload', 
+      description: 'Upload documents to process',
+      estimatedTime: '5-10 min',
+      status: 'upcoming'
+    },
+    { 
+      id: 'edit', 
+      title: 'Graph Editing', 
+      description: 'Refine extracted graph',
+      estimatedTime: '20-45 min',
+      status: 'upcoming'
+    },
+    { 
+      id: 'merge', 
+      title: 'Merge Process', 
+      description: 'Combine data into final graph',
+      estimatedTime: '10-20 min',
+      status: 'upcoming'
+    }
   ]
 
+  const handleStepNavigation = (stepId: string) => {
+    const routes: Record<string, string> = {
+      'ontology': '/ontology',
+      'upload': '/transform',
+      'edit': '/transform',
+      'merge': '/merge'
+    }
+    
+    if (routes[stepId]) {
+      router.push(routes[stepId])
+    }
+  }
+
   return (
-    <WorkflowLayout 
+    <EnhancedWorkflowLayout 
       steps={workflowSteps} 
       currentStepId="ontology"
       hasUnsavedChanges={hasUnsavedChanges}
+      projectTitle="Ontology Editor"
+      onStepClick={handleStepNavigation}
     >
       <div className="flex-1 flex flex-col h-full">
-        {/* Top Header Bar - Remove sticky class */}
-        <div className="h-16 flex items-center justify-between px-6 border-b bg-background z-10 shadow-sm">
-          <div className="flex items-center space-x-4">
-            <div className="flex items-center space-x-2.5 text-lg font-semibold">
-              <div className="bg-primary/10 w-9 h-9 rounded-md flex items-center justify-center text-primary">
-                <svg width="22" height="22" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M5 2V1H10V2H5ZM4.75 0C4.33579 0 4 0.335786 4 0.75V1H3.5C2.67157 1 2 1.67157 2 2.5V12.5C2 13.3284 2.67157 14 3.5 14H11.5C12.3284 14 13 13.3284 13 12.5V2.5C13 1.67157 12.3284 1 11.5 1H11V0.75C11 0.335786 10.6642 0 10.25 0H4.75ZM3 2.5C3 2.22386 3.22386 2 3.5 2H4V2.25C4 2.66421 4.33579 3 4.75 3H10.25C10.6642 3 11 2.66421 11 2.25V2H11.5C11.7761 2 12 2.22386 12 2.5V12.5C12 12.7761 11.7761 13 11.5 13H3.5C3.22386 13 3 12.7761 3 12.5V2.5Z" fill="currentColor" fillRule="evenodd" clipRule="evenodd"></path>
-                </svg>
+        <PageHeader
+          title="Ontology Editor"
+          description="Define your knowledge graph structure using YAML or visual editor"
+          icon={<Database className="h-6 w-6" />}
+          actions={
+            <div className="flex items-center space-x-3">
+              <div className="hidden sm:flex border rounded-md overflow-hidden shadow-sm">
+                <Button 
+                  variant={viewMode === 'code' ? "default" : "ghost"} 
+                  size="sm" 
+                  className={cn(
+                    "rounded-none border-0",
+                    viewMode === 'code' ? "bg-primary text-primary-foreground" : ""
+                  )}
+                  onClick={() => setViewMode('code')}
+                >
+                  <Code2 className="h-4 w-4 mr-1.5" />
+                  Code
+                </Button>
+                <Button 
+                  variant={viewMode === 'visual' ? "default" : "ghost"} 
+                  size="sm" 
+                  className={cn(
+                    "rounded-none border-0",
+                    viewMode === 'visual' ? "bg-primary text-primary-foreground" : ""
+                  )}
+                  onClick={() => setViewMode('visual')}
+                >
+                  <Grid2x2 className="h-4 w-4 mr-1.5" />
+                  Visual
+                </Button>
+                <Button 
+                  variant={viewMode === 'split' ? "default" : "ghost"} 
+                  size="sm" 
+                  className={cn(
+                    "rounded-none border-0",
+                    viewMode === 'split' ? "bg-primary text-primary-foreground" : ""
+                  )}
+                  onClick={() => setViewMode('split')}
+                >
+                  <SplitSquareVertical className="h-4 w-4 mr-1.5" />
+                  Split
+                </Button>
               </div>
-              <span>Ontology Editor</span>
-            </div>
-          </div>
-
-          <div className="flex items-center space-x-3">
-            <div className="hidden sm:flex border rounded-md overflow-hidden shadow-sm">
+              
               <Button 
-                variant={viewMode === 'code' ? "default" : "ghost"} 
-                size="sm" 
-                className={cn(
-                  "h-9 rounded-none px-3 font-medium transition-all duration-200",
-                  viewMode === 'code' 
-                    ? "bg-primary text-primary-foreground shadow-[inset_0_-2px_0_0] shadow-primary" 
-                    : "hover:bg-muted/60"
-                )}
-                onClick={() => setViewMode('code')}
+                onClick={handleSubmit} 
+                disabled={!yaml.trim() || isSubmitting}
+                size="sm"
               >
-                <Code2 className="h-4 w-4 mr-1.5" />
-                Code
-              </Button>
-              <Button 
-                variant={viewMode === 'visual' ? "default" : "ghost"} 
-                size="sm" 
-                className={cn(
-                  "h-9 rounded-none px-3 font-medium transition-all duration-200",
-                  viewMode === 'visual' 
-                    ? "bg-primary text-primary-foreground shadow-[inset_0_-2px_0_0] shadow-primary" 
-                    : "hover:bg-muted/60"
-                )}
-                onClick={() => setViewMode('visual')}
-              >
-                <Grid2x2 className="h-4 w-4 mr-1.5" />
-                Visual
-              </Button>
-              <Button 
-                variant={viewMode === 'split' ? "default" : "ghost"} 
-                size="sm" 
-                className={cn(
-                  "h-9 rounded-none px-3 font-medium transition-all duration-200", 
-                  viewMode === 'split' 
-                    ? "bg-primary text-primary-foreground shadow-[inset_0_-2px_0_0] shadow-primary" 
-                    : "hover:bg-muted/60"
-                )}
-                onClick={() => setViewMode('split')}
-              >
-                <SplitSquareVertical className="h-4 w-4 mr-1.5" />
-                Split
+                <Play className="h-4 w-4 mr-1.5" />
+                {isSubmitting ? 'Submitting...' : 'Submit'}
               </Button>
             </div>
-            
-            <Button
-              variant="default"
-              size="sm"
-              onClick={handleSubmit}
-              disabled={isSubmitting}
-              className="gap-1.5 font-medium shadow-sm"
-            >
-              <Play className="h-4 w-4" />
-              <span className="hidden md:inline">Submit Ontology</span>
-              <span className="inline md:hidden">Submit</span>
-            </Button>
-          </div>
-        </div>
+          }
+        />
 
         {/* Error Alert */}
         {error && (
@@ -567,7 +605,6 @@ export default function OntologyPage() {
                           value={yaml} 
                           onChange={(value) => {
                             updateFromYaml(value)
-                            setHasUnsavedChanges(true)
                           }} 
                         />
                       </div>
@@ -581,7 +618,6 @@ export default function OntologyPage() {
                         value={yaml} 
                         onChange={(value) => {
                           updateFromYaml(value)
-                          setHasUnsavedChanges(true)
                         }} 
                       />
                     </div>
@@ -596,6 +632,6 @@ export default function OntologyPage() {
           </ResizablePanelGroup>
         </div>
       </div>
-    </WorkflowLayout>
+    </EnhancedWorkflowLayout>
   )
 }

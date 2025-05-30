@@ -3,9 +3,14 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useUser } from '@clerk/nextjs'
+import { DashboardLayout } from '@/components/layouts/dashboard-layout'
+import { PageHeader } from '@/components/layouts/page-header'
 import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Loader2, Settings, AlertCircle, CheckCircle, ArrowLeft } from 'lucide-react'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Badge } from '@/components/ui/badge'
+import { Loader2, Settings, AlertCircle, CheckCircle, Database, User, Bell, Shield } from 'lucide-react'
 import { DatabaseConfigForm } from '@/components/config/database-config-form'
 import { DatabaseConfig, UserConfig, ConfigRequest } from '@/types/config'
 import { toast } from 'sonner'
@@ -25,11 +30,11 @@ export default function ConfigPage() {
   const [config, setConfig] = useState<UserConfig | null>(null)
   const [stagingDb, setStagingDb] = useState<DatabaseConfig>({
     ...defaultDbConfig,
-    name: 'Staging Neo4j'
+    name: 'neo4j'
   })
   const [prodDb, setProdDb] = useState<DatabaseConfig>({
     ...defaultDbConfig,
-    name: 'Production Neo4j'
+    name: 'neo4j'
   })
   const [error, setError] = useState<string | null>(null)
 
@@ -48,62 +53,42 @@ export default function ConfigPage() {
       
       if (response.status === 404) {
         // Configuration not found - this is expected for new users
-        // Don't show an error, just continue with empty config
+        console.log('No configuration found for user, using defaults')
         setConfig(null)
         return
       }
-      
+
       if (!response.ok) {
-        const data = await response.json()
-        throw new Error(data.error || 'Failed to fetch configuration')
+        throw new Error(`Failed to fetch configuration: ${response.status}`)
       }
 
       const data = await response.json()
-      if (data) {
-        setConfig(data)
-        setStagingDb(data.stagingDb)
-        setProdDb(data.prodDb)
+      console.log('Fetched configuration:', data)
+      
+      setConfig(data)
+      if (data.stagingDb) {
+        setStagingDb({
+          ...data.stagingDb,
+          password: '' // Don't populate password for security
+        })
       }
-    } catch (error) {
-      console.error('Error fetching config:', error)
-      setError(error instanceof Error ? error.message : 'Failed to fetch configuration')
+      if (data.prodDb) {
+        setProdDb({
+          ...data.prodDb,
+          password: '' // Don't populate password for security
+        })
+      }
+    } catch (err) {
+      console.error('Error fetching config:', err)
+      setError(err instanceof Error ? err.message : 'Failed to load configuration')
     } finally {
       setLoading(false)
     }
   }
 
-  const validateConfig = (): string | null => {
-    // Validate staging DB
-    if (!stagingDb.name || !stagingDb.uri || !stagingDb.username || !stagingDb.password) {
-      return 'Please fill in all required fields for the staging database'
-    }
-
-    // Validate prod DB
-    if (!prodDb.name || !prodDb.uri || !prodDb.username || !prodDb.password) {
-      return 'Please fill in all required fields for the production database'
-    }
-
-    // Validate URI formats
-    const validUriPrefixes = ['neo4j://', 'bolt://', 'neo4j+s://', 'bolt+s://']
-    if (!validUriPrefixes.some(prefix => stagingDb.uri.startsWith(prefix))) {
-      return 'Staging database URI must start with neo4j://, bolt://, neo4j+s://, or bolt+s://'
-    }
-    if (!validUriPrefixes.some(prefix => prodDb.uri.startsWith(prefix))) {
-      return 'Production database URI must start with neo4j://, bolt://, neo4j+s://, or bolt+s://'
-    }
-
-    // Validate that staging and prod are different
-    if (stagingDb.uri === prodDb.uri) {
-      return 'Staging and production database URIs must be different'
-    }
-
-    return null
-  }
-
-  const saveConfig = async () => {
-    const validationError = validateConfig()
-    if (validationError) {
-      setError(validationError)
+  const handleSave = async () => {
+    if (!user) {
+      setError('User not authenticated')
       return
     }
 
@@ -111,151 +96,238 @@ export default function ConfigPage() {
       setSaving(true)
       setError(null)
 
-      const configData: ConfigRequest = {
-        stagingDb,
-        prodDb,
+      const configRequest: ConfigRequest = {
+        userId: user.id,
+        stagingDatabase: stagingDb,
+        productionDatabase: prodDb,
       }
 
-      const method = config ? 'PUT' : 'POST'
+      console.log('Saving configuration:', configRequest)
+
       const response = await fetch('/api/config', {
-        method,
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(configData),
+        body: JSON.stringify(configRequest),
       })
 
-      const data = await response.json()
-
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to save configuration')
+        const errorData = await response.json()
+        throw new Error(errorData.error || `HTTP error! status: ${response.status}`)
       }
 
-      setConfig(data)
-      toast.success('Configuration saved successfully!')
+      const savedConfig = await response.json()
+      console.log('Configuration saved successfully:', savedConfig)
       
-      // Redirect to home page after successful save
-      setTimeout(() => {
-        router.push('/')
-      }, 1000)
-    } catch (error) {
-      console.error('Error saving config:', error)
-      setError(error instanceof Error ? error.message : 'Failed to save configuration')
-      toast.error('Failed to save configuration')
+      setConfig(savedConfig)
+      toast.success('Configuration saved successfully')
+    } catch (err) {
+      console.error('Error saving config:', err)
+      const errorMessage = err instanceof Error ? err.message : 'Failed to save configuration'
+      setError(errorMessage)
+      toast.error(errorMessage)
     } finally {
       setSaving(false)
     }
   }
 
-  if (!isLoaded || loading) {
+  if (!isLoaded) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="flex items-center gap-2">
-          <Loader2 className="h-6 w-6 animate-spin" />
-          <span>Loading configuration...</span>
+      <DashboardLayout>
+        <div className="flex-1 flex items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin" />
         </div>
-      </div>
+      </DashboardLayout>
+    )
+  }
+
+  if (!user) {
+    return (
+      <DashboardLayout>
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <h2 className="text-lg font-semibold">Authentication Required</h2>
+            <p className="text-gray-600">Please sign in to access configuration.</p>
+          </div>
+        </div>
+      </DashboardLayout>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="container mx-auto px-4 py-8 max-w-6xl">
-        <div className="mb-8">
-          <div className="flex items-center gap-4 mb-4">
-            <Button
-              variant="ghost"
-              onClick={() => router.back()}
-              className="flex items-center gap-2"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              Back
-            </Button>
-          </div>
-          
-          <div className="flex items-center gap-3 mb-2">
-            <Settings className="h-8 w-8 text-blue-600" />
-            <h1 className="text-3xl font-bold">Neo4j Database Configuration</h1>
-          </div>
-          <p className="text-gray-600">
-            Configure your staging and production Neo4j databases to get started with Graphora.
-            Both databases are required and must have different URIs.
-          </p>
-        </div>
-
-        {error && (
-          <Alert className="mb-6 border-red-200 bg-red-50">
-            <AlertCircle className="h-4 w-4 text-red-600" />
-            <AlertDescription className="text-red-800">{error}</AlertDescription>
-          </Alert>
-        )}
-
-        {config && (
-          <Alert className="mb-6 border-green-200 bg-green-50">
-            <CheckCircle className="h-4 w-4 text-green-600" />
-            <AlertDescription className="text-green-800">
-              Configuration found. You can update your database settings below.
-            </AlertDescription>
-          </Alert>
-        )}
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-          <DatabaseConfigForm
-            title="Staging Database"
-            description="Neo4j database used for testing and development"
-            config={stagingDb}
-            onChange={setStagingDb}
-            disabled={saving}
-          />
-
-          <DatabaseConfigForm
-            title="Production Database"
-            description="Neo4j database used for live data and production merges"
-            config={prodDb}
-            onChange={setProdDb}
-            disabled={saving}
-          />
-        </div>
-
-        <div className="bg-white rounded-lg p-6 mb-8">
-          <h3 className="text-lg font-semibold mb-3">Neo4j Connection Examples</h3>
-          <div className="space-y-2 text-sm text-gray-600">
-            <div>
-              <strong>Local Neo4j:</strong> <code className="bg-gray-100 px-2 py-1 rounded">neo4j://localhost:7687</code>
+    <DashboardLayout>
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <PageHeader
+          title="Configuration"
+          description="Manage your system settings and database connections"
+          icon={<Settings className="h-6 w-6" />}
+          actions={
+            <div className="flex items-center space-x-3">
+              {config && (
+                <Badge variant="secondary" className="bg-emerald-100 text-emerald-700">
+                  <CheckCircle className="h-3 w-3 mr-1" />
+                  Configured
+                </Badge>
+              )}
+              <Button
+                onClick={handleSave}
+                disabled={saving || loading}
+                size="sm"
+                className="bg-blue-600 hover:bg-blue-700"
+              >
+                {saving ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  'Save Configuration'
+                )}
+              </Button>
             </div>
-            <div>
-              <strong>Neo4j Aura:</strong> <code className="bg-gray-100 px-2 py-1 rounded">neo4j+s://your-instance.databases.neo4j.io</code>
-            </div>
-            <div>
-              <strong>Bolt Protocol:</strong> <code className="bg-gray-100 px-2 py-1 rounded">bolt://localhost:7687</code>
-            </div>
-          </div>
-        </div>
+          }
+        />
 
-        <div className="flex justify-end gap-4">
-          <Button
-            variant="outline"
-            onClick={() => router.push('/')}
-            disabled={saving}
-          >
-            Cancel
-          </Button>
-          <Button
-            onClick={saveConfig}
-            disabled={saving}
-            className="min-w-[120px]"
-          >
-            {saving ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                Saving...
-              </>
-            ) : (
-              'Save Configuration'
-            )}
-          </Button>
+        <div className="flex-1 overflow-auto p-6">
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="text-center">
+                <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-blue-600" />
+                <p className="text-slate-600">Loading configuration...</p>
+              </div>
+            </div>
+          ) : (
+            <div className="max-w-4xl mx-auto space-y-6">
+              {error && (
+                <Alert variant="destructive">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
+              )}
+
+              <Tabs defaultValue="databases" className="space-y-6">
+                <TabsList className="grid w-full grid-cols-4">
+                  <TabsTrigger value="databases">
+                    <Database className="h-4 w-4 mr-2" />
+                    Databases
+                  </TabsTrigger>
+                  <TabsTrigger value="profile">
+                    <User className="h-4 w-4 mr-2" />
+                    Profile
+                  </TabsTrigger>
+                  <TabsTrigger value="notifications">
+                    <Bell className="h-4 w-4 mr-2" />
+                    Notifications
+                  </TabsTrigger>
+                  <TabsTrigger value="security">
+                    <Shield className="h-4 w-4 mr-2" />
+                    Security
+                  </TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="databases" className="space-y-6">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <Card className="enhanced-card">
+                      <CardHeader className="enhanced-card-header">
+                        <CardTitle className="flex items-center space-x-2">
+                          <Database className="h-5 w-5 text-blue-600" />
+                          <span>Staging Database</span>
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="enhanced-card-content">
+                        <DatabaseConfigForm
+                          title="Staging Database"
+                          description="Neo4j database used for testing and development"
+                          config={stagingDb}
+                          onChange={setStagingDb}
+                          disabled={saving}
+                          isExistingConfig={!!config?.stagingDb?.uri}
+                        />
+                      </CardContent>
+                    </Card>
+
+                    <Card className="enhanced-card">
+                      <CardHeader className="enhanced-card-header">
+                        <CardTitle className="flex items-center space-x-2">
+                          <Database className="h-5 w-5 text-emerald-600" />
+                          <span>Production Database</span>
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="enhanced-card-content">
+                        <DatabaseConfigForm
+                          title="Production Database"
+                          description="Neo4j database used for live data and production merges"
+                          config={prodDb}
+                          onChange={setProdDb}
+                          disabled={saving}
+                          isExistingConfig={!!config?.prodDb?.uri}
+                        />
+                      </CardContent>
+                    </Card>
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="profile" className="space-y-6">
+                  <Card className="enhanced-card">
+                    <CardHeader className="enhanced-card-header">
+                      <CardTitle>User Profile</CardTitle>
+                    </CardHeader>
+                    <CardContent className="enhanced-card-content space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="form-label">Email</label>
+                          <input 
+                            className="form-input" 
+                            value={user?.emailAddresses[0]?.emailAddress || ''} 
+                            disabled 
+                          />
+                        </div>
+                        <div>
+                          <label className="form-label">User ID</label>
+                          <input 
+                            className="form-input" 
+                            value={user?.id || ''} 
+                            disabled 
+                          />
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+
+                <TabsContent value="notifications" className="space-y-6">
+                  <Card className="enhanced-card">
+                    <CardHeader className="enhanced-card-header">
+                      <CardTitle>Notification Preferences</CardTitle>
+                    </CardHeader>
+                    <CardContent className="enhanced-card-content">
+                      <div className="text-center py-8 text-slate-500">
+                        <Bell className="h-12 w-12 mx-auto mb-4 text-slate-300" />
+                        <p>Notification settings coming soon</p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+
+                <TabsContent value="security" className="space-y-6">
+                  <Card className="enhanced-card">
+                    <CardHeader className="enhanced-card-header">
+                      <CardTitle>Security Settings</CardTitle>
+                    </CardHeader>
+                    <CardContent className="enhanced-card-content">
+                      <div className="text-center py-8 text-slate-500">
+                        <Shield className="h-12 w-12 mx-auto mb-4 text-slate-300" />
+                        <p>Security settings coming soon</p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+              </Tabs>
+            </div>
+          )}
         </div>
       </div>
-    </div>
+    </DashboardLayout>
   )
 } 

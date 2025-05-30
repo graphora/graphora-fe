@@ -419,78 +419,105 @@ export const MergeGraphVisualization: React.FC<MergeGraphVisualizationProps> = (
   }
 
   return (
-    <div className="flex h-full w-full">
-      <div className="w-48 p-4 bg-white border-r border-gray-200 shrink-0 flex flex-col gap-4">
-        <div>
-          <h3 className="font-medium mb-2">Search</h3>
-          <Input
-            type="text"
-            placeholder="Search nodes..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full"
-          />
+    <div className="w-full h-full relative bg-gray-50">
+      {/* Graph Information - Top Right */}
+      <div className="absolute top-4 right-4 z-10">
+        <div className="bg-white/90 backdrop-blur-sm p-3 rounded-lg shadow-sm border border-gray-200 text-sm">
+          <div className="font-medium mb-1 text-gray-800">Graph Information</div>
+          <div className="text-gray-600">Nodes: {currentGraphData.nodes.length}</div>
+          <div className="text-gray-600">Edges: {currentGraphData.rels.length}</div>
         </div>
-        <div>
-          <h3 className="font-medium mb-2">Type Filter</h3>
-          <div className="space-y-2">
-            {availableTypes.map((type) => (
-              <div key={type} className="flex items-center">
-                <Switch
-                  checked={filters[`show${type}`]}
-                  onCheckedChange={(checked) => 
-                    setFilters(prev => ({ ...prev, [`show${type}`]: checked }))
-                  }
-                  style={{ 
-                    backgroundColor: filters[`show${type}`] ? typeColors[type] : '#e5e7eb'
-                  }}
-                  className="mr-2"
-                />
-                <span className="flex items-center">
-                  <div 
-                    className="w-3 h-3 rounded-full mr-2" 
-                    style={{ backgroundColor: typeColors[type] }} 
-                  />
-                  {type}
-                </span>
+      </div>
+
+      {/* Search Controls - Top Left */}
+      <div className="absolute top-4 left-4 z-10">
+        <div className="bg-white/90 backdrop-blur-sm p-3 rounded-lg shadow-sm border border-gray-200 w-64">
+          <div className="space-y-3">
+            <div>
+              <label className="text-sm font-medium text-gray-700 mb-1 block">Search</label>
+              <Input
+                type="text"
+                placeholder="Search nodes..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full h-8 text-sm"
+              />
+            </div>
+            
+            {availableTypes.length > 0 && (
+              <div>
+                <label className="text-sm font-medium text-gray-700 mb-2 block">Node Types</label>
+                <div className="space-y-1 max-h-32 overflow-y-auto">
+                  {availableTypes.map((type) => (
+                    <div key={type} className="flex items-center justify-between text-sm">
+                      <span className="flex items-center">
+                        <div 
+                          className="w-2 h-2 rounded-full mr-2" 
+                          style={{ backgroundColor: typeColors[type] }} 
+                        />
+                        <span className="text-gray-700 truncate">{type}</span>
+                      </span>
+                      <Switch
+                        checked={filters[`show${type}`]}
+                        onCheckedChange={(checked) => 
+                          setFilters(prev => ({ ...prev, [`show${type}`]: checked }))
+                        }
+                        className="ml-2 scale-75"
+                      />
+                    </div>
+                  ))}
+                </div>
               </div>
-            ))}
+            )}
           </div>
         </div>
-        <div>
-          <h3 className="font-medium mb-2">View Controls</h3>
-          <div className="space-y-2">
+      </div>
+
+      {/* View Controls - Bottom Left */}
+      <div className="absolute bottom-4 left-4 z-10">
+        <div className="bg-white/90 backdrop-blur-sm p-2 rounded-lg shadow-sm border border-gray-200">
+          <div className="flex space-x-1">
             <Button
-              variant="outline"
+              variant="ghost"
               size="sm"
-              className="w-full"
+              className="h-8 w-8 p-0 text-gray-600 hover:text-gray-800"
               onClick={handleZoomIn}
+              title="Zoom In"
             >
-              Zoom In
+              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+              </svg>
             </Button>
             <Button
-              variant="outline"
+              variant="ghost"
               size="sm"
-              className="w-full"
+              className="h-8 w-8 p-0 text-gray-600 hover:text-gray-800"
               onClick={handleZoomOut}
+              title="Zoom Out"
             >
-              Zoom Out
+              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
+              </svg>
             </Button>
             <Button
-              variant="outline"
+              variant="ghost"
               size="sm"
-              className="w-full"
+              className="h-8 w-8 p-0 text-gray-600 hover:text-gray-800"
               onClick={handleReset}
+              title="Reset View"
             >
-              Reset View
+              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
             </Button>
           </div>
         </div>
       </div>
 
+      {/* Main Graph Container */}
       <div
         ref={containerRef}
-        className="flex-1 relative h-full min-h-[500px] bg-white rounded-lg overflow-hidden border border-gray-200"
+        className="w-full h-full"
         onMouseMove={handleMouseMove}
         onMouseDown={() => setIsDragging(true)}
         onMouseUp={() => setIsDragging(false)}
@@ -710,14 +737,6 @@ export const MergeGraphVisualization: React.FC<MergeGraphVisualizationProps> = (
             </Badge>
           </div>
         )}
-
-        <div className="absolute top-4 right-4 flex flex-col gap-2 z-10 mt-12">
-          <div className="bg-white/90 p-2 rounded-md shadow-sm text-xs">
-            <div className="font-medium mb-1">Graph Information</div>
-            <div>Nodes: {currentGraphData.nodes.length}</div>
-            <div>Edges: {currentGraphData.rels.length}</div>
-          </div>
-        </div>
       </div>
     </div>
   );

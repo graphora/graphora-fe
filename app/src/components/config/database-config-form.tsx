@@ -16,9 +16,10 @@ interface DatabaseConfigFormProps {
   config: DatabaseConfig
   onChange: (config: DatabaseConfig) => void
   disabled?: boolean
+  isExistingConfig?: boolean
 }
 
-export function DatabaseConfigForm({ title, description, config, onChange, disabled }: DatabaseConfigFormProps) {
+export function DatabaseConfigForm({ title, description, config, onChange, disabled, isExistingConfig }: DatabaseConfigFormProps) {
   const [showPassword, setShowPassword] = useState(false)
   const [testing, setTesting] = useState(false)
   const [testResult, setTestResult] = useState<ConnectionTestResponse | null>(null)
@@ -35,8 +36,13 @@ export function DatabaseConfigForm({ title, description, config, onChange, disab
   }
 
   const testConnection = async () => {
-    if (!config.uri || !config.username || !config.password) {
-      toast.error('Please fill in all connection fields before testing')
+    if (!config.uri || !config.username) {
+      toast.error('Please fill in URI and username before testing')
+      return
+    }
+
+    if (!isExistingConfig && !config.password) {
+      toast.error('Please fill in password for new connection')
       return
     }
 
@@ -78,15 +84,15 @@ export function DatabaseConfigForm({ title, description, config, onChange, disab
     }
   }
 
-  const isFormValid = config.uri && config.username && config.password
+  const isFormValid = config.uri && config.username && (isExistingConfig || config.password)
 
   return (
     <Card className="w-full">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
+        {/* <CardTitle className="flex items-center gap-2">
           <Database className="h-5 w-5" />
           {title}
-        </CardTitle>
+        </CardTitle> */}
         <CardDescription>{description}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -132,8 +138,8 @@ export function DatabaseConfigForm({ title, description, config, onChange, disab
             <Input
               id={`${title.toLowerCase()}-password`}
               type={showPassword ? 'text' : 'password'}
-              placeholder="password"
-              value={config.password || ''}
+              placeholder={isExistingConfig ? "Leave blank to keep existing password" : "password"}
+              value={isExistingConfig ? '' : (config.password || '')}
               onChange={(e) => handleChange('password', e.target.value)}
               disabled={disabled}
               className="pr-10"
@@ -153,6 +159,11 @@ export function DatabaseConfigForm({ title, description, config, onChange, disab
               )}
             </Button>
           </div>
+          {isExistingConfig && (
+            <p className="text-xs text-gray-500">
+              Password is already configured. Only fill this if you want to update it.
+            </p>
+          )}
         </div>
 
         {testResult && (
