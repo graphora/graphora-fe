@@ -25,10 +25,10 @@ interface ConflictListProps {
 }
 
 const severityColors = {
-  critical: 'text-red-600 bg-red-50 border-red-200',
-  major: 'text-orange-600 bg-orange-50 border-orange-200',
-  minor: 'text-yellow-600 bg-yellow-50 border-yellow-200',
-  info: 'text-blue-600 bg-blue-50 border-blue-200'
+  critical: 'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/50 border-red-200 dark:border-red-800/50',
+  major: 'text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-950/50 border-orange-200 dark:border-orange-800/50',
+  minor: 'text-yellow-600 dark:text-yellow-400 bg-yellow-50 dark:bg-yellow-950/50 border-yellow-200 dark:border-yellow-800/50',
+  info: 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/50 border-blue-200 dark:border-blue-800/50'
 }
 
 const defaultFilters: ConflictListFilters = {
@@ -305,7 +305,7 @@ export function ConflictList({
                   value={filters.severity?.[0]}
                   onValueChange={(value) => handleFilterChange('severity', [value])}
                 >
-                  <SelectTrigger className="w-[140px] border-gray-300 rounded">
+                  <SelectTrigger className="w-[140px] border-border rounded">
                     <SelectValue placeholder="Severity" />
                   </SelectTrigger>
                   <SelectContent>
@@ -319,7 +319,7 @@ export function ConflictList({
                   variant="outline"
                   size="icon"
                   onClick={() => setFilters(defaultFilters)}
-                  className="border-gray-300 rounded"
+                  className="border-border rounded"
                 >
                   <Filter className="h-4 w-4" />
                 </Button>
@@ -346,7 +346,7 @@ export function ConflictList({
                     <div className="flex items-center justify-center py-8">
                       <div className="text-center">
                         <CheckCircle2 className="h-8 w-8 text-green-500 mx-auto mb-2" />
-                        <p className="text-gray-500">No conflicts found</p>
+                        <p className="text-muted-foreground">No conflicts found</p>
                       </div>
                     </div>
                   ) : (
@@ -357,7 +357,7 @@ export function ConflictList({
                             checked={selectedConflicts.length === convertedConflicts.length}
                             onCheckedChange={handleSelectAll}
                           />
-                          <span className="text-xs">{selectedConflicts.length} selected</span>
+                          <span className="text-xs text-muted-foreground">{selectedConflicts.length} selected</span>
                         </div>
                         <div className="flex items-center gap-1">
                           <Button variant="ghost" size="sm" onClick={() => handleSort('severity')}>
@@ -383,24 +383,24 @@ export function ConflictList({
                               />
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2 mb-1">
-                                  <span className="font-medium text-sm truncate">
+                                  <span className="font-medium text-sm truncate text-foreground">
                                     {conflict.entity_name || conflict.entity_id}
                                   </span>
                                   <Badge className={cn(severityColors[conflict.severity.level], 'rounded-full text-xs')}>
                                     {conflict.severity.level}
                                   </Badge>
                                 </div>
-                                <p className="text-xs text-gray-500 truncate">{conflict.description}</p>
-                                <div className="flex items-center gap-2 mt-1 text-xs text-gray-500">
+                                <p className="text-xs text-muted-foreground truncate">{conflict.description}</p>
+                                <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
                                   <span>{new Date(conflict.created_at).toLocaleDateString()}</span>
                                   {conflict.resolution_status === 'auto-resolved' && (
-                                    <Badge className="bg-blue-100 text-blue-800 border-blue-200 rounded-full text-xs">
+                                    <Badge className="bg-blue-100 dark:bg-blue-950/50 text-blue-800 dark:text-blue-300 border-blue-200 dark:border-blue-800/50 rounded-full text-xs">
                                       <Wand2 className="h-3 w-3 mr-1" />
                                       Auto
                                     </Badge>
                                   )}
                                   {conflict.resolved && (
-                                    <span className="flex items-center text-green-600">
+                                    <span className="flex items-center text-green-600 dark:text-green-400">
                                       <CheckCircle2 className="h-3 w-3 mr-1" />
                                       Resolved
                                     </span>
@@ -448,7 +448,7 @@ export function ConflictList({
           </div>
 
           <div
-            className="absolute right-0 top-0 bottom-0 w-1 bg-gray-300 cursor-col-resize hover:bg-gray-400"
+            className="absolute right-0 top-0 bottom-0 w-1 bg-border hover:bg-border/80 cursor-col-resize"
             onMouseDown={startResizing}
           />
         </div>

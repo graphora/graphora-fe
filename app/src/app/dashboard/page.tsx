@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
+import { useUser } from '@clerk/nextjs'
 import { DashboardLayout } from '@/components/layouts/dashboard-layout'
 import { PageHeader } from '@/components/layouts/page-header'
 import { StatusIndicator } from '@/components/ui/status-indicator'
@@ -21,14 +22,18 @@ import {
   Play,
   History,
   AlertTriangle,
-  ExternalLink
+  ExternalLink,
+  Loader2
 } from 'lucide-react'
 import Link from 'next/link'
+import { useUserConfig } from '@/hooks/useUserConfig'
 
 export default function DashboardPage() {
   const [auditSummary, setAuditSummary] = useState<any>(null)
   const [conflictsSummary, setConflictsSummary] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+  const { user, isLoaded } = useUser()
+  const { checkConfigBeforeWorkflow } = useUserConfig()
 
   // Fetch audit trail data
   useEffect(() => {
@@ -105,6 +110,12 @@ export default function DashboardPage() {
     }
   }
 
+  const handleRunWorkflow = () => {
+    if (checkConfigBeforeWorkflow()) {
+      window.location.href = '/ontology'
+    }
+  }
+
   return (
     <DashboardLayout>
       <div className="flex-1 flex flex-col overflow-hidden">
@@ -114,12 +125,13 @@ export default function DashboardPage() {
           icon={<BarChart3 className="h-6 w-6" />}
           actions={
             <div className="flex items-center space-x-3">
-              <Link href="/ontology">
-                <Button className="bg-emerald-600 hover:bg-emerald-700 text-white">
-                  <Play className="h-4 w-4 mr-2" />
-                  Run Workflow
-                </Button>
-              </Link>
+              <Button 
+                className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                onClick={handleRunWorkflow}
+              >
+                <Play className="h-4 w-4 mr-2" />
+                Run Workflow
+              </Button>
             </div>
           }
         />

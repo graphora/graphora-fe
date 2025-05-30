@@ -34,6 +34,7 @@ import { ResizablePanel } from '@/components/command-center/resizable-panel'
 import { CommandPalette } from '@/components/command-center/command-palette'
 import { type AIAssistantState } from '@/lib/types/ai-assistant'
 import { toast } from 'sonner'
+import { useUserConfig } from '@/hooks/useUserConfig'
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB
 const ACCEPTED_FILE_TYPES = {
@@ -91,6 +92,7 @@ function TransformPageContent() {
   const pathname = usePathname()
   const sessionId = searchParams.get('session_id')
   const urlTransformId = searchParams.get('transform_id')
+  const { checkConfigBeforeWorkflow } = useUserConfig()
 
   const [file, setFile] = useState<FileWithPreview | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -489,6 +491,11 @@ function TransformPageContent() {
 
   const handleMergeConfirm = () => {
     setShowMergeConfirm(false)
+    
+    // Check if user has database configurations before proceeding with merge
+    if (!checkConfigBeforeWorkflow()) {
+      return
+    }
     
     setIsProcessing(true)
     setCurrentStep('Initializing merge process...')

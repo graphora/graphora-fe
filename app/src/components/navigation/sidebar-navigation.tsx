@@ -22,6 +22,8 @@ import {
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Tooltip } from '@/components/ui/tooltip'
+import { UserButton } from '@/components/ui/user-button'
+import { ThemeToggle } from '@/components/ui/theme-toggle'
 
 interface NavigationItem {
   id: string
@@ -221,6 +223,39 @@ export function SidebarNavigation({ className, defaultCollapsed = true }: Sideba
       </div>
 
       {/* Footer */}
+      {/* User Section */}
+      <div className="p-4 border-t border-border">
+        <div className="flex items-center justify-between mb-3">
+          {!isCollapsed && (
+            <div className="flex items-center space-x-2 flex-1">
+              <UserButton />
+              <div className="flex-1 min-w-0">
+                <div className="text-sm font-medium text-foreground truncate">
+                  Welcome back
+                </div>
+              </div>
+            </div>
+          )}
+          {isCollapsed && (
+            <div className="flex justify-center">
+              <UserButton />
+            </div>
+          )}
+          
+          {!isCollapsed && (
+            <div className="flex items-center space-x-1">
+              <ThemeToggle />
+            </div>
+          )}
+        </div>
+        
+        {isCollapsed && (
+          <div className="flex justify-center mt-2">
+            <ThemeToggle />
+          </div>
+        )}
+      </div>
+
       {!isCollapsed && (
         <div className="p-4 border-t border-border">
           <div className="bg-muted rounded-lg p-3">

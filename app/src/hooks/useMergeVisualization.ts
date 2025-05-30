@@ -43,6 +43,7 @@ export function useMergeVisualization(mergeId: string, transformId: string) {
 
   const fetchData = useCallback(async () => {
     if (!mergeId || !transformId) {
+      console.error('useMergeVisualization: No merge ID or transform ID provided', { mergeId, transformId })
       setError('No merge ID or transform ID provided')
       return
     }
@@ -51,32 +52,42 @@ export function useMergeVisualization(mergeId: string, transformId: string) {
       setLoading(true)
       setError(null)
 
+      console.log(`useMergeVisualization: Fetching data for mergeId: ${mergeId}, transformId: ${transformId}`)
       const response = await fetch(`/api/merge/merges/${mergeId}/graph/${transformId}`)
       
       if (!response.ok) {
         if (response.status === 404) {
+          console.warn('useMergeVisualization: Graph data not found (404), setting empty graph')
           setGraphData({ nodes: [], edges: [] })
           return
         }
+        const errorText = await response.text()
+        console.error(`useMergeVisualization: API error (${response.status}):`, errorText)
         throw new Error(`Failed to fetch visualization data: ${response.statusText}`)
       }
 
       const responseData = await response.json()
+      console.log('useMergeVisualization: Raw API response:', responseData)
       
       if (!responseData) {
+        console.error('useMergeVisualization: Empty response from API')
         throw new Error('Invalid response format')
       }
 
       const currentDataString = JSON.stringify(responseData)
       if (currentDataString === prevDataRef.current) {
+        console.log('useMergeVisualization: Data unchanged, skipping update')
         return // Data hasn't changed, no need to update
       }
 
       prevDataRef.current = currentDataString
       setData(responseData)
-      setGraphData(transformGraphData(responseData.data))
+      
+      const transformedGraphData = transformGraphData(responseData.data || responseData)
+      console.log('useMergeVisualization: Transformed graph data:', transformedGraphData)
+      setGraphData(transformedGraphData)
     } catch (err) {
-      console.error('Error fetching visualization data:', err)
+      console.error('useMergeVisualization: Error fetching data:', err)
       setError(err instanceof Error ? err.message : 'Failed to load visualization')
       setGraphData({ nodes: [], edges: [] })
     } finally {

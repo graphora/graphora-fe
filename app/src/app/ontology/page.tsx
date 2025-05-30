@@ -17,15 +17,23 @@ import { VisualEditor } from '@/components/ontology/visual-editor'
 import { type AIAssistantState } from '@/lib/types/ai-assistant'
 import { cn } from '@/lib/utils'
 import Link from 'next/link'
+import { useUserConfig } from '@/hooks/useUserConfig'
 
 type ViewMode = 'code' | 'visual' | 'split'
+
+interface ParsedOntology {
+  entities: Record<string, {
+    properties: Record<string, any>
+    relationships: Record<string, any>
+  }>
+}
 
 interface LoadedOntology {
   id: string
   file_name: string
   yaml_content: string
   version: number
-  source: string
+  source: 'file' | 'database'
   created_at: string
   updated_at: string
 }
@@ -213,6 +221,7 @@ function OntologyPageContent() {
   const searchParams = useSearchParams()
   const { user } = useUser()
   const { yaml, updateFromYaml } = useOntologyEditorStore()
+  const { checkConfigBeforeWorkflow } = useUserConfig()
   const [sidebarWidth, setSidebarWidth] = useState(320)
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -325,6 +334,11 @@ function OntologyPageContent() {
   const handleContinue = async () => {
     if (!yaml.trim()) {
       setError('Please define your ontology before proceeding')
+      return
+    }
+
+    // Check if user has database configurations before proceeding
+    if (!checkConfigBeforeWorkflow()) {
       return
     }
 

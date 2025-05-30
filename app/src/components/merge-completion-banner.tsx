@@ -68,12 +68,12 @@ export function MergeCompletionBanner({
     <div className={cn("w-full", className)}>
       { takeToFinalize ? (  
         <div>
-          <Alert className="bg-green-50 border-green-200 mb-4">
-            <CheckCircle2 className="h-5 w-5 text-green-500" />
-            <AlertTitle className="text-green-700 font-medium ml-2">
+          <Alert className="bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-800/50 mb-4">
+            <CheckCircle2 className="h-5 w-5 text-green-500 dark:text-green-400" />
+            <AlertTitle className="text-green-700 dark:text-green-300 font-medium ml-2">
               Graph Ready to be merged to Production
             </AlertTitle>
-            <AlertDescription className="ml-7 text-green-600">
+            <AlertDescription className="ml-7 text-green-600 dark:text-green-400">
               All conflicts have been resolved and the graph is ready to be merged to Production.
             </AlertDescription>
           </Alert>
@@ -82,7 +82,7 @@ export function MergeCompletionBanner({
             <Button 
               onClick={onViewProgress}
               size="lg"
-              className="bg-blue-600 hover:bg-blue-700 text-white"
+              className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 text-white"
             >
               <Eye className="mr-2 h-5 w-5" />
               Merge to Production
@@ -91,12 +91,12 @@ export function MergeCompletionBanner({
         </div>
         ) : (
           <div className={cn("w-full", className)}>
-            <Alert className="bg-green-50 border-green-200 mb-4">
-              <CheckCircle2 className="h-5 w-5 text-green-500" />
-              <AlertTitle className="text-green-700 font-medium ml-2">
+            <Alert className="bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-800/50 mb-4">
+              <CheckCircle2 className="h-5 w-5 text-green-500 dark:text-green-400" />
+              <AlertTitle className="text-green-700 dark:text-green-300 font-medium ml-2">
                 All conflicts resolved successfully!
               </AlertTitle>
-              <AlertDescription className="ml-7 text-green-600">
+              <AlertDescription className="ml-7 text-green-600 dark:text-green-400">
                 The merge process is complete and all conflicts have been resolved.
               </AlertDescription>
             </Alert>
@@ -105,7 +105,7 @@ export function MergeCompletionBanner({
               <Button 
                 onClick={onViewFinalGraph}
                 size="lg"
-                className="bg-blue-600 hover:bg-blue-700 text-white"
+                className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 text-white"
               >
                 <Eye className="mr-2 h-5 w-5" />
                 View Final Merged Graph
@@ -122,10 +122,10 @@ export function MergeCompletionBanner({
             </div>
             
             {showStats && (
-              <Card className="border-blue-100 bg-blue-50">
+              <Card className="border-blue-100 dark:border-blue-800/50 bg-blue-50 dark:bg-blue-950/30">
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-lg text-blue-800">Merge Statistics</CardTitle>
-                  <CardDescription>Summary of changes applied during the merge</CardDescription>
+                  <CardTitle className="text-lg text-blue-800 dark:text-blue-200">Merge Statistics</CardTitle>
+                  <CardDescription className="dark:text-muted-foreground">Summary of changes applied during the merge</CardDescription>
                 </CardHeader>
                 <CardContent>
                   {loading ? (
@@ -142,55 +142,55 @@ export function MergeCompletionBanner({
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <div className="flex justify-between">
-                          <span className="text-sm text-gray-500">Total Nodes:</span>
+                          <span className="text-sm text-muted-foreground">Total Nodes:</span>
                           <Badge variant="outline" className="font-mono">{statistics.total_nodes}</Badge>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-sm text-gray-500">Nodes Added:</span>
-                          <Badge variant="outline" className="bg-green-50 text-green-700 font-mono">{statistics.nodes_added}</Badge>
+                          <span className="text-sm text-muted-foreground">Nodes Added:</span>
+                          <Badge variant="outline" className="bg-green-50 dark:bg-green-950/50 text-green-700 dark:text-green-300 border-green-200 dark:border-green-800/50 font-mono">{statistics.nodes_added}</Badge>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-sm text-gray-500">Nodes Updated:</span>
-                          <Badge variant="outline" className="bg-blue-50 text-blue-700 font-mono">{statistics.nodes_updated}</Badge>
+                          <span className="text-sm text-muted-foreground">Nodes Updated:</span>
+                          <Badge variant="outline" className="bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800/50 font-mono">{statistics.nodes_updated}</Badge>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-sm text-gray-500">Nodes Deleted:</span>
-                          <Badge variant="outline" className="bg-red-50 text-red-700 font-mono">{statistics.nodes_deleted}</Badge>
+                          <span className="text-sm text-muted-foreground">Nodes Deleted:</span>
+                          <Badge variant="outline" className="bg-red-50 dark:bg-red-950/50 text-red-700 dark:text-red-300 border-red-200 dark:border-red-800/50 font-mono">{statistics.nodes_deleted}</Badge>
                         </div>
                       </div>
                       <div className="space-y-2">
                         <div className="flex justify-between">
-                          <span className="text-sm text-gray-500">Total Relationships:</span>
+                          <span className="text-sm text-muted-foreground">Total Relationships:</span>
                           <Badge variant="outline" className="font-mono">{statistics.total_relationships}</Badge>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-sm text-gray-500">Relationships Added:</span>
-                          <Badge variant="outline" className="bg-green-50 text-green-700 font-mono">{statistics.relationships_added}</Badge>
+                          <span className="text-sm text-muted-foreground">Relationships Added:</span>
+                          <Badge variant="outline" className="bg-green-50 dark:bg-green-950/50 text-green-700 dark:text-green-300 border-green-200 dark:border-green-800/50 font-mono">{statistics.relationships_added}</Badge>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-sm text-gray-500">Relationships Updated:</span>
-                          <Badge variant="outline" className="bg-blue-50 text-blue-700 font-mono">{statistics.relationships_updated}</Badge>
+                          <span className="text-sm text-muted-foreground">Relationships Updated:</span>
+                          <Badge variant="outline" className="bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800/50 font-mono">{statistics.relationships_updated}</Badge>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-sm text-gray-500">Relationships Deleted:</span>
-                          <Badge variant="outline" className="bg-red-50 text-red-700 font-mono">{statistics.relationships_deleted}</Badge>
+                          <span className="text-sm text-muted-foreground">Relationships Deleted:</span>
+                          <Badge variant="outline" className="bg-red-50 dark:bg-red-950/50 text-red-700 dark:text-red-300 border-red-200 dark:border-red-800/50 font-mono">{statistics.relationships_deleted}</Badge>
                         </div>
                       </div>
-                      <div className="col-span-2 pt-2 border-t">
+                      <div className="col-span-2 pt-2 border-t border-border">
                         <div className="flex justify-between">
-                          <span className="text-sm text-gray-500">Conflicts Resolved:</span>
-                          <Badge className="bg-green-500 text-white font-mono">{statistics.conflicts_resolved}</Badge>
+                          <span className="text-sm text-muted-foreground">Conflicts Resolved:</span>
+                          <Badge className="bg-green-500 dark:bg-green-600 text-white font-mono">{statistics.conflicts_resolved}</Badge>
                         </div>
                         <div className="flex justify-between mt-2">
-                          <span className="text-sm text-gray-500">Completion Time:</span>
-                          <span className="text-sm font-medium">
+                          <span className="text-sm text-muted-foreground">Completion Time:</span>
+                          <span className="text-sm font-medium text-foreground">
                             {new Date().toLocaleString()}
                           </span>
                         </div>
                       </div>
                     </div>
                   ) : (
-                    <p className="text-sm text-gray-500">No statistics available</p>
+                    <p className="text-sm text-muted-foreground">No statistics available</p>
                   )}
                 </CardContent>
               </Card>
