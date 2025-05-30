@@ -616,8 +616,8 @@ function TransformPageContent() {
     // --- End Construct Backend Request Body ---
 
     try {
-      // Ensure API path includes /v1/
-      const response = await fetch(`/api/v1/graph/${transformId}`, {
+      // Ensure API path uses frontend route
+      const response = await fetch(`/api/graph/${transformId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

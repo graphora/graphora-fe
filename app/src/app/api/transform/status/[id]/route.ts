@@ -1,10 +1,16 @@
 import { NextResponse } from 'next/server'
+import { auth } from '@clerk/nextjs/server'
 
 export async function GET(
   request: Request,
   { params }: any
 ) {
   try {
+    const { userId } = await auth()
+    if (!userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const { id } = await params
     
     const response = await fetch(
@@ -12,7 +18,8 @@ export async function GET(
       {
         method: 'GET',
         headers: {
-          'accept': 'application/json'
+          'accept': 'application/json',
+          'user-id': userId  // Pass user-id in header (note the hyphen)
         }
       }
     )

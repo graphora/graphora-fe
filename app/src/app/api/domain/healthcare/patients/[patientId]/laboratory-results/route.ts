@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { auth } from '@clerk/nextjs/server'
 
 // This API route will fetch laboratory results for a specific patient
 export async function GET(
@@ -6,12 +7,18 @@ export async function GET(
   { params }: any
 ) {
   try {
+    const { userId } = await auth()
+    if (!userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const { patientId } = await params
     
     const response = await fetch(`${process.env.BACKEND_API_URL}/api/v1/domain/healthcare/patients/${patientId}/laboratory-results`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
+        'user-id': userId  // Pass user-id in header (note the hyphen)
       },
     })
     

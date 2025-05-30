@@ -26,6 +26,7 @@ export async function GET(
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
+          'user-id': userId  // Pass user-id in header (note the hyphen)
         }
       });
 
