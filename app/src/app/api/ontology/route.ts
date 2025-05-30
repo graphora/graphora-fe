@@ -1,21 +1,30 @@
 import { NextResponse } from 'next/server'
+import { auth } from '@clerk/nextjs/server'
 import type { OntologyResponse } from '@/types/api'
 
 export async function POST(request: Request) {
   try {
+    const { userId } = await auth()
+    if (!userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const body = await request.json()
     
     const response = await fetch(`${process.env.BACKEND_API_URL}/api/v1/ontology`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'accept': 'application/json'
+        'accept': 'application/json',
+        'user-id': userId
       },
       body: JSON.stringify({
         text: body.text
       }),
     })
     if (!response.ok) {
+      const errorText = await response.text()
+      console.error('Backend error:', errorText)
       throw new Error('Failed to submit ontology')
     }
 

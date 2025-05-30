@@ -21,6 +21,7 @@ export function ConfigCheck({ children, requireConfig = true }: ConfigCheckProps
   const [config, setConfig] = useState<UserConfig | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [retryCount, setRetryCount] = useState(0)
+  const [configNotFound, setConfigNotFound] = useState(false)
 
   useEffect(() => {
     if (isLoaded && user) {
@@ -32,15 +33,24 @@ export function ConfigCheck({ children, requireConfig = true }: ConfigCheckProps
     try {
       setLoading(true)
       setError(null)
+      setConfigNotFound(false)
       
       const response = await fetch('/api/config')
-      const data = await response.json()
-
+      
+      if (response.status === 404) {
+        // Configuration not found - this is expected for new users
+        setConfigNotFound(true)
+        setConfig(null)
+        return
+      }
+      
       if (!response.ok) {
+        const data = await response.json()
         throw new Error(data.error || 'Failed to fetch configuration')
       }
 
-      setConfig(data.config)
+      const data = await response.json()
+      setConfig(data)
     } catch (error) {
       console.error('Error checking config:', error)
       const errorMessage = error instanceof Error ? error.message : 'Failed to check configuration'
@@ -72,7 +82,7 @@ export function ConfigCheck({ children, requireConfig = true }: ConfigCheckProps
   }
 
   if (error) {
-    const isBackendError = error.includes('Backend') || error.includes('fetch') || error.includes('connect')
+    const isBackendError = error.includes('Backend') || error.includes('fetch') || error.includes('connect') || error.includes('Failed to fetch')
     const isConfigError = error.includes('configuration') || error.includes('CLERK_SECRET_KEY')
     
     return (
@@ -127,7 +137,8 @@ export function ConfigCheck({ children, requireConfig = true }: ConfigCheckProps
     )
   }
 
-  if (requireConfig && !config) {
+  // Configuration not found - redirect to settings
+  if (requireConfig && (configNotFound || !config)) {
     return (
       <div className="min-h-screen flex items-center justify-center p-4">
         <Card className="w-full max-w-lg">
@@ -199,13 +210,20 @@ export function useConfig() {
     try {
       setLoading(true)
       const response = await fetch('/api/config')
-      const data = await response.json()
-
+      
+      if (response.status === 404) {
+        // Configuration not found
+        setConfig(null)
+        return
+      }
+      
       if (!response.ok) {
+        const data = await response.json()
         throw new Error(data.error || 'Failed to fetch configuration')
       }
 
-      setConfig(data.config)
+      const data = await response.json()
+      setConfig(data)
     } catch (error) {
       console.error('Error fetching config:', error)
       setError(error instanceof Error ? error.message : 'Failed to fetch configuration')

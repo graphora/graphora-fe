@@ -42,17 +42,27 @@ export default function ConfigPage() {
   const fetchConfig = async () => {
     try {
       setLoading(true)
+      setError(null) // Clear any previous errors
+      
       const response = await fetch('/api/config')
-      const data = await response.json()
-
+      
+      if (response.status === 404) {
+        // Configuration not found - this is expected for new users
+        // Don't show an error, just continue with empty config
+        setConfig(null)
+        return
+      }
+      
       if (!response.ok) {
+        const data = await response.json()
         throw new Error(data.error || 'Failed to fetch configuration')
       }
 
-      if (data.config) {
-        setConfig(data.config)
-        setStagingDb(data.config.stagingDb)
-        setProdDb(data.config.prodDb)
+      const data = await response.json()
+      if (data) {
+        setConfig(data)
+        setStagingDb(data.stagingDb)
+        setProdDb(data.prodDb)
       }
     } catch (error) {
       console.error('Error fetching config:', error)
@@ -121,7 +131,7 @@ export default function ConfigPage() {
         throw new Error(data.error || 'Failed to save configuration')
       }
 
-      setConfig(data.config)
+      setConfig(data)
       toast.success('Configuration saved successfully!')
       
       // Redirect to home page after successful save

@@ -20,19 +20,28 @@ export async function GET(
       );
     }
 
+    console.log(`Fetching merge graph for user ${userId}: mergeId=${mergeId}, transformId=${transformId}`);
+
     try {
-      const response = await fetch(`${process.env.BACKEND_API_URL}/api/v1/merge/graph/${mergeId}/${transformId}`, {
+      // Build API URL (merge operations use production database)
+      const apiUrl = `${process.env.BACKEND_API_URL}/api/v1/merge/graph/${mergeId}/${transformId}`;
+      
+      const response = await fetch(apiUrl, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
+          'user-id': userId  // Pass user-id in header (note the hyphen)
         }
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        const errorText = await response.text();
+        console.error('Backend error response:', errorText);
+        throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
       }
 
       const data = await response.json();
+      console.log(`Successfully fetched merge graph for user ${userId}`);
       return NextResponse.json(data);
     } catch (error) {
       console.error('Error fetching merge graph:', error);
