@@ -2,6 +2,7 @@
 
 import React, { useRef, useState, useEffect, useCallback } from 'react';
 import dynamic from 'next/dynamic';
+import { useTheme } from 'next-themes';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { type Node, type Edge, type GraphData, type GraphOperation } from '@/types/graph';
@@ -137,6 +138,8 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({
   onGraphOperation,
   sidebarWidth = 320,
 }) => {
+  const { theme, resolvedTheme } = useTheme();
+  const isDark = resolvedTheme === 'dark';
   const containerRef = useRef<HTMLDivElement>(null);
   const nvlRef = useRef<{ fit: () => void }>(null);
   const [hoveredNode, setHoveredNode] = useState<ProcessedNode | null>(null);
@@ -425,7 +428,7 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({
   return (
     <div
       ref={containerRef}
-      className="relative w-full h-full min-h-[500px] bg-gray-50 rounded-lg overflow-hidden border border-gray-200"
+      className="relative w-full h-full min-h-[500px] bg-background rounded-lg overflow-hidden border border-border"
       onMouseMove={handleMouseMove}
       onMouseDown={() => setIsDragging(true)}
       onMouseUp={() => setIsDragging(false)}
@@ -463,10 +466,11 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({
               relationshipLabelsVisible: true,
               relationshipArrowSize: 3,
               labelFontSize: 20,
-              labelColor: '#000000',
-              labelBackgroundColor: 'rgba(255, 255, 255, 0.9)',
+              labelColor: isDark ? '#e2e8f0' : '#1e293b',
+              labelBackgroundColor: isDark ? 'rgba(15, 23, 42, 0.9)' : 'rgba(255, 255, 255, 0.9)',
               nodeBorderWidth: 2,
               useWebGL: true,
+              backgroundColor: isDark ? '#0f172a' : '#f8fafc',
             }}
             style={{ width: '100%', height: '100%' }}
           />
@@ -480,7 +484,7 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({
       {/* Tooltip for hover */}
       {(hoveredNode || hoveredLink) && !selectedElement && (
         <div
-          className="absolute bg-white p-3 rounded-lg shadow-lg border border-gray-200 z-50 max-w-xs text-sm pointer-events-none"
+          className="absolute bg-popover p-3 rounded-lg shadow-lg border border-border z-50 max-w-xs text-sm pointer-events-none"
           style={{
             left: `${tooltipPosition.x + 20}px`,
             top: `${tooltipPosition.y + 15}px`,
@@ -490,14 +494,14 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({
         >
           {hoveredNode && hoveredNode.label && hoveredNode.type && (
             <>
-              <div className="font-semibold text-base text-gray-800">{hoveredNode.label || 'Unnamed'}</div>
-              <div className="text-gray-600 mb-1">Type: {hoveredNode.type || 'Unknown'}</div>
+              <div className="font-semibold text-base text-popover-foreground">{hoveredNode.label || 'Unnamed'}</div>
+              <div className="text-muted-foreground mb-1">Type: {hoveredNode.type || 'Unknown'}</div>
             </>
           )}
           {hoveredLink && hoveredLink.caption && hoveredLink.from && hoveredLink.to && (
             <>
-              <div className="font-semibold text-base text-gray-800">{hoveredLink.caption || 'Relationship'}</div>
-              <div className="text-gray-600 mb-1">
+              <div className="font-semibold text-base text-popover-foreground">{hoveredLink.caption || 'Relationship'}</div>
+              <div className="text-muted-foreground mb-1">
                 {hoveredLink.from} → {hoveredLink.to}
               </div>
             </>
@@ -508,91 +512,73 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({
       {/* Property Editing Modal */}
       {selectedElement && (
         <Dialog open={!!selectedElement} onOpenChange={() => setSelectedElement(null)} modal={true}>
-          <DialogContent className="sm:max-w-[700px] max-h-[80vh] overflow-y-auto bg-white">
+          <DialogContent className="sm:max-w-[800px] max-h-[85vh] w-[95vw] lg:w-[800px] overflow-y-auto bg-popover border-border shadow-lg">
             <DialogHeader>
-              <DialogTitle>{selectedElement.type === 'node' ? 'Node Details' : 'Edge Details'}</DialogTitle>
+              <DialogTitle className="text-popover-foreground">{selectedElement.type === 'node' ? 'Node Details' : 'Edge Details'}</DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
               {selectedElement.type === 'node' && (
                 <>
                   <div className="grid grid-cols-4 gap-2">
-                    <span className="font-medium text-gray-700">Type:</span>
-                    <span className="col-span-3">{(selectedElement.data as Node).type || 'Unknown'}</span>
+                    <span className="font-medium text-popover-foreground">Type:</span>
+                    <span className="col-span-3 text-popover-foreground">{(selectedElement.data as Node).type || 'Unknown'}</span>
                   </div>
                   <div className="grid grid-cols-4 gap-2">
-                    <span className="font-medium text-gray-700">Name:</span>
+                    <span className="font-medium text-popover-foreground">Name:</span>
                     <input
                       value={editedProperties.name || ''}
                       onChange={e => handlePropertyChange('name', e.target.value)}
-                      className="col-span-3 border rounded px-3 py-2 w-full"
+                      className="col-span-3 border border-border rounded px-3 py-2 w-full bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                     />
                   </div>
                 </>
               )}
               {selectedElement.type === 'link' && (
                 <div className="grid grid-cols-4 gap-2">
-                  <span className="font-medium text-gray-700">Type:</span>
-                  <span className="col-span-3">{(selectedElement.data as Edge).label || (selectedElement.data as Edge).type || 'Link'}</span>
+                  <span className="font-medium text-popover-foreground">Type:</span>
+                  <span className="col-span-3 text-popover-foreground">{(selectedElement.data as Edge).label || (selectedElement.data as Edge).type || 'Link'}</span>
                 </div>
               )}
-              <div className="mt-4">
-                <div className="flex justify-between items-center mb-2">
-                  <h4 className="font-medium text-gray-800">Properties:</h4>
-                  <Button variant="outline" size="sm" onClick={handleAddProperty}>
-                    Add Property
-                  </Button>
-                </div>
-                <div className="border rounded-md overflow-hidden">
-                  <table className="w-full border-collapse">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th className="text-left p-3 text-sm font-medium text-gray-600 border-b w-1/3">Property</th>
-                        <th className="text-left p-3 text-sm font-medium text-gray-600 border-b w-2/3">Value</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y">
-                      {Object.entries(editedProperties).map(([key, value]) => {
-                        const isSystemProperty = key.startsWith('_');
-                        return (
-                          <tr key={key} className="border-b">
-                            <td className="p-3 align-top">
-                              <span className="inline-flex items-center">
-                                {key}
-                                {isSystemProperty && <span className="ml-1 text-xs text-gray-500">(system)</span>}
-                              </span>
-                            </td>
-                            <td className="p-3">
-                              <div className="flex gap-2">
-                                <input
-                                  className={`flex-1 rounded px-2 py-1 ${isSystemProperty ? 'bg-gray-100 text-gray-500 cursor-not-allowed' : 'bg-white'}`}
-                                  value={value ?? ''}
-                                  onChange={e => !isSystemProperty && handlePropertyChange(key, e.target.value)}
-                                  readOnly={isSystemProperty}
-                                />
-                                {!isSystemProperty && (
-                                  <button
-                                    onClick={() => handleDeleteProperty(key)}
-                                    className="text-red-500 hover:text-red-700 p-1"
-                                  >
-                                    ×
-                                  </button>
-                                )}
-                              </div>
+              <div>
+                <span className="font-medium text-popover-foreground block mb-2">Properties:</span>
+                <div className="space-y-2 max-h-96 overflow-y-auto border border-border rounded p-3 bg-muted/30">
+                  {Object.entries(editedProperties).length === 0 ? (
+                    <p className="text-sm text-muted-foreground italic">No properties available</p>
+                  ) : (
+                    <table className="w-full">
+                      <thead>
+                        <tr className="border-b border-border">
+                          <th className="text-left py-2 text-popover-foreground font-medium">Property</th>
+                          <th className="text-left py-2 text-popover-foreground font-medium">Value</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {Object.entries(editedProperties).map(([key, value]) => (
+                          <tr key={key} className="border-b border-border/50">
+                            <td className="py-2 pr-4 text-popover-foreground font-medium">{key}</td>
+                            <td className="py-2">
+                              <input
+                                value={String(value || '')}
+                                onChange={e => handlePropertyChange(key, e.target.value)}
+                                className="w-full border border-border rounded px-2 py-1 text-sm bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+                              />
                             </td>
                           </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
+                        ))}
+                      </tbody>
+                    </table>
+                  )}
                 </div>
               </div>
             </div>
-            <DialogFooter className="flex justify-end space-x-2 mt-4">
-              <Button variant="destructive" onClick={() => setSelectedElement(null)}>
+            <div className="flex justify-end gap-2 mt-6">
+              <Button variant="outline" onClick={() => setSelectedElement(null)}>
                 Cancel
               </Button>
-              <Button onClick={handleSaveChanges}>Save Changes</Button>
-            </DialogFooter>
+              <Button onClick={handleSaveChanges}>
+                Save Changes
+              </Button>
+            </div>
           </DialogContent>
         </Dialog>
       )}
@@ -600,7 +586,7 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({
       <div className="absolute bottom-4 right-4 flex gap-2 z-5">
         <button
           onClick={() => nvlRef.current?.fit()}
-          className="bg-white p-2 rounded-full shadow-md hover:bg-gray-100 text-gray-700 transition-colors"
+          className="bg-background p-2 rounded-full shadow-md hover:bg-muted text-foreground transition-colors border border-border"
           title="Center and fit graph"
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -610,7 +596,7 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({
         {onGraphReset && (
           <button
             onClick={handleReset}
-            className="bg-white p-2 rounded-full shadow-md hover:bg-gray-100 text-gray-700 transition-colors"
+            className="bg-background p-2 rounded-full shadow-md hover:bg-muted text-foreground transition-colors border border-border"
             title="Reset graph"
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -623,22 +609,22 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({
       <div
         className="absolute top-4 right-4 flex flex-col gap-2 z-5"
       >
-        <div className="bg-white/90 p-2 rounded-md shadow-sm text-xs backdrop-blur-sm">
-          <div className="font-medium text-gray-700 mb-1">Graph Information</div>
-          <div className="text-gray-600">Nodes: {currentGraphData.nodes.length}</div>
-          <div className="text-gray-600">Edges: {currentGraphData.rels.length}</div>
+        <div className="bg-background/90 p-2 rounded-md shadow-sm text-xs backdrop-blur-sm border border-border">
+          <div className="font-medium text-foreground mb-1">Graph Information</div>
+          <div className="text-muted-foreground">Nodes: {currentGraphData.nodes.length}</div>
+          <div className="text-muted-foreground">Edges: {currentGraphData.rels.length}</div>
         </div>
         {currentGraphData.nodeTypes.length > 0 && (
-          <div className="bg-white/90 p-2 rounded-md shadow-sm text-xs backdrop-blur-sm max-h-40 overflow-y-auto">
-            <div className="font-medium text-gray-700 mb-1">Node Types</div>
+          <div className="bg-background/90 p-2 rounded-md shadow-sm text-xs backdrop-blur-sm max-h-40 overflow-y-auto border border-border">
+            <div className="font-medium text-foreground mb-1">Node Types</div>
             <div className="grid grid-cols-1 gap-1">
               {currentGraphData.nodeTypes.map((type) => (
                 <div key={type} className="flex items-center">
                   <span
-                    className="w-3 h-3 rounded-full mr-1.5 border border-gray-300"
+                    className="w-3 h-3 rounded-full mr-1.5 border border-border"
                     style={{ backgroundColor: stringToColor(type.toLowerCase()) }}
                   ></span>
-                  <span className="capitalize text-gray-600">{type.replace(/_/g, ' ')}</span>
+                  <span className="capitalize text-muted-foreground">{type.replace(/_/g, ' ')}</span>
                 </div>
               ))}
             </div>

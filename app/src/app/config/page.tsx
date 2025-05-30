@@ -147,8 +147,8 @@ export default function ConfigPage() {
       <DashboardLayout>
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center">
-            <h2 className="text-lg font-semibold">Authentication Required</h2>
-            <p className="text-gray-600">Please sign in to access configuration.</p>
+            <h2 className="text-lg font-semibold text-foreground">Authentication Required</h2>
+            <p className="text-muted-foreground">Please sign in to access configuration.</p>
           </div>
         </div>
       </DashboardLayout>
@@ -165,7 +165,7 @@ export default function ConfigPage() {
           actions={
             <div className="flex items-center space-x-3">
               {config && (
-                <Badge variant="secondary" className="bg-emerald-100 text-emerald-700">
+                <Badge variant="secondary" className="bg-emerald-100 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800/50">
                   <CheckCircle className="h-3 w-3 mr-1" />
                   Configured
                 </Badge>
@@ -174,7 +174,6 @@ export default function ConfigPage() {
                 onClick={handleSave}
                 disabled={saving || loading}
                 size="sm"
-                className="bg-blue-600 hover:bg-blue-700"
               >
                 {saving ? (
                   <>
@@ -193,8 +192,8 @@ export default function ConfigPage() {
           {loading ? (
             <div className="flex items-center justify-center py-12">
               <div className="text-center">
-                <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-blue-600" />
-                <p className="text-slate-600">Loading configuration...</p>
+                <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-primary" />
+                <p className="text-muted-foreground">Loading configuration...</p>
               </div>
             </div>
           ) : (
@@ -231,7 +230,7 @@ export default function ConfigPage() {
                     <Card className="enhanced-card">
                       <CardHeader className="enhanced-card-header">
                         <CardTitle className="flex items-center space-x-2">
-                          <Database className="h-5 w-5 text-blue-600" />
+                          <Database className="h-5 w-5 text-primary" />
                           <span>Staging Database</span>
                         </CardTitle>
                       </CardHeader>
@@ -250,7 +249,7 @@ export default function ConfigPage() {
                     <Card className="enhanced-card">
                       <CardHeader className="enhanced-card-header">
                         <CardTitle className="flex items-center space-x-2">
-                          <Database className="h-5 w-5 text-emerald-600" />
+                          <Database className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
                           <span>Production Database</span>
                         </CardTitle>
                       </CardHeader>
@@ -302,8 +301,8 @@ export default function ConfigPage() {
                       <CardTitle>Notification Preferences</CardTitle>
                     </CardHeader>
                     <CardContent className="enhanced-card-content">
-                      <div className="text-center py-8 text-slate-500">
-                        <Bell className="h-12 w-12 mx-auto mb-4 text-slate-300" />
+                      <div className="text-center py-8 text-muted-foreground">
+                        <Bell className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
                         <p>Notification settings coming soon</p>
                       </div>
                     </CardContent>
@@ -316,8 +315,8 @@ export default function ConfigPage() {
                       <CardTitle>Security Settings</CardTitle>
                     </CardHeader>
                     <CardContent className="enhanced-card-content">
-                      <div className="text-center py-8 text-slate-500">
-                        <Shield className="h-12 w-12 mx-auto mb-4 text-slate-300" />
+                      <div className="text-center py-8 text-muted-foreground">
+                        <Shield className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
                         <p>Security settings coming soon</p>
                       </div>
                     </CardContent>

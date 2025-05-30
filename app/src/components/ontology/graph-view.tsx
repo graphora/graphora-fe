@@ -515,17 +515,17 @@ export function GraphView({ ontology, onChange }: GraphViewProps) {
 
   return isFullScreen ? (
     <Dialog open={isFullScreen} onOpenChange={setIsFullScreen}>
-      <DialogContent className="max-w-[95vw] max-h-[95vh] w-[95vw] h-[95vh] flex flex-col p-0">
-        <DialogHeader className="p-4 border-b">
-           <DialogTitle>Graph Editor (Full Screen)</DialogTitle>
+      <DialogContent className="max-w-[95vw] max-h-[95vh] w-[95vw] h-[95vh] flex flex-col p-0 bg-background border-border">
+        <DialogHeader className="p-4 border-b border-border bg-background">
+           <DialogTitle className="text-foreground">Graph Editor (Full Screen)</DialogTitle>
         </DialogHeader>
-        <div className="flex-1 overflow-auto">
+        <div className="flex-1 overflow-auto bg-background">
            {graphEditor}
         </div>
       </DialogContent>
     </Dialog>
   ) : (
-     <div className="h-full w-full">
+     <div className="h-full w-full bg-background">
         {graphEditor}
      </div>
   )

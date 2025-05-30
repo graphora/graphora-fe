@@ -89,7 +89,7 @@ export default function ChatPage() {
           badge="Beta"
           actions={
             <div className="flex items-center space-x-3">
-              <Badge variant="secondary" className="bg-blue-100 text-blue-700">
+              <Badge variant="secondary" className="bg-blue-100 dark:bg-blue-950/30 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800/50">
                 <Sparkles className="h-3 w-3 mr-1" />
                 Powered by AI
               </Badge>
@@ -102,7 +102,7 @@ export default function ChatPage() {
 
         <div className="flex-1 flex overflow-hidden">
           <ProgressSidebar />
-          <main className="flex-1 flex flex-col bg-white">
+          <main className="flex-1 flex flex-col bg-background">
             <div className="flex-1 overflow-y-auto p-6">
               <div className="max-w-4xl mx-auto space-y-6">
                 {messages.map((message) => (
@@ -118,16 +118,16 @@ export default function ChatPage() {
                       <MessageSquare className="h-4 w-4 text-white" />
                     </div>
                     <div className="typing-indicator flex space-x-1">
-                      <div className="dot w-2 h-2 bg-slate-400 rounded-full animate-bounce" />
-                      <div className="dot w-2 h-2 bg-slate-400 rounded-full animate-bounce delay-100" />
-                      <div className="dot w-2 h-2 bg-slate-400 rounded-full animate-bounce delay-200" />
+                      <div className="dot w-2 h-2 bg-muted-foreground rounded-full animate-bounce" />
+                      <div className="dot w-2 h-2 bg-muted-foreground rounded-full animate-bounce delay-100" />
+                      <div className="dot w-2 h-2 bg-muted-foreground rounded-full animate-bounce delay-200" />
                     </div>
                   </div>
                 )}
                 <div ref={messagesEndRef} />
               </div>
             </div>
-            <div className="border-t bg-white p-6">
+            <div className="border-t border-border bg-background p-6">
               <div className="max-w-4xl mx-auto">
                 <ChatInput onSend={handleSend} disabled={isTyping} />
               </div>

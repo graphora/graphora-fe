@@ -4,7 +4,7 @@ import { auth } from '@clerk/nextjs/server'
 // This API route will fetch the journey data for a specific patient
 export async function GET(
   request: NextRequest,
-  { params }: any
+  { params }: { params: Promise<{ patientId: string }> }
 ) {
   try {
     const { userId } = await auth()
@@ -29,9 +29,10 @@ export async function GET(
     const data = await response.json()
     return NextResponse.json(data)
   } catch (error) {
-    console.error(`Error fetching journey for patient ${params.patientId}:`, error)
+    const { patientId } = await params
+    console.error(`Error fetching journey for patient ${patientId}:`, error)
     return NextResponse.json(
-      { error: `Failed to fetch journey for patient ${params.patientId}` },
+      { error: `Failed to fetch journey for patient ${patientId}` },
       { status: 500 }
     )
   }

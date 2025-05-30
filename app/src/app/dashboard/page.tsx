@@ -35,42 +35,23 @@ import Link from 'next/link'
 const workflowSteps = [
   { 
     id: 'ontology', 
-    name: 'Ontology Definition', 
+    name: 'Ontology', 
     status: 'completed', 
     progress: 100,
-    estimatedTime: '15-30 min',
     completedAt: '2 hours ago'
   },
   { 
-    id: 'upload', 
-    name: 'Document Upload', 
-    status: 'completed', 
-    progress: 100,
-    estimatedTime: '5-10 min',
-    completedAt: '1 hour ago'
-  },
-  { 
     id: 'transform', 
-    name: 'Data Transformation', 
+    name: 'Extract & Transform', 
     status: 'current', 
     progress: 65,
-    estimatedTime: '20-45 min',
     timeRemaining: '15 min remaining'
   },
   { 
     id: 'merge', 
-    name: 'Graph Merging', 
+    name: 'Merge to Prod', 
     status: 'pending', 
     progress: 0,
-    estimatedTime: '10-20 min',
-    timeRemaining: 'Not started'
-  },
-  { 
-    id: 'analysis', 
-    name: 'Analysis & Insights', 
-    status: 'pending', 
-    progress: 0,
-    estimatedTime: '5-15 min',
     timeRemaining: 'Not started'
   }
 ]
@@ -163,28 +144,28 @@ const quickActions = [
     description: 'Start with ontology definition',
     icon: <Plus className="h-5 w-5" />,
     href: '/ontology',
-    color: 'bg-blue-50 text-blue-600 hover:bg-blue-100'
+    color: 'text-blue-600 dark:text-blue-400'
   },
   {
     title: 'Upload Documents',
     description: 'Transform documents to graphs',
     icon: <Upload className="h-5 w-5" />,
     href: '/transform',
-    color: 'bg-purple-50 text-purple-600 hover:bg-purple-100'
+    color: 'text-purple-600 dark:text-purple-400'
   },
   {
     title: 'Merge Graphs',
     description: 'Combine existing graphs',
     icon: <GitMerge className="h-5 w-5" />,
     href: '/merge',
-    color: 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100'
+    color: 'text-emerald-600 dark:text-emerald-400'
   },
   {
     title: 'AI Assistant',
     description: 'Get insights from your data',
     icon: <Sparkles className="h-5 w-5" />,
     href: '/chat',
-    color: 'bg-pink-50 text-pink-600 hover:bg-pink-100'
+    color: 'text-pink-600 dark:text-pink-400'
   }
 ]
 
@@ -192,24 +173,24 @@ export default function DashboardPage() {
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'completed':
-        return <CheckCircle className="h-4 w-4 text-emerald-600" />
+        return <CheckCircle className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
       case 'current':
-        return <Clock className="h-4 w-4 text-blue-600" />
+        return <Clock className="h-4 w-4 text-blue-600 dark:text-blue-400" />
       case 'pending':
-        return <AlertCircle className="h-4 w-4 text-slate-400" />
+        return <AlertCircle className="h-4 w-4 text-muted-foreground" />
       default:
-        return <AlertCircle className="h-4 w-4 text-slate-400" />
+        return <AlertCircle className="h-4 w-4 text-muted-foreground" />
     }
   }
 
   const getTrendIcon = (trend: string) => {
     switch (trend) {
       case 'up':
-        return <TrendingUp className="h-4 w-4 text-emerald-600" />
+        return <TrendingUp className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
       case 'down':
-        return <TrendingDown className="h-4 w-4 text-red-600" />
+        return <TrendingDown className="h-4 w-4 text-red-600 dark:text-red-400" />
       default:
-        return <Activity className="h-4 w-4 text-slate-400" />
+        return <Activity className="h-4 w-4 text-muted-foreground" />
     }
   }
 
@@ -240,67 +221,67 @@ export default function DashboardPage() {
           {/* Metrics Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {metrics.map((metric, index) => (
-              <Card key={index} className="border-slate-200 shadow-sm hover:shadow-md transition-all duration-200">
-                <CardContent className="p-6">
+              <Card key={index} className="enhanced-card">
+                <CardContent className="enhanced-card-content p-6">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-3">
-                      <div className="p-2 bg-slate-50 rounded-lg">
+                      <div className="p-2 bg-muted rounded-lg">
                         {metric.icon}
                       </div>
                       <div>
-                        <div className="text-2xl font-bold text-slate-900">{metric.value}</div>
-                        <div className="text-sm text-slate-600">{metric.title}</div>
+                        <div className="text-2xl font-bold text-foreground">{metric.value}</div>
+                        <div className="text-sm text-muted-foreground">{metric.title}</div>
                       </div>
                     </div>
                     <div className="flex items-center space-x-1">
                       {getTrendIcon(metric.trend)}
                       <span className={`text-sm font-medium ${
-                        metric.trend === 'up' ? 'text-emerald-600' : 
-                        metric.trend === 'down' ? 'text-red-600' : 'text-slate-600'
+                        metric.trend === 'up' ? 'text-emerald-600 dark:text-emerald-400' : 
+                        metric.trend === 'down' ? 'text-red-600 dark:text-red-400' : 'text-muted-foreground'
                       }`}>
                         {metric.change}
                       </span>
                     </div>
                   </div>
-                  <div className="mt-2 text-xs text-slate-500">{metric.description}</div>
+                  <div className="mt-2 text-xs text-muted-foreground">{metric.description}</div>
                 </CardContent>
               </Card>
             ))}
           </div>
 
           {/* Workflow Progress */}
-          <Card className="border-slate-200 shadow-sm">
-            <CardHeader>
+          <Card className="enhanced-card">
+            <CardHeader className="enhanced-card-header">
               <div className="flex items-center justify-between">
                 <div>
                   <CardTitle className="text-lg">Current Workflow Progress</CardTitle>
                   <CardDescription>Healthcare Knowledge Graph Project</CardDescription>
                 </div>
-                <Badge variant="outline" className="bg-blue-50 text-blue-700">
+                <Badge variant="outline" className="bg-blue-100 dark:bg-blue-950/30 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800/50">
                   In Progress
                 </Badge>
               </div>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="enhanced-card-content space-y-4">
               {workflowSteps.map((step, index) => (
-                <div key={step.id} className="flex items-center space-x-4 p-4 rounded-lg border border-slate-100 hover:border-slate-200 transition-colors">
+                <div key={step.id} className="flex items-center space-x-4 p-4 rounded-lg border border-border hover:bg-muted/50 transition-colors">
                   <div className="flex-shrink-0">
                     {getStatusIcon(step.status)}
                   </div>
                   
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between mb-2">
-                      <div className="font-medium text-slate-900">{step.name}</div>
-                      <div className="text-sm text-slate-500">
+                      <div className="font-medium text-foreground">{step.name}</div>
+                      <div className="text-sm text-muted-foreground">
                         {step.status === 'completed' ? step.completedAt : 
                          step.status === 'current' ? step.timeRemaining : 
-                         step.estimatedTime}
+                         step.timeRemaining}
                       </div>
                     </div>
                     
                     <div className="flex items-center space-x-3">
                       <Progress value={step.progress} className="flex-1 h-2" />
-                      <span className="text-sm font-medium text-slate-600 min-w-[3rem]">
+                      <span className="text-sm font-medium text-muted-foreground min-w-[3rem]">
                         {step.progress}%
                       </span>
                     </div>
@@ -319,8 +300,8 @@ export default function DashboardPage() {
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             {/* Recent Projects */}
-            <Card className="border-slate-200 shadow-sm">
-              <CardHeader>
+            <Card className="enhanced-card">
+              <CardHeader className="enhanced-card-header">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-lg">Recent Projects</CardTitle>
                   <Button variant="ghost" size="sm">
@@ -329,15 +310,15 @@ export default function DashboardPage() {
                   </Button>
                 </div>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="enhanced-card-content space-y-4">
                 {recentProjects.map((project) => (
-                  <div key={project.id} className="p-4 rounded-lg border border-slate-100 hover:border-slate-200 transition-colors cursor-pointer group">
+                  <div key={project.id} className="p-4 rounded-lg border border-border hover:bg-muted/50 transition-colors cursor-pointer group">
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex-1 min-w-0">
-                        <div className="font-medium text-slate-900 group-hover:text-blue-600 transition-colors">
+                        <div className="font-medium text-foreground group-hover:text-primary transition-colors">
                           {project.name}
                         </div>
-                        <div className="text-sm text-slate-600 mt-1">{project.description}</div>
+                        <div className="text-sm text-muted-foreground mt-1">{project.description}</div>
                       </div>
                       <div className="flex items-center space-x-2 ml-4">
                         {getTrendIcon(project.trend)}
@@ -348,7 +329,7 @@ export default function DashboardPage() {
                       </div>
                     </div>
                     
-                    <div className="flex items-center justify-between text-sm text-slate-500">
+                    <div className="flex items-center justify-between text-sm text-muted-foreground">
                       <div className="flex items-center space-x-4">
                         <span>{project.entities} entities</span>
                         <span>{project.relationships} relationships</span>
@@ -365,28 +346,28 @@ export default function DashboardPage() {
             </Card>
 
             {/* Quick Actions */}
-            <Card className="border-slate-200 shadow-sm">
-              <CardHeader>
+            <Card className="enhanced-card">
+              <CardHeader className="enhanced-card-header">
                 <CardTitle className="text-lg">Quick Actions</CardTitle>
                 <CardDescription>Start a new workflow or continue existing work</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-3">
+              <CardContent className="enhanced-card-content space-y-3">
                 {quickActions.map((action, index) => (
                   <Link key={index} href={action.href}>
-                    <div className={`p-4 rounded-lg transition-all duration-200 cursor-pointer group ${action.color}`}>
+                    <div className="p-4 rounded-lg transition-all duration-200 cursor-pointer group bg-muted/30 hover:bg-muted/50 border border-border">
                       <div className="flex items-center space-x-3">
-                        <div className="flex-shrink-0">
+                        <div className={`flex-shrink-0 ${action.color}`}>
                           {action.icon}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <div className="font-medium group-hover:translate-x-1 transition-transform">
+                          <div className="font-medium text-foreground group-hover:translate-x-1 transition-transform">
                             {action.title}
                           </div>
-                          <div className="text-sm opacity-75 mt-1">
+                          <div className="text-sm text-muted-foreground mt-1">
                             {action.description}
                           </div>
                         </div>
-                        <ArrowRight className="h-4 w-4 opacity-50 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
+                        <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-foreground group-hover:translate-x-1 transition-all" />
                       </div>
                     </div>
                   </Link>

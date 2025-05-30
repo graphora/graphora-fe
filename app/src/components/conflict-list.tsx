@@ -261,7 +261,7 @@ export function ConflictList({
   return (
     <div className={cn("h-screen flex flex-col", className)}>
       {summary?.unresolved === 0 && summary?.total > 0 && (
-        <div className="p-2 border-b bg-white">
+        <div className="p-2 border-b bg-background">
           <MergeCompletionBanner
             mergeId={mergeId}
             onViewFinalGraph={onViewFinalGraph}
@@ -273,25 +273,25 @@ export function ConflictList({
 
       <div className="flex-1 flex overflow-hidden" ref={containerRef}>
         <div 
-          className="relative bg-white border-r"
+          className="relative bg-background border-r border-border"
           style={{ width: `${leftWidth}%` }}
         >
           <div className="h-full flex flex-col">
             {/* Filters - Fixed at top */}
-            <div className="p-4 border-b bg-white shrink-0">
+            <div className="p-4 border-b border-border bg-background shrink-0">
               <div className="flex items-center gap-2 flex-wrap">
                 <Input
                   placeholder="Search conflicts..."
                   value={searchQuery}
                   onChange={handleSearchChange}
-                  className="max-w-sm border-gray-300 rounded"
+                  className="max-w-sm"
                 />
                 {conflictTypes.length > 0 && (
                   <Select
                     value={filters.conflict_type?.[0]}
                     onValueChange={(value) => handleFilterChange('conflict_type', [value])}
                   >
-                    <SelectTrigger className="w-[140px] border-gray-300 rounded">
+                    <SelectTrigger className="w-[140px]">
                       <SelectValue placeholder="Type" />
                     </SelectTrigger>
                     <SelectContent>
@@ -369,8 +369,8 @@ export function ConflictList({
                         <Card
                           key={conflict.id}
                           className={cn(
-                            "cursor-pointer hover:bg-gray-50 transition-colors",
-                            selectedConflictForDetails?.id === conflict.id && "bg-gray-100 border-primary"
+                            "cursor-pointer hover:bg-muted/50 transition-colors",
+                            selectedConflictForDetails?.id === conflict.id && "bg-muted border-primary"
                           )}
                           onClick={() => handleConflictClick(conflict)}
                         >
@@ -419,7 +419,7 @@ export function ConflictList({
 
             {/* Pagination - Fixed at bottom */}
             {convertedConflicts.length >= filters.limit! && (
-              <div className="p-2 border-t bg-white shrink-0">
+              <div className="p-2 border-t bg-background shrink-0">
                 <div className="flex items-center justify-between text-xs">
                   <span>
                     {filters.offset! + 1} - {Math.min(filters.offset! + filters.limit!, convertedConflicts.length)} of {convertedConflicts.length}
@@ -454,7 +454,7 @@ export function ConflictList({
         </div>
 
         <div 
-          className="bg-white flex-1 overflow-auto"
+          className="bg-background flex-1 overflow-auto"
           style={{ width: `${100 - leftWidth}%` }}
         >
           {selectedConflictForDetails ? (
@@ -479,7 +479,7 @@ export function ConflictList({
               }}
             />
           ) : (
-            <div className="p-4 text-center text-gray-500">
+            <div className="p-4 text-center text-muted-foreground">
               <p>Select a conflict from the list to view details</p>
             </div>
           )}

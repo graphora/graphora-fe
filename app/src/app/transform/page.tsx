@@ -28,7 +28,6 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { EnhancedWorkflowLayout, WorkflowStep } from '@/components/enhanced-workflow-layout'
-import { PageHeader } from '@/components/layouts/page-header'
 import { clsx as cn } from 'clsx'
 import { Toolbar } from '@/components/command-center/toolbar'
 import { ResizablePanel } from '@/components/command-center/resizable-panel'
@@ -68,30 +67,20 @@ const SAMPLE_FILES = [
 const workflowSteps: WorkflowStep[] = [
   { 
     id: 'ontology', 
-    title: 'Ontology Entry', 
+    title: 'Ontology', 
     description: 'Define your graph structure',
-    estimatedTime: '15-30 min',
     status: 'completed'
   },
   { 
-    id: 'upload', 
-    title: 'Document Upload', 
-    description: 'Upload documents to process',
-    estimatedTime: '5-10 min',
+    id: 'transform', 
+    title: 'Extract & Transform', 
+    description: 'Upload documents and extract knowledge',
     status: 'current'
   },
   { 
-    id: 'edit', 
-    title: 'Graph Editing', 
-    description: 'Refine extracted graph',
-    estimatedTime: '20-45 min',
-    status: 'upcoming'
-  },
-  { 
     id: 'merge', 
-    title: 'Merge Process', 
-    description: 'Combine data into final graph',
-    estimatedTime: '10-20 min',
+    title: 'Merge to Prod', 
+    description: 'Merge data into production database',
     status: 'upcoming'
   }
 ]
@@ -726,54 +715,6 @@ function TransformPageContent() {
 
   return (
     <div className="flex-1 flex flex-col h-full">
-      <PageHeader
-        title="Document Transform"
-        description="Upload and transform documents into knowledge graphs"
-        icon={<Zap className="h-6 w-6" />}
-        actions={
-          <div className="flex items-center space-x-3">
-            {/* Progress indicator in header when processing */}
-            {isProcessing && (
-              <div className="flex items-center space-x-2 bg-blue-50 px-3 py-1.5 rounded-lg border border-blue-200">
-                <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
-                <span className="text-sm text-blue-700 font-medium">{progress}%</span>
-                <span className="text-xs text-blue-600">{currentStep || 'Processing...'}</span>
-              </div>
-            )}
-            
-            <Button 
-              onClick={handleViewTransformStatus}
-              size="sm"
-              variant="outline"
-              className="text-slate-600 hover:text-slate-900"
-            >
-              <Monitor className="h-4 w-4 mr-1.5" />
-              View Status
-            </Button>
-            
-            <Button 
-              onClick={handleExtract} 
-              disabled={!file || isProcessing || !!transformId}
-              size="sm"
-              className="bg-purple-600 hover:bg-purple-700"
-            >
-              <Rocket className="h-4 w-4 mr-1.5" />
-              {isProcessing ? 'Processing...' : 'Transform'}
-            </Button>
-            
-            <Button 
-              onClick={() => setShowMergeConfirm(true)} 
-              disabled={!graphData || isProcessing}
-              size="sm"
-              className="bg-emerald-600 hover:bg-emerald-700"
-            >
-              <GitMerge className="h-4 w-4 mr-1.5" />
-              Merge
-            </Button>
-          </div>
-        }
-      />
-
       {/* Error Alert */}
       {error && (
         <Alert variant="destructive" className="m-4">
@@ -781,147 +722,207 @@ function TransformPageContent() {
         </Alert>
       )}
 
-      {/* Main Content */}
-      <div className="flex-1 overflow-auto p-6">
-        <div className="grid grid-cols-4 gap-6 h-full">
-          {/* Upload Panel - 25% width */}
-          <div className="col-span-1 space-y-6">
-            {/* File Upload Section */}
-            <div className="enhanced-card">
-              <div className="enhanced-card-header">
-                <h3 className="text-base font-semibold text-slate-900">Document Upload</h3>
-                <p className="text-xs text-slate-600">Upload a document to transform into a knowledge graph</p>
+      {/* Main Content with Action Bar */}
+      <div className="flex-1 overflow-auto">
+        {/* Action Bar */}
+        <div className="bg-background border-b border-border shadow-sm">
+          <div className="px-6 py-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <Zap className="h-6 w-6 text-purple-600" />
+                <div>
+                  <h2 className="text-lg font-semibold text-foreground">Document Transform</h2>
+                  <p className="text-sm text-muted-foreground">Upload and transform documents into knowledge graphs</p>
+                </div>
               </div>
-              <div className="enhanced-card-content space-y-3">
-                {!file ? (
-                  <div
-                    {...getRootProps()}
-                    className={cn(
-                      "border-2 border-dashed rounded-lg p-4 text-center cursor-pointer transition-colors duration-200",
-                      isDragActive ? "border-blue-400 bg-blue-50" : "border-slate-300 hover:border-slate-400",
-                      error && "border-red-300 bg-red-50"
-                    )}
-                  >
-                    <input {...getInputProps()} />
-                    <div className="flex flex-col items-center space-y-3">
-                      <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center">
-                        <Upload className="h-6 w-6 text-slate-500" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-slate-900">
-                          {isDragActive ? "Drop file here" : "Drop file or click"}
-                        </p>
-                        <p className="text-xs text-slate-500 mt-1">
-                          PDF, TXT up to 10MB
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="border rounded-lg p-3 bg-slate-50">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-2">
-                        <FileText className="h-6 w-6 text-blue-600" />
-                        <div>
-                          <p className="text-sm font-medium text-slate-900">{file.name}</p>
-                          <p className="text-xs text-slate-500">{(file.size / (1024 * 1024)).toFixed(2)} MB</p>
-                        </div>
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setFile(null)}
-                        disabled={isProcessing}
-                      >
-                        <X className="h-3 w-3" />
-                      </Button>
-                    </div>
+              
+              <div className="flex items-center space-x-3">
+                {/* Progress indicator in header when processing */}
+                {isProcessing && (
+                  <div className="flex items-center space-x-2 bg-blue-50 dark:bg-blue-950 px-3 py-1.5 rounded-lg border border-blue-200 dark:border-blue-800">
+                    <Loader2 className="h-4 w-4 animate-spin text-blue-600 dark:text-blue-400" />
+                    <span className="text-sm text-blue-700 dark:text-blue-300 font-medium">{progress}%</span>
+                    <span className="text-xs text-blue-600 dark:text-blue-400">{currentStep || 'Processing...'}</span>
                   </div>
                 )}
+                
+                <div className="flex flex-col space-y-2">
+                  <Button 
+                    onClick={handleExtract} 
+                    disabled={!file || isProcessing || !!transformId}
+                    size="sm"
+                    className="bg-purple-600 hover:bg-purple-700 text-white"
+                  >
+                    <Rocket className="h-4 w-4 mr-1.5" />
+                    {isProcessing ? 'Processing...' : 'Transform'}
+                  </Button>
+                  
+                  <Button 
+                    onClick={handleViewTransformStatus}
+                    size="sm"
+                    variant="outline"
+                    className="text-muted-foreground hover:text-foreground"
+                  >
+                    <Monitor className="h-4 w-4 mr-1.5" />
+                    View Status
+                  </Button>
+                </div>
+                
+                <Button 
+                  onClick={() => setShowMergeConfirm(true)} 
+                  disabled={!graphData || isProcessing}
+                  size="sm"
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                >
+                  <GitMerge className="h-4 w-4 mr-1.5" />
+                  Merge
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
 
-                {/* Sample Files */}
-                <div className="border-t pt-3">
-                  <h4 className="text-xs font-medium text-slate-900 mb-2">Sample Files</h4>
-                  <div className="space-y-2">
-                    {SAMPLE_FILES.map((sampleFile) => (
-                      <div key={sampleFile.id} className="space-y-1">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleSampleFileSelect(sampleFile)}
-                          disabled={isProcessing}
-                          className="w-full justify-start h-auto p-2 text-xs"
-                        >
-                          <FileSymlink className="h-3 w-3 mr-1.5 flex-shrink-0" />
-                          <div className="text-left truncate">
-                            <div className="font-medium truncate">{sampleFile.name}</div>
+        <div className="p-6">
+          <div className="grid grid-cols-4 gap-6 h-full">
+            {/* Upload Panel - 25% width */}
+            <div className="col-span-1 space-y-6">
+              {/* File Upload Section */}
+              <div className="enhanced-card">
+                <div className="enhanced-card-header">
+                  <h3 className="text-base font-semibold text-foreground">Document Upload</h3>
+                  <p className="text-xs text-muted-foreground">Upload a document to transform into a knowledge graph</p>
+                </div>
+                <div className="enhanced-card-content space-y-3">
+                  {!file ? (
+                    <div
+                      {...getRootProps()}
+                      className={cn(
+                        "border-2 border-dashed rounded-lg p-4 text-center cursor-pointer transition-colors duration-200",
+                        isDragActive ? "border-blue-400 bg-blue-50 dark:bg-blue-950" : "border-border hover:border-border/80",
+                        error && "border-red-300 bg-red-50 dark:bg-red-950"
+                      )}
+                    >
+                      <input {...getInputProps()} />
+                      <div className="flex flex-col items-center space-y-3">
+                        <div className="w-12 h-12 bg-muted rounded-full flex items-center justify-center">
+                          <Upload className="h-6 w-6 text-muted-foreground" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-foreground">
+                            {isDragActive ? "Drop file here" : "Drop file or click"}
+                          </p>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            PDF, TXT up to 10MB
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="border rounded-lg p-3 bg-muted">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-2">
+                          <FileText className="h-6 w-6 text-blue-600" />
+                          <div>
+                            <p className="text-sm font-medium text-foreground">{file.name}</p>
+                            <p className="text-xs text-muted-foreground">{(file.size / (1024 * 1024)).toFixed(2)} MB</p>
                           </div>
-                        </Button>
+                        </div>
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => window.open(sampleFile.path, '_blank')}
-                          className="w-full text-xs h-6 text-blue-600 hover:text-blue-700"
+                          onClick={() => setFile(null)}
+                          disabled={isProcessing}
                         >
-                          Preview File
+                          <X className="h-3 w-3" />
                         </Button>
                       </div>
-                    ))}
+                    </div>
+                  )}
+
+                  {/* Sample Files */}
+                  <div className="border-t pt-3">
+                    <h4 className="text-xs font-medium text-foreground mb-2">Sample Files</h4>
+                    <div className="space-y-2">
+                      {SAMPLE_FILES.map((sampleFile) => (
+                        <div key={sampleFile.id} className="space-y-1">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleSampleFileSelect(sampleFile)}
+                            disabled={isProcessing}
+                            className="w-full justify-start h-auto p-2 text-xs"
+                          >
+                            <FileSymlink className="h-3 w-3 mr-1.5 flex-shrink-0" />
+                            <div className="text-left truncate">
+                              <div className="font-medium truncate">{sampleFile.name}</div>
+                            </div>
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => window.open(sampleFile.path, '_blank')}
+                            className="w-full text-xs h-6 text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
+                          >
+                            Preview File
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
 
-          {/* Graph Visualization Panel - 75% width */}
-          <div className="col-span-3">
-            <div className="enhanced-card h-full">
-              <div className="enhanced-card-header">
-                <h3 className="text-lg font-semibold text-slate-900">Knowledge Graph</h3>
-                <p className="text-sm text-slate-600">
-                  {graphData ? 'Interactive visualization of your knowledge graph' : 'Graph will appear here after transformation'}
-                </p>
-              </div>
-              <div className="enhanced-card-content h-[600px] relative">
-                {isProcessing ? (
-                  <div className="h-full flex items-center justify-center bg-gradient-to-br from-blue-50 to-purple-50">
-                    <div className="text-center space-y-6 max-w-md">
-                      <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center mx-auto shadow-lg border border-blue-100">
-                        <Loader2 className="h-10 w-10 animate-spin text-blue-600" />
-                      </div>
-                      <div className="space-y-3">
-                        <h3 className="text-xl font-semibold text-slate-900">Transforming Document</h3>
-                        <p className="text-sm text-slate-600">{currentStep || 'Processing your document...'}</p>
-                        <div className="w-full max-w-xs mx-auto">
-                          <Progress value={progress} className="w-full h-3" />
-                          <p className="text-lg font-bold text-blue-600 mt-2">{progress}% Complete</p>
+            {/* Graph Visualization Panel - 75% width */}
+            <div className="col-span-3">
+              <div className="enhanced-card h-full">
+                <div className="enhanced-card-header">
+                  <h3 className="text-lg font-semibold text-foreground">Knowledge Graph</h3>
+                  <p className="text-sm text-muted-foreground">
+                    {graphData ? 'Interactive visualization of your knowledge graph' : 'Graph will appear here after transformation'}
+                  </p>
+                </div>
+                <div className="enhanced-card-content h-[600px] relative">
+                  {isProcessing ? (
+                    <div className="h-full flex items-center justify-center bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-950 dark:to-purple-950">
+                      <div className="text-center space-y-6 max-w-md">
+                        <div className="w-20 h-20 bg-background rounded-full flex items-center justify-center mx-auto shadow-lg border border-blue-100 dark:border-blue-800">
+                          <Loader2 className="h-10 w-10 animate-spin text-blue-600 dark:text-blue-400" />
+                        </div>
+                        <div className="space-y-3">
+                          <h3 className="text-xl font-semibold text-foreground">Transforming Document</h3>
+                          <p className="text-sm text-muted-foreground">{currentStep || 'Processing your document...'}</p>
+                          <div className="w-full max-w-xs mx-auto">
+                            <Progress value={progress} className="w-full h-3" />
+                            <p className="text-lg font-bold text-blue-600 dark:text-blue-400 mt-2">{progress}% Complete</p>
+                          </div>
+                        </div>
+                        <div className="text-xs text-muted-foreground bg-background/50 rounded-lg p-3">
+                          <p>🔄 Parsing document structure</p>
+                          <p>🧠 Extracting entities and relationships</p>
+                          <p>📊 Building knowledge graph</p>
                         </div>
                       </div>
-                      <div className="text-xs text-slate-500 bg-white/50 rounded-lg p-3">
-                        <p>🔄 Parsing document structure</p>
-                        <p>🧠 Extracting entities and relationships</p>
-                        <p>📊 Building knowledge graph</p>
+                    </div>
+                  ) : graphData ? (
+                    <GraphVisualization 
+                      graphData={graphData}
+                      onGraphReset={handleGraphReset}
+                    />
+                  ) : (
+                    <div className="h-full flex items-center justify-center">
+                      <div className="text-center space-y-4">
+                        <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto">
+                          <Database className="h-8 w-8 text-muted-foreground" />
+                        </div>
+                        <div>
+                          <p className="text-lg font-medium text-foreground">No Graph Data</p>
+                          <p className="text-sm text-muted-foreground">Upload and transform a document to see your knowledge graph</p>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ) : graphData ? (
-                  <GraphVisualization 
-                    graphData={graphData}
-                    onGraphReset={handleGraphReset}
-                  />
-                ) : (
-                  <div className="h-full flex items-center justify-center">
-                    <div className="text-center space-y-4">
-                      <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto">
-                        <Database className="h-8 w-8 text-slate-400" />
-                      </div>
-                      <div>
-                        <p className="text-lg font-medium text-slate-900">No Graph Data</p>
-                        <p className="text-sm text-slate-500">Upload and transform a document to see your knowledge graph</p>
-                      </div>
-                    </div>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
             </div>
           </div>
@@ -985,8 +986,7 @@ export default function TransformPage() {
   const handleStepNavigation = (stepId: string) => {
     const routes: Record<string, string> = {
       'ontology': '/ontology',
-      'upload': '/transform',
-      'edit': '/transform',
+      'transform': '/transform',
       'merge': '/merge'
     }
     
@@ -998,7 +998,7 @@ export default function TransformPage() {
   return (
     <EnhancedWorkflowLayout 
       steps={workflowSteps}
-      currentStepId="upload"
+      currentStepId="transform"
       projectTitle="Document Transform"
       onStepClick={handleStepNavigation}
     >

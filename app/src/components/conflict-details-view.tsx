@@ -223,7 +223,7 @@ export function ConflictDetailsView({
       ) : (
         <>
           {/* Header */}
-          <div className="flex-none bg-white border-b shadow-sm">
+          <div className="flex-none bg-background border-b border-border shadow-sm">
             <div className="p-4">
               <Breadcrumb>
                 <BreadcrumbItem>
@@ -233,7 +233,7 @@ export function ConflictDetailsView({
                   <ChevronRight className="h-4 w-4" />
                 </BreadcrumbItem>
                 <BreadcrumbItem isCurrentPage>
-                  <span className="text-gray-600">Conflict Details</span>
+                  <span className="text-muted-foreground">Conflict Details</span>
                 </BreadcrumbItem>
               </Breadcrumb>
 
@@ -255,12 +255,12 @@ export function ConflictDetailsView({
                       </Badge>
                     )}
                   </div>
-                  <p className="text-sm text-gray-600 mt-1">
+                  <p className="text-sm text-muted-foreground mt-1">
                     {changeLog ? 
                       `Entity ID: ${changeLog.staging_node.id}` : 
                       `Entity ID: ${conflict.entity_id}`}
                   </p>
-                  <p className="text-sm text-gray-600">
+                  <p className="text-sm text-muted-foreground">
                     Type: {changeLog ? changeLog.staging_node.type : conflict.entity_type}
                   </p>
                 </div>
@@ -377,7 +377,7 @@ export function ConflictDetailsView({
 
           {/* Footer Actions */}
           {!conflict.resolved && (
-            <div className="flex-none bg-gray-50 border-t shadow-[0_-1px_2px_rgba(0,0,0,0.05)] p-1 fixed bottom-0 left-0 w-full">
+            <div className="flex-none bg-muted/30 border-t border-border shadow-[0_-1px_2px_rgba(0,0,0,0.05)] p-1 fixed bottom-0 left-0 w-full">
               <div className="flex items-center justify-between">
                 <div>
                   {/* Left side actions if needed */}

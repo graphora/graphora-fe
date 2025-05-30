@@ -157,10 +157,10 @@ export function RelationshipEditor({ relationshipId, onClose }: RelationshipEdit
 
   return (
     <Dialog open={!!relationshipId} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-3xl max-h-[80vh] flex flex-col">
-        <DialogHeader>
-          <DialogTitle>Edit Relationship</DialogTitle>
-          <DialogDescription>
+      <DialogContent className="sm:max-w-3xl max-h-[80vh] flex flex-col bg-background border-border">
+        <DialogHeader className="bg-background">
+          <DialogTitle className="text-foreground">Edit Relationship</DialogTitle>
+          <DialogDescription className="text-muted-foreground">
              Modify the type and properties of the relationship from 
              <span className="font-medium"> {from} </span> to <span className="font-medium"> {to}</span>.
           </DialogDescription>

@@ -16,8 +16,7 @@ import {
   MessageSquare,
   BarChart3,
   Users,
-  HelpCircle,
-  User
+  HelpCircle
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -38,7 +37,7 @@ interface SidebarNavigationProps {
   defaultCollapsed?: boolean
 }
 
-export function SidebarNavigation({ className, defaultCollapsed = true }: SidebarNavigationProps) {
+export function SidebarNavigation({ className, defaultCollapsed = false }: SidebarNavigationProps) {
   const router = useRouter()
   const pathname = usePathname()
   const [isCollapsed, setIsCollapsed] = useState(defaultCollapsed)
@@ -87,7 +86,7 @@ export function SidebarNavigation({ className, defaultCollapsed = true }: Sideba
       id: 'help',
       name: 'Help & Support',
       icon: <HelpCircle className="w-5 h-5" />,
-      path: 'mailto:ezhil@graphora.io',
+      path: '/help',
       description: 'Documentation and support'
     }
   ]
@@ -100,11 +99,7 @@ export function SidebarNavigation({ className, defaultCollapsed = true }: Sideba
   }
 
   const handleNavigation = (path: string) => {
-    if (path.startsWith('mailto:')) {
-      window.location.href = path
-    } else {
-      router.push(path)
-    }
+    router.push(path)
   }
 
   const NavItem = ({ item }: { item: NavigationItem }) => {
@@ -223,28 +218,9 @@ export function SidebarNavigation({ className, defaultCollapsed = true }: Sideba
             <div className="text-xs text-muted-foreground mb-2">
               Check our documentation or contact support
             </div>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="w-full text-xs"
-              onClick={() => window.open('https://docs.graphora.io/', '_blank')}
-            >
+            <Button variant="outline" size="sm" className="w-full text-xs">
               View Docs
             </Button>
-            <div className="mt-2 text-xs text-muted-foreground">
-              Email: <a href="mailto:support@graphora.io" className="text-primary hover:underline">support@graphora.io</a>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Version Info */}
-      {!isCollapsed && (
-        <div className="p-4">
-          <div className="bg-muted rounded-lg p-3">
-            <div className="text-xs text-muted-foreground">
-              Version 2.0.1
-            </div>
           </div>
         </div>
       )}

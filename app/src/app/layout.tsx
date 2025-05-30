@@ -7,6 +7,7 @@ import {
 import { Inter } from 'next/font/google'
 import { Toaster } from '@/components/ui/toaster'
 import { Toaster as SonnerToaster } from 'sonner'
+import { ThemeProvider } from '@/providers/theme-provider'
 import { cn } from '@/lib/utils'
 import './globals.css'
 
@@ -18,12 +19,19 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en">
-      <body className={cn(inter.className, 'min-h-screen bg-gray-50')}>
+    <html lang="en" suppressHydrationWarning>
+      <body className={cn(inter.className, 'min-h-screen')}>
         <ClerkProvider>
-          <Toaster />
-          <SonnerToaster />
-          {children}
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="system"
+            enableSystem
+            disableTransitionOnChange
+          >
+            <Toaster />
+            <SonnerToaster />
+            {children}
+          </ThemeProvider>
         </ClerkProvider>
       </body>
     </html>

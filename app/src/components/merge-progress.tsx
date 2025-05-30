@@ -590,10 +590,20 @@ export function MergeProgress({ mergeId, sessionId, transformId, onViewConflicts
         {progress.overall_status === MergeStatus.READY_TO_MERGE && (
           <Alert className="bg-green-50 border-green-200 animate-fadeIn mb-4">
             <CheckCircle2 className="h-5 w-5 text-green-600" />
-            <div className="font-medium text-green-800">Ready to Merge!</div>
+            <div className="font-medium text-green-800">Merged!</div>
             <AlertDescription className="text-green-700">
-              Great news! All conflicts have been resolved and the merge is ready to finalize. 
-              <strong className="block mt-1">Please click the "Finalize Merge" button below to complete the process.</strong>
+              Great news! All conflicts have been resolved. The merge process is complete.
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {/* Completed Merge Notification */}
+        {progress.overall_status === MergeStatus.COMPLETED && (
+          <Alert className="bg-green-50 border-green-200 animate-fadeIn mb-4">
+            <CheckCircle2 className="h-5 w-5 text-green-600" />
+            <div className="font-medium text-green-800">Merge Completed Successfully!</div>
+            <AlertDescription className="text-green-700">
+              Excellent! The merge has been completed successfully. All data has been merged into the production database.
             </AlertDescription>
           </Alert>
         )}
@@ -678,7 +688,7 @@ export function MergeProgress({ mergeId, sessionId, transformId, onViewConflicts
       </CardContent>
       
       {/* Action Buttons - Fixed at the bottom */}
-      <CardFooter className="flex flex-col sm:flex-row justify-between gap-3 pt-4 border-t mt-auto flex-shrink-0 bg-white sticky bottom-0 z-10 pb-4">
+      <CardFooter className="flex flex-col sm:flex-row justify-between gap-3 pt-4 border-t mt-auto flex-shrink-0 sticky bottom-0 z-10 pb-4">
         <div>
           {onCancel && (progress.overall_status === MergeStatus.STARTED || 
                          progress.overall_status === MergeStatus.AUTO_RESOLVE ||
@@ -697,27 +707,6 @@ export function MergeProgress({ mergeId, sessionId, transformId, onViewConflicts
             >
               <AlertTriangle className="mr-2 h-5 w-5" />
               Resolve {progress.conflict_count} Conflicts
-            </Button>
-          )}
-          
-          {progress.overall_status === MergeStatus.READY_TO_MERGE && (
-            <Button 
-              onClick={handleFinalizeMerge} 
-              disabled={isFinalizingMerge}
-              className="bg-green-600 hover:bg-green-700 text-white animate-pulse-subtle w-full sm:w-auto"
-              size="lg"
-            >
-              {isFinalizingMerge ? (
-                <>
-                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                  Finalizing...
-                </>
-              ) : (
-                <>
-                  <ArrowRight className="mr-2 h-5 w-5" />
-                  Finalize Merge
-                </>
-              )}
             </Button>
           )}
         </div>

@@ -4,7 +4,7 @@ import { auth } from '@clerk/nextjs/server'
 // This API route will fetch laboratory results for a specific patient
 export async function GET(
   request: NextRequest,
-  { params }: any
+  { params }: { params: Promise<{ patientId: string }> }
 ) {
   try {
     const { userId } = await auth()
@@ -29,10 +29,11 @@ export async function GET(
     const data = await response.json()
     return NextResponse.json(data)
   } catch (error) {
-    console.error(`Error fetching laboratory results for patient ${params.patientId}:`, error)
+    const { patientId } = await params
+    console.error(`Error fetching laboratory results for patient ${patientId}:`, error)
     return NextResponse.json(
       { 
-        error: `Failed to fetch laboratory results for patient ${params.patientId}`,
+        error: `Failed to fetch laboratory results for patient ${patientId}`,
         laboratoryResults: [] 
       },
       { status: 500 }

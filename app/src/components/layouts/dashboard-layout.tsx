@@ -18,7 +18,7 @@ export function DashboardLayout({
   showSidebar = true 
 }: DashboardLayoutProps) {
   return (
-    <div className={cn("flex h-screen bg-slate-50", className)}>
+    <div className={cn("flex h-screen bg-background", className)}>
       {showSidebar && (
         <SidebarNavigation 
           defaultCollapsed={sidebarCollapsed}

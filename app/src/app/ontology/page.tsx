@@ -403,30 +403,20 @@ export default function OntologyPage() {
   const workflowSteps: WorkflowStep[] = [
     { 
       id: 'ontology', 
-      title: 'Ontology Entry', 
+      title: 'Ontology', 
       description: 'Define your graph structure',
-      estimatedTime: '15-30 min',
       status: 'current'
     },
     { 
-      id: 'upload', 
-      title: 'Document Upload', 
-      description: 'Upload documents to process',
-      estimatedTime: '5-10 min',
-      status: 'upcoming'
-    },
-    { 
-      id: 'edit', 
-      title: 'Graph Editing', 
-      description: 'Refine extracted graph',
-      estimatedTime: '20-45 min',
+      id: 'transform', 
+      title: 'Extract & Transform', 
+      description: 'Upload documents and extract knowledge',
       status: 'upcoming'
     },
     { 
       id: 'merge', 
-      title: 'Merge Process', 
-      description: 'Combine data into final graph',
-      estimatedTime: '10-20 min',
+      title: 'Merge to Prod', 
+      description: 'Merge data into production database',
       status: 'upcoming'
     }
   ]
@@ -434,8 +424,7 @@ export default function OntologyPage() {
   const handleStepNavigation = (stepId: string) => {
     const routes: Record<string, string> = {
       'ontology': '/ontology',
-      'upload': '/transform',
-      'edit': '/transform',
+      'transform': '/transform',
       'merge': '/merge'
     }
     
@@ -453,62 +442,70 @@ export default function OntologyPage() {
       onStepClick={handleStepNavigation}
     >
       <div className="flex-1 flex flex-col h-full">
-        <PageHeader
-          title="Ontology Editor"
-          description="Define your knowledge graph structure using YAML or visual editor"
-          icon={<Database className="h-6 w-6" />}
-          actions={
-            <div className="flex items-center space-x-3">
-              <div className="hidden sm:flex border rounded-md overflow-hidden shadow-sm">
-                <Button 
-                  variant={viewMode === 'code' ? "default" : "ghost"} 
-                  size="sm" 
-                  className={cn(
-                    "rounded-none border-0",
-                    viewMode === 'code' ? "bg-primary text-primary-foreground" : ""
-                  )}
-                  onClick={() => setViewMode('code')}
-                >
-                  <Code2 className="h-4 w-4 mr-1.5" />
-                  Code
-                </Button>
-                <Button 
-                  variant={viewMode === 'visual' ? "default" : "ghost"} 
-                  size="sm" 
-                  className={cn(
-                    "rounded-none border-0",
-                    viewMode === 'visual' ? "bg-primary text-primary-foreground" : ""
-                  )}
-                  onClick={() => setViewMode('visual')}
-                >
-                  <Grid2x2 className="h-4 w-4 mr-1.5" />
-                  Visual
-                </Button>
-                <Button 
-                  variant={viewMode === 'split' ? "default" : "ghost"} 
-                  size="sm" 
-                  className={cn(
-                    "rounded-none border-0",
-                    viewMode === 'split' ? "bg-primary text-primary-foreground" : ""
-                  )}
-                  onClick={() => setViewMode('split')}
-                >
-                  <SplitSquareVertical className="h-4 w-4 mr-1.5" />
-                  Split
-                </Button>
+        {/* Toolbar Header */}
+        <div className="bg-background border-b border-border shadow-sm">
+          <div className="px-4 py-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <Database className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                <div>
+                  <h2 className="text-lg font-semibold text-foreground">Ontology Editor</h2>
+                  <p className="text-sm text-muted-foreground">Define your knowledge graph structure using YAML or visual editor</p>
+                </div>
               </div>
               
-              <Button 
-                onClick={handleSubmit} 
-                disabled={!yaml.trim() || isSubmitting}
-                size="sm"
-              >
-                <Play className="h-4 w-4 mr-1.5" />
-                {isSubmitting ? 'Submitting...' : 'Submit'}
-              </Button>
+              <div className="flex items-center space-x-3">
+                <div className="hidden sm:flex border rounded-md overflow-hidden shadow-sm">
+                  <Button 
+                    variant={viewMode === 'code' ? "default" : "ghost"} 
+                    size="sm" 
+                    className={cn(
+                      "rounded-none border-0",
+                      viewMode === 'code' ? "bg-primary text-primary-foreground" : ""
+                    )}
+                    onClick={() => setViewMode('code')}
+                  >
+                    <Code2 className="h-4 w-4 mr-1.5" />
+                    Code
+                  </Button>
+                  <Button 
+                    variant={viewMode === 'visual' ? "default" : "ghost"} 
+                    size="sm" 
+                    className={cn(
+                      "rounded-none border-0",
+                      viewMode === 'visual' ? "bg-primary text-primary-foreground" : ""
+                    )}
+                    onClick={() => setViewMode('visual')}
+                  >
+                    <Grid2x2 className="h-4 w-4 mr-1.5" />
+                    Visual
+                  </Button>
+                  <Button 
+                    variant={viewMode === 'split' ? "default" : "ghost"} 
+                    size="sm" 
+                    className={cn(
+                      "rounded-none border-0",
+                      viewMode === 'split' ? "bg-primary text-primary-foreground" : ""
+                    )}
+                    onClick={() => setViewMode('split')}
+                  >
+                    <SplitSquareVertical className="h-4 w-4 mr-1.5" />
+                    Split
+                  </Button>
+                </div>
+                
+                <Button 
+                  onClick={handleSubmit} 
+                  disabled={!yaml.trim() || isSubmitting}
+                  size="sm"
+                >
+                  <Play className="h-4 w-4 mr-1.5" />
+                  {isSubmitting ? 'Submitting...' : 'Submit'}
+                </Button>
+              </div>
             </div>
-          }
-        />
+          </div>
+        </div>
 
         {/* Error Alert */}
         {error && (

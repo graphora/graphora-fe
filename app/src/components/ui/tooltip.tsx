@@ -11,14 +11,21 @@ interface TooltipProps {
   content: React.ReactNode
   side?: 'top' | 'right' | 'bottom' | 'left'
   align?: 'start' | 'center' | 'end'
+  disabled?: boolean
 }
 
 export function Tooltip({ 
   children, 
   content,
   side = 'top',
-  align = 'center'
+  align = 'center',
+  disabled = false
 }: TooltipProps) {
+  // If disabled, just return children without tooltip
+  if (disabled) {
+    return <>{children}</>
+  }
+
   return (
     <TooltipProvider>
       <TooltipRoot>
@@ -30,20 +37,18 @@ export function Tooltip({
             side={side}
             align={align}
             className={cn(
-              'z-50 overflow-hidden rounded-lg border border-slate-200 bg-white px-3 py-2',
-              'text-sm font-medium text-slate-900 shadow-lg',
+              'z-50 overflow-hidden rounded-lg border border-border bg-popover px-3 py-2',
+              'text-sm font-medium text-popover-foreground shadow-lg',
               'animate-in fade-in-0 zoom-in-95',
               'data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95',
               'data-[side=bottom]:slide-in-from-top-2',
               'data-[side=left]:slide-in-from-right-2',
               'data-[side=right]:slide-in-from-left-2',
-              'data-[side=top]:slide-in-from-bottom-2',
-              // Theme support for future implementation
-              'dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100'
+              'data-[side=top]:slide-in-from-bottom-2'
             )}
           >
             {content}
-            <TooltipPrimitive.Arrow className="fill-white dark:fill-slate-800" />
+            <TooltipPrimitive.Arrow className="fill-popover" />
           </TooltipContent>
         </TooltipPrimitive.Portal>
       </TooltipRoot>

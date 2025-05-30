@@ -153,10 +153,10 @@ export function NodeEditor({ nodeId, onClose }: NodeEditorProps) {
 
   return (
     <Dialog open={!!nodeId} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-3xl max-h-[80vh] flex flex-col">
-        <DialogHeader>
-           <DialogTitle>Edit Entity: {caption || '...'}</DialogTitle>
-           <DialogDescription>
+      <DialogContent className="sm:max-w-3xl max-h-[80vh] flex flex-col bg-background border-border">
+        <DialogHeader className="bg-background">
+           <DialogTitle className="text-foreground">Edit Entity: {caption || '...'}</DialogTitle>
+           <DialogDescription className="text-muted-foreground">
                Modify the entity name and its properties.
            </DialogDescription>
         </DialogHeader>

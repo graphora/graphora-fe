@@ -9,7 +9,9 @@ import {
   XCircle, 
   Loader2,
   Circle,
-  Pause
+  Pause,
+  AlertTriangle,
+  Info
 } from 'lucide-react'
 
 export type StatusType = 
@@ -30,56 +32,55 @@ interface StatusIndicatorProps {
   className?: string
 }
 
-const statusConfig = {
+const variants = {
   success: {
+    bgColor: 'bg-emerald-50 dark:bg-emerald-950/30',
+    textColor: 'text-emerald-700 dark:text-emerald-400',
+    borderColor: 'border-emerald-200 dark:border-emerald-800/50',
     icon: CheckCircle,
-    color: 'text-emerald-600',
-    bgColor: 'bg-emerald-50',
-    borderColor: 'border-emerald-200',
-    dotColor: 'bg-emerald-500'
-  },
-  pending: {
-    icon: Clock,
-    color: 'text-blue-600',
-    bgColor: 'bg-blue-50',
-    borderColor: 'border-blue-200',
-    dotColor: 'bg-blue-500'
   },
   warning: {
-    icon: AlertCircle,
-    color: 'text-amber-600',
-    bgColor: 'bg-amber-50',
-    borderColor: 'border-amber-200',
-    dotColor: 'bg-amber-500'
+    bgColor: 'bg-amber-50 dark:bg-amber-950/30',
+    textColor: 'text-amber-700 dark:text-amber-400',
+    borderColor: 'border-amber-200 dark:border-amber-800/50',
+    icon: AlertTriangle,
   },
   error: {
+    bgColor: 'bg-red-50 dark:bg-red-950/30',
+    textColor: 'text-red-700 dark:text-red-400',
+    borderColor: 'border-red-200 dark:border-red-800/50',
     icon: XCircle,
-    color: 'text-red-600',
-    bgColor: 'bg-red-50',
-    borderColor: 'border-red-200',
-    dotColor: 'bg-red-500'
+  },
+  info: {
+    bgColor: 'bg-blue-50 dark:bg-blue-950/30',
+    textColor: 'text-blue-700 dark:text-blue-400',
+    borderColor: 'border-blue-200 dark:border-blue-800/50',
+    icon: Info,
   },
   loading: {
+    bgColor: 'bg-muted',
+    textColor: 'text-muted-foreground',
+    borderColor: 'border-border',
     icon: Loader2,
-    color: 'text-blue-600',
-    bgColor: 'bg-blue-50',
-    borderColor: 'border-blue-200',
-    dotColor: 'bg-blue-500'
+  },
+  pending: {
+    bgColor: 'bg-blue-50 dark:bg-blue-950/30',
+    textColor: 'text-blue-700 dark:text-blue-400',
+    borderColor: 'border-blue-200 dark:border-blue-800/50',
+    icon: Clock,
   },
   inactive: {
+    bgColor: 'bg-muted',
+    textColor: 'text-muted-foreground',
+    borderColor: 'border-border',
     icon: Circle,
-    color: 'text-slate-400',
-    bgColor: 'bg-slate-50',
-    borderColor: 'border-slate-200',
-    dotColor: 'bg-slate-400'
   },
   paused: {
+    bgColor: 'bg-orange-50 dark:bg-orange-950/30',
+    textColor: 'text-orange-700 dark:text-orange-400',
+    borderColor: 'border-orange-200 dark:border-orange-800/50',
     icon: Pause,
-    color: 'text-orange-600',
-    bgColor: 'bg-orange-50',
-    borderColor: 'border-orange-200',
-    dotColor: 'bg-orange-500'
-  }
+  },
 }
 
 const sizeConfig = {
@@ -111,7 +112,7 @@ export function StatusIndicator({
   showIcon = true,
   className
 }: StatusIndicatorProps) {
-  const config = statusConfig[status]
+  const config = variants[status]
   const sizeStyles = sizeConfig[size]
   const Icon = config.icon
 
@@ -124,7 +125,7 @@ export function StatusIndicator({
       className
     )}>
       {showIcon && (
-        <div className={cn(config.color)}>
+        <div className={cn(config.textColor)}>
           <Icon 
             className={cn(
               sizeStyles.icon,
@@ -138,7 +139,7 @@ export function StatusIndicator({
         <div 
           className={cn(
             "rounded-full",
-            config.dotColor,
+            config.textColor,
             sizeStyles.dot
           )}
         />
@@ -147,7 +148,7 @@ export function StatusIndicator({
       {label && (
         <span className={cn(
           "font-medium",
-          config.color,
+          config.textColor,
           sizeStyles.text
         )}>
           {label}
@@ -156,7 +157,7 @@ export function StatusIndicator({
       
       {description && (
         <span className={cn(
-          "text-slate-600",
+          "text-muted-foreground",
           sizeStyles.text
         )}>
           {description}

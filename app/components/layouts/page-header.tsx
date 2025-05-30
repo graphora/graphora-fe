@@ -5,8 +5,6 @@ import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
-import { ThemeToggle } from '@/components/ui/theme-toggle'
-import { UserButton } from '@/components/ui/user-button'
 
 interface PageHeaderProps {
   title: string
@@ -19,7 +17,6 @@ interface PageHeaderProps {
     href?: string
   }>
   className?: string
-  showUserControls?: boolean
 }
 
 export function PageHeader({
@@ -29,8 +26,7 @@ export function PageHeader({
   badge,
   actions,
   breadcrumbs,
-  className,
-  showUserControls = true
+  className
 }: PageHeaderProps) {
   return (
     <div className={cn("bg-background border-b border-border", className)}>
@@ -87,17 +83,12 @@ export function PageHeader({
             </div>
           </div>
 
-          {/* Actions + User Controls */}
-          <div className="flex items-center space-x-3">
-            {actions}
-            {showUserControls && (
-              <>
-                {actions && <Separator orientation="vertical" className="h-6" />}
-                <ThemeToggle />
-                <UserButton />
-              </>
-            )}
-          </div>
+          {/* Only show actions, no theme toggle or avatar */}
+          {actions && (
+            <div className="flex items-center space-x-3">
+              {actions}
+            </div>
+          )}
         </div>
       </div>
     </div>

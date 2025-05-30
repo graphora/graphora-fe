@@ -62,7 +62,7 @@ export default function DomainAppsPage() {
       path: '/domain-apps/healthcare',
       enabled: true,
       status: 'active',
-      color: 'bg-red-50 text-red-600',
+      color: 'bg-red-100 dark:bg-red-950/30 text-red-600 dark:text-red-400',
       features: ['Patient Journey Mapping', 'Treatment Analysis', 'Outcome Prediction']
     },
     {
@@ -73,7 +73,7 @@ export default function DomainAppsPage() {
       path: '/domain-apps/financial',
       enabled: true,
       status: 'active',
-      color: 'bg-emerald-50 text-emerald-600',
+      color: 'bg-emerald-100 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400',
       features: ['Risk Assessment', 'Fraud Detection', 'Portfolio Analysis']
     },
     {
@@ -84,7 +84,7 @@ export default function DomainAppsPage() {
       path: '/domain-apps/cybersecurity',
       enabled: false,
       status: 'coming-soon',
-      color: 'bg-purple-50 text-purple-600',
+      color: 'bg-purple-100 dark:bg-purple-950/30 text-purple-600 dark:text-purple-400',
       features: ['Threat Analysis', 'Incident Correlation', 'Attack Vector Mapping']
     },
     {
@@ -95,7 +95,7 @@ export default function DomainAppsPage() {
       path: '/domain-apps/supply-chain',
       enabled: false,
       status: 'coming-soon',
-      color: 'bg-blue-50 text-blue-600',
+      color: 'bg-blue-100 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400',
       features: ['Supplier Mapping', 'Route Optimization', 'Risk Assessment']
     }
   ]
@@ -114,12 +114,12 @@ export default function DomainAppsPage() {
               {[1, 2, 3].map((i) => (
                 <div key={i} className="enhanced-card animate-pulse">
                   <div className="enhanced-card-header">
-                    <div className="w-8 h-8 bg-slate-200 rounded-lg" />
-                    <div className="w-32 h-4 bg-slate-200 rounded" />
+                    <div className="w-8 h-8 bg-muted rounded-lg" />
+                    <div className="w-32 h-4 bg-muted rounded" />
                   </div>
                   <div className="enhanced-card-content space-y-3">
-                    <div className="w-full h-3 bg-slate-200 rounded" />
-                    <div className="w-3/4 h-3 bg-slate-200 rounded" />
+                    <div className="w-full h-3 bg-muted rounded" />
+                    <div className="w-3/4 h-3 bg-muted rounded" />
                   </div>
                 </div>
               ))}
@@ -151,8 +151,8 @@ export default function DomainAppsPage() {
 
         <div className="flex-1 overflow-auto p-6 space-y-8">
           {error && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-              <p className="text-red-700">{error}</p>
+            <div className="bg-red-100 dark:bg-red-950/30 border border-red-200 dark:border-red-800/50 rounded-lg p-4">
+              <p className="text-red-700 dark:text-red-400">{error}</p>
             </div>
           )}
 
@@ -171,23 +171,23 @@ export default function DomainAppsPage() {
                       size="sm"
                     />
                   </div>
-                  <CardTitle className="text-lg group-hover:text-blue-600 transition-colors">
+                  <CardTitle className="text-lg group-hover:text-primary transition-colors">
                     {domain.name}
                   </CardTitle>
                 </CardHeader>
                 
                 <CardContent className="enhanced-card-content space-y-4">
-                  <CardDescription className="text-slate-600 leading-relaxed">
+                  <CardDescription className="text-muted-foreground leading-relaxed">
                     {domain.description}
                   </CardDescription>
                   
                   {domain.features && (
                     <div className="space-y-2">
-                      <h4 className="text-sm font-medium text-slate-900">Key Features:</h4>
-                      <ul className="text-sm text-slate-600 space-y-1">
+                      <h4 className="text-sm font-medium text-foreground">Key Features:</h4>
+                      <ul className="text-sm text-muted-foreground space-y-1">
                         {domain.features.map((feature: string, index: number) => (
                           <li key={index} className="flex items-center space-x-2">
-                            <div className="w-1.5 h-1.5 bg-blue-500 rounded-full" />
+                            <div className="w-1.5 h-1.5 bg-primary rounded-full" />
                             <span>{feature}</span>
                           </li>
                         ))}
@@ -199,7 +199,7 @@ export default function DomainAppsPage() {
                 <CardFooter className="pt-0">
                   {domain.enabled ? (
                     <Link href={domain.path} className="w-full">
-                      <Button className="w-full group-hover:bg-blue-600 transition-colors">
+                      <Button className="w-full group-hover:bg-primary/90 transition-colors">
                         Open Application
                         <ArrowRight className="h-4 w-4 ml-2 group-hover:translate-x-1 transition-transform" />
                       </Button>
@@ -216,22 +216,22 @@ export default function DomainAppsPage() {
           </div>
 
           {/* Custom Domain App CTA */}
-          <Card className="enhanced-card bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200">
+          <Card className="enhanced-card bg-gradient-to-r from-blue-50/50 to-purple-50/50 dark:from-blue-950/20 dark:to-purple-950/20 border-blue-200 dark:border-blue-800/50">
             <CardContent className="enhanced-card-content">
               <div className="flex flex-col md:flex-row items-center gap-6">
                 <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
                   <Zap className="h-8 w-8 text-white" />
                 </div>
                 <div className="flex-1 text-center md:text-left space-y-2">
-                  <h3 className="text-xl font-bold text-slate-900">
+                  <h3 className="text-xl font-bold text-foreground">
                     Need a Custom Domain Application?
                   </h3>
-                  <p className="text-slate-600 leading-relaxed">
+                  <p className="text-muted-foreground leading-relaxed">
                     We can build specialized graph visualization applications tailored to your industry or specific use case. 
                     Get in touch to discuss your requirements.
                   </p>
                 </div>
-                <Button className="bg-blue-600 hover:bg-blue-700">
+                <Button className="bg-primary hover:bg-primary/90">
                   Contact Our Team
                 </Button>
               </div>

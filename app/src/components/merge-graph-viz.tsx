@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useRef, useState, useEffect, useCallback } from 'react';
+import React, { useRef, useState, useEffect, useCallback, useMemo } from 'react';
 import dynamic from 'next/dynamic';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { type Node, type Edge, type GraphData, type GraphOperation } from '@/types/graph';
 import { toast } from 'react-hot-toast';
+import { useTheme } from 'next-themes';
 
 const stringToColor = (str: string): string => {
   let hash = 0;
@@ -111,6 +112,7 @@ export const MergeGraphVisualization: React.FC<MergeGraphVisualizationProps> = (
   onGraphReset,
   onGraphOperation,
 }) => {
+  const { resolvedTheme } = useTheme()
   const containerRef = useRef<HTMLDivElement>(null);
   const nvlRef = useRef<any>(null); // Use any for now to avoid ref typing issues
   const [hoveredNode, setHoveredNode] = useState<ProcessedNode | null>(null);
@@ -128,6 +130,7 @@ export const MergeGraphVisualization: React.FC<MergeGraphVisualizationProps> = (
   const [typeColors, setTypeColors] = useState<Record<string, string>>({});
   const [isFinalGraph, setIsFinalGraph] = useState(false);
   const [finalGraphData, setFinalGraphData] = useState<GraphData | null>(null);
+  const isDark = resolvedTheme === 'dark'
 
   const graphData = finalGraphData || externalGraphData;
 
@@ -419,22 +422,22 @@ export const MergeGraphVisualization: React.FC<MergeGraphVisualizationProps> = (
   }
 
   return (
-    <div className="w-full h-full relative bg-gray-50">
+    <div className="w-full h-full relative bg-background">
       {/* Graph Information - Top Right */}
       <div className="absolute top-4 right-4 z-10">
-        <div className="bg-white/90 backdrop-blur-sm p-3 rounded-lg shadow-sm border border-gray-200 text-sm">
-          <div className="font-medium mb-1 text-gray-800">Graph Information</div>
-          <div className="text-gray-600">Nodes: {currentGraphData.nodes.length}</div>
-          <div className="text-gray-600">Edges: {currentGraphData.rels.length}</div>
+        <div className="bg-background/90 backdrop-blur-sm p-3 rounded-lg shadow-sm border border-border text-sm">
+          <div className="font-medium mb-1 text-foreground">Graph Information</div>
+          <div className="text-muted-foreground">Nodes: {currentGraphData.nodes.length}</div>
+          <div className="text-muted-foreground">Edges: {currentGraphData.rels.length}</div>
         </div>
       </div>
 
       {/* Search Controls - Top Left */}
       <div className="absolute top-4 left-4 z-10">
-        <div className="bg-white/90 backdrop-blur-sm p-3 rounded-lg shadow-sm border border-gray-200 w-64">
+        <div className="bg-background/90 backdrop-blur-sm p-3 rounded-lg shadow-sm border border-border w-64">
           <div className="space-y-3">
             <div>
-              <label className="text-sm font-medium text-gray-700 mb-1 block">Search</label>
+              <label className="text-sm font-medium text-foreground mb-1 block">Search</label>
               <Input
                 type="text"
                 placeholder="Search nodes..."
@@ -446,7 +449,7 @@ export const MergeGraphVisualization: React.FC<MergeGraphVisualizationProps> = (
             
             {availableTypes.length > 0 && (
               <div>
-                <label className="text-sm font-medium text-gray-700 mb-2 block">Node Types</label>
+                <label className="text-sm font-medium text-foreground mb-2 block">Node Types</label>
                 <div className="space-y-1 max-h-32 overflow-y-auto">
                   {availableTypes.map((type) => (
                     <div key={type} className="flex items-center justify-between text-sm">
@@ -455,7 +458,7 @@ export const MergeGraphVisualization: React.FC<MergeGraphVisualizationProps> = (
                           className="w-2 h-2 rounded-full mr-2" 
                           style={{ backgroundColor: typeColors[type] }} 
                         />
-                        <span className="text-gray-700 truncate">{type}</span>
+                        <span className="text-foreground truncate">{type}</span>
                       </span>
                       <Switch
                         checked={filters[`show${type}`]}
@@ -475,12 +478,12 @@ export const MergeGraphVisualization: React.FC<MergeGraphVisualizationProps> = (
 
       {/* View Controls - Bottom Left */}
       <div className="absolute bottom-4 left-4 z-10">
-        <div className="bg-white/90 backdrop-blur-sm p-2 rounded-lg shadow-sm border border-gray-200">
+        <div className="bg-background/90 backdrop-blur-sm p-2 rounded-lg shadow-sm border border-border">
           <div className="flex space-x-1">
             <Button
               variant="ghost"
               size="sm"
-              className="h-8 w-8 p-0 text-gray-600 hover:text-gray-800"
+              className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
               onClick={handleZoomIn}
               title="Zoom In"
             >
@@ -491,7 +494,7 @@ export const MergeGraphVisualization: React.FC<MergeGraphVisualizationProps> = (
             <Button
               variant="ghost"
               size="sm"
-              className="h-8 w-8 p-0 text-gray-600 hover:text-gray-800"
+              className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
               onClick={handleZoomOut}
               title="Zoom Out"
             >
@@ -502,7 +505,7 @@ export const MergeGraphVisualization: React.FC<MergeGraphVisualizationProps> = (
             <Button
               variant="ghost"
               size="sm"
-              className="h-8 w-8 p-0 text-gray-600 hover:text-gray-800"
+              className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
               onClick={handleReset}
               title="Reset View"
             >
@@ -555,11 +558,11 @@ export const MergeGraphVisualization: React.FC<MergeGraphVisualizationProps> = (
                 relationshipLabelsVisible: true,
                 relationshipArrowSize: 3,
                 labelFontSize: 12,
-                labelColor: '#000000',
-                labelBackgroundColor: 'rgba(255, 255, 255, 0.9)',
+                labelColor: isDark ? '#e2e8f0' : '#1e293b',
+                labelBackgroundColor: isDark ? 'rgba(15, 23, 42, 0.9)' : 'rgba(255, 255, 255, 0.9)',
                 nodeBorderWidth: 2,
                 useWebGL: true,
-                backgroundColor: '#ffffff'
+                backgroundColor: isDark ? '#0f172a' : '#f8fafc'
               }}
               style={{ width: '100%', height: '100%' }}
             />
@@ -573,7 +576,7 @@ export const MergeGraphVisualization: React.FC<MergeGraphVisualizationProps> = (
         {/* Tooltip */}
         {(hoveredNode || hoveredLink) && !showPropertiesModal && (
           <div
-            className="absolute bg-white p-3 rounded-lg shadow-lg border border-gray-200 z-50 max-w-xs text-sm pointer-events-none"
+            className="absolute bg-background p-3 rounded-lg shadow-lg border border-border z-50 max-w-xs text-sm pointer-events-none"
             style={{
               left: `${tooltipPosition.x + 20}px`,
               top: `${tooltipPosition.y + 15}px`,
@@ -581,14 +584,14 @@ export const MergeGraphVisualization: React.FC<MergeGraphVisualizationProps> = (
           >
             {hoveredNode && (
               <>
-                <div className="font-semibold">{hoveredNode.displayName}</div>
-                <div className="text-gray-600">Type: {hoveredNode.type}</div>
+                <div className="font-semibold text-foreground">{hoveredNode.displayName}</div>
+                <div className="text-muted-foreground">Type: {hoveredNode.type}</div>
               </>
             )}
             {hoveredLink && (
               <>
-                <div className="font-semibold">{hoveredLink.caption}</div>
-                <div className="text-gray-600">
+                <div className="font-semibold text-foreground">{hoveredLink.caption}</div>
+                <div className="text-muted-foreground">
                   {hoveredLink.from} → {hoveredLink.to}
                 </div>
               </>
@@ -598,7 +601,7 @@ export const MergeGraphVisualization: React.FC<MergeGraphVisualizationProps> = (
 
         {/* Node Properties Modal */}
         <Dialog open={showPropertiesModal} onOpenChange={setShowPropertiesModal}>
-          <DialogContent className="sm:max-w-[700px] max-h-[80vh] overflow-y-auto bg-white">
+          <DialogContent className="sm:max-w-[700px] max-h-[80vh] overflow-y-auto bg-background">
             <DialogHeader>
               <DialogTitle>Node Details</DialogTitle>
             </DialogHeader>
@@ -618,10 +621,10 @@ export const MergeGraphVisualization: React.FC<MergeGraphVisualizationProps> = (
                   </div>
                   <div className="border rounded-md overflow-hidden">
                     <table className="w-full border-collapse">
-                      <thead className="bg-gray-50">
+                      <thead className="bg-background">
                         <tr>
-                          <th className="text-left p-3 text-sm font-medium text-gray-600 border-b w-1/3">Property</th>
-                          <th className="text-left p-3 text-sm font-medium text-gray-600 border-b w-2/3">Value</th>
+                          <th className="text-left p-3 text-sm font-medium text-muted-foreground border-b w-1/3">Property</th>
+                          <th className="text-left p-3 text-sm font-medium text-muted-foreground border-b w-2/3">Value</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y">
@@ -659,7 +662,7 @@ export const MergeGraphVisualization: React.FC<MergeGraphVisualizationProps> = (
 
         {/* Relationship Properties Modal */}
         <Dialog open={showLinkPropertiesModal} onOpenChange={setShowLinkPropertiesModal}>
-          <DialogContent className="sm:max-w-[700px] max-h-[80vh] overflow-y-auto bg-white">
+          <DialogContent className="sm:max-w-[700px] max-h-[80vh] overflow-y-auto bg-background">
             <DialogHeader>
               <DialogTitle>Relationship Details</DialogTitle>
             </DialogHeader>
@@ -683,10 +686,10 @@ export const MergeGraphVisualization: React.FC<MergeGraphVisualizationProps> = (
                   </div>
                   <div className="border rounded-md overflow-hidden">
                     <table className="w-full border-collapse">
-                      <thead className="bg-gray-50">
+                      <thead className="bg-background">
                         <tr>
-                          <th className="text-left p-3 text-sm font-medium text-gray-600 border-b w-1/3">Property</th>
-                          <th className="text-left p-3 text-sm font-medium text-gray-600 border-b w-2/3">Value</th>
+                          <th className="text-left p-3 text-sm font-medium text-muted-foreground border-b w-1/3">Property</th>
+                          <th className="text-left p-3 text-sm font-medium text-muted-foreground border-b w-2/3">Value</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y">

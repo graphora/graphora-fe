@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import { useTheme } from 'next-themes'
 import { useGraphEditorStore, PropertyDefinition } from '@/lib/store/graph-editor-store'
 import { Point } from '@/lib/utils/point'
 import { Vector } from '@/lib/utils/vector'
@@ -12,6 +13,7 @@ interface GraphDisplayProps {
 }
 
 export function GraphDisplay({ className = '' }: GraphDisplayProps) {
+  const { theme, resolvedTheme } = useTheme()
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const {
     graph,
@@ -43,6 +45,11 @@ export function GraphDisplay({ className = '' }: GraphDisplayProps) {
   const [isCreatingRelationship, setIsCreatingRelationship] = useState(false)
   const [relationshipStartNode, setRelationshipStartNode] = useState<string | null>(null)
   const [relationshipEndPoint, setRelationshipEndPoint] = useState<Point | null>(null)
+
+  // Get theme-aware colors
+  const isDarkTheme = resolvedTheme === 'dark'
+  const canvasBackgroundColor = isDarkTheme ? 'rgb(30, 41, 59)' : 'rgb(248, 250, 252)' // matches CSS variables
+  const gridColor = isDarkTheme ? 'rgb(71, 85, 105)' : 'rgb(226, 232, 240)' // matches border colors
 
   // Resize observer to keep canvas size in sync with container
   useEffect(() => {
@@ -112,13 +119,12 @@ export function GraphDisplay({ className = '' }: GraphDisplayProps) {
     // Clear the canvas
     ctx.clearRect(0, 0, canvasSize.width, canvasSize.height)
 
-    // Set the background color
-    ctx.fillStyle = graph.style['background-color'] || '#f5f5f5'
+    // Set the background color based on theme
+    ctx.fillStyle = canvasBackgroundColor
     ctx.fillRect(0, 0, canvasSize.width, canvasSize.height)
 
-    // Draw grid (similar to arrows_app)
+    // Draw grid with theme-aware colors
     const gridSize = 20
-    const gridColor = '#e5e5e5'
     
     ctx.strokeStyle = gridColor
     ctx.lineWidth = 0.5
