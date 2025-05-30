@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useUser } from '@clerk/nextjs'
 import { DashboardLayout } from '@/components/layouts/dashboard-layout'
@@ -22,7 +22,7 @@ const defaultDbConfig: DatabaseConfig = {
   password: '',
 }
 
-export default function ConfigPage() {
+function ConfigPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { user, isLoaded } = useUser()
@@ -394,5 +394,13 @@ export default function ConfigPage() {
         </div>
       </div>
     </DashboardLayout>
+  )
+}
+
+export default function ConfigPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <ConfigPageContent />
+    </Suspense>
   )
 } 
