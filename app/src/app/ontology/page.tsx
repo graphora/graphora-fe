@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useCallback } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useCallback, useEffect, Suspense } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useUser } from '@clerk/nextjs'
 import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -12,12 +12,23 @@ import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/componen
 import { EnhancedWorkflowLayout, WorkflowStep } from '@/components/enhanced-workflow-layout'
 import { PageHeader } from '@/components/layouts/page-header'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { Search, Upload, Play, Code2, Grid2x2, SplitSquareVertical, Settings, Database } from 'lucide-react'
+import { Search, Upload, Play, Code2, Grid2x2, SplitSquareVertical, Settings, Database, Save, ArrowLeft } from 'lucide-react'
 import { VisualEditor } from '@/components/ontology/visual-editor'
 import { type AIAssistantState } from '@/lib/types/ai-assistant'
 import { cn } from '@/lib/utils'
+import Link from 'next/link'
 
 type ViewMode = 'code' | 'visual' | 'split'
+
+interface LoadedOntology {
+  id: string
+  file_name: string
+  yaml_content: string
+  version: number
+  source: string
+  created_at: string
+  updated_at: string
+}
 
 const SAMPLE_YAML = `version: 0.1.0 
 entities:
@@ -197,8 +208,9 @@ entities:
         type: str
         description: Citation description (10 words max)`
 
-export default function OntologyPage() {
+function OntologyPageContent() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { user } = useUser()
   const { yaml, updateFromYaml } = useOntologyEditorStore()
   const [sidebarWidth, setSidebarWidth] = useState(320)
@@ -257,6 +269,58 @@ export default function OntologyPage() {
   })
 
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
+  
+  // New state for ontology management
+  const [loadedOntology, setLoadedOntology] = useState<LoadedOntology | null>(null)
+  const [isLoadingOntology, setIsLoadingOntology] = useState(false)
+  const [isEditMode, setIsEditMode] = useState(false)
+
+  // Load existing ontology if ID is provided in URL
+  useEffect(() => {
+    const ontologyId = searchParams.get('id')
+    if (ontologyId) {
+      loadExistingOntology(ontologyId)
+    }
+  }, [searchParams]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Track changes to YAML content
+  useEffect(() => {
+    if (loadedOntology && yaml !== loadedOntology.yaml_content) {
+      setHasUnsavedChanges(true)
+    } else if (!loadedOntology && yaml !== SAMPLE_YAML && yaml.trim() !== '') {
+      setHasUnsavedChanges(true)
+    }
+  }, [yaml, loadedOntology])
+
+  const loadExistingOntology = async (ontologyId: string) => {
+    setIsLoadingOntology(true)
+    setError(null)
+    
+    try {
+      const response = await fetch(`/api/v1/ontologies/${ontologyId}`, {
+        headers: {
+          'user-id': user?.id || 'anonymous'
+        }
+      })
+      if (!response.ok) {
+        if (response.status === 404) {
+          throw new Error('Ontology not found')
+        }
+        throw new Error('Failed to load ontology')
+      }
+      
+      const ontologyData = await response.json()
+      setLoadedOntology(ontologyData)
+      setIsEditMode(true)
+      updateFromYaml(ontologyData.yaml_content)
+      setHasUnsavedChanges(false)
+    } catch (err) {
+      console.error('Error loading ontology:', err)
+      setError(err instanceof Error ? err.message : 'Failed to load ontology')
+    } finally {
+      setIsLoadingOntology(false)
+    }
+  }
 
   const handleContinue = async () => {
     if (!yaml.trim()) {
@@ -268,11 +332,17 @@ export default function OntologyPage() {
     setError(null)
 
     try {
+      // If in edit mode and there are changes, save first
+      if (isEditMode && hasUnsavedChanges) {
+        await saveOntology()
+      }
+
       // Call ontology API to create session
-      const response = await fetch('/api/ontology', {
+      const response = await fetch('/api/v1/ontology', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'user-id': user?.id || 'anonymous'
         },
         body: JSON.stringify({
           text: yaml
@@ -312,8 +382,86 @@ export default function OntologyPage() {
     }
   }
 
-  const handleSubmit = async () => {
-    await handleContinue()
+  const saveOntology = async () => {
+    if (!yaml.trim()) {
+      setError('Please define your ontology before saving')
+      return
+    }
+
+    setIsSubmitting(true)
+    setError(null)
+
+    try {
+      // If editing existing ontology, use PUT; otherwise use POST
+      if (isEditMode && loadedOntology) {
+        // Update existing ontology
+        const response = await fetch(`/api/v1/ontology/${loadedOntology.id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'user-id': user?.id || 'anonymous' // Add required user-id header
+          },
+          body: JSON.stringify({
+            text: yaml
+          }),
+        })
+
+        if (!response.ok) {
+          throw new Error('Failed to update ontology')
+        }
+
+        const data = await response.json()
+        
+        if (data.status === 'error') {
+          throw new Error(data.error || data.message || 'Failed to update ontology')
+        }
+
+        // Update loaded ontology with new data
+        setLoadedOntology(prev => prev ? {
+          ...prev,
+          yaml_content: yaml,
+          updated_at: new Date().toISOString()
+        } : null)
+      } else {
+        // Create new ontology
+        const response = await fetch('/api/v1/ontology', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'user-id': user?.id || 'anonymous' // Add required user-id header
+          },
+          body: JSON.stringify({
+            text: yaml
+          }),
+        })
+
+        if (!response.ok) {
+          throw new Error('Failed to save ontology')
+        }
+
+        const data = await response.json()
+        
+        if (data.status === 'error') {
+          throw new Error(data.error || data.message || 'Failed to save ontology')
+        }
+      }
+
+      setHasUnsavedChanges(false)
+      setError(null)
+
+      // Show success message or toast here if needed
+      console.log('Ontology saved successfully')
+      
+    } catch (err) {
+      console.error('Error saving ontology:', err)
+      setError(err instanceof Error ? err.message : 'Failed to save ontology')
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  const handleSave = async () => {
+    await saveOntology()
   }
 
   const loadSampleYaml = useCallback(() => {
@@ -370,7 +518,7 @@ export default function OntologyPage() {
       id: 'run',
       icon: <Play className="h-4 w-4" />,
       label: 'Run',
-      action: handleSubmit,
+      action: handleContinue,
       shortcut: '⌘R'
     },
     {
@@ -447,11 +595,37 @@ export default function OntologyPage() {
           <div className="px-4 py-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-3">
+                {isEditMode && (
+                  <Link href="/ontologies">
+                    <Button variant="ghost" size="sm" className="mr-2">
+                      <ArrowLeft className="h-4 w-4 mr-1" />
+                      Back to Library
+                    </Button>
+                  </Link>
+                )}
                 <Database className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                 <div>
-                  <h2 className="text-lg font-semibold text-foreground">Ontology Editor</h2>
-                  <p className="text-sm text-muted-foreground">Define your knowledge graph structure using YAML or visual editor</p>
+                  <h2 className="text-lg font-semibold text-foreground">
+                    {isLoadingOntology 
+                      ? 'Loading Ontology...' 
+                      : isEditMode && loadedOntology
+                        ? `Edit: ${loadedOntology.file_name.replace('.yaml', '')}`
+                        : 'Ontology Editor'
+                    }
+                  </h2>
+                  <p className="text-sm text-muted-foreground">
+                    {isEditMode && loadedOntology
+                      ? `Version ${loadedOntology.version} • ${loadedOntology.source === 'file' ? 'File System' : 'Database'}`
+                      : 'Define your knowledge graph structure using YAML or visual editor'
+                    }
+                  </p>
                 </div>
+                {hasUnsavedChanges && (
+                  <div className="flex items-center space-x-2 text-amber-600 dark:text-amber-400">
+                    <div className="w-2 h-2 bg-amber-500 rounded-full animate-pulse" />
+                    <span className="text-xs font-medium">Unsaved changes</span>
+                  </div>
+                )}
               </div>
               
               <div className="flex items-center space-x-3">
@@ -494,13 +668,25 @@ export default function OntologyPage() {
                   </Button>
                 </div>
                 
+                {isEditMode && (
+                  <Button 
+                    onClick={handleSave} 
+                    disabled={!yaml.trim() || isSubmitting || !hasUnsavedChanges}
+                    size="sm"
+                    variant="outline"
+                  >
+                    <Save className="h-4 w-4 mr-1.5" />
+                    {isSubmitting ? 'Saving...' : 'Save'}
+                  </Button>
+                )}
+                
                 <Button 
-                  onClick={handleSubmit} 
+                  onClick={handleContinue} 
                   disabled={!yaml.trim() || isSubmitting}
                   size="sm"
                 >
                   <Play className="h-4 w-4 mr-1.5" />
-                  {isSubmitting ? 'Submitting...' : 'Submit'}
+                  {isSubmitting ? 'Processing...' : (isEditMode ? 'Use for Transform' : 'Submit')}
                 </Button>
               </div>
             </div>
@@ -630,5 +816,13 @@ export default function OntologyPage() {
         </div>
       </div>
     </EnhancedWorkflowLayout>
+  )
+}
+
+export default function OntologyPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <OntologyPageContent />
+    </Suspense>
   )
 }

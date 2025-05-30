@@ -60,6 +60,13 @@ export function SidebarNavigation({ className, defaultCollapsed = true }: Sideba
       description: 'Chat with AI about your data'
     },
     {
+      id: 'ontologies',
+      name: 'Ontology Library',
+      icon: <Database className="w-5 h-5" />,
+      path: '/ontologies',
+      description: 'Manage your knowledge graph ontologies'
+    },
+    {
       id: 'run-workflow',
       name: 'Run Workflow',
       icon: <Zap className="w-5 h-5" />,

@@ -465,7 +465,7 @@ export const MergeGraphVisualization: React.FC<MergeGraphVisualizationProps> = (
                         onCheckedChange={(checked) => 
                           setFilters(prev => ({ ...prev, [`show${type}`]: checked }))
                         }
-                        className="ml-2 scale-75"
+                        className="ml-2 scale-75 data-[state=unchecked]:bg-gray-300 dark:data-[state=unchecked]:bg-gray-600 data-[state=checked]:bg-primary border border-gray-400 dark:border-gray-500"
                       />
                     </div>
                   ))}
@@ -608,23 +608,23 @@ export const MergeGraphVisualization: React.FC<MergeGraphVisualizationProps> = (
             {selectedNode && (
               <div className="space-y-4">
                 <div className="grid grid-cols-4 gap-2">
-                  <span className="font-medium text-gray-700">Name:</span>
-                  <span className="col-span-3">{selectedNode.displayName}</span>
+                  <span className="font-medium text-foreground">Name:</span>
+                  <span className="col-span-3 text-foreground">{selectedNode.displayName}</span>
                 </div>
                 <div className="grid grid-cols-4 gap-2">
-                  <span className="font-medium text-gray-700">Type:</span>
-                  <span className="col-span-3">{selectedNode.type}</span>
+                  <span className="font-medium text-foreground">Type:</span>
+                  <span className="col-span-3 text-foreground">{selectedNode.type}</span>
                 </div>
                 <div className="mt-4">
                   <div className="flex justify-between items-center mb-2">
-                    <h4 className="font-medium text-gray-800">Properties:</h4>
+                    <h4 className="font-medium text-foreground">Properties:</h4>
                   </div>
-                  <div className="border rounded-md overflow-hidden">
+                  <div className="border rounded-md overflow-hidden border-border">
                     <table className="w-full border-collapse">
-                      <thead className="bg-background">
+                      <thead className="bg-muted/50">
                         <tr>
-                          <th className="text-left p-3 text-sm font-medium text-muted-foreground border-b w-1/3">Property</th>
-                          <th className="text-left p-3 text-sm font-medium text-muted-foreground border-b w-2/3">Value</th>
+                          <th className="text-left p-3 text-sm font-medium text-muted-foreground border-b border-border w-1/3">Property</th>
+                          <th className="text-left p-3 text-sm font-medium text-muted-foreground border-b border-border w-2/3">Value</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y">

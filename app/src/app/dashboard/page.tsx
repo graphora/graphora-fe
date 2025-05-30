@@ -1,187 +1,98 @@
 'use client'
 
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import { DashboardLayout } from '@/components/layouts/dashboard-layout'
 import { PageHeader } from '@/components/layouts/page-header'
 import { StatusIndicator } from '@/components/ui/status-indicator'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Progress } from '@/components/ui/progress'
 import { 
   BarChart3, 
   Database, 
   FileText, 
   GitMerge, 
-  Zap, 
   TrendingUp,
   TrendingDown,
-  Users,
   Activity,
-  Clock,
   CheckCircle,
   ArrowRight,
-  Plus,
-  Eye,
-  Download,
-  Share2,
-  AlertCircle,
-  Sparkles,
-  Upload
+  Upload,
+  Play,
+  History,
+  AlertTriangle,
+  ExternalLink
 } from 'lucide-react'
 import Link from 'next/link'
 
-// Mock data for demonstration
-const workflowSteps = [
-  { 
-    id: 'ontology', 
-    name: 'Ontology', 
-    status: 'completed', 
-    progress: 100,
-    completedAt: '2 hours ago'
-  },
-  { 
-    id: 'transform', 
-    name: 'Extract & Transform', 
-    status: 'current', 
-    progress: 65,
-    timeRemaining: '15 min remaining'
-  },
-  { 
-    id: 'merge', 
-    name: 'Merge to Prod', 
-    status: 'pending', 
-    progress: 0,
-    timeRemaining: 'Not started'
-  }
-]
-
-const recentProjects = [
-  {
-    id: 1,
-    name: 'Healthcare Knowledge Graph',
-    description: 'Patient pathway analysis and treatment optimization',
-    status: 'pending' as const,
-    progress: 75,
-    lastUpdated: '2 hours ago',
-    entities: 1247,
-    relationships: 3891,
-    trend: 'up'
-  },
-  {
-    id: 2,
-    name: 'Financial Risk Assessment',
-    description: 'Corporate relationship mapping and risk analysis',
-    status: 'success' as const,
-    progress: 100,
-    lastUpdated: '1 day ago',
-    entities: 892,
-    relationships: 2156,
-    trend: 'stable'
-  },
-  {
-    id: 3,
-    name: 'Supply Chain Optimization',
-    description: 'Vendor relationship analysis and bottleneck identification',
-    status: 'warning' as const,
-    progress: 45,
-    lastUpdated: '3 hours ago',
-    entities: 634,
-    relationships: 1423,
-    trend: 'down'
-  },
-  {
-    id: 4,
-    name: 'Customer Journey Mapping',
-    description: 'E-commerce user behavior and conversion analysis',
-    status: 'loading' as const,
-    progress: 20,
-    lastUpdated: '30 minutes ago',
-    entities: 423,
-    relationships: 987,
-    trend: 'up'
-  }
-]
-
-const metrics = [
-  {
-    title: 'Total Knowledge Graphs',
-    value: '24',
-    change: '+12%',
-    trend: 'up',
-    icon: <Database className="h-5 w-5" />,
-    description: 'Active graphs in your workspace'
-  },
-  {
-    title: 'Documents Processed',
-    value: '1,247',
-    change: '+23%',
-    trend: 'up',
-    icon: <FileText className="h-5 w-5" />,
-    description: 'Total documents transformed'
-  },
-  {
-    title: 'Entities Extracted',
-    value: '45.2K',
-    change: '+8%',
-    trend: 'up',
-    icon: <Activity className="h-5 w-5" />,
-    description: 'Unique entities identified'
-  },
-  {
-    title: 'Active Collaborators',
-    value: '8',
-    change: '+2',
-    trend: 'up',
-    icon: <Users className="h-5 w-5" />,
-    description: 'Team members working on projects'
-  }
-]
-
-const quickActions = [
-  {
-    title: 'Create New Graph',
-    description: 'Start with ontology definition',
-    icon: <Plus className="h-5 w-5" />,
-    href: '/ontology',
-    color: 'text-blue-600 dark:text-blue-400'
-  },
-  {
-    title: 'Upload Documents',
-    description: 'Transform documents to graphs',
-    icon: <Upload className="h-5 w-5" />,
-    href: '/transform',
-    color: 'text-purple-600 dark:text-purple-400'
-  },
-  {
-    title: 'Merge Graphs',
-    description: 'Combine existing graphs',
-    icon: <GitMerge className="h-5 w-5" />,
-    href: '/merge',
-    color: 'text-emerald-600 dark:text-emerald-400'
-  },
-  {
-    title: 'AI Assistant',
-    description: 'Get insights from your data',
-    icon: <Sparkles className="h-5 w-5" />,
-    href: '/chat',
-    color: 'text-pink-600 dark:text-pink-400'
-  }
-]
-
 export default function DashboardPage() {
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'completed':
-        return <CheckCircle className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-      case 'current':
-        return <Clock className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-      case 'pending':
-        return <AlertCircle className="h-4 w-4 text-muted-foreground" />
-      default:
-        return <AlertCircle className="h-4 w-4 text-muted-foreground" />
+  const [auditSummary, setAuditSummary] = useState<any>(null)
+  const [conflictsSummary, setConflictsSummary] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+
+  // Fetch audit trail data
+  useEffect(() => {
+    const fetchAuditData = async () => {
+      try {
+        const [auditResponse, conflictsResponse] = await Promise.all([
+          fetch('/api/audit/summary'),
+          fetch('/api/audit/conflicts')
+        ])
+
+        if (auditResponse.ok) {
+          const auditData = await auditResponse.json()
+          setAuditSummary(auditData)
+        }
+
+        if (conflictsResponse.ok) {
+          const conflictsData = await conflictsResponse.json()
+          setConflictsSummary(conflictsData)
+        }
+      } catch (error) {
+        console.error('Error fetching audit data:', error)
+      } finally {
+        setLoading(false)
+      }
     }
-  }
+
+    fetchAuditData()
+  }, [])
+
+  // Calculate metrics based on audit trail data
+  const metrics = [
+    {
+      title: 'Ontologies Created',
+      value: auditSummary?.by_type?.ontology_stored || '0',
+      change: null,
+      trend: 'up',
+      icon: <Database className="h-5 w-5" />,
+      description: 'Total ontologies stored'
+    },
+    {
+      title: 'Transforms Completed',
+      value: auditSummary?.by_type?.transform_completed || '0',
+      change: null,
+      trend: 'up',
+      icon: <FileText className="h-5 w-5" />,
+      description: 'Documents processed successfully'
+    },
+    {
+      title: 'Merges Executed',
+      value: auditSummary?.by_type?.merge_completed || '0',
+      change: null,
+      trend: 'up',
+      icon: <GitMerge className="h-5 w-5" />,
+      description: 'Successful merge operations'
+    },
+    {
+      title: 'Active Conflicts',
+      value: conflictsSummary?.total_conflicts?.toString() || '0',
+      change: null,
+      trend: conflictsSummary?.total_conflicts > 0 ? 'down' : 'up',
+      icon: <AlertTriangle className="h-5 w-5" />,
+      description: 'Merge conflicts needing review'
+    }
+  ]
 
   const getTrendIcon = (trend: string) => {
     switch (trend) {
@@ -203,14 +114,10 @@ export default function DashboardPage() {
           icon={<BarChart3 className="h-6 w-6" />}
           actions={
             <div className="flex items-center space-x-3">
-              <Button variant="outline" size="sm">
-                <Download className="h-4 w-4 mr-2" />
-                Export Report
-              </Button>
               <Link href="/ontology">
-                <Button size="sm">
-                  <Plus className="h-4 w-4 mr-2" />
-                  New Project
+                <Button className="bg-emerald-600 hover:bg-emerald-700 text-white">
+                  <Play className="h-4 w-4 mr-2" />
+                  Run Workflow
                 </Button>
               </Link>
             </div>
@@ -235,12 +142,14 @@ export default function DashboardPage() {
                     </div>
                     <div className="flex items-center space-x-1">
                       {getTrendIcon(metric.trend)}
-                      <span className={`text-sm font-medium ${
-                        metric.trend === 'up' ? 'text-emerald-600 dark:text-emerald-400' : 
-                        metric.trend === 'down' ? 'text-red-600 dark:text-red-400' : 'text-muted-foreground'
-                      }`}>
-                        {metric.change}
-                      </span>
+                      {metric.change && (
+                        <span className={`text-sm font-medium ${
+                          metric.trend === 'up' ? 'text-emerald-600 dark:text-emerald-400' : 
+                          metric.trend === 'down' ? 'text-red-600 dark:text-red-400' : 'text-muted-foreground'
+                        }`}>
+                          {metric.change}
+                        </span>
+                      )}
                     </div>
                   </div>
                   <div className="mt-2 text-xs text-muted-foreground">{metric.description}</div>
@@ -249,129 +158,142 @@ export default function DashboardPage() {
             ))}
           </div>
 
-          {/* Workflow Progress */}
-          <Card className="enhanced-card">
-            <CardHeader className="enhanced-card-header">
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="text-lg">Current Workflow Progress</CardTitle>
-                  <CardDescription>Healthcare Knowledge Graph Project</CardDescription>
-                </div>
-                <Badge variant="outline" className="bg-blue-100 dark:bg-blue-950/30 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800/50">
-                  In Progress
-                </Badge>
-              </div>
-            </CardHeader>
-            <CardContent className="enhanced-card-content space-y-4">
-              {workflowSteps.map((step, index) => (
-                <div key={step.id} className="flex items-center space-x-4 p-4 rounded-lg border border-border hover:bg-muted/50 transition-colors">
-                  <div className="flex-shrink-0">
-                    {getStatusIcon(step.status)}
-                  </div>
-                  
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="font-medium text-foreground">{step.name}</div>
-                      <div className="text-sm text-muted-foreground">
-                        {step.status === 'completed' ? step.completedAt : 
-                         step.status === 'current' ? step.timeRemaining : 
-                         step.timeRemaining}
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-center space-x-3">
-                      <Progress value={step.progress} className="flex-1 h-2" />
-                      <span className="text-sm font-medium text-muted-foreground min-w-[3rem]">
-                        {step.progress}%
-                      </span>
-                    </div>
-                  </div>
-
-                  {step.status === 'current' && (
-                    <Button size="sm" variant="outline">
-                      <Eye className="h-4 w-4 mr-2" />
-                      View
-                    </Button>
-                  )}
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Recent Projects */}
+            {/* Audit Trail */}
             <Card className="enhanced-card">
               <CardHeader className="enhanced-card-header">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-lg">Recent Projects</CardTitle>
-                  <Button variant="ghost" size="sm">
-                    View All
-                    <ArrowRight className="h-4 w-4 ml-2" />
-                  </Button>
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <History className="h-5 w-5" />
+                    Recent Activity
+                  </CardTitle>
                 </div>
               </CardHeader>
               <CardContent className="enhanced-card-content space-y-4">
-                {recentProjects.map((project) => (
-                  <div key={project.id} className="p-4 rounded-lg border border-border hover:bg-muted/50 transition-colors cursor-pointer group">
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex-1 min-w-0">
-                        <div className="font-medium text-foreground group-hover:text-primary transition-colors">
-                          {project.name}
-                        </div>
-                        <div className="text-sm text-muted-foreground mt-1">{project.description}</div>
+                {auditSummary?.recent_operations?.slice(0, 5).map((activity: any, index: number) => (
+                  <div key={activity.id || index} className="flex items-center space-x-3 p-3 rounded-lg border border-border hover:bg-muted/50 transition-colors">
+                    <div className="flex-shrink-0">
+                      {activity.operation_type === 'ontology_stored' && <Database className="h-4 w-4 text-blue-500" />}
+                      {activity.operation_type === 'transform_started' && <Upload className="h-4 w-4 text-purple-500" />}
+                      {activity.operation_type === 'transform_completed' && <FileText className="h-4 w-4 text-green-500" />}
+                      {activity.operation_type === 'merge_started' && <GitMerge className="h-4 w-4 text-orange-500" />}
+                      {activity.operation_type === 'merge_completed' && <CheckCircle className="h-4 w-4 text-emerald-500" />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium text-foreground capitalize">
+                        {activity.operation_type?.replace('_', ' ') || 'Unknown operation'}
                       </div>
-                      <div className="flex items-center space-x-2 ml-4">
-                        {getTrendIcon(project.trend)}
-                        <StatusIndicator 
-                          status={project.status} 
-                          size="sm"
-                        />
+                      <div className="text-sm text-muted-foreground">
+                        {activity.resource_name || `ID: ${activity.operation_id?.slice(0, 8)}`}
                       </div>
                     </div>
-                    
-                    <div className="flex items-center justify-between text-sm text-muted-foreground">
-                      <div className="flex items-center space-x-4">
-                        <span>{project.entities} entities</span>
-                        <span>{project.relationships} relationships</span>
-                      </div>
-                      <span>{project.lastUpdated}</span>
-                    </div>
-                    
-                    <div className="mt-3">
-                      <Progress value={project.progress} className="h-1.5" />
+                    <div className="flex items-center space-x-2">
+                      <StatusIndicator 
+                        status={activity.status === 'success' ? 'success' : activity.status === 'failed' ? 'error' : 'pending'} 
+                        size="sm"
+                      />
+                      <span className="text-xs text-muted-foreground">
+                        {new Date(activity.created_at).toLocaleTimeString()}
+                      </span>
                     </div>
                   </div>
-                ))}
+                )) || (
+                  <div className="text-center text-muted-foreground py-8">
+                    <History className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                    <p>No recent activity</p>
+                  </div>
+                )}
               </CardContent>
             </Card>
 
-            {/* Quick Actions */}
+            {/* Merge Conflicts */}
             <Card className="enhanced-card">
               <CardHeader className="enhanced-card-header">
-                <CardTitle className="text-lg">Quick Actions</CardTitle>
-                <CardDescription>Start a new workflow or continue existing work</CardDescription>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <AlertTriangle className="h-5 w-5" />
+                    Merge Conflicts
+                  </CardTitle>
+                  {conflictsSummary?.total_conflicts > 0 && (
+                    <Badge variant="destructive">
+                      {conflictsSummary.total_conflicts} conflicts
+                    </Badge>
+                  )}
+                </div>
               </CardHeader>
-              <CardContent className="enhanced-card-content space-y-3">
-                {quickActions.map((action, index) => (
-                  <Link key={index} href={action.href}>
-                    <div className="p-4 rounded-lg transition-all duration-200 cursor-pointer group bg-muted/30 hover:bg-muted/50 border border-border">
-                      <div className="flex items-center space-x-3">
-                        <div className={`flex-shrink-0 ${action.color}`}>
-                          {action.icon}
+              <CardContent className="enhanced-card-content space-y-4">
+                {conflictsSummary?.conflicts_by_merge?.slice(0, 3).map((conflict: any, index: number) => (
+                  <div key={conflict.merge_id || index} className="p-4 rounded-lg border border-border hover:bg-muted/50 transition-colors cursor-pointer group">
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium text-foreground group-hover:text-primary transition-colors">
+                          Merge {conflict.merge_id?.slice(0, 8)}
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="font-medium text-foreground group-hover:translate-x-1 transition-transform">
-                            {action.title}
-                          </div>
-                          <div className="text-sm text-muted-foreground mt-1">
-                            {action.description}
-                          </div>
+                        <div className="text-sm text-muted-foreground mt-1">
+                          {conflict.total_conflicts} conflicts across {Object.keys(conflict.by_type || {}).length} entity types
                         </div>
-                        <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-foreground group-hover:translate-x-1 transition-all" />
+                      </div>
+                      <div className="flex items-center space-x-2 ml-4">
+                        <Link href={`/merge?merge_id=${conflict.merge_id}`}>
+                          <Button size="sm" variant="outline">
+                            <ExternalLink className="h-3 w-3 mr-1" />
+                            Resolve
+                          </Button>
+                        </Link>
                       </div>
                     </div>
-                  </Link>
-                ))}
+                    
+                    <div className="flex flex-wrap gap-2">
+                      {Object.entries(conflict.by_type || {}).map(([entityType, count]: [string, any]) => (
+                        <Badge key={entityType} variant="secondary" className="text-xs">
+                          {entityType}: {count}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                )) || (
+                  <div className="text-center text-muted-foreground py-8">
+                    <CheckCircle className="h-8 w-8 mx-auto mb-2 text-emerald-500" />
+                    <p>No conflicts detected</p>
+                    <p className="text-xs mt-1">All merges completed successfully</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Data Validation Section */}
+          <div className="grid grid-cols-1 gap-8">
+            <Card className="enhanced-card">
+              <CardHeader className="enhanced-card-header">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <Database className="h-5 w-5" />
+                    Data Validation
+                  </CardTitle>
+                  <Badge variant="outline">Coming Soon</Badge>
+                </div>
+              </CardHeader>
+              <CardContent className="enhanced-card-content">
+                <div className="text-center text-muted-foreground py-8">
+                  <Database className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <h3 className="font-medium mb-2">Data Quality Reports</h3>
+                  <p className="text-sm mb-4">Comprehensive validation reports will be available here to help you maintain data quality across your knowledge graphs.</p>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+                    <div className="p-3 rounded-lg bg-muted/30">
+                      <div className="font-medium mb-1">Schema Validation</div>
+                      <div className="text-muted-foreground">Ensure data conforms to ontology</div>
+                    </div>
+                    <div className="p-3 rounded-lg bg-muted/30">
+                      <div className="font-medium mb-1">Data Quality Metrics</div>
+                      <div className="text-muted-foreground">Monitor completeness & accuracy</div>
+                    </div>
+                    <div className="p-3 rounded-lg bg-muted/30">
+                      <div className="font-medium mb-1">Anomaly Detection</div>
+                      <div className="text-muted-foreground">Identify data inconsistencies</div>
+                    </div>
+                  </div>
+                </div>
               </CardContent>
             </Card>
           </div>

@@ -884,7 +884,7 @@ function TransformPageContent() {
                 </div>
                 <div className="enhanced-card-content h-[600px] relative">
                   {isProcessing ? (
-                    <div className="h-full flex items-center justify-center bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-950 dark:to-purple-950">
+                    <div className="h-full flex items-center justify-center bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-950/50 dark:to-purple-950/50">
                       <div className="text-center space-y-6 max-w-md">
                         <div className="w-20 h-20 bg-background rounded-full flex items-center justify-center mx-auto shadow-lg border border-blue-100 dark:border-blue-800">
                           <Loader2 className="h-10 w-10 animate-spin text-blue-600 dark:text-blue-400" />
@@ -893,11 +893,11 @@ function TransformPageContent() {
                           <h3 className="text-xl font-semibold text-foreground">Transforming Document</h3>
                           <p className="text-sm text-muted-foreground">{currentStep || 'Processing your document...'}</p>
                           <div className="w-full max-w-xs mx-auto">
-                            <Progress value={progress} className="w-full h-3" />
+                            <Progress value={progress} className="w-full h-3 bg-gray-200 dark:bg-gray-700" />
                             <p className="text-lg font-bold text-blue-600 dark:text-blue-400 mt-2">{progress}% Complete</p>
                           </div>
                         </div>
-                        <div className="text-xs text-muted-foreground bg-background/50 rounded-lg p-3">
+                        <div className="text-xs text-muted-foreground bg-background/80 dark:bg-background/60 rounded-lg p-3 border border-border">
                           <p>🔄 Parsing document structure</p>
                           <p>🧠 Extracting entities and relationships</p>
                           <p>📊 Building knowledge graph</p>
@@ -931,13 +931,13 @@ function TransformPageContent() {
 
       {/* Merge Confirmation Dialog */}
       <AlertDialog open={showMergeConfirm} onOpenChange={setShowMergeConfirm}>
-        <AlertDialogContent>
+        <AlertDialogContent className="bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100">
           <AlertDialogHeader>
-            <AlertDialogTitle>Merge to Production Database</AlertDialogTitle>
-            <AlertDialogDescription>
+            <AlertDialogTitle className="text-gray-900 dark:text-gray-100">Merge to Production Database</AlertDialogTitle>
+            <AlertDialogDescription className="text-gray-600 dark:text-gray-300">
               This will start the process of merging your transformed graph into the production database.
             </AlertDialogDescription>
-            <div className="mt-2 text-sm text-muted-foreground">
+            <div className="mt-2 text-sm text-gray-600 dark:text-gray-300">
               <ul className="list-disc pl-5 space-y-1">
                 <li>The merge process will start automatically</li>
                 <li>You'll be guided through any conflicts that need resolution</li>
@@ -946,8 +946,8 @@ function TransformPageContent() {
             </div>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleMergeConfirm}>
+            <AlertDialogCancel className="bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600 hover:bg-gray-200 dark:hover:bg-gray-700">Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleMergeConfirm} className="bg-blue-600 dark:bg-blue-700 text-white hover:bg-blue-700 dark:hover:bg-blue-800">
               Continue to Merge
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -956,13 +956,13 @@ function TransformPageContent() {
 
       {/* Upload Confirmation Dialog */}
       <AlertDialog open={showUploadConfirm} onOpenChange={setShowUploadConfirm}>
-        <AlertDialogContent>
+        <AlertDialogContent className="bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100">
           <AlertDialogHeader>
-            <AlertDialogTitle>Replace Current Document?</AlertDialogTitle>
-            <AlertDialogDescription>
+            <AlertDialogTitle className="text-gray-900 dark:text-gray-100">Replace Current Document?</AlertDialogTitle>
+            <AlertDialogDescription className="text-gray-600 dark:text-gray-300">
               You already have a transformed document. Uploading a new document will:
             </AlertDialogDescription>
-            <div className="mt-2 text-sm text-muted-foreground">
+            <div className="mt-2 text-sm text-gray-600 dark:text-gray-300">
               <ul className="list-disc pl-5 space-y-1">
                 <li>Clear the current graph visualization</li>
                 <li>Remove the existing transform data</li>
@@ -971,8 +971,8 @@ function TransformPageContent() {
             </div>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={handleCancelNewUpload}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleConfirmNewUpload}>
+            <AlertDialogCancel onClick={handleCancelNewUpload} className="bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600 hover:bg-gray-200 dark:hover:bg-gray-700">Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmNewUpload} className="bg-blue-600 dark:bg-blue-700 text-white hover:bg-blue-700 dark:hover:bg-blue-800">
               Replace Document
             </AlertDialogAction>
           </AlertDialogFooter>
