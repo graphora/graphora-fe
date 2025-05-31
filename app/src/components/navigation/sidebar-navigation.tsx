@@ -9,15 +9,10 @@ import {
   ChevronRight,
   Home,
   Settings,
-  FileText,
-  GitMerge,
   Database,
   Zap,
   MessageSquare,
-  BarChart3,
-  Users,
-  HelpCircle,
-  User
+  BarChart3
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -88,16 +83,6 @@ export function SidebarNavigation({ className, defaultCollapsed = true }: Sideba
       icon: <Settings className="w-5 h-5" />,
       path: '/config',
       description: 'System settings and preferences'
-    }
-  ]
-
-  const secondaryItems: NavigationItem[] = [
-    {
-      id: 'help',
-      name: 'Help & Support',
-      icon: <HelpCircle className="w-5 h-5" />,
-      path: 'mailto:ezhil@graphora.io',
-      description: 'Documentation and support'
     }
   ]
 
@@ -204,25 +189,37 @@ export function SidebarNavigation({ className, defaultCollapsed = true }: Sideba
       </div>
 
       {/* Navigation Items */}
-      <div className="flex-1 flex flex-col p-4 space-y-1">
-        <div className="space-y-1">
+      <div className="flex-1 flex flex-col p-4">
+        <div className="space-y-1 flex-1">
           {navigationItems.map((item) => (
             <NavItem key={item.id} item={item} />
           ))}
         </div>
 
-        {/* Divider */}
-        <div className="my-4 border-t border-border" />
-
-        {/* Secondary Items */}
-        <div className="space-y-1">
-          {secondaryItems.map((item) => (
-            <NavItem key={item.id} item={item} />
-          ))}
-        </div>
+        {/* Need Help Section - integrated into main flow */}
+        {!isCollapsed && (
+          <div className="mt-6 p-3 bg-muted rounded-lg">
+            <div className="text-sm font-medium text-foreground mb-1">
+              Need Help?
+            </div>
+            <div className="text-xs text-muted-foreground mb-2">
+              Check our documentation or contact support
+            </div>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="w-full text-xs"
+              onClick={() => window.open('https://docs.graphora.io/', '_blank')}
+            >
+              View Docs
+            </Button>
+            <div className="mt-2 text-xs text-muted-foreground">
+              Email: <a href="mailto:support@graphora.io" className="text-primary hover:underline">support@graphora.io</a>
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* Footer */}
       {/* User Section */}
       <div className="p-4 border-t border-border">
         <div className="flex items-center justify-between mb-3">
@@ -255,30 +252,6 @@ export function SidebarNavigation({ className, defaultCollapsed = true }: Sideba
           </div>
         )}
       </div>
-
-      {!isCollapsed && (
-        <div className="p-4 border-t border-border">
-          <div className="bg-muted rounded-lg p-3">
-            <div className="text-sm font-medium text-foreground mb-1">
-              Need Help?
-            </div>
-            <div className="text-xs text-muted-foreground mb-2">
-              Check our documentation or contact support
-            </div>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="w-full text-xs"
-              onClick={() => window.open('https://docs.graphora.io/', '_blank')}
-            >
-              View Docs
-            </Button>
-            <div className="mt-2 text-xs text-muted-foreground">
-              Email: <a href="mailto:support@graphora.io" className="text-primary hover:underline">support@graphora.io</a>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Version Info */}
       {!isCollapsed && (

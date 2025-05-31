@@ -3,21 +3,11 @@
 import React, { useEffect, useState } from 'react'
 import { useBeforeUnload } from '@/hooks/use-before-unload'
 import { cn } from '@/lib/utils'
-import { Check, Home, ChevronRight, Clock, AlertCircle, Settings, Moon, Sun, Monitor, ChevronLeft, BarChart3, MessageSquare, Zap, Database, HelpCircle } from 'lucide-react'
-import Link from 'next/link'
+import { Check, ChevronRight, Clock, AlertCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Tooltip } from '@/components/ui/tooltip'
-import { UserButton } from '@/components/ui/user-button'
-import { useTheme } from 'next-themes'
-import { usePathname } from 'next/navigation'
 import { SidebarNavigation } from '@/components/navigation/sidebar-navigation'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
 
 export type WorkflowStep = {
   id: string
@@ -35,36 +25,6 @@ export interface EnhancedWorkflowLayoutProps {
   hasUnsavedChanges?: boolean
   projectTitle?: string
   onStepClick?: (stepId: string) => void
-}
-
-function ThemeToggle() {
-  const { setTheme, theme } = useTheme()
-
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="sm" className="h-8 w-8 px-0">
-          <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-          <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-          <span className="sr-only">Toggle theme</span>
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="bg-popover backdrop-blur-sm border border-border shadow-lg">
-        <DropdownMenuItem onClick={() => setTheme("light")} className="text-popover-foreground hover:bg-accent">
-          <Sun className="mr-2 h-4 w-4" />
-          <span>Light</span>
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => setTheme("dark")} className="text-popover-foreground hover:bg-accent">
-          <Moon className="mr-2 h-4 w-4" />
-          <span>Dark</span>
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => setTheme("system")} className="text-popover-foreground hover:bg-accent">
-          <Monitor className="mr-2 h-4 w-4" />
-          <span>System</span>
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
-  )
 }
 
 export function EnhancedWorkflowLayout({
@@ -134,7 +94,7 @@ export function EnhancedWorkflowLayout({
                 <span className="font-semibold text-foreground">{projectTitle}</span>
               </div>
 
-              {/* Right: Status Indicators and User Controls */}
+              {/* Right: Status Indicators and Controls */}
               <div className="flex items-center space-x-3">
                 {hasUnsavedChanges && (
                   <Badge variant="outline" className="bg-amber-50 dark:bg-amber-950 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800">
@@ -151,11 +111,6 @@ export function EnhancedWorkflowLayout({
                 >
                   {isCollapsed ? 'Expand Steps' : 'Collapse Steps'}
                 </Button>
-
-                {/* Theme Toggle and User Avatar */}
-                <ThemeToggle />
-                <div className="h-6 w-px bg-border" />
-                <UserButton />
               </div>
             </div>
           </div>

@@ -103,6 +103,27 @@
     -moz-osx-font-smoothing: grayscale;
   }
 
+  /* Consistent text selection styling for all browsers */
+  ::selection {
+    background-color: rgba(59, 130, 246, 0.25); /* Primary blue with opacity */
+    color: rgb(var(--foreground));
+  }
+
+  ::-moz-selection {
+    background-color: rgba(59, 130, 246, 0.25); /* Primary blue with opacity */
+    color: rgb(var(--foreground));
+  }
+
+  .dark ::selection {
+    background-color: rgba(99, 102, 241, 0.25); /* Indigo with opacity for dark mode */
+    color: rgb(var(--foreground));
+  }
+
+  .dark ::-moz-selection {
+    background-color: rgba(99, 102, 241, 0.25); /* Indigo with opacity for dark mode */
+    color: rgb(var(--foreground));
+  }
+
   /* Custom scrollbar */
   ::-webkit-scrollbar {
     width: 6px;

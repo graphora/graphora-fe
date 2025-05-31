@@ -22,9 +22,12 @@ export async function GET(request: Request) {
       );
     }
 
-    // Forward the WebSocket connection to the backend
-    const backendWsUrl = `${process.env.NEXT_PUBLIC_WS_URL}/merge?transform_id=${transformId}&session_id=${sessionId}`;
-    const response = await fetch(backendWsUrl, {
+    // Convert HTTP backend URL to WebSocket URL for server-side usage
+    const backendUrl = process.env.BACKEND_API_URL || 'http://localhost:8000'
+    const backendWsUrl = backendUrl.replace('http://', 'ws://').replace('https://', 'wss://')
+    const wsUrl = `${backendWsUrl}/merge?transform_id=${transformId}&session_id=${sessionId}`;
+    
+    const response = await fetch(wsUrl, {
       method: 'GET',
       headers: {
         'Upgrade': 'websocket',

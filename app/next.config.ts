@@ -9,10 +9,13 @@ const nextConfig = {
     return config
   },
   async rewrites() {
+    // Use environment variable for backend API URL, fallback to localhost for development
+    const backendUrl = process.env.BACKEND_API_URL || 'http://localhost:8000'
+    
     return [
       {
         source: '/api/v1/:path*',
-        destination: 'http://localhost:8000/api/v1/:path*'
+        destination: `${backendUrl}/api/v1/:path*`
       }
     ]
   }
