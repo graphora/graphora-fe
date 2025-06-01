@@ -146,11 +146,21 @@ export function ConflictDetailsView({
         throw new Error('No properties to change')
       }
       
+      // Map frontend resolution values to backend enum values
+      const resolutionMapping: Record<string, string> = {
+        'staging': 'KEEP_STAGING',
+        'production': 'KEEP_PRODUCTION',
+        'custom': 'MERGE_VALUES',
+        'both': 'KEEP_BOTH'
+      }
+      
+      const backendResolution = resolutionMapping[selectedResolution] || selectedResolution
+      
       // If learning comment is empty, use a default
       const comment = learningComment.trim() || 'Conflict resolved manually'
       
       const response = await fetch(
-        `/api/merge/merges/${mergeId}/conflicts/${conflict.id}/resolve?resolution=${selectedResolution}&learning_comment=${encodeURIComponent(comment)}`,
+        `/api/merge/merges/${mergeId}/conflicts/${conflict.id}/resolve?resolution=${backendResolution}&learning_comment=${encodeURIComponent(comment)}`,
         {
           method: 'POST',
           headers: {
