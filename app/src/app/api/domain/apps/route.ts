@@ -42,30 +42,42 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const response = await fetch(`${process.env.BACKEND_API_URL}/api/v1/domain/apps`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'user-id': userId  // Pass user-id in header (note the hyphen)
-      },
-    })
-    
-    if (!response.ok) {
-      throw new Error(`Backend API error: ${response.status}`)
-    }
-    
-    const data = await response.json()
-    
-    // If the backend returns empty domains, use our mock data
-    if (!data.domains || data.domains.length === 0) {
+    // Check if backend API URL is configured
+    if (!process.env.BACKEND_API_URL) {
+      // No backend configured, return mock data
       return NextResponse.json(mockDomainApps)
     }
-    
-    return NextResponse.json(data)
+
+    try {
+      const response = await fetch(`${process.env.BACKEND_API_URL}/api/v1/domain/apps`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'user-id': userId  // Pass user-id in header (note the hyphen)
+        },
+      })
+      
+      if (!response.ok) {
+        // Backend API error, fall back to mock data silently
+        return NextResponse.json(mockDomainApps)
+      }
+      
+      const data = await response.json()
+      
+      // If the backend returns empty domains, use our mock data
+      if (!data.domains || data.domains.length === 0) {
+        return NextResponse.json(mockDomainApps)
+      }
+      
+      return NextResponse.json(data)
+    } catch (backendError) {
+      // Backend API is not available, fall back to mock data silently
+      return NextResponse.json(mockDomainApps)
+    }
   } catch (error) {
-    console.error('Error fetching domain apps:', error)
+    console.error('Error in domain apps API:', error)
     
-    // Return mock data as fallback when API fails
+    // Return mock data as final fallback
     return NextResponse.json(mockDomainApps)
   }
 }

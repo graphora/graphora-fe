@@ -178,13 +178,17 @@ export function PatientJourneyGraph({ patientData }: PatientJourneyGraphProps) {
       <div className="relative p-6 pt-12">
         {/* Timeline events */}
         <div className="relative">
-          {/* Main timeline line - clean and professional */}
-          <div className="absolute left-0 right-0 h-1 bg-border dark:bg-border z-0" style={{ top: '48px' }}>
-            <div className="absolute inset-0 bg-gradient-to-r from-primary/30 via-primary/60 to-primary/30"></div>
-          </div>
-          
           {/* Timeline nodes with clean design */}
-          <div className="flex justify-between items-start">
+          <div className="flex justify-between items-start relative">
+            {/* HORIZONTAL LINE - Simple and guaranteed visible */}
+            <div 
+              className="absolute left-0 right-0 h-0.5 bg-gray-300 dark:bg-gray-600"
+              style={{ 
+                top: '48px',
+                zIndex: 1
+              }}
+            ></div>
+            
             {graphData.nodes.map((node, index) => {
               const isTop = index % 2 === 0;
               
@@ -197,12 +201,15 @@ export function PatientJourneyGraph({ patientData }: PatientJourneyGraphProps) {
                   
                   {/* Timeline dot - clean and simple */}
                   <div 
-                    className="w-4 h-4 rounded-full border-3 border-background shadow-sm relative z-20" 
-                    style={{ backgroundColor: node.color }}
+                    className="w-4 h-4 rounded-full border-2 border-white dark:border-gray-800 shadow-sm relative"
+                    style={{ 
+                      backgroundColor: node.color,
+                      zIndex: 10
+                    }}
                   ></div>
                   
                   {/* Vertical connector line - simple and clean */}
-                  <div className="w-px bg-border h-8 my-2 z-10"></div>
+                  <div className="w-0.5 bg-gray-300 dark:bg-gray-600 h-8 my-2"></div>
                   
                   {/* Event card - clean professional design */}
                   <div 
@@ -254,7 +261,7 @@ export function PatientJourneyGraph({ patientData }: PatientJourneyGraphProps) {
           </div>
           
           {/* Timeline progression arrows */}
-          {graphData.nodes.length > 1 && (
+          {/* {graphData.nodes.length > 1 && (
             <div className="absolute left-0 right-0 flex justify-between items-center pointer-events-none z-30" style={{ top: '44px' }}>
               {graphData.nodes.slice(0, -1).map((_, index) => (
                 <div key={`arrow-${index}`} className="flex-1 flex justify-end pr-4" style={{ width: `${100 / graphData.nodes.length}%` }}>
@@ -271,7 +278,7 @@ export function PatientJourneyGraph({ patientData }: PatientJourneyGraphProps) {
                 </div>
               ))}
             </div>
-          )}
+          )} */}
         </div>
         
         {/* Timeline summary */}
