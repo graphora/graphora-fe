@@ -103,8 +103,8 @@ function ConfigPageContent() {
 
       const configRequest: ConfigRequest = {
         userId: user.id,
-        stagingDatabase: stagingDb,
-        productionDatabase: prodDb,
+        stagingDb: stagingDb,
+        prodDb: prodDb,
       }
 
       console.log('Saving configuration:', configRequest)

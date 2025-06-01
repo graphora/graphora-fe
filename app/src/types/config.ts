@@ -23,8 +23,8 @@ export interface ConfigResponse {
 
 export interface ConfigRequest {
   userId: string
-  stagingDatabase: DatabaseConfig
-  productionDatabase: DatabaseConfig
+  stagingDb: DatabaseConfig
+  prodDb: DatabaseConfig
 }
 
 export interface ConnectionTestResponse {

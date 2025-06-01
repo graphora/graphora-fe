@@ -3,6 +3,38 @@ import { auth } from '@clerk/nextjs/server'
 import { ConfigRequest, ConfigResponse } from '@/types/config'
 import { getUserEmailOrThrow } from '@/lib/auth-utils'
 
+// Utility function to sanitize passwords from logs
+function sanitizeForLog(text: string): string {
+  try {
+    const parsed = JSON.parse(text)
+    return JSON.stringify(sanitizePasswordsFromObject(parsed))
+  } catch {
+    // If it's not JSON, just replace password patterns
+    return text.replace(/"password":\s*"[^"]*"/g, '"password":"***"')
+      .replace(/password["\s]*:["\s]*[^,}\s]+/gi, 'password:"***"')
+  }
+}
+
+function sanitizePasswordsFromObject(obj: any): any {
+  if (typeof obj !== 'object' || obj === null) {
+    return obj
+  }
+  
+  if (Array.isArray(obj)) {
+    return obj.map(item => sanitizePasswordsFromObject(item))
+  }
+  
+  const sanitized = { ...obj }
+  for (const key in sanitized) {
+    if (key.toLowerCase().includes('password')) {
+      sanitized[key] = '***'
+    } else if (typeof sanitized[key] === 'object') {
+      sanitized[key] = sanitizePasswordsFromObject(sanitized[key])
+    }
+  }
+  return sanitized
+}
+
 export async function GET(req: NextRequest) {
   try {
     const { userId } = await auth()
@@ -22,7 +54,7 @@ export async function GET(req: NextRequest) {
 
     if (!backendResponse.ok) {
       const error = await backendResponse.text()
-      console.error('Backend error response:', error)
+      console.error('Backend error response:', sanitizeForLog(error))
       return NextResponse.json(
         { error: 'Failed to fetch configuration' },
         { status: backendResponse.status }
@@ -67,7 +99,7 @@ export async function POST(req: NextRequest) {
 
     if (!backendResponse.ok) {
       const error = await backendResponse.text()
-      console.error('Backend error response:', error)
+      console.error('Backend error response:', sanitizeForLog(error))
       return NextResponse.json(
         { error: 'Failed to create configuration' },
         { status: backendResponse.status }
@@ -112,7 +144,7 @@ export async function PUT(req: NextRequest) {
 
     if (!backendResponse.ok) {
       const error = await backendResponse.text()
-      console.error('Backend error response:', error)
+      console.error('Backend error response:', sanitizeForLog(error))
       return NextResponse.json(
         { error: 'Failed to update configuration' },
         { status: backendResponse.status }

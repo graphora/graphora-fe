@@ -153,6 +153,60 @@
     max-width: 100%;
   }
 
+  /* Fixed opacity for modals and tooltips in light theme */
+  .light [data-radix-dialog-overlay] {
+    background-color: rgba(0, 0, 0, 0.8) !important;
+  }
+
+  .light [data-radix-dialog-content] {
+    background-color: rgb(var(--card)) !important;
+    opacity: 1 !important;
+    backdrop-filter: none !important;
+  }
+
+  .light [data-radix-alert-dialog-overlay] {
+    background-color: rgba(0, 0, 0, 0.8) !important;
+  }
+
+  .light [data-radix-alert-dialog-content] {
+    background-color: rgb(var(--card)) !important;
+    opacity: 1 !important;
+  }
+
+  .light [data-radix-tooltip-content] {
+    background-color: rgb(var(--popover)) !important;
+    opacity: 1 !important;
+    backdrop-filter: none !important;
+  }
+
+  /* Ensure all modals and overlays have proper opacity */
+  .bg-popover {
+    background-color: rgb(var(--popover)) !important;
+    opacity: 1 !important;
+  }
+
+  .bg-background {
+    background-color: rgb(var(--card)) !important;
+    opacity: 1 !important;
+  }
+
+  /* Dialog specific fixes for light theme */
+  :not(.dark) .fixed.inset-0.z-50.bg-black {
+    background-color: rgba(0, 0, 0, 0.8) !important;
+  }
+
+  :not(.dark) .fixed.left-\[50\%\].top-\[50\%\].z-50 {
+    background-color: rgb(var(--card)) !important;
+    opacity: 1 !important;
+  }
+
+  /* Tooltip fixes for light theme */
+  :not(.dark) [role="tooltip"] {
+    background-color: rgb(var(--popover)) !important;
+    opacity: 1 !important;
+    backdrop-filter: none !important;
+  }
+
   /* Enhanced Card Styles - Professional Look */
   .enhanced-card {
     background-color: rgb(var(--card));
