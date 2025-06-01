@@ -7,6 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Button } from '@/components/ui/button';
 import { type Node, type Edge, type GraphData, type GraphOperation } from '@/types/graph';
 import { toast } from 'react-hot-toast';
+import { Loader2 } from 'lucide-react';
 
 const hslToRgb = (h: number, s: number, l: number): [number, number, number] => {
   s /= 100;
@@ -151,6 +152,7 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({
   const [isDragging, setIsDragging] = useState(false);
   const [internalNodes, setInternalNodes] = useState<ProcessedNode[]>([]);
   const [internalRels, setInternalRels] = useState<ProcessedRel[]>([]);
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     console.log('Raw graphData:', graphData);
@@ -338,7 +340,8 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({
   };
 
   const handleSaveChanges = async () => {
-    if (selectedElement) {
+    if (selectedElement && !isSaving) {
+      setIsSaving(true);
       let operation: GraphOperation | null = null;
 
       if (selectedElement.type === 'node') {
@@ -356,6 +359,7 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({
         if (!edgeId) {
             console.error("Cannot save edge changes: Edge ID is missing or cannot be constructed.", edge);
             toast.error("Cannot save edge changes: Edge ID missing.");
+            setIsSaving(false);
             return;
         }
         operation = {
@@ -413,6 +417,8 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({
       } catch (error) {
         console.error('Error saving changes:', error);
         alert('Failed to save changes. Please try again.');
+      } finally {
+        setIsSaving(false);
       }
     }
   };
@@ -572,11 +578,18 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({
               </div>
             </div>
             <div className="flex justify-end gap-2 mt-6">
-              <Button variant="outline" onClick={() => setSelectedElement(null)}>
+              <Button variant="outline" onClick={() => setSelectedElement(null)} disabled={isSaving}>
                 Cancel
               </Button>
-              <Button onClick={handleSaveChanges}>
-                Save Changes
+              <Button onClick={handleSaveChanges} disabled={isSaving}>
+                {isSaving ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  'Save Changes'
+                )}
               </Button>
             </div>
           </DialogContent>

@@ -40,8 +40,24 @@ export async function POST(req: NextRequest) {
     })
     
     if (!backendResponse.ok) {
-      const error = await backendResponse.text()
-      throw new Error(error)
+      const errorText = await backendResponse.text()
+      
+      // Try to parse the error and provide meaningful feedback
+      try {
+        const errorData = JSON.parse(errorText)
+        return NextResponse.json({ 
+          error: errorData.detail || 'Failed to process files',
+          message: errorData.detail || 'An error occurred while processing your files',
+          type: 'api_error'
+        }, { status: backendResponse.status })
+      } catch {
+        // If JSON parsing fails, return the raw error
+        return NextResponse.json({ 
+          error: 'Failed to process files',
+          message: errorText || 'An unknown error occurred while processing your files',
+          type: 'unknown_error'
+        }, { status: backendResponse.status })
+      }
     }
 
     const data = await backendResponse.json()
@@ -49,7 +65,11 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     console.error('Error in transform API:', error)
     return NextResponse.json(
-      { error: 'Failed to process files' },
+      { 
+        error: 'Internal server error',
+        message: 'An internal error occurred while processing your files',
+        type: 'internal_error'
+      },
       { status: 500 }
     )
   }

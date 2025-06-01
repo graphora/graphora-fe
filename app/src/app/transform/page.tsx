@@ -168,14 +168,22 @@ function TransformPageContent() {
           const response = await fetch(`/api/transform/status/${urlTransformId}`)
           
           if (!response.ok) {
-            if (response.status === 404) {
+            const errorData = await response.json()
+            
+            if (response.status === 403 && errorData.type === 'access_denied') {
+              setError('You do not have permission to access this transform. Please check if you are signed in with the correct account.')
+              setTransformId(null)
+              const newSearchParams = new URLSearchParams(searchParams.toString())
+              newSearchParams.delete('transform_id')
+              router.replace(`${pathname}?${newSearchParams.toString()}`)
+            } else if (response.status === 404) {
               setError('Transform process not found for the provided ID.')
               setTransformId(null)
               const newSearchParams = new URLSearchParams(searchParams.toString())
               newSearchParams.delete('transform_id')
               router.replace(`${pathname}?${newSearchParams.toString()}`)
             } else {
-              throw new Error('Failed to fetch transform status')
+              setError(errorData.message || 'Failed to fetch transform status')
             }
             return
           }
@@ -332,7 +340,8 @@ function TransformPageContent() {
 
       if (!response.ok) {
         const errorData = await response.json()
-        throw new Error(errorData.error || 'Failed to process file')
+        const errorMessage = errorData.message || errorData.error || 'Failed to process file'
+        throw new Error(errorMessage)
       }
 
       const data = await response.json()
@@ -433,11 +442,24 @@ function TransformPageContent() {
         const response = await fetch(`/api/transform/status/${transformId}`)
         
         if (!response.ok) {
+          const errorData = await response.json()
+          
+          if (response.status === 403 && errorData.type === 'access_denied') {
+            console.log('Access denied for transform, stopping status checks')
+            setError('You do not have permission to access this transform')
+            setIsProcessing(false)
+            if (statusInterval) {
+              clearInterval(statusInterval)
+            }
+            return
+          }
+          
           if (response.status === 404) {
             console.log('Transform not found, continuing processing')
             return
           }
-          console.error('Failed to fetch status:', response.status)
+          
+          console.error('Failed to fetch status:', response.status, errorData.message)
           return
         }
         
@@ -882,7 +904,7 @@ function TransformPageContent() {
 
             {/* Graph Visualization Panel - 75% width */}
             <div className="col-span-3">
-              <div className="enhanced-card h-full">
+              <div className="enhanced-card h-full text-sm text-muted-foreground">
                 <div className="enhanced-card-header">
                   <h3 className="text-lg font-semibold text-foreground">Knowledge Graph</h3>
                   <p className="text-sm text-muted-foreground">
@@ -891,23 +913,32 @@ function TransformPageContent() {
                 </div>
                 <div className="enhanced-card-content h-[600px] relative">
                   {isProcessing ? (
-                    <div className="h-full flex items-center justify-center bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-950/50 dark:to-purple-950/50">
+                    <div className="h-full flex items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-slate-800 dark:via-slate-700 dark:to-slate-900">
                       <div className="text-center space-y-6 max-w-md">
-                        <div className="w-20 h-20 bg-background rounded-full flex items-center justify-center mx-auto shadow-lg border border-blue-100 dark:border-blue-800">
+                        <div className="w-20 h-20 bg-white dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto shadow-xl border-2 border-blue-200 dark:border-slate-600">
                           <Loader2 className="h-10 w-10 animate-spin text-blue-600 dark:text-blue-400" />
                         </div>
                         <div className="space-y-3">
-                          <h3 className="text-xl font-semibold text-foreground">Transforming Document</h3>
-                          <p className="text-sm text-muted-foreground">{currentStep || 'Processing your document...'}</p>
+                          <h3 className="text-xl font-semibold text-slate-800 dark:text-white">Transforming Document</h3>
+                          <p className="text-sm text-slate-600 dark:text-slate-300">{currentStep || 'Processing your document...'}</p>
                           <div className="w-full max-w-xs mx-auto">
                             <Progress value={progress} className="w-full h-3" />
                             <p className="text-lg font-bold text-blue-600 dark:text-blue-400 mt-2">{progress}% Complete</p>
                           </div>
                         </div>
-                        <div className="text-xs text-muted-foreground bg-background/80 dark:bg-background/90 rounded-lg p-3 border border-border">
-                          <p className="text-muted-foreground">🔄 Parsing document structure</p>
-                          <p className="text-muted-foreground">🧠 Extracting entities and relationships</p>
-                          <p className="text-muted-foreground">📊 Building knowledge graph</p>
+                        <div className="bg-white/90 dark:bg-slate-800/95 border border-blue-200 dark:border-slate-600 rounded-lg p-4 space-y-2 backdrop-blur-sm shadow-lg">
+                          <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
+                            <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                            <span>Parsing document structure</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
+                            <div className="w-2 h-2 bg-purple-500 rounded-full animate-pulse"></div>
+                            <span>Extracting entities and relationships</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
+                            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                            <span>Building knowledge graph</span>
+                          </div>
                         </div>
                       </div>
                     </div>
