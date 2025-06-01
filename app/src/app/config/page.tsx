@@ -14,6 +14,7 @@ import { Loader2, Settings, AlertCircle, CheckCircle, Database, User, Bell, Shie
 import { DatabaseConfigForm } from '@/components/config/database-config-form'
 import { DatabaseConfig, UserConfig, ConfigRequest } from '@/types/config'
 import { toast } from 'sonner'
+import { DomainAppsToggle } from '@/components/config/domain-apps-toggle'
 
 const defaultDbConfig: DatabaseConfig = {
   name: '',
@@ -236,7 +237,7 @@ function ConfigPageContent() {
                 <Database className="h-4 w-4 mr-2" />
                 Databases
               </TabsTrigger>
-              <TabsTrigger value="profile" disabled>
+              <TabsTrigger value="profile">
                 <User className="h-4 w-4 mr-2" />
                 Profile
               </TabsTrigger>
@@ -360,10 +361,23 @@ function ConfigPageContent() {
             {/* Placeholder tabs for future features */}
             <TabsContent value="profile" className="space-y-6">
               <Card className="enhanced-card">
-                <CardContent className="enhanced-card-content p-6">
-                  <div className="text-center text-muted-foreground">
-                    <User className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                    <p>Profile settings will be available in a future update.</p>
+                <CardHeader className="enhanced-card-header">
+                  <CardTitle className="flex items-center space-x-2">
+                    <User className="h-5 w-5 text-primary" />
+                    <span>Preferences</span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="enhanced-card-content space-y-6">
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-1">
+                        <h4 className="text-sm font-medium text-foreground">Domain Applications in Sidebar</h4>
+                        <p className="text-sm text-muted-foreground">
+                          Show or hide domain applications link in the sidebar navigation
+                        </p>
+                      </div>
+                      <DomainAppsToggle />
+                    </div>
                   </div>
                 </CardContent>
               </Card>

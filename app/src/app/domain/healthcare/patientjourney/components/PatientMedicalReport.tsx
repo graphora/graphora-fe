@@ -15,8 +15,14 @@ export function PatientMedicalReport({ patientData }: PatientMedicalReportProps)
   useEffect(() => {
     if (!patientData?.medicalReports || !chartRef.current) return
     
+    // Get current theme for chart styling
+    const isDarkMode = document.documentElement.classList.contains('dark')
+    const textColor = isDarkMode ? '#e2e8f0' : '#374151'
+    const backgroundColor = isDarkMode ? '#0f172a' : '#ffffff'
+    const gridColor = isDarkMode ? '#334155' : '#e5e7eb'
+    
     // Initialize ECharts instance
-    const chart = echarts.init(chartRef.current)
+    const chart = echarts.init(chartRef.current, isDarkMode ? 'dark' : 'light')
     
     // Process data for the chart
     const reports = patientData.medicalReports || []
@@ -50,22 +56,42 @@ export function PatientMedicalReport({ patientData }: PatientMedicalReportProps)
     
     // Create option for the chart
     const option = {
+      backgroundColor: backgroundColor,
       title: {
         text: 'Patient Recovery Progress',
-        left: 'center'
+        left: 'center',
+        textStyle: {
+          color: textColor,
+          fontSize: 16,
+          fontWeight: 'bold'
+        }
       },
       tooltip: {
-        trigger: 'axis'
+        trigger: 'axis',
+        backgroundColor: isDarkMode ? '#1e293b' : '#ffffff',
+        borderColor: isDarkMode ? '#475569' : '#e5e7eb',
+        textStyle: {
+          color: textColor
+        }
       },
       legend: {
         data: ['Recovery Status'],
-        bottom: 0
+        bottom: 0,
+        textStyle: {
+          color: textColor
+        }
       },
       xAxis: {
         type: 'category',
         data: dates,
         axisLabel: {
-          rotate: 45
+          rotate: 45,
+          color: textColor
+        },
+        axisLine: {
+          lineStyle: {
+            color: gridColor
+          }
         }
       },
       yAxis: {
@@ -74,10 +100,24 @@ export function PatientMedicalReport({ patientData }: PatientMedicalReportProps)
         min: 0,
         max: 5,
         interval: 1,
+        nameTextStyle: {
+          color: textColor
+        },
         axisLabel: {
           formatter: function(value: number) {
             const labels = ['Critical', 'Acute', 'Treated', 'Improving', 'Recovering', 'Resolved']
             return labels[value] || value
+          },
+          color: textColor
+        },
+        axisLine: {
+          lineStyle: {
+            color: gridColor
+          }
+        },
+        splitLine: {
+          lineStyle: {
+            color: gridColor
           }
         }
       },
@@ -124,12 +164,93 @@ export function PatientMedicalReport({ patientData }: PatientMedicalReportProps)
       chart.resize()
     }
     
+    // Handle theme changes
+    const handleThemeChange = () => {
+      setTimeout(() => {
+        const newIsDarkMode = document.documentElement.classList.contains('dark')
+        const newTextColor = newIsDarkMode ? '#e2e8f0' : '#374151'
+        const newBackgroundColor = newIsDarkMode ? '#0f172a' : '#ffffff'
+        const newGridColor = newIsDarkMode ? '#334155' : '#e5e7eb'
+        
+        chart.dispose()
+        const newChart = echarts.init(chartRef.current!, newIsDarkMode ? 'dark' : 'light')
+        
+        const updatedOption = {
+          ...option,
+          backgroundColor: newBackgroundColor,
+          title: {
+            ...option.title,
+            textStyle: {
+              ...option.title.textStyle,
+              color: newTextColor
+            }
+          },
+          tooltip: {
+            ...option.tooltip,
+            backgroundColor: newIsDarkMode ? '#1e293b' : '#ffffff',
+            borderColor: newIsDarkMode ? '#475569' : '#e5e7eb',
+            textStyle: {
+              color: newTextColor
+            }
+          },
+          legend: {
+            ...option.legend,
+            textStyle: {
+              color: newTextColor
+            }
+          },
+          xAxis: {
+            ...option.xAxis,
+            axisLabel: {
+              ...option.xAxis.axisLabel,
+              color: newTextColor
+            },
+            axisLine: {
+              lineStyle: {
+                color: newGridColor
+              }
+            }
+          },
+          yAxis: {
+            ...option.yAxis,
+            nameTextStyle: {
+              color: newTextColor
+            },
+            axisLabel: {
+              ...option.yAxis.axisLabel,
+              color: newTextColor
+            },
+            axisLine: {
+              lineStyle: {
+                color: newGridColor
+              }
+            },
+            splitLine: {
+              lineStyle: {
+                color: newGridColor
+              }
+            }
+          }
+        }
+        
+        newChart.setOption(updatedOption)
+      }, 100)
+    }
+    
     window.addEventListener('resize', handleResize)
+    
+    // Listen for theme changes
+    const observer = new MutationObserver(handleThemeChange)
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class']
+    })
     
     // Cleanup
     return () => {
       chart.dispose()
       window.removeEventListener('resize', handleResize)
+      observer.disconnect()
     }
   }, [patientData])
   

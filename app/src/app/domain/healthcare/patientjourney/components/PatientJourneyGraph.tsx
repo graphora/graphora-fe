@@ -173,81 +173,114 @@ export function PatientJourneyGraph({ patientData }: PatientJourneyGraphProps) {
   // Create a timeline visualization using HTML/CSS instead of Neo4j NVL
   // This is a fallback since we're having issues with the Neo4j NVL library
   return (
-    <div className="w-full h-full">
+    <div className="w-full h-full bg-background">
       {/* Timeline container */}
-      <div className="relative p-4 pt-10">
+      <div className="relative p-6 pt-12">
         {/* Timeline events */}
-        <div className="relative mt-8">
-          {/* Main timeline line */}
-          <div className="absolute h-1 bg-gray-300 left-0 right-0" style={{ top: '20px' }}></div>
+        <div className="relative">
+          {/* Main timeline line - clean and professional */}
+          <div className="absolute left-0 right-0 h-1 bg-border dark:bg-border z-0" style={{ top: '48px' }}>
+            <div className="absolute inset-0 bg-gradient-to-r from-primary/30 via-primary/60 to-primary/30"></div>
+          </div>
           
-          {/* Timeline nodes with dots, lines and cards */}
-          <div className="flex justify-between">
+          {/* Timeline nodes with clean design */}
+          <div className="flex justify-between items-start">
             {graphData.nodes.map((node, index) => {
               const isTop = index % 2 === 0;
-              const verticalLineHeight = isTop ? 40 : 100;
               
               return (
-                <div key={`node-${node.id}`} className="relative" style={{ width: `${100 / graphData.nodes.length}%` }}>
+                <div key={`node-${node.id}`} className="relative flex flex-col items-center" style={{ width: `${100 / graphData.nodes.length}%` }}>
                   {/* Date label */}
-                  <div className="absolute text-xs font-medium text-gray-600 whitespace-nowrap" 
-                    style={{ 
-                      top: '0px',
-                      left: '50%',
-                      transform: 'translateX(-50%)'
-                    }}>
+                  <div className="mb-4 text-xs font-medium text-muted-foreground bg-background px-2 py-1 rounded border border-border/50 whitespace-nowrap">
                     {node.properties.date}
                   </div>
                   
-                  {/* Timeline dot - positioned exactly on the line */}
-                  <div className="absolute rounded-full z-10" 
-                    style={{ 
-                      backgroundColor: node.color,
-                      width: '8px',
-                      height: '8px',
-                      top: '20px',
-                      left: '50%',
-                      transform: 'translate(-50%, -50%)',
-                      border: '1px solid white'
-                    }}>
-                  </div>
-                  
-                  {/* Vertical connecting line - starts from the dot */}
+                  {/* Timeline dot - clean and simple */}
                   <div 
-                    style={{
-                      position: 'absolute',
-                      top: '20px',
-                      left: '50%',
-                      width: '2px',
-                      height: `${verticalLineHeight}px`,
-                      backgroundColor: node.color,
-                      transform: 'translateX(-50%)'
-                    }}>
-                  </div>
+                    className="w-4 h-4 rounded-full border-3 border-background shadow-sm relative z-20" 
+                    style={{ backgroundColor: node.color }}
+                  ></div>
                   
-                  {/* Event card */}
-                  <div className="absolute border border-gray-200 rounded p-3 bg-white shadow-sm"
-                    style={{
-                      borderLeftColor: node.color,
-                      borderLeftWidth: '3px',
-                      maxWidth: '180px',
-                      width: '90%',
-                      top: `${20 + verticalLineHeight}px`,
-                      left: '50%',
-                      transform: 'translateX(-50%)'
-                    }}>
-                    <div className="flex items-center mb-1">
-                      <div className="w-2 h-2 rounded-full mr-2" style={{ backgroundColor: node.color }}></div>
-                      <h4 className="font-medium text-sm">{node.label}</h4>
+                  {/* Vertical connector line - simple and clean */}
+                  <div className="w-px bg-border h-8 my-2 z-10"></div>
+                  
+                  {/* Event card - clean professional design */}
+                  <div 
+                    className={`bg-card border border-border rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow duration-200 ${
+                      isTop ? 'mb-4' : 'mt-4'
+                    }`}
+                    style={{ width: '220px', maxWidth: '90vw' }}
+                  >
+                    {/* Event header */}
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex-1">
+                        <h4 className="text-sm font-semibold text-foreground leading-tight mb-1">
+                          {node.label}
+                        </h4>
+                        <p className="text-xs text-muted-foreground font-medium">
+                          {node.properties.type}
+                        </p>
+                      </div>
+                      <div className="flex-shrink-0 ml-2">
+                        <span 
+                          className="inline-flex items-center px-2 py-1 text-xs font-medium text-white rounded-md"
+                          style={{ backgroundColor: node.color }}
+                        >
+                          {node.type}
+                        </span>
+                      </div>
                     </div>
-                    <div className="text-xs">{node.properties.details}</div>
-                    <div className="mt-2">
-                      <span className="text-xs bg-gray-100 px-2 py-0.5 rounded-full">{node.type}</span>
+                    
+                    {/* Event details */}
+                    {node.properties.details && (
+                      <div className="text-xs text-muted-foreground leading-relaxed">
+                        {node.properties.details.length > 120 
+                          ? `${node.properties.details.substring(0, 120)}...` 
+                          : node.properties.details
+                        }
+                      </div>
+                    )}
+                    
+                    {/* Event number */}
+                    <div className="mt-3 pt-2 border-t border-border/50">
+                      <span className="text-xs text-muted-foreground/70 font-mono">
+                        Event {index + 1}
+                      </span>
                     </div>
                   </div>
                 </div>
               );
             })}
+          </div>
+          
+          {/* Timeline progression arrows */}
+          {graphData.nodes.length > 1 && (
+            <div className="absolute left-0 right-0 flex justify-between items-center pointer-events-none z-30" style={{ top: '44px' }}>
+              {graphData.nodes.slice(0, -1).map((_, index) => (
+                <div key={`arrow-${index}`} className="flex-1 flex justify-end pr-4" style={{ width: `${100 / graphData.nodes.length}%` }}>
+                  <div className="w-6 h-6 flex items-center justify-center">
+                    <svg 
+                      className="w-4 h-4 text-primary/80" 
+                      fill="none" 
+                      stroke="currentColor" 
+                      viewBox="0 0 24 24"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+        
+        {/* Timeline summary */}
+        <div className="mt-8 pt-6 border-t border-border/30">
+          <div className="flex items-center justify-between text-sm text-muted-foreground">
+            <span>Total Events: {graphData.nodes.length}</span>
+            <span>
+              Timeline: {graphData.nodes[0]?.properties.date} - {graphData.nodes[graphData.nodes.length - 1]?.properties.date}
+            </span>
           </div>
         </div>
       </div>

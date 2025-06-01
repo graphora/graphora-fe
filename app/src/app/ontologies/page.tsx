@@ -278,7 +278,7 @@ export default function OntologiesPage() {
                       <Button
                         size="sm"
                         onClick={() => handleUseOntology(ontology.id)}
-                        className="flex-1 bg-emerald-600 hover:bg-emerald-700"
+                        className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white dark:text-white"
                       >
                         <Play className="h-3 w-3 mr-1" />
                         Use

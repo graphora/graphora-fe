@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
@@ -39,8 +39,26 @@ export function SidebarNavigation({ className, defaultCollapsed = true }: Sideba
   const router = useRouter()
   const pathname = usePathname()
   const [isCollapsed, setIsCollapsed] = useState(defaultCollapsed)
+  const [isDomainAppsVisible, setIsDomainAppsVisible] = useState(false)
 
-  const navigationItems: NavigationItem[] = [
+  useEffect(() => {
+    // Get the setting from localStorage, default to false (hidden)
+    const stored = localStorage.getItem('domainAppsVisible')
+    setIsDomainAppsVisible(stored === 'true')
+
+    // Listen for changes to domain apps visibility
+    const handleVisibilityChange = (event: CustomEvent) => {
+      setIsDomainAppsVisible(event.detail.visible)
+    }
+
+    window.addEventListener('domainAppsVisibilityChanged', handleVisibilityChange as EventListener)
+    
+    return () => {
+      window.removeEventListener('domainAppsVisibilityChanged', handleVisibilityChange as EventListener)
+    }
+  }, [])
+
+  const allNavigationItems: NavigationItem[] = [
     {
       id: 'dashboard',
       name: 'Dashboard',
@@ -85,6 +103,14 @@ export function SidebarNavigation({ className, defaultCollapsed = true }: Sideba
       description: 'System settings and preferences'
     }
   ]
+
+  // Filter navigation items based on domain apps visibility
+  const navigationItems = allNavigationItems.filter(item => {
+    if (item.id === 'applications' && !isDomainAppsVisible) {
+      return false
+    }
+    return true
+  })
 
   const isActivePath = (path: string) => {
     if (path === '/') {
