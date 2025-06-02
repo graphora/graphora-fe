@@ -1,6 +1,6 @@
 'use client'
 
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import { useTheme } from 'next-themes'
 import { cn } from '@/lib/utils'
 
@@ -18,9 +18,15 @@ export function Logo({
   alt = "Graphora Logo" 
 }: LogoProps) {
   const { resolvedTheme } = useTheme()
-  
-  // Default to light logo for SSR
-  const logoSrc = resolvedTheme === 'dark' ? '/logo-dark.png' : '/logo-light.png'
+  const [mounted, setMounted] = useState(false)
+
+  // Handle hydration by waiting for component to mount
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  // During SSR and before hydration, show light logo as default
+  const logoSrc = mounted && resolvedTheme === 'dark' ? '/logo-dark.png' : '/logo-light.png'
 
   return (
     <img 
