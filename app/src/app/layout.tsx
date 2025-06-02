@@ -18,7 +18,7 @@ export const metadata: Metadata = {
   title: 'Graphora - Knowledge Graph Platform',
   description: 'Transform your unstructured data into powerful knowledge graphs with AI',
   icons: {
-    icon: '/logo-light.png',
+    icon: '/favicon.ico',
     shortcut: '/logo-light.png',
     apple: '/logo-light.png',
   },
