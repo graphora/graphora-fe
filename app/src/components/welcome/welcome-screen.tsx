@@ -8,6 +8,7 @@ import { ModeCard } from './mode-card'
 import { ComparisonTable } from './comparison-table'
 import { ConfigCheck } from '@/components/config/config-check'
 import { cn } from '@/lib/utils'
+import { Logo } from '@/components/ui/logo'
 
 const cards = [
   {
@@ -71,13 +72,29 @@ export function WelcomeScreen() {
       <div className="welcome-screen fixed inset-0 flex items-center justify-center bg-black bg-opacity-80 backdrop-blur-sm z-50">
         <div className="container mx-auto px-4 max-w-6xl">
           <div className="bg-white rounded-2xl p-4 shadow-xl">
+            <div className="text-center max-w-2xl mx-auto space-y-8">
+              {/* Logo and Brand */}
+              <div className="flex flex-col items-center space-y-4">
+                <div className="w-24 h-24 flex items-center justify-center overflow-hidden mb-4">
+                  <Logo 
+                    width={96}
+                    height={96}
+                    className="w-full h-full"
+                  />
+                </div>
+                <h1 className="text-5xl font-bold text-gray-900 dark:text-white tracking-tight">
+                  Welcome to Graphora
+                </h1>
+                <p className="text-xl text-gray-600 dark:text-gray-300 leading-relaxed">
+                  Transform your unstructured data into powerful knowledge graphs with our AI-powered platform
+                </p>
+              </div>
+            </div>
+
             <div className="text-center mb-8">
-              <h1 className="text-3xl font-bold mb-4">
-                Welcome to Graphora
-              </h1>
-              <p className="text-xl text-gray-600">
+              <h2 className="text-3xl font-bold mb-4">
                 Choose Your Path to Knowledge Graph Creation
-              </p>
+              </h2>
             </div>
 
             <div className="flex flex-col md:flex-row gap-6 justify-center mb-8">

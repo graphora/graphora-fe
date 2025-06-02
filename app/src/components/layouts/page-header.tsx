@@ -5,11 +5,13 @@ import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
+import { Logo } from '@/components/ui/logo'
 
 interface PageHeaderProps {
   title: string
   description?: string
   icon?: React.ReactNode
+  logo?: boolean
   badge?: string
   actions?: React.ReactNode
   breadcrumbs?: Array<{
@@ -23,6 +25,7 @@ export function PageHeader({
   title,
   description,
   icon,
+  logo,
   badge,
   actions,
   breadcrumbs,
@@ -57,9 +60,17 @@ export function PageHeader({
         {/* Main Header */}
         <div className="flex items-start justify-between">
           <div className="flex items-start space-x-4">
-            {icon && (
-              <div className="flex-shrink-0 w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center text-white shadow-sm">
-                {icon}
+            {(icon || logo) && (
+              <div className="flex-shrink-0 w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center text-white shadow-sm">
+                {logo ? (
+                  <Logo 
+                    width={64}
+                    height={64}
+                    className="w-full h-full"
+                  />
+                ) : (
+                  icon
+                )}
               </div>
             )}
             

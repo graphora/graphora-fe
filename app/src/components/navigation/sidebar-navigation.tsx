@@ -19,6 +19,7 @@ import { Badge } from '@/components/ui/badge'
 import { Tooltip } from '@/components/ui/tooltip'
 import { UserButton } from '@/components/ui/user-button'
 import { ThemeToggle } from '@/components/ui/theme-toggle'
+import { Logo } from '@/components/ui/logo'
 
 interface NavigationItem {
   id: string
@@ -190,8 +191,12 @@ export function SidebarNavigation({ className, defaultCollapsed = true }: Sideba
       <div className="flex items-center justify-between p-4 border-b border-border">
         {!isCollapsed && (
           <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
-              <span className="text-white text-sm font-bold">G</span>
+            <div className="w-24 h-24 rounded-lg flex items-center justify-center overflow-hidden">
+              <Logo 
+                width={96}
+                height={96}
+                className="w-full h-full"
+              />
             </div>
             <div>
               <div className="font-semibold text-foreground">Graphora</div>

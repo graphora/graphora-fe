@@ -8,6 +8,8 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Tooltip } from '@/components/ui/tooltip'
 import { SidebarNavigation } from '@/components/navigation/sidebar-navigation'
+import { useRouter } from 'next/navigation'
+import { Logo } from '@/components/ui/logo'
 
 export type WorkflowStep = {
   id: string
@@ -37,6 +39,7 @@ export function EnhancedWorkflowLayout({
   onStepClick,
 }: EnhancedWorkflowLayoutProps) {
   const [isCollapsed, setIsCollapsed] = useState(true)
+  const router = useRouter()
   
   // Calculate current step index based on either currentStepId or currentStepIndex prop
   const currentStepIndex = currentStepId 
@@ -91,7 +94,20 @@ export function EnhancedWorkflowLayout({
             <div className="flex items-center justify-between">
               {/* Left: Project Info */}
               <div className="flex items-center space-x-3">
-                <span className="font-semibold text-foreground">{projectTitle}</span>
+                <Button
+                  variant="ghost"
+                  className="p-2 rounded-lg text-gray-600 hover:bg-gray-100 active:bg-gray-200 transition-colors duration-150 flex items-center gap-2"
+                  onClick={() => router.push('/')}
+                >
+                  <div className="w-7 h-7 flex items-center justify-center overflow-hidden">
+                    <Logo 
+                      width={28}
+                      height={28}
+                      className="w-full h-full"
+                    />
+                  </div>
+                  <span className="font-medium">{projectTitle}</span>
+                </Button>
               </div>
 
               {/* Right: Status Indicators and Controls */}

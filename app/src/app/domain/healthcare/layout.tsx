@@ -7,6 +7,7 @@ import { Briefcase, Activity, FileText, Users, Menu, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { UserButton } from '@/components/ui/user-button'
 import { ThemeToggle } from '@/components/ui/theme-toggle'
+import { Logo } from '@/components/ui/logo'
 
 interface HealthcareLayoutProps {
   children: React.ReactNode
@@ -40,7 +41,16 @@ export default function HealthcareLayout({ children }: HealthcareLayoutProps) {
                 <Menu className="h-6 w-6" aria-hidden="true" />
               )}
             </button>
-            <h1 className="text-lg font-bold text-primary">HealthGraph</h1>
+            <div className="flex items-center space-x-2">
+              <div className="w-8 h-8 flex items-center justify-center overflow-hidden">
+                <Logo 
+                  width={32}
+                  height={32}
+                  className="w-full h-full"
+                />
+              </div>
+              <h1 className="text-lg font-bold text-primary">HealthGraph</h1>
+            </div>
           </div>
           
           <div className="flex items-center space-x-2">
@@ -58,7 +68,16 @@ export default function HealthcareLayout({ children }: HealthcareLayoutProps) {
         <div className="flex min-h-0 flex-1 flex-col border-r border-border bg-card">
           <div className="flex flex-1 flex-col overflow-y-auto pt-5 pb-4">
             <div className="flex flex-shrink-0 items-center px-4">
-              <h1 className="text-xl font-bold text-primary">HealthGraph</h1>
+              <div className="flex items-center space-x-2">
+                <div className="w-8 h-8 flex items-center justify-center overflow-hidden">
+                  <Logo 
+                    width={32}
+                    height={32}
+                    className="w-full h-full"
+                  />
+                </div>
+                <h1 className="text-xl font-bold text-primary">HealthGraph</h1>
+              </div>
             </div>
             <nav className="mt-5 flex-1 space-y-1 bg-card px-2">
               {navigation.map((item) => (
@@ -120,7 +139,16 @@ export default function HealthcareLayout({ children }: HealthcareLayoutProps) {
             </div>
             
             <div className="flex flex-shrink-0 items-center px-4">
-              <h1 className="text-xl font-bold text-primary">HealthGraph</h1>
+              <div className="flex items-center space-x-2">
+                <div className="w-8 h-8 flex items-center justify-center overflow-hidden">
+                  <Logo 
+                    width={32}
+                    height={32}
+                    className="w-full h-full"
+                  />
+                </div>
+                <h1 className="text-xl font-bold text-primary">HealthGraph</h1>
+              </div>
             </div>
             <div className="mt-5 h-0 flex-1 overflow-y-auto">
               <nav className="space-y-1 px-2">

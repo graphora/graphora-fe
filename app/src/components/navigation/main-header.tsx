@@ -12,6 +12,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { Logo } from '@/components/ui/logo'
 
 interface MainHeaderProps {
   hasUnsavedChanges?: boolean
@@ -44,7 +45,13 @@ export function MainHeader({ hasUnsavedChanges }: MainHeaderProps) {
           onClick={handleHomeClick}
           disabled={isNavigating}
         >
-          <Home className="w-5 h-5" />
+          <div className="w-7 h-7 flex items-center justify-center overflow-hidden">
+            <Logo 
+              width={28}
+              height={28}
+              className="w-full h-full"
+            />
+          </div>
           <span className="font-medium">Graphora</span>
         </Button>
         {/* <div className="text-xl font-semibold text-gray-800">Graphora</div> */}
