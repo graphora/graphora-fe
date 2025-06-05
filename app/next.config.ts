@@ -6,6 +6,22 @@ const nextConfig = {
       'utf-8-validate': 'commonjs utf-8-validate',
       'bufferutil': 'commonjs bufferutil',
     })
+    
+    // Fix for Neo4j NVL layout files
+    config.resolve.fallback = {
+      ...config.resolve.fallback,
+      fs: false,
+      path: false,
+      os: false,
+    }
+    
+    // Ensure layout implementation files are included in the bundle
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      'cose-bilkent-layout-impl': require.resolve('cytoscape-cose-bilkent'),
+      'dagre-layout-impl': require.resolve('cytoscape-dagre'),
+    }
+    
     return config
   },
   async rewrites() {
