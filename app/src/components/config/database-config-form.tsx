@@ -138,8 +138,8 @@ export function DatabaseConfigForm({ title, description, config, onChange, disab
             <Input
               id={`${title.toLowerCase()}-password`}
               type={showPassword ? 'text' : 'password'}
-              placeholder={isExistingConfig ? "Leave blank to keep existing password" : "password"}
-              value={isExistingConfig ? '' : (config.password || '')}
+              // placeholder={isExistingConfig ? "Leave blank to keep existing password" : "password"}
+              // value={isExistingConfig ? '' : (config.password || '')}
               onChange={(e) => handleChange('password', e.target.value)}
               disabled={disabled}
               className="pr-10"
@@ -159,11 +159,11 @@ export function DatabaseConfigForm({ title, description, config, onChange, disab
               )}
             </Button>
           </div>
-          {isExistingConfig && (
+          {/* {isExistingConfig && (
             <p className="text-xs text-gray-500">
               Password is already configured. Only fill this if you want to update it.
             </p>
-          )}
+          )} */}
         </div>
 
         {testResult && (

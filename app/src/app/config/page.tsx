@@ -108,10 +108,14 @@ function ConfigPageContent() {
         prodDb: prodDb,
       }
 
-      console.log('Saving configuration:', configRequest)
+      // Determine if this is an update or create operation
+      const isUpdate = config !== null
+      const method = isUpdate ? 'PUT' : 'POST'
+
+      console.log(`${isUpdate ? 'Updating' : 'Creating'} configuration:`, configRequest)
 
       const response = await fetch('/api/config', {
-        method: 'POST',
+        method: method,
         headers: {
           'Content-Type': 'application/json',
         },
@@ -127,7 +131,7 @@ function ConfigPageContent() {
       console.log('Configuration saved successfully:', savedConfig)
       
       setConfig(savedConfig)
-      toast.success('Configuration saved successfully')
+      toast.success(`Configuration ${isUpdate ? 'updated' : 'created'} successfully`)
 
       // If there's a return URL, redirect after a short delay
       if (returnTo) {
