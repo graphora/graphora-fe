@@ -1,0 +1,501 @@
+'use client'
+
+import React, { useState } from 'react'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Progress } from '@/components/ui/progress'
+import { Button } from '@/components/ui/button'
+import { Separator } from '@/components/ui/separator'
+import { 
+  BarChart3, 
+  Zap, 
+  FileText, 
+  TrendingUp, 
+  Clock, 
+  DollarSign, 
+  Server,
+  AlertTriangle,
+  CheckCircle,
+  Activity,
+  Calendar,
+  RefreshCw
+} from 'lucide-react'
+import { useUsageSummary, useUsageReport, useModelUsage } from '@/hooks/useUsageData'
+import { cn } from '@/lib/utils'
+
+interface UsageTrackingModalProps {
+  isOpen: boolean
+  onClose: () => void
+}
+
+export function UsageTrackingModal({ isOpen, onClose }: UsageTrackingModalProps) {
+  const [activeTab, setActiveTab] = useState('overview')
+  const [reportDays, setReportDays] = useState(30)
+  
+  const { data: summary, loading: summaryLoading, error: summaryError, refetch: refetchSummary } = useUsageSummary()
+  const { data: report, loading: reportLoading, error: reportError, refetch: refetchReport } = useUsageReport(undefined, undefined, reportDays)
+  const { data: modelUsage, loading: modelLoading, error: modelError, refetch: refetchModel } = useModelUsage(reportDays)
+
+  const formatCurrency = (amount: string | number) => {
+    const num = typeof amount === 'string' ? parseFloat(amount) : amount
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 4
+    }).format(num)
+  }
+
+  const formatNumber = (num: number) => {
+    return new Intl.NumberFormat('en-US').format(num)
+  }
+
+  const getUsagePercentage = (current: number, limit: number | null) => {
+    if (!limit) return 0
+    return Math.min((current / limit) * 100, 100)
+  }
+
+  const getUsageStatus = (current: number, limit: number | null) => {
+    if (!limit) return 'unlimited'
+    const percentage = (current / limit) * 100
+    if (percentage >= 90) return 'danger'
+    if (percentage >= 75) return 'warning'
+    return 'good'
+  }
+
+  const handleRefresh = () => {
+    refetchSummary()
+    refetchReport()
+    refetchModel()
+  }
+
+  return (
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="max-w-5xl max-h-[90vh] overflow-hidden bg-background border-border">
+        <DialogHeader className="pb-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+                <BarChart3 className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <DialogTitle className="text-xl text-foreground">Usage & Billing</DialogTitle>
+                <p className="text-sm text-muted-foreground">Track your document processing and AI usage</p>
+              </div>
+            </div>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={handleRefresh}
+              disabled={summaryLoading || reportLoading || modelLoading}
+            >
+              <RefreshCw className={cn("w-4 h-4 mr-2", (summaryLoading || reportLoading || modelLoading) && "animate-spin")} />
+              Refresh
+            </Button>
+          </div>
+        </DialogHeader>
+
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 overflow-hidden">
+          <TabsList className="grid w-full grid-cols-3 mb-4">
+            <TabsTrigger value="overview" className="flex items-center gap-2">
+              <Activity className="w-4 h-4" />
+              Overview
+            </TabsTrigger>
+            <TabsTrigger value="detailed" className="flex items-center gap-2">
+              <BarChart3 className="w-4 h-4" />
+              Analytics
+            </TabsTrigger>
+            <TabsTrigger value="models" className="flex items-center gap-2">
+              <Server className="w-4 h-4" />
+              Models
+            </TabsTrigger>
+          </TabsList>
+
+          <div className="overflow-auto max-h-[65vh]">
+            <TabsContent value="overview" className="space-y-6 mt-0">
+              {summaryError ? (
+                <Card className="border-destructive/50 bg-destructive/5">
+                  <CardContent className="p-6">
+                    <div className="flex items-center gap-2 text-destructive">
+                      <AlertTriangle className="w-5 h-5" />
+                      <span>Error loading usage data: {summaryError}</span>
+                    </div>
+                  </CardContent>
+                </Card>
+              ) : (
+                <>
+                  {/* Current Billing Period */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <Calendar className="w-5 h-5" />
+                        Current Billing Period
+                      </CardTitle>
+                      <CardDescription>
+                        {summary && new Date(summary.current_period.start).toLocaleDateString()} - {summary && new Date(summary.current_period.end).toLocaleDateString()}
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div className="text-center p-4 bg-muted/50 rounded-lg">
+                          <FileText className="w-6 h-6 mx-auto mb-2 text-blue-600" />
+                          <div className="text-2xl font-bold text-foreground">
+                            {summaryLoading ? '...' : formatNumber(summary?.current_period.documents_processed || 0)}
+                          </div>
+                          <div className="text-sm text-muted-foreground">Documents</div>
+                        </div>
+                        <div className="text-center p-4 bg-muted/50 rounded-lg">
+                          <Clock className="w-6 h-6 mx-auto mb-2 text-green-600" />
+                          <div className="text-2xl font-bold text-foreground">
+                            {summaryLoading ? '...' : formatNumber(summary?.current_period.pages_processed || 0)}
+                          </div>
+                          <div className="text-sm text-muted-foreground">Pages</div>
+                        </div>
+                        <div className="text-center p-4 bg-muted/50 rounded-lg">
+                          <Zap className="w-6 h-6 mx-auto mb-2 text-yellow-600" />
+                          <div className="text-2xl font-bold text-foreground">
+                            {summaryLoading ? '...' : formatNumber(summary?.current_period.tokens_used || 0)}
+                          </div>
+                          <div className="text-sm text-muted-foreground">Tokens</div>
+                        </div>
+                        <div className="text-center p-4 bg-muted/50 rounded-lg">
+                          <DollarSign className="w-6 h-6 mx-auto mb-2 text-purple-600" />
+                          <div className="text-2xl font-bold text-foreground">
+                            {summaryLoading ? '...' : formatCurrency(summary?.current_period.estimated_cost_usd || '0')}
+                          </div>
+                          <div className="text-sm text-muted-foreground">Est. Cost</div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Usage Limits */}
+                  {summary && (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                          <TrendingUp className="w-5 h-5" />
+                          Usage Limits
+                          <Badge variant={summary.limits.within_limits ? "default" : "destructive"} className="ml-2">
+                            {summary.limits.tier}
+                          </Badge>
+                        </CardTitle>
+                        <CardDescription>
+                          Current usage against your plan limits
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        {/* Document Usage */}
+                        <div>
+                          <div className="flex justify-between items-center mb-2">
+                            <span className="text-sm font-medium">Documents</span>
+                            <span className="text-sm text-muted-foreground">{summary.limits.document_usage}</span>
+                          </div>
+                          <Progress 
+                            value={getUsagePercentage(summary.current_period.documents_processed, summary.limits.document_usage.includes('unlimited') ? null : parseInt(summary.limits.document_usage.split('/')[1]))} 
+                            className="h-2"
+                          />
+                        </div>
+
+                        {/* Page Usage */}
+                        <div>
+                          <div className="flex justify-between items-center mb-2">
+                            <span className="text-sm font-medium">Pages</span>
+                            <span className="text-sm text-muted-foreground">{summary.limits.page_usage}</span>
+                          </div>
+                          <Progress 
+                            value={getUsagePercentage(summary.current_period.pages_processed, summary.limits.page_usage.includes('unlimited') ? null : parseInt(summary.limits.page_usage.split('/')[1]))} 
+                            className="h-2"
+                          />
+                        </div>
+
+                        {/* Token Usage */}
+                        <div>
+                          <div className="flex justify-between items-center mb-2">
+                            <span className="text-sm font-medium">Tokens</span>
+                            <span className="text-sm text-muted-foreground">{summary.limits.token_usage}</span>
+                          </div>
+                          <Progress 
+                            value={getUsagePercentage(summary.current_period.tokens_used, summary.limits.token_usage.includes('unlimited') ? null : parseInt(summary.limits.token_usage.split('/')[1]))} 
+                            className="h-2"
+                          />
+                        </div>
+
+                        {summary.limits.warnings.length > 0 && (
+                          <div className="mt-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+                            <div className="flex items-center gap-2 text-yellow-800 dark:text-yellow-200">
+                              <AlertTriangle className="w-4 h-4" />
+                              <span className="font-medium">Warnings</span>
+                            </div>
+                            <ul className="mt-2 text-sm text-yellow-700 dark:text-yellow-300">
+                              {summary.limits.warnings.map((warning, index) => (
+                                <li key={index}>• {warning}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {/* Performance Metrics */}
+                  {summary && summary.performance && (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                          <Activity className="w-5 h-5" />
+                          Performance
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="grid grid-cols-2 gap-6">
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm font-medium">Average Processing Time</span>
+                            <span className="text-foreground">
+                              {summary.performance.avg_processing_time_ms 
+                                ? `${(summary.performance.avg_processing_time_ms / 1000).toFixed(2)}s`
+                                : 'N/A'
+                              }
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm font-medium">Success Rate</span>
+                            <div className="flex items-center gap-2">
+                              <span className="text-foreground">
+                                {summary.performance.success_rate ? `${parseFloat(summary.performance.success_rate).toFixed(1)}%` : 'N/A'}
+                              </span>
+                              {summary.performance.success_rate && parseFloat(summary.performance.success_rate) >= 95 && (
+                                <CheckCircle className="w-4 h-4 text-green-600" />
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+                </>
+              )}
+            </TabsContent>
+
+            <TabsContent value="detailed" className="space-y-6 mt-0">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-medium">Detailed Analytics</h3>
+                  <p className="text-sm text-muted-foreground">In-depth usage breakdown and trends</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-muted-foreground">Period:</span>
+                  <div className="flex gap-2">
+                    {[7, 30, 90].map((days) => (
+                      <Button
+                        key={days}
+                        variant={reportDays === days ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setReportDays(days)}
+                      >
+                        {days}d
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {reportError ? (
+                <Card className="border-destructive/50 bg-destructive/5">
+                  <CardContent className="p-6">
+                    <div className="flex items-center gap-2 text-destructive">
+                      <AlertTriangle className="w-5 h-5" />
+                      <span>Error loading report data: {reportError}</span>
+                    </div>
+                  </CardContent>
+                </Card>
+              ) : (
+                <>
+                  {/* Period Summary */}
+                  {report && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                      <Card>
+                        <CardContent className="p-4">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="text-sm text-muted-foreground">Total Documents</p>
+                              <p className="text-2xl font-bold">{formatNumber(report.total_documents)}</p>
+                            </div>
+                            <FileText className="w-8 h-8 text-blue-600" />
+                          </div>
+                        </CardContent>
+                      </Card>
+
+                      <Card>
+                        <CardContent className="p-4">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="text-sm text-muted-foreground">Total Pages</p>
+                              <p className="text-2xl font-bold">{formatNumber(report.total_pages)}</p>
+                            </div>
+                            <Clock className="w-8 h-8 text-green-600" />
+                          </div>
+                        </CardContent>
+                      </Card>
+
+                      <Card>
+                        <CardContent className="p-4">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="text-sm text-muted-foreground">LLM Calls</p>
+                              <p className="text-2xl font-bold">{formatNumber(report.total_llm_calls)}</p>
+                            </div>
+                            <Zap className="w-8 h-8 text-yellow-600" />
+                          </div>
+                        </CardContent>
+                      </Card>
+
+                      <Card>
+                        <CardContent className="p-4">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="text-sm text-muted-foreground">Total Cost</p>
+                              <p className="text-2xl font-bold">{formatCurrency(report.estimated_total_cost_usd)}</p>
+                            </div>
+                            <DollarSign className="w-8 h-8 text-purple-600" />
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </div>
+                  )}
+
+                  {/* Document Types Breakdown */}
+                  {report && Object.keys(report.document_types).length > 0 && (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Document Types</CardTitle>
+                        <CardDescription>Breakdown by document format</CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-3">
+                          {Object.entries(report.document_types).map(([type, count]) => (
+                            <div key={type} className="flex items-center justify-between">
+                              <span className="text-sm font-medium">{type}</span>
+                              <div className="flex items-center gap-2">
+                                <div className="w-24 bg-muted rounded-full h-2">
+                                  <div 
+                                    className="bg-blue-600 h-2 rounded-full" 
+                                    style={{ width: `${(count / report.total_documents) * 100}%` }}
+                                  />
+                                </div>
+                                <span className="text-sm text-muted-foreground w-12 text-right">{count}</span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+                </>
+              )}
+            </TabsContent>
+
+            <TabsContent value="models" className="space-y-6 mt-0">
+              <div>
+                <h3 className="text-lg font-medium">Model Usage</h3>
+                <p className="text-sm text-muted-foreground">AI model usage breakdown and costs</p>
+              </div>
+
+              {modelError ? (
+                <Card className="border-destructive/50 bg-destructive/5">
+                  <CardContent className="p-6">
+                    <div className="flex items-center gap-2 text-destructive">
+                      <AlertTriangle className="w-5 h-5" />
+                      <span>Error loading model data: {modelError}</span>
+                    </div>
+                  </CardContent>
+                </Card>
+              ) : (
+                <>
+                  {/* Model Usage Summary */}
+                  {modelUsage && (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Summary ({reportDays} days)</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="text-center">
+                            <div className="text-2xl font-bold text-foreground">{formatNumber(modelUsage.totals.total_calls)}</div>
+                            <div className="text-sm text-muted-foreground">Total Calls</div>
+                          </div>
+                          <div className="text-center">
+                            <div className="text-2xl font-bold text-foreground">{formatNumber(modelUsage.totals.total_tokens)}</div>
+                            <div className="text-sm text-muted-foreground">Total Tokens</div>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {/* All Models */}
+                  {modelUsage && Object.keys(modelUsage.by_provider).length > 0 && (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                          <Server className="w-5 h-5" />
+                          Model Usage
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-3">
+                          {Object.entries(modelUsage.by_provider).map(([provider, models]) => 
+                            Object.entries(models).map(([model, usage]) => (
+                              <div key={`${provider}-${model}`} className="border rounded-lg p-4">
+                                <div className="flex items-center justify-between mb-2">
+                                  <span className="font-medium">{model}</span>
+                                </div>
+                                <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+                                  <div>
+                                    <span className="text-muted-foreground">Calls:</span>
+                                    <br />
+                                    <span className="font-medium">{formatNumber(usage.calls)}</span>
+                                  </div>
+                                  <div>
+                                    <span className="text-muted-foreground">Input Tokens:</span>
+                                    <br />
+                                    <span className="font-medium">{formatNumber(usage.input_tokens)}</span>
+                                  </div>
+                                  <div>
+                                    <span className="text-muted-foreground">Output Tokens:</span>
+                                    <br />
+                                    <span className="font-medium">{formatNumber(usage.output_tokens)}</span>
+                                  </div>
+                                </div>
+                              </div>
+                            ))
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {modelUsage && Object.keys(modelUsage.by_provider).length === 0 && (
+                    <Card>
+                      <CardContent className="p-6 text-center">
+                        <Server className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
+                        <p className="text-muted-foreground">No model usage data available for the selected period.</p>
+                      </CardContent>
+                    </Card>
+                  )}
+                </>
+              )}
+            </TabsContent>
+          </div>
+        </Tabs>
+      </DialogContent>
+    </Dialog>
+  )
+} 

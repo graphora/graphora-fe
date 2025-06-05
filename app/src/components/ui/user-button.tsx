@@ -1,6 +1,6 @@
 'use client'
 
-import React from 'react'
+import React, { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import {
@@ -11,9 +11,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { User, Settings, LogOut, HelpCircle } from 'lucide-react'
+import { User, Settings, LogOut, HelpCircle, BarChart3 } from 'lucide-react'
 import { useUser, useClerk } from '@clerk/nextjs'
 import { useRouter } from 'next/navigation'
+import { UsageTrackingModal } from '@/components/usage/usage-tracking-modal'
 
 interface UserButtonProps {
   user?: {
@@ -28,6 +29,7 @@ export function UserButton({ user: propUser }: UserButtonProps) {
   const { user: clerkUser } = useUser()
   const { signOut, openUserProfile } = useClerk()
   const router = useRouter()
+  const [showUsageModal, setShowUsageModal] = useState(false)
   
   const user = clerkUser || propUser
   const userName = (clerkUser?.fullName || clerkUser?.firstName || propUser?.name) || 'User'
@@ -67,6 +69,14 @@ export function UserButton({ user: propUser }: UserButtonProps) {
     window.location.href = 'mailto:support@graphora.io'
   }
 
+  const handleUsageTracking = () => {
+    setShowUsageModal(true)
+  }
+
+  const handleUsagePage = () => {
+    router.push('/usage')
+  }
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -97,6 +107,10 @@ export function UserButton({ user: propUser }: UserButtonProps) {
           <Settings className="mr-2 h-4 w-4" />
           <span>Settings</span>
         </DropdownMenuItem>
+        <DropdownMenuItem onClick={handleUsageTracking} className="text-popover-foreground hover:bg-accent">
+          <BarChart3 className="mr-2 h-4 w-4" />
+          <span>Usage & Billing</span>
+        </DropdownMenuItem>
         <DropdownMenuItem onClick={handleHelp} className="text-popover-foreground hover:bg-accent">
           <HelpCircle className="mr-2 h-4 w-4" />
           <span>Help</span>
@@ -107,6 +121,11 @@ export function UserButton({ user: propUser }: UserButtonProps) {
           <span>Log out</span>
         </DropdownMenuItem>
       </DropdownMenuContent>
+      
+      <UsageTrackingModal 
+        isOpen={showUsageModal} 
+        onClose={() => setShowUsageModal(false)} 
+      />
     </DropdownMenu>
   )
 } 

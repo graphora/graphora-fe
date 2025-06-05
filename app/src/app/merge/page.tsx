@@ -909,19 +909,7 @@ function MergePageContent() {
                   </p>
                 </div>
                 <div className="enhanced-card-content h-[600px] relative">
-                  {/* Show the merge completion banner when all conflicts are resolved */}
-                  {allConflictsResolved && currentMergeId && (
-                    <div className="absolute top-0 left-0 right-0 z-10 p-4 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/50 rounded-lg mb-4">
-                      <MergeCompletionBanner
-                        mergeId={currentMergeId}
-                        onViewFinalGraph={handleViewFinalGraph}
-                        onViewProgress={handleViewProgress}
-                        takeToFinalize={false}
-                      />
-                    </div>
-                  )}
-
-                  <div className={`h-full overflow-hidden ${allConflictsResolved ? 'pt-20' : ''}`}>
+                  <div className="h-full overflow-hidden">
                     {currentMergeId ? (
                       <ConflictList
                         mergeId={currentMergeId}
@@ -954,18 +942,7 @@ function MergePageContent() {
                   </p>
                 </div>
                 <div className="enhanced-card-content h-[600px] relative">
-                  {/* Show the merge completion banner at the top of the visualization when all conflicts are resolved */}
-                  {allConflictsResolved && currentMergeId && (
-                    <div className="absolute top-0 left-0 right-0 z-10 p-4 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/50 rounded-lg mb-4">
-                      <MergeCompletionBanner
-                        mergeId={currentMergeId}
-                        onViewProgress={handleViewProgress}
-                        onViewFinalGraph={handleViewProgress}
-                        takeToFinalize={true}
-                        className="max-w-3xl mx-auto"
-                      />
-                    </div>
-                  )}
+
                   
                   {isLoadingGraph && (
                     <div className="absolute inset-0 flex items-center justify-center bg-background/80 z-20">

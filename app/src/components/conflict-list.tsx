@@ -10,7 +10,7 @@ import { Loader2, AlertCircle, CheckCircle2, Filter, SortAsc, SortDesc, Wand2 } 
 import { type ConflictListItem, type ConflictListFilters, type ConflictListResponse } from '@/types/merge'
 import { cn } from '@/lib/utils'
 import { ConflictDetailsView } from '@/components/conflict-details-view'
-import { MergeCompletionBanner } from './merge-completion-banner'
+
 import { ChangeLog } from '@/types/merge'
 
 interface ConflictListProps {
@@ -260,16 +260,7 @@ export function ConflictList({
 
   return (
     <div className={cn("h-screen flex flex-col", className)}>
-      {summary?.unresolved === 0 && summary?.total > 0 && (
-        <div className="p-2 border-b bg-background">
-          <MergeCompletionBanner
-            mergeId={mergeId}
-            onViewFinalGraph={onViewFinalGraph}
-            onViewProgress={() => {}}
-            takeToFinalize={false}
-          />
-        </div>
-      )}
+
 
       <div className="flex-1 flex overflow-hidden" ref={containerRef}>
         <div 
