@@ -4,6 +4,7 @@ import { useState, useCallback, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useUser } from '@clerk/nextjs'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { YAMLEditor } from '@/components/ontology/yaml-editor'
 import { EntityList } from '@/components/ontology/entity-list'
@@ -12,7 +13,7 @@ import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/componen
 import { EnhancedWorkflowLayout, WorkflowStep } from '@/components/enhanced-workflow-layout'
 import { PageHeader } from '@/components/layouts/page-header'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { Search, Upload, Play, Code2, Grid2x2, SplitSquareVertical, Settings, Database, Save, ArrowLeft } from 'lucide-react'
+import { Search, Upload, Play, Code2, Grid2x2, SplitSquareVertical, Settings, Database, Save, ArrowLeft, Edit2, Check, X } from 'lucide-react'
 import { VisualEditor } from '@/components/ontology/visual-editor'
 import { type AIAssistantState } from '@/lib/types/ai-assistant'
 import { cn } from '@/lib/utils'
@@ -30,6 +31,7 @@ interface ParsedOntology {
 
 interface LoadedOntology {
   id: string
+  name: string
   file_name: string
   yaml_content: string
   version: number
@@ -283,6 +285,11 @@ function OntologyPageContent() {
   const [loadedOntology, setLoadedOntology] = useState<LoadedOntology | null>(null)
   const [isLoadingOntology, setIsLoadingOntology] = useState(false)
   const [isEditMode, setIsEditMode] = useState(false)
+  
+  // Filename editing state
+  const [isEditingFilename, setIsEditingFilename] = useState(false)
+  const [editingFilename, setEditingFilename] = useState('')
+  const [ontologyTitle, setOntologyTitle] = useState('My Ontology')
 
   // Load existing ontology if ID is provided in URL
   useEffect(() => {
@@ -292,14 +299,17 @@ function OntologyPageContent() {
     }
   }, [searchParams]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Track changes to YAML content
+  // Track changes to YAML content and name
   useEffect(() => {
-    if (loadedOntology && yaml !== loadedOntology.yaml_content) {
-      setHasUnsavedChanges(true)
-    } else if (!loadedOntology && yaml !== SAMPLE_YAML && yaml.trim() !== '') {
+    if (loadedOntology) {
+      const originalTitle = loadedOntology.name || loadedOntology.file_name.replace('.yaml', '')
+      if (yaml !== loadedOntology.yaml_content || ontologyTitle !== originalTitle) {
+        setHasUnsavedChanges(true)
+      }
+    } else if (!loadedOntology && (yaml !== SAMPLE_YAML && yaml.trim() !== '')) {
       setHasUnsavedChanges(true)
     }
-  }, [yaml, loadedOntology])
+  }, [yaml, loadedOntology, ontologyTitle])
 
   const loadExistingOntology = async (ontologyId: string) => {
     setIsLoadingOntology(true)
@@ -321,6 +331,7 @@ function OntologyPageContent() {
       const ontologyData = await response.json()
       setLoadedOntology(ontologyData)
       setIsEditMode(true)
+      setOntologyTitle(ontologyData.name || ontologyData.file_name.replace('.yaml', ''))
       updateFromYaml(ontologyData.yaml_content)
       setHasUnsavedChanges(false)
     } catch (err) {
@@ -328,6 +339,33 @@ function OntologyPageContent() {
       setError(err instanceof Error ? err.message : 'Failed to load ontology')
     } finally {
       setIsLoadingOntology(false)
+    }
+  }
+
+  const handleStartEditingFilename = () => {
+    setIsEditingFilename(true)
+    setEditingFilename(ontologyTitle)
+  }
+
+  const handleSaveFilename = () => {
+    const trimmedTitle = editingFilename.trim()
+    if (trimmedTitle) {
+      setOntologyTitle(trimmedTitle)
+      setHasUnsavedChanges(true)
+    }
+    setIsEditingFilename(false)
+  }
+
+  const handleCancelEditingFilename = () => {
+    setIsEditingFilename(false)
+    setEditingFilename('')
+  }
+
+  const handleFilenameKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleSaveFilename()
+    } else if (e.key === 'Escape') {
+      handleCancelEditingFilename()
     }
   }
 
@@ -346,44 +384,53 @@ function OntologyPageContent() {
     setError(null)
 
     try {
-      // If in edit mode and there are changes, save first
-      if (isEditMode && hasUnsavedChanges) {
-        await saveOntology()
-      }
+      let sessionId: string
 
-      // Call ontology API to create session
-      const response = await fetch('/api/v1/ontology', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'user-id': user?.id || 'anonymous'
-        },
-        body: JSON.stringify({
-          text: yaml
-        }),
-      })
+      if (isEditMode && loadedOntology) {
+        // Using an existing ontology
+        if (hasUnsavedChanges) {
+          // Save changes first (this will create a new version)
+          await saveOntology()
+        }
+        // Use the existing ontology ID as session ID
+        sessionId = loadedOntology.id
+        console.log('Using existing ontology ID as session:', sessionId)
+      } else {
+        // Creating a new ontology - need to create it first
+        const response = await fetch('/api/v1/ontology', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'user-id': user?.id || 'anonymous'
+          },
+          body: JSON.stringify({
+            text: yaml,
+            name: ontologyTitle
+          }),
+        })
 
-      if (!response.ok) {
-        throw new Error('Failed to submit ontology')
-      }
+        if (!response.ok) {
+          throw new Error('Failed to submit ontology')
+        }
 
-      const data = await response.json()
-      console.log('Ontology API response:', data) // Debug log
-      
-      // Check if the backend returned an error
-      if (data.status === 'error') {
-        throw new Error(data.error || data.message || 'Failed to process ontology')
-      }
-      
-      // The backend returns 'id' field, use that as session ID
-      const sessionId = data.id
-      
-      console.log('Extracted session ID:', sessionId) // Debug log
-      
-      // Ensure we have a session ID
-      if (!sessionId) {
-        console.error('No session ID found in response. Available fields:', Object.keys(data))
-        throw new Error(`No session ID received from server. Response: ${JSON.stringify(data)}`)
+        const data = await response.json()
+        console.log('Ontology API response:', data) // Debug log
+        
+        // Check if the backend returned an error
+        if (data.status === 'error') {
+          throw new Error(data.error || data.message || 'Failed to process ontology')
+        }
+        
+        // The backend returns 'id' field, use that as session ID
+        sessionId = data.id
+        
+        // Ensure we have a session ID
+        if (!sessionId) {
+          console.error('No session ID found in response. Available fields:', Object.keys(data))
+          throw new Error(`No session ID received from server. Response: ${JSON.stringify(data)}`)
+        }
+        
+        console.log('Created new ontology with ID:', sessionId)
       }
       
       // Navigate to transform page with session ID
@@ -416,7 +463,8 @@ function OntologyPageContent() {
             'user-id': user?.id || 'anonymous' // Add required user-id header
           },
           body: JSON.stringify({
-            text: yaml
+            text: yaml,
+            name: ontologyTitle
           }),
         })
 
@@ -433,6 +481,8 @@ function OntologyPageContent() {
         // Update loaded ontology with new data
         setLoadedOntology(prev => prev ? {
           ...prev,
+          name: ontologyTitle,
+          file_name: `${ontologyTitle}.yaml`,
           yaml_content: yaml,
           updated_at: new Date().toISOString()
         } : null)
@@ -445,7 +495,8 @@ function OntologyPageContent() {
             'user-id': user?.id || 'anonymous' // Add required user-id header
           },
           body: JSON.stringify({
-            text: yaml
+            text: yaml,
+            name: ontologyTitle
           }),
         })
 
@@ -480,6 +531,7 @@ function OntologyPageContent() {
 
   const loadSampleYaml = useCallback(() => {
     updateFromYaml(SAMPLE_YAML)
+    setOntologyTitle('Sample Ontology')
     setHasUnsavedChanges(false) // Reset unsaved changes when loading sample
   }, [updateFromYaml])
 
@@ -492,6 +544,9 @@ function OntologyPageContent() {
       const content = e.target?.result as string
       if (content) {
         updateFromYaml(content)
+        // Set filename from uploaded file, removing .yaml/.yml extension
+        const filename = file.name.replace(/\.(yaml|yml)$/i, '')
+        setOntologyTitle(filename)
       }
     }
     reader.readAsText(file)
@@ -619,14 +674,53 @@ function OntologyPageContent() {
                 )}
                 <Database className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                 <div>
-                  <h2 className="text-lg font-semibold text-foreground">
-                    {isLoadingOntology 
-                      ? 'Loading Ontology...' 
-                      : isEditMode && loadedOntology
-                        ? `Edit: ${loadedOntology.file_name.replace('.yaml', '')}`
-                        : 'Ontology Editor'
-                    }
-                  </h2>
+                  <div className="flex items-center gap-2">
+                    {isLoadingOntology ? (
+                      <h2 className="text-lg font-semibold text-foreground">Loading Ontology...</h2>
+                    ) : isEditingFilename ? (
+                      <div className="flex items-center gap-2">
+                        <Input
+                          value={editingFilename}
+                          onChange={(e) => setEditingFilename(e.target.value)}
+                          onKeyDown={handleFilenameKeyDown}
+                          className="text-lg font-semibold h-8 px-2 py-1 w-64"
+                          placeholder="Enter ontology name..."
+                          autoFocus
+                        />
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-7 w-7"
+                          onClick={handleSaveFilename}
+                        >
+                          <Check className="h-4 w-4 text-green-600" />
+                        </Button>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-7 w-7"
+                          onClick={handleCancelEditingFilename}
+                        >
+                          <X className="h-4 w-4 text-red-600" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2 group">
+                        <h2 className="text-lg font-semibold text-foreground">
+                          {isEditMode ? `Edit: ${ontologyTitle}` : ontologyTitle}
+                        </h2>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={handleStartEditingFilename}
+                          title="Edit filename"
+                        >
+                          <Edit2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    )}
+                  </div>
                   <p className="text-sm text-muted-foreground">
                     {isEditMode && loadedOntology
                       ? `Version ${loadedOntology.version} • ${loadedOntology.source === 'file' ? 'File System' : 'Database'}`

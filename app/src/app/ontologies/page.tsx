@@ -25,6 +25,7 @@ import { useUser } from '@clerk/nextjs'
 
 interface Ontology {
   id: string
+  name: string
   file_name: string
   version: number
   source?: string
@@ -85,6 +86,7 @@ export default function OntologiesPage() {
       setFilteredOntologies(ontologies)
     } else {
       const filtered = ontologies.filter(ontology =>
+        ontology.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         ontology.file_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         ontology.id.toLowerCase().includes(searchQuery.toLowerCase())
       )
@@ -239,7 +241,7 @@ export default function OntologiesPage() {
                     <div className="flex items-start justify-between">
                       <div className="flex-1 min-w-0">
                         <CardTitle className="text-lg font-medium truncate group-hover:text-primary transition-colors">
-                          {ontology.file_name.replace('.yaml', '')}
+                          {ontology.name || ontology.file_name.replace('.yaml', '')}
                         </CardTitle>
                         <CardDescription className="text-sm mt-1">
                           ID: {ontology.id}
