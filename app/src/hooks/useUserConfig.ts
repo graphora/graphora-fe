@@ -10,6 +10,7 @@ export function useUserConfig() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [hasConfig, setHasConfig] = useState(false)
+  const [hasAiConfig, setHasAiConfig] = useState(false)
 
   useEffect(() => {
     if (isLoaded && user) {
@@ -24,27 +25,45 @@ export function useUserConfig() {
       setLoading(true)
       setError(null)
       
-      const response = await fetch('/api/config')
+      // Fetch both database and AI configurations
+      const [dbResponse, aiResponse] = await Promise.all([
+        fetch('/api/config'),
+        fetch('/api/ai-config')
+      ])
       
-      if (response.status === 404) {
+      let dbConfig = null
+      let aiConfig = null
+      
+      // Handle database config
+      if (dbResponse.status === 404) {
         // Configuration not found - user needs to set up databases
         setConfig(null)
         setHasConfig(false)
-        return
+      } else if (dbResponse.ok) {
+        dbConfig = await dbResponse.json()
+        setConfig(dbConfig)
+        setHasConfig(!!(dbConfig.stagingDb?.uri && dbConfig.prodDb?.uri))
+      } else {
+        throw new Error(`Failed to fetch database configuration: ${dbResponse.status}`)
       }
-
-      if (!response.ok) {
-        throw new Error(`Failed to fetch configuration: ${response.status}`)
+      
+      // Handle AI config
+      if (aiResponse.ok) {
+        aiConfig = await aiResponse.json()
+        // Check if user has AI configuration (should be an object with api_key_masked and default_model_name)
+        setHasAiConfig(!!(aiConfig?.api_key_masked && aiConfig?.default_model_name))
+      } else if (aiResponse.status !== 404) {
+        console.warn('Failed to fetch AI configuration:', aiResponse.status)
+        setHasAiConfig(false)
+      } else {
+        setHasAiConfig(false)
       }
-
-      const data = await response.json()
-      setConfig(data)
-      setHasConfig(!!(data.stagingDb?.uri && data.prodDb?.uri))
       
     } catch (err) {
       console.error('Error fetching config:', err)
       setError(err instanceof Error ? err.message : 'Failed to load configuration')
       setHasConfig(false)
+      setHasAiConfig(false)
     } finally {
       setLoading(false)
     }
@@ -76,22 +95,32 @@ export function useUserConfig() {
     return true
   }
 
-  const checkConfigBeforeWorkflow = (): boolean => {
+  const checkConfigBeforeWorkflow = (): { success: boolean; error?: string } => {
     if (!isLoaded || loading) {
-      return false
+      return { success: false, error: 'Configuration check in progress...' }
     }
 
     if (!user) {
       router.push('/sign-in')
-      return false
+      return { success: false, error: 'User not authenticated' }
+    }
+
+    if (!hasConfig && !hasAiConfig) {
+      router.push('/config?reason=workflow&returnTo=' + encodeURIComponent(window.location.pathname + window.location.search))
+      return { success: false, error: 'Database and AI configuration required to run workflows' }
     }
 
     if (!hasConfig) {
       router.push('/config?reason=workflow&returnTo=' + encodeURIComponent(window.location.pathname + window.location.search))
-      return false
+      return { success: false, error: 'Database configuration required to run workflows' }
     }
 
-    return true
+    if (!hasAiConfig) {
+      router.push('/config?tab=ai&reason=workflow&returnTo=' + encodeURIComponent(window.location.pathname + window.location.search))
+      return { success: false, error: 'AI configuration required to run workflows' }
+    }
+
+    return { success: true }
   }
 
   return {
@@ -99,6 +128,7 @@ export function useUserConfig() {
     loading,
     error,
     hasConfig,
+    hasAiConfig,
     requireConfig,
     checkConfigBeforeWorkflow,
     refetch: fetchConfig

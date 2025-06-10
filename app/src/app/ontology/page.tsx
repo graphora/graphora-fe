@@ -375,8 +375,12 @@ function OntologyPageContent() {
       return
     }
 
-    // Check if user has database configurations before proceeding
-    if (!checkConfigBeforeWorkflow()) {
+    // Check if user has database and AI configurations before proceeding
+    const configCheck = checkConfigBeforeWorkflow()
+    if (!configCheck.success) {
+      if (configCheck.error) {
+        setError(configCheck.error)
+      }
       return
     }
 

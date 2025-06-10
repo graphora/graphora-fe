@@ -10,17 +10,25 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
-import { Loader2, Settings, AlertCircle, CheckCircle, Database, User, Bell, Shield, ArrowLeft } from 'lucide-react'
+import { Loader2, Settings, AlertCircle, CheckCircle, Database, User, Bell, Shield, ArrowLeft, Sparkles } from 'lucide-react'
 import { DatabaseConfigForm } from '@/components/config/database-config-form'
+import { GeminiConfigForm } from '@/components/config/gemini-config-form'
 import { DatabaseConfig, UserConfig, ConfigRequest } from '@/types/config'
+import { GeminiConfigRequest, UserAIConfigDisplay } from '@/types/ai-config'
 import { toast } from 'sonner'
 import { DomainAppsToggle } from '@/components/config/domain-apps-toggle'
+import { AiAssistantToggle } from '@/components/config/ai-assistant-toggle'
 
 const defaultDbConfig: DatabaseConfig = {
   name: '',
   uri: '',
   username: 'neo4j',
   password: '',
+}
+
+const defaultGeminiConfig: GeminiConfigRequest = {
+  api_key: '',
+  default_model_name: '', // Will be set dynamically when models are loaded
 }
 
 function ConfigPageContent() {
@@ -39,14 +47,21 @@ function ConfigPageContent() {
     name: 'neo4j'
   })
   const [error, setError] = useState<string | null>(null)
+  
+  // AI Configuration state
+  const [aiConfig, setAiConfig] = useState<UserAIConfigDisplay | null>(null)
+  const [geminiConfig, setGeminiConfig] = useState<GeminiConfigRequest>(defaultGeminiConfig)
+  const [savingAI, setSavingAI] = useState(false)
 
   const returnTo = searchParams.get('returnTo')
   const reason = searchParams.get('reason')
+  const tabParam = searchParams.get('tab')
   const isWorkflowRedirect = reason === 'workflow'
 
   useEffect(() => {
     if (isLoaded && user) {
       fetchConfig()
+      fetchAIConfig()
     }
   }, [isLoaded, user])
 
@@ -89,6 +104,37 @@ function ConfigPageContent() {
       setError(err instanceof Error ? err.message : 'Failed to load configuration')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const fetchAIConfig = async () => {
+    try {
+      const response = await fetch('/api/ai-config')
+      
+      if (response.status === 404) {
+        // AI configuration not found - this is expected for new users
+        console.log('No AI configuration found for user, using defaults')
+        setAiConfig(null)
+        return
+      }
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch AI configuration: ${response.status}`)
+      }
+
+      const data = await response.json()
+      console.log('Fetched AI configuration:', data)
+      
+      setAiConfig(data)
+      if (data) {
+        setGeminiConfig({
+          api_key: '', // Don't populate API key for security
+          default_model_name: data.default_model_name
+        })
+      }
+    } catch (err) {
+      console.error('Error fetching AI config:', err)
+      // Don't set error for AI config as it's optional
     }
   }
 
@@ -146,6 +192,68 @@ function ConfigPageContent() {
       toast.error(errorMessage)
     } finally {
       setSaving(false)
+    }
+  }
+
+  const handleSaveAI = async () => {
+    if (!user) {
+      setError('User not authenticated')
+      return
+    }
+
+    if (!geminiConfig.api_key || !geminiConfig.default_model_name) {
+      toast.error('Please fill in both API key and select a model')
+      return
+    }
+
+    try {
+      setSavingAI(true)
+      setError(null)
+
+      // Determine if this is an update or create operation
+      const isUpdate = aiConfig !== null
+      const method = isUpdate ? 'PUT' : 'POST'
+
+      console.log(`${isUpdate ? 'Updating' : 'Creating'} AI configuration:`, {
+        default_model_name: geminiConfig.default_model_name
+      })
+
+      const response = await fetch('/api/ai-config', {
+        method: method,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(geminiConfig),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || `HTTP error! status: ${response.status}`)
+      }
+
+      const savedConfig = await response.json()
+      console.log('AI Configuration saved successfully:', savedConfig)
+      
+      setAiConfig(savedConfig)
+      // Clear the API key field for security
+      setGeminiConfig({
+        ...geminiConfig,
+        api_key: ''
+      })
+      toast.success(`AI configuration ${isUpdate ? 'updated' : 'created'} successfully`)
+
+      // If there's a return URL and this is a workflow redirect, redirect after a short delay
+      if (returnTo && isWorkflowRedirect) {
+        setTimeout(() => {
+          router.push(decodeURIComponent(returnTo))
+        }, 1000)
+      }
+    } catch (err) {
+      console.error('Error saving AI config:', err)
+      const errorMessage = err instanceof Error ? err.message : 'Failed to save AI configuration'
+      toast.error(errorMessage)
+    } finally {
+      setSavingAI(false)
     }
   }
 
@@ -222,7 +330,7 @@ function ConfigPageContent() {
             <Alert className="mb-6 border-amber-200 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-800">
               <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
               <AlertDescription className="text-amber-800 dark:text-amber-300">
-                <strong>Database Configuration Required:</strong> You need to configure both staging and production Neo4j databases before you can run workflows. 
+                <strong>Both Database & AI Configuration Required:</strong> You need to configure both staging & production Neo4j databases and an AI provider before you can run workflows. 
                 Once configured, you'll be redirected back to continue your workflow.
               </AlertDescription>
             </Alert>
@@ -235,11 +343,15 @@ function ConfigPageContent() {
             </Alert>
           )}
 
-          <Tabs defaultValue="databases" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-4 bg-muted">
+          <Tabs defaultValue={tabParam || "databases"} className="space-y-6">
+            <TabsList className="grid w-full grid-cols-5 bg-muted">
               <TabsTrigger value="databases" className="data-[state=active]:bg-background">
                 <Database className="h-4 w-4 mr-2" />
                 Databases
+              </TabsTrigger>
+              <TabsTrigger value="ai-config" className="data-[state=active]:bg-background">
+                <Sparkles className="h-4 w-4 mr-2" />
+                AI Config
               </TabsTrigger>
               <TabsTrigger value="profile">
                 <User className="h-4 w-4 mr-2" />
@@ -362,6 +474,113 @@ function ConfigPageContent() {
               </Card>
             </TabsContent>
 
+            <TabsContent value="ai-config" className="space-y-6">
+              {isWorkflowRedirect && (
+                <Alert className="mb-6 border-amber-200 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-800">
+                  <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                  <AlertDescription className="text-amber-800 dark:text-amber-300">
+                    <strong>AI Configuration Required:</strong> You need to configure an AI provider to enable intelligent document processing and entity extraction in workflows. 
+                    Once configured, you'll be redirected back to continue your workflow.
+                  </AlertDescription>
+                </Alert>
+              )}
+              
+              {/* AI Configuration Status */}
+              <Card className="enhanced-card">
+                <CardHeader className="enhanced-card-header">
+                  <CardTitle className="flex items-center justify-between">
+                    <span className="flex items-center space-x-2">
+                      <Sparkles className="h-5 w-5 text-primary" />
+                      <span>AI Configuration Status</span>
+                    </span>
+                    {aiConfig ? (
+                      <Badge className="bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800">
+                        <CheckCircle className="h-3 w-3 mr-1" />
+                        Configured
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline" className="bg-amber-50 dark:bg-amber-950 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800">
+                        <AlertCircle className="h-3 w-3 mr-1" />
+                        Setup Required
+                      </Badge>
+                    )}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="enhanced-card-content">
+                  <div className="space-y-4">
+                    <div className="text-sm text-muted-foreground">
+                      Configure your AI provider for intelligent document processing, entity extraction, 
+                      and conflict resolution. Currently supporting Google Gemini AI Studio.
+                    </div>
+                    
+                    {aiConfig && (
+                      <div className="p-4 rounded-lg bg-muted/30 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-medium">Current Provider:</span>
+                          <span className="text-sm">{aiConfig.provider_display_name}</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-medium">API Key:</span>
+                          <span className="text-sm font-mono">{aiConfig.api_key_masked}</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-medium">Default Model:</span>
+                          <span className="text-sm">{aiConfig.default_model_display_name}</span>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {!aiConfig && (
+                      <Alert>
+                        <Sparkles className="h-4 w-4" />
+                        <AlertDescription>
+                          You'll need to provide a Gemini API key and select a default model to enable AI features.
+                          Get your API key from Google AI Studio.
+                        </AlertDescription>
+                      </Alert>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Gemini Configuration Form */}
+              <Card className="enhanced-card">
+                <CardHeader className="enhanced-card-header">
+                  <CardTitle className="flex items-center justify-between">
+                    <span className="flex items-center space-x-2">
+                      <Sparkles className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                      <span>Google Gemini AI Studio</span>
+                    </span>
+                    <Button 
+                      onClick={handleSaveAI} 
+                      disabled={savingAI || !geminiConfig.api_key || !geminiConfig.default_model_name}
+                      className="bg-blue-600 hover:bg-blue-700 text-white"
+                    >
+                      {savingAI ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Saving...
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="h-4 w-4 mr-2" />
+                          {aiConfig ? 'Update Configuration' : 'Save Configuration'}
+                        </>
+                      )}
+                    </Button>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="enhanced-card-content">
+                  <GeminiConfigForm
+                    config={geminiConfig}
+                    onChange={setGeminiConfig}
+                    disabled={savingAI}
+                    isExistingConfig={!!aiConfig}
+                  />
+                </CardContent>
+              </Card>
+            </TabsContent>
+
             {/* Placeholder tabs for future features */}
             <TabsContent value="profile" className="space-y-6">
               <Card className="enhanced-card">
@@ -381,6 +600,16 @@ function ConfigPageContent() {
                         </p>
                       </div>
                       <DomainAppsToggle />
+                    </div>
+                    
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-1">
+                        <h4 className="text-sm font-medium text-foreground">AI Assistant in Sidebar</h4>
+                        <p className="text-sm text-muted-foreground">
+                          Show or hide AI assistant link in the sidebar navigation
+                        </p>
+                      </div>
+                      <AiAssistantToggle />
                     </div>
                   </div>
                 </CardContent>

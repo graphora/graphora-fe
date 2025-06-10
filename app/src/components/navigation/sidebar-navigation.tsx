@@ -41,21 +41,32 @@ export function SidebarNavigation({ className, defaultCollapsed = true }: Sideba
   const pathname = usePathname()
   const [isCollapsed, setIsCollapsed] = useState(defaultCollapsed)
   const [isDomainAppsVisible, setIsDomainAppsVisible] = useState(false)
+  const [isAiAssistantVisible, setIsAiAssistantVisible] = useState(false)
 
   useEffect(() => {
-    // Get the setting from localStorage, default to false (hidden)
-    const stored = localStorage.getItem('domainAppsVisible')
-    setIsDomainAppsVisible(stored === 'true')
+    // Get the settings from localStorage, default to false (hidden)
+    const domainAppsStored = localStorage.getItem('domainAppsVisible')
+    setIsDomainAppsVisible(domainAppsStored === 'true')
+    
+    const aiAssistantStored = localStorage.getItem('aiAssistantVisible')
+    setIsAiAssistantVisible(aiAssistantStored === 'true')
 
     // Listen for changes to domain apps visibility
-    const handleVisibilityChange = (event: CustomEvent) => {
+    const handleDomainAppsVisibilityChange = (event: CustomEvent) => {
       setIsDomainAppsVisible(event.detail.visible)
     }
 
-    window.addEventListener('domainAppsVisibilityChanged', handleVisibilityChange as EventListener)
+    // Listen for changes to AI assistant visibility
+    const handleAiAssistantVisibilityChange = (event: CustomEvent) => {
+      setIsAiAssistantVisible(event.detail.visible)
+    }
+
+    window.addEventListener('domainAppsVisibilityChanged', handleDomainAppsVisibilityChange as EventListener)
+    window.addEventListener('aiAssistantVisibilityChanged', handleAiAssistantVisibilityChange as EventListener)
     
     return () => {
-      window.removeEventListener('domainAppsVisibilityChanged', handleVisibilityChange as EventListener)
+      window.removeEventListener('domainAppsVisibilityChanged', handleDomainAppsVisibilityChange as EventListener)
+      window.removeEventListener('aiAssistantVisibilityChanged', handleAiAssistantVisibilityChange as EventListener)
     }
   }, [])
 
@@ -105,9 +116,12 @@ export function SidebarNavigation({ className, defaultCollapsed = true }: Sideba
     }
   ]
 
-  // Filter navigation items based on domain apps visibility
+  // Filter navigation items based on visibility settings
   const navigationItems = allNavigationItems.filter(item => {
     if (item.id === 'applications' && !isDomainAppsVisible) {
+      return false
+    }
+    if (item.id === 'ai-assistant' && !isAiAssistantVisible) {
       return false
     }
     return true
