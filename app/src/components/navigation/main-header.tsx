@@ -44,6 +44,7 @@ export function MainHeader({ hasUnsavedChanges }: MainHeaderProps) {
           className="p-2 rounded-lg text-gray-600 hover:bg-gray-100 active:bg-gray-200 transition-colors duration-150 flex items-center gap-2"
           onClick={handleHomeClick}
           disabled={isNavigating}
+          aria-label="Go to home page"
         >
           <div className="w-7 h-7 flex items-center justify-center overflow-hidden">
             <Logo 
@@ -65,6 +66,7 @@ export function MainHeader({ hasUnsavedChanges }: MainHeaderProps) {
               size="sm"
               onClick={handleConfigClick}
               className="flex items-center gap-2 text-gray-600 hover:text-gray-900"
+              aria-label="Open settings"
             >
               <Settings className="w-4 h-4" />
               <span className="hidden sm:inline">Settings</span>
