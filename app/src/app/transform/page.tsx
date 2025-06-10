@@ -9,7 +9,8 @@ import {
   Monitor,
   Rocket,
   FileSymlink,
-  Zap
+  Zap,
+  RefreshCcw
 } from 'lucide-react'
 import { useRouter, useSearchParams, usePathname } from 'next/navigation'
 import { Button } from '@/components/ui/button'
@@ -196,15 +197,16 @@ function TransformPageContent() {
             setIsUploadPanelExpanded(false)
             console.log('Transform already completed, loading graph data')
             await loadGraphData(urlTransformId)
-          } else if (data.status === 'failed') {
+          } else if (data.status === 'failed' || data.overall_status === 'failed' || data.current_stage === 'failed') {
             setIsProcessing(false)
+            setProgress(0) // Reset progress for failed state
             setError(data.message || 'Processing failed for this transform ID')
             setIsUploadPanelExpanded(true)
           } else {
             setIsProcessing(true)
             setIsUploadPanelExpanded(false)
             const progressStatus: Record<string, number> = {
-              "upload": 10, "parse": 20, "chunk": 30, "transform": 50, "load": 90
+              "upload": 10, "parse": 20, "chunk": 30, "transform": 50, "load": 90, "failed": 0
             }
             setProgress(Math.max(10, progressStatus[data.current_stage] || 10))
           }
@@ -476,8 +478,9 @@ function TransformPageContent() {
           if (statusInterval) {
             clearInterval(statusInterval)
           }
-        } else if (data.status === 'failed') {
+        } else if (data.status === 'failed' || data.overall_status === 'failed' || data.current_stage === 'failed') {
           setIsProcessing(false)
+          setProgress(0) // Reset progress for failed state
           setError(data.message || 'Processing failed')
           if (statusInterval) {
             clearInterval(statusInterval)
@@ -488,9 +491,10 @@ function TransformPageContent() {
             "parse": 20,
             "chunk": 30,
             "transform": 50,
-            "load": 90
+            "load": 90,
+            "failed": 0 // Handle failed stage explicitly
           }
-          setProgress(Math.max(10, progressStatus[data.current_stage]))
+          setProgress(Math.max(10, progressStatus[data.current_stage] || 0))
         }
       } catch (err) {
         console.error('Error checking status:', err)
@@ -591,6 +595,25 @@ function TransformPageContent() {
       console.warn('NEXT_PUBLIC_TRANSFORM_PREFECT_STATUS_URL is not defined.');
     }
   };
+
+  const handleRetryTransform = () => {
+    // Clear the transform_id from URL and reset state to allow retry
+    const newSearchParams = new URLSearchParams(searchParams.toString())
+    newSearchParams.delete('transform_id')
+    router.push(`${pathname}?${newSearchParams.toString()}`)
+    
+    // Reset state
+    setTransformId(null)
+    setError(null)
+    setIsProcessing(false)
+    setProgress(0)
+    setCurrentStep('')
+    setGraphData(null)
+    setIsUploadPanelExpanded(true)
+    
+    // Show success message
+    toast.success('Ready to retry transform. Please click Transform button to start again.')
+  }
 
   const tools = [
     {
@@ -747,7 +770,20 @@ function TransformPageContent() {
       {/* Error Alert */}
       {error && (
         <Alert variant="destructive" className="m-4">
-          <AlertDescription>{error}</AlertDescription>
+          <AlertDescription className="flex items-center justify-between">
+            <span>{error}</span>
+            {(error.includes('failed') || error.includes('Failed')) && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleRetryTransform}
+                className="ml-4 bg-white hover:bg-gray-50 text-red-600 border-red-300"
+              >
+                <RefreshCcw className="h-4 w-4 mr-2" />
+                Retry Transform
+              </Button>
+            )}
+          </AlertDescription>
         </Alert>
       )}
 

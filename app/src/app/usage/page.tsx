@@ -13,32 +13,20 @@ import {
   FileText, 
   TrendingUp, 
   Clock, 
-  DollarSign, 
   AlertTriangle,
   CheckCircle,
   Activity,
   Calendar,
   RefreshCw
 } from 'lucide-react'
-import { useUsageSummary, useUsageReport } from '@/hooks/useUsageData'
+import { useUsageSummary, useModelUsage } from '@/hooks/useUsageData'
 import { cn } from '@/lib/utils'
 
 export default function UsagePage() {
   const [activeTab, setActiveTab] = useState('overview')
-  const [reportDays, setReportDays] = useState(30)
   
   const { data: summary, loading: summaryLoading, error: summaryError, refetch: refetchSummary } = useUsageSummary()
-  const { data: report, loading: reportLoading, error: reportError, refetch: refetchReport } = useUsageReport(undefined, undefined, reportDays)
-
-  const formatCurrency = (amount: string | number) => {
-    const num = typeof amount === 'string' ? parseFloat(amount) : amount
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 4
-    }).format(num)
-  }
+  const { data: modelUsage, loading: modelLoading, error: modelError, refetch: refetchModelUsage } = useModelUsage(30)
 
   const formatNumber = (num: number) => {
     return new Intl.NumberFormat('en-US').format(num)
@@ -51,7 +39,7 @@ export default function UsagePage() {
 
   const handleRefresh = () => {
     refetchSummary()
-    refetchReport()
+    refetchModelUsage()
   }
 
   return (
@@ -64,9 +52,9 @@ export default function UsagePage() {
           <Button 
             variant="outline" 
             onClick={handleRefresh}
-            disabled={summaryLoading || reportLoading}
+            disabled={summaryLoading || modelLoading}
           >
-            <RefreshCw className={cn("w-4 h-4 mr-2", (summaryLoading || reportLoading) && "animate-spin")} />
+            <RefreshCw className={cn("w-4 h-4 mr-2", (summaryLoading || modelLoading) && "animate-spin")} />
             Refresh
           </Button>
         }
@@ -74,14 +62,10 @@ export default function UsagePage() {
 
       <div className="container mx-auto px-6 py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-1">
             <TabsTrigger value="overview" className="flex items-center gap-2">
               <Activity className="w-4 h-4" />
-              Overview
-            </TabsTrigger>
-            <TabsTrigger value="detailed" className="flex items-center gap-2">
-              <BarChart3 className="w-4 h-4" />
-              Analytics
+              Usage Overview
             </TabsTrigger>
           </TabsList>
 
@@ -109,7 +93,7 @@ export default function UsagePage() {
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                       <div className="text-center p-4 bg-muted/50 rounded-lg">
                         <FileText className="w-6 h-6 mx-auto mb-2 text-blue-600" />
                         <div className="text-2xl font-bold text-foreground">
@@ -130,13 +114,6 @@ export default function UsagePage() {
                           {summaryLoading ? '...' : formatNumber(summary?.current_period.tokens_used || 0)}
                         </div>
                         <div className="text-sm text-muted-foreground">Tokens</div>
-                      </div>
-                      <div className="text-center p-4 bg-muted/50 rounded-lg">
-                        <DollarSign className="w-6 h-6 mx-auto mb-2 text-purple-600" />
-                        <div className="text-2xl font-bold text-foreground">
-                          {summaryLoading ? '...' : formatCurrency(summary?.current_period.estimated_cost_usd || '0')}
-                        </div>
-                        <div className="text-sm text-muted-foreground">Est. Cost</div>
                       </div>
                     </div>
                   </CardContent>
@@ -246,121 +223,49 @@ export default function UsagePage() {
                     </CardContent>
                   </Card>
                 )}
-              </>
-            )}
-          </TabsContent>
 
-          <TabsContent value="detailed" className="space-y-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-lg font-medium">Detailed Analytics</h3>
-                <p className="text-sm text-muted-foreground">In-depth usage breakdown and trends</p>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-muted-foreground">Period:</span>
-                <div className="flex gap-2">
-                  {[7, 30, 90].map((days) => (
-                    <Button
-                      key={days}
-                      variant={reportDays === days ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setReportDays(days)}
-                    >
-                      {days}d
-                    </Button>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {reportError ? (
-              <Card className="border-destructive/50 bg-destructive/5">
-                <CardContent className="p-6">
-                  <div className="flex items-center gap-2 text-destructive">
-                    <AlertTriangle className="w-5 h-5" />
-                    <span>Error loading report data: {reportError}</span>
-                  </div>
-                </CardContent>
-              </Card>
-            ) : (
-              <>
-                {/* Period Summary */}
-                {report && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <Card>
-                      <CardContent className="p-4">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <p className="text-sm text-muted-foreground">Total Documents</p>
-                            <p className="text-2xl font-bold">{formatNumber(report.total_documents)}</p>
-                          </div>
-                          <FileText className="w-8 h-8 text-blue-600" />
-                        </div>
-                      </CardContent>
-                    </Card>
-
-                    <Card>
-                      <CardContent className="p-4">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <p className="text-sm text-muted-foreground">Total Pages</p>
-                            <p className="text-2xl font-bold">{formatNumber(report.total_pages)}</p>
-                          </div>
-                          <Clock className="w-8 h-8 text-green-600" />
-                        </div>
-                      </CardContent>
-                    </Card>
-
-                    <Card>
-                      <CardContent className="p-4">
-                        <div className="flex items-center justify-between">
-                          <div>
-                                                    <p className="text-sm text-muted-foreground">Total Tokens</p>
-                        <p className="text-2xl font-bold">{formatNumber(report.total_tokens)}</p>
-                          </div>
-                          <Zap className="w-8 h-8 text-yellow-600" />
-                        </div>
-                      </CardContent>
-                    </Card>
-
-                    <Card>
-                      <CardContent className="p-4">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <p className="text-sm text-muted-foreground">Total Cost</p>
-                            <p className="text-2xl font-bold">{formatCurrency(report.estimated_total_cost_usd)}</p>
-                          </div>
-                          <DollarSign className="w-8 h-8 text-purple-600" />
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </div>
-                )}
-
-                {/* Document Types Breakdown */}
-                {report && Object.keys(report.document_types).length > 0 && (
+                {/* Model Usage Breakdown */}
+                {modelUsage && Object.keys(modelUsage.by_provider).length > 0 && (
                   <Card>
                     <CardHeader>
-                      <CardTitle>Document Types</CardTitle>
-                      <CardDescription>Breakdown by document format</CardDescription>
+                      <CardTitle className="flex items-center gap-2">
+                        <Zap className="w-5 h-5" />
+                        Model Usage
+                      </CardTitle>
+                      <CardDescription>
+                        AI model usage breakdown for the current period
+                      </CardDescription>
                     </CardHeader>
                     <CardContent>
-                      <div className="space-y-3">
-                        {Object.entries(report.document_types).map(([type, count]) => (
-                          <div key={type} className="flex items-center justify-between">
-                            <span className="text-sm font-medium">{type}</span>
-                            <div className="flex items-center gap-2">
-                              <div className="w-24 bg-muted rounded-full h-2">
-                                <div 
-                                  className="bg-blue-600 h-2 rounded-full" 
-                                  style={{ width: `${(count / report.total_documents) * 100}%` }}
-                                />
+                      {(() => {
+                        // Calculate total input and output tokens across all models and providers
+                        let totalInputTokens = 0;
+                        let totalOutputTokens = 0;
+                        
+                        Object.values(modelUsage.by_provider).forEach(models => {
+                          Object.values(models).forEach(usage => {
+                            totalInputTokens += usage.input_tokens;
+                            totalOutputTokens += usage.output_tokens;
+                          });
+                        });
+                        
+                        return (
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="text-center p-4 bg-muted/50 rounded-lg">
+                              <div className="text-2xl font-bold text-foreground">
+                                {formatNumber(totalInputTokens)}
                               </div>
-                              <span className="text-sm text-muted-foreground w-12 text-right">{count}</span>
+                              <div className="text-sm text-muted-foreground">Input Tokens</div>
+                            </div>
+                            <div className="text-center p-4 bg-muted/50 rounded-lg">
+                              <div className="text-2xl font-bold text-foreground">
+                                {formatNumber(totalOutputTokens)}
+                              </div>
+                              <div className="text-sm text-muted-foreground">Output Tokens</div>
                             </div>
                           </div>
-                        ))}
-                      </div>
+                        );
+                      })()}
                     </CardContent>
                   </Card>
                 )}

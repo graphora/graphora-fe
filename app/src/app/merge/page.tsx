@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, useMemo, Suspense } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useRouter, useSearchParams, usePathname } from 'next/navigation'
 import { Loader2, PauseCircle, PlayCircle, AlertCircle, CheckCircle2, RefreshCcw, Monitor, Clock, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { MergeGraphVisualization } from '@/components/merge-graph-viz'
@@ -22,6 +22,7 @@ import { EnhancedWorkflowLayout, WorkflowStep } from '@/components/enhanced-work
 import { AlertDialog, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogCancel, AlertDialogAction } from '@/components/ui/alert-dialog'
 import { buttonVariants } from '@/components/ui/button'
 import type { GraphData } from '@/types/graph'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 
 // Define workflow steps for merge page
 const workflowSteps: WorkflowStep[] = [
@@ -59,6 +60,7 @@ function MergePageContent() {
   const router = useRouter()
   const { user, isLoaded } = useUser()
   const searchParams = useSearchParams()
+  const pathname = usePathname()
 
   const [isPaused, setIsPaused] = useState(false)
   const [status, setStatus] = useState<MergeStatus>(MergeStatus.STARTED)
@@ -209,6 +211,11 @@ function MergePageContent() {
             console.log(`Initial status for ${currentMergeId}: ${statusValue}`);
 
             setStatus(statusValue as MergeStatus) // Cast to MergeStatus
+            
+            // Set start time for ongoing merges if not already set
+            if ((statusValue === MergeStatus.STARTED || statusValue === MergeStatus.MERGE_IN_PROGRESS) && !startTime) {
+              setStartTime(Date.now())
+            }
 
             if (statusValue === MergeStatus.COMPLETED) {
               console.log('Merge already completed, setting graph view.')
@@ -305,6 +312,11 @@ function MergePageContent() {
       if (data.merge_id) {
         // Set the state, which will trigger the useEffect hook to handle polling
         setCurrentMergeId(data.merge_id)
+        
+        // Start the timer when merge actually begins
+        if (!startTime) {
+          setStartTime(Date.now())
+        }
 
         // Update URL with merge_id without navigation
         const newUrl = new URL(window.location.href)
@@ -548,22 +560,32 @@ function MergePageContent() {
       setIsRetrying(true)
       setError(null)
 
-      // Reset state
-      setStatus(MergeStatus.STARTED) // Use MergeStatus.STARTED
+      // Clear merge_id from URL to allow fresh retry
+      const newSearchParams = new URLSearchParams(searchParams.toString())
+      newSearchParams.delete('merge_id')
+      router.push(`${pathname}?${newSearchParams.toString()}`)
+
+      // Reset ALL state for fresh start
+      setStatus(MergeStatus.STARTED)
       setProgress(0)
-      setCurrentStep('')
+      setCurrentStep('Initializing merge...')
       setMessages([])
       setCurrentConflict(null)
-      setCurrentMergeId(null); // Reset merge ID to trigger potential restart
-      hasStartedMergeProcess.current = false;
+      setCurrentMergeId(null)
+      setStartTime(Date.now()) // Reset start time for proper elapsed time tracking
+      setElapsedTime(0)
+      setConflictStats({ total: 0, resolved: 0 })
+      setAllConflictsResolved(false)
+      setShowMergeCompletionBanner(false)
+      hasStartedMergeProcess.current = false
 
-      // Start the merge process again (which will set a new mergeId and trigger polling via useEffect)
+      // Start the merge process again
       await startMergeProcess()
 
     } catch (error) {
       console.error('Error retrying merge:', error)
       setError(error instanceof Error ? error.message : 'Failed to retry merge')
-      setStatus(MergeStatus.FAILED); // Set status to failed on retry error
+      setStatus(MergeStatus.FAILED)
     } finally {
       setIsRetrying(false)
     }
@@ -868,6 +890,25 @@ function MergePageContent() {
                   <Monitor className="h-4 w-4 mr-1" />
                   View Status
                 </Button>
+
+                {/* Retry Button for Failed Merges */}
+                {status === MergeStatus.FAILED && (
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={handleRetry}
+                    disabled={isRetrying}
+                    className="bg-red-50 hover:bg-red-100 text-red-600 border-red-300"
+                    title="Retry the merge process"
+                  >
+                    {isRetrying ? (
+                      <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                    ) : (
+                      <RefreshCcw className="h-4 w-4 mr-1" />
+                    )}
+                    {isRetrying ? 'Retrying...' : 'Retry'}
+                  </Button>
+                )}
               </div>
             </div>
             <TabsContent value="progress" className="space-y-6">
@@ -889,6 +930,49 @@ function MergePageContent() {
                         onCancel={handleCancelMerge}
                         onFinalize={handleAutoResolveComplete}
                       />
+
+                      {/* Completed Merge Notification */}
+                      {status === MergeStatus.COMPLETED && (
+                        <Alert className="bg-green-50 border-green-200 animate-fadeIn mb-4">
+                          <CheckCircle2 className="h-5 w-5 text-green-600" />
+                          <div className="font-medium text-green-800">Merge Completed Successfully!</div>
+                          <AlertDescription className="text-green-700">
+                            Excellent! The merge has been completed successfully. All data has been merged into the production database.
+                          </AlertDescription>
+                        </Alert>
+                      )}
+
+                      {/* Failed Merge Notification */}
+                      {status === MergeStatus.FAILED && (
+                        <Alert className="bg-red-50 border-red-200 animate-fadeIn mb-4">
+                          <AlertCircle className="h-5 w-5 text-red-600" />
+                          <div className="font-medium text-red-800">Merge Failed</div>
+                          <AlertDescription className="text-red-700">
+                            <p className="mb-3">
+                              The merge process encountered an error and could not be completed. You can retry the merge process.
+                            </p>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={handleRetry}
+                              disabled={isRetrying}
+                              className="bg-white hover:bg-red-50 text-red-600 border-red-300"
+                            >
+                              {isRetrying ? (
+                                <>
+                                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                  Retrying...
+                                </>
+                              ) : (
+                                <>
+                                  <RefreshCcw className="h-4 w-4 mr-2" />
+                                  Retry Merge
+                                </>
+                              )}
+                            </Button>
+                          </AlertDescription>
+                        </Alert>
+                      )}
                     </div>
                   ) : (
                     <div className="flex flex-col items-center justify-center py-12">
