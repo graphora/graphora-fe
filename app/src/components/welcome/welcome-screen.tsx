@@ -71,7 +71,7 @@ export function WelcomeScreen() {
     <ConfigCheck requireConfig={true}>
       <div className="welcome-screen fixed inset-0 flex items-center justify-center bg-black bg-opacity-80 backdrop-blur-sm z-50">
         <div className="container mx-auto px-4 max-w-6xl">
-          <div className="bg-white rounded-2xl p-4 shadow-xl">
+          <div className="bg-background border border-border rounded-2xl p-4 shadow-xl">
             <div className="text-center max-w-2xl mx-auto space-y-8">
               {/* Logo and Brand */}
               <div className="flex flex-col items-center space-y-4">
@@ -82,17 +82,17 @@ export function WelcomeScreen() {
                     className="w-full h-full"
                   />
                 </div>
-                <h1 className="text-5xl font-bold text-gray-900 dark:text-white tracking-tight">
+                <h1 className="text-5xl font-bold text-foreground tracking-tight">
                   Welcome to Graphora
                 </h1>
-                <p className="text-xl text-gray-600 dark:text-gray-300 leading-relaxed">
+                <p className="text-xl text-muted-foreground leading-relaxed">
                   Transform your unstructured data into powerful knowledge graphs with our AI-powered platform
                 </p>
               </div>
             </div>
 
             <div className="text-center mb-8">
-              <h2 className="text-3xl font-bold mb-4">
+              <h2 className="text-3xl font-bold mb-4 text-foreground">
                 Choose Your Path to Knowledge Graph Creation
               </h2>
             </div>

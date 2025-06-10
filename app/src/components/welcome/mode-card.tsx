@@ -29,14 +29,13 @@ export function ModeCard({
     <div
       className={cn(
         "mode-card",
-        "bg-white rounded-xl p-6",
-        "border-2 border-transparent",
+        "bg-card border border-border rounded-xl p-6",
         "transition-all duration-300",
-        "hover:border-blue-500 hover:shadow-lg hover:scale-[1.02]",
+        "hover:border-primary hover:shadow-lg hover:scale-[1.02]",
         "cursor-pointer",
         "flex flex-col",
         "min-w-[300px] max-w-[400px]",
-        selected && "border-blue-500 shadow-lg"
+        selected && "border-primary shadow-lg"
       )}
       onClick={onClick}
       role="button"
@@ -48,12 +47,12 @@ export function ModeCard({
       }}
     >
       <div className="flex items-center gap-4 mb-4">
-        <div className="text-blue-500 w-12 h-12">
+        <div className="text-primary w-12 h-12">
           {icon}
         </div>
         <div>
-          <h3 className="text-xl font-semibold">{title}</h3>
-          <p className="text-gray-600">{subtitle}</p>
+          <h3 className="text-xl font-semibold text-card-foreground">{title}</h3>
+          <p className="text-muted-foreground">{subtitle}</p>
         </div>
       </div>
 
@@ -61,7 +60,7 @@ export function ModeCard({
         {features.map((feature) => (
           <li key={feature} className="flex items-center gap-2">
             <svg 
-              className="w-5 h-5 text-green-500" 
+              className="w-5 h-5 text-green-500 dark:text-green-400" 
               fill="none" 
               viewBox="0 0 24 24" 
               stroke="currentColor"
@@ -73,7 +72,7 @@ export function ModeCard({
                 d="M5 13l4 4L19 7" 
               />
             </svg>
-            <span>{feature}</span>
+            <span className="text-card-foreground">{feature}</span>
           </li>
         ))}
       </ul>
@@ -81,10 +80,14 @@ export function ModeCard({
       <button 
         className={cn(
           "mt-6 w-full py-2 px-4 rounded-lg",
-          ctaText === "Coming Soon" ? "bg-gray-300 text-gray-500 cursor-not-allowed" : "bg-blue-500 text-white",
-          ctaText === "Coming Soon" ? "hover:bg-gray-300" : "hover:bg-blue-600",
+          ctaText === "Coming Soon" 
+            ? "bg-muted text-muted-foreground cursor-not-allowed" 
+            : "bg-primary text-primary-foreground",
+          ctaText === "Coming Soon" 
+            ? "hover:bg-muted" 
+            : "hover:bg-primary/90",
           "transition-colors duration-200",
-          "focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+          "focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
         )}
         disabled={ctaText === "Coming Soon"}
       >

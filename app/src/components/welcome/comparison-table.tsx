@@ -13,30 +13,30 @@ interface ComparisonTableProps {
 
 export function ComparisonTable({ headers, rows }: ComparisonTableProps) {
   return (
-    <div className="w-full mt-8 bg-white rounded-lg overflow-hidden border border-gray-200">
+    <div className="w-full mt-8 bg-card border border-border rounded-lg overflow-hidden">
       <table className="w-full">
         <thead>
-          <tr className="bg-gray-50">
+          <tr className="bg-muted/50">
             {headers.map((header) => (
               <th
                 key={header}
-                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider"
               >
                 {header}
               </th>
             ))}
           </tr>
         </thead>
-        <tbody className="bg-white divide-y divide-gray-200">
+        <tbody className="bg-card divide-y divide-border">
           {rows.map((row) => (
             <tr key={row.feature}>
-              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-card-foreground">
                 {row.feature}
               </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+              <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
                 {row.easy}
               </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+              <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
                 {row.expert}
               </td>
             </tr>
