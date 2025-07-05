@@ -15,7 +15,6 @@ import { PageHeader } from '@/components/layouts/page-header'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Search, Upload, Play, Code2, Grid2x2, SplitSquareVertical, Settings, Database, Save, ArrowLeft, Edit2, Check, X } from 'lucide-react'
 import { VisualEditor } from '@/components/ontology/visual-editor'
-import { type AIAssistantState } from '@/lib/types/ai-assistant'
 import { cn } from '@/lib/utils'
 import Link from 'next/link'
 import { useUserConfig } from '@/hooks/useUserConfig'
@@ -229,55 +228,6 @@ function OntologyPageContent() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [viewMode, setViewMode] = useState<ViewMode>('split')
-  const [aiAssistantState, setAiAssistantState] = useState<AIAssistantState>({
-    isExpanded: false,
-    isCompact: true,
-    suggestions: [
-      {
-        id: '1',
-        priority: 'high' as const,
-        type: 'pattern' as const,
-        content: {
-          title: 'Add Timestamps to Entities',
-          description: 'Consider adding created_at and updated_at fields to track entity changes.',
-          impact: 'Improves auditability and helps track data lineage.',
-          confidence: 0.9
-        }
-      }
-    ],
-    activePatterns: [
-      {
-        id: 'p1',
-        name: 'Timestamp Pattern',
-        description: 'Add created_at and updated_at fields',
-        confidence: 0.9,
-        type: 'domain' as const,
-        matches: [
-          {
-            path: 'entities.User',
-            score: 0.9
-          }
-        ]
-      }
-    ],
-    qualityMetrics: {
-      score: 85,
-      components: {
-        completeness: 80,
-        consistency: 90,
-        optimization: 85,
-        bestPractices: 85
-      },
-      improvements: [],
-      history: [
-        {
-          id: '1',
-          timestamp: Date.now(),
-          score: 85
-        }
-      ]
-    }
-  })
 
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
   
@@ -557,34 +507,20 @@ function OntologyPageContent() {
   }, [updateFromYaml])
 
   const handleApplySuggestion = useCallback((id: string) => {
-    const suggestion = aiAssistantState.suggestions.find(s => s.id === id)
-    if (!suggestion?.content) return
-    
-    // TODO: Implement applying suggestion
-    console.log('Applying suggestion:', suggestion.content)
-  }, [aiAssistantState.suggestions])
+    console.log('Applying suggestion:', id)
+  }, [])
 
   const handleDismissSuggestion = useCallback((id: string) => {
-    setAiAssistantState(prev => ({
-      ...prev,
-      suggestions: prev.suggestions.filter(s => s.id !== id)
-    }))
+    console.log('Dismissing suggestion:', id)
   }, [])
 
   const handleExplainSuggestion = useCallback((id: string) => {
-    setAiAssistantState(prev => ({
-      ...prev,
-      selectedSuggestion: id
-    }))
+    console.log('Explaining suggestion:', id)
   }, [])
 
   const handleCustomizeSuggestion = useCallback((id: string) => {
-    const suggestion = aiAssistantState.suggestions.find(s => s.id === id)
-    if (!suggestion?.content) return
-    
-    // TODO: Implement customizing suggestion
-    console.log('Customizing suggestion:', suggestion.content)
-  }, [aiAssistantState.suggestions])
+    console.log('Customizing suggestion:', id)
+  }, [])
 
   const tools = [
     {

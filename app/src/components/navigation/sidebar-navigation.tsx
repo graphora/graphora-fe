@@ -11,8 +11,8 @@ import {
   Settings,
   Database,
   Zap,
-  MessageSquare,
-  BarChart3
+  BarChart3,
+  Bot
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -41,32 +41,21 @@ export function SidebarNavigation({ className, defaultCollapsed = true }: Sideba
   const pathname = usePathname()
   const [isCollapsed, setIsCollapsed] = useState(defaultCollapsed)
   const [isDomainAppsVisible, setIsDomainAppsVisible] = useState(false)
-  const [isAiAssistantVisible, setIsAiAssistantVisible] = useState(false)
 
   useEffect(() => {
     // Get the settings from localStorage, default to false (hidden)
     const domainAppsStored = localStorage.getItem('domainAppsVisible')
     setIsDomainAppsVisible(domainAppsStored === 'true')
     
-    const aiAssistantStored = localStorage.getItem('aiAssistantVisible')
-    setIsAiAssistantVisible(aiAssistantStored === 'true')
-
     // Listen for changes to domain apps visibility
     const handleDomainAppsVisibilityChange = (event: CustomEvent) => {
       setIsDomainAppsVisible(event.detail.visible)
     }
 
-    // Listen for changes to AI assistant visibility
-    const handleAiAssistantVisibilityChange = (event: CustomEvent) => {
-      setIsAiAssistantVisible(event.detail.visible)
-    }
-
     window.addEventListener('domainAppsVisibilityChanged', handleDomainAppsVisibilityChange as EventListener)
-    window.addEventListener('aiAssistantVisibilityChanged', handleAiAssistantVisibilityChange as EventListener)
     
     return () => {
       window.removeEventListener('domainAppsVisibilityChanged', handleDomainAppsVisibilityChange as EventListener)
-      window.removeEventListener('aiAssistantVisibilityChanged', handleAiAssistantVisibilityChange as EventListener)
     }
   }, [])
 
@@ -79,12 +68,12 @@ export function SidebarNavigation({ className, defaultCollapsed = true }: Sideba
       description: 'Main dashboard overview'
     },
     {
-      id: 'ai-assistant',
-      name: 'AI Assistant',
-      icon: <MessageSquare className="w-5 h-5" />,
-      path: '/chat',
-      badge: 'WIP',
-      description: 'Chat with AI about your data'
+      id: 'ai-schema-generator',
+      name: 'AI Schema Generator',
+      icon: <Bot className="w-5 h-5" />,
+      path: '/schema-chat',
+      badge: 'New',
+      description: 'Generate schemas using AI conversation'
     },
     {
       id: 'ontologies',
@@ -119,9 +108,6 @@ export function SidebarNavigation({ className, defaultCollapsed = true }: Sideba
   // Filter navigation items based on visibility settings
   const navigationItems = allNavigationItems.filter(item => {
     if (item.id === 'applications' && !isDomainAppsVisible) {
-      return false
-    }
-    if (item.id === 'ai-assistant' && !isAiAssistantVisible) {
       return false
     }
     return true
