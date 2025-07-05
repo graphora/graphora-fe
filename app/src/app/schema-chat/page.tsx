@@ -44,6 +44,8 @@ import {
   type ChatMessage,
   type UserResponse
 } from '@/lib/store/schema-chat-store'
+import { ChatMessage as ChatMessageComponent } from '@/components/schema-chat/chat-message'
+import { QuestionInput } from '@/components/schema-chat/question-input'
 
 
 // Progress steps for the stepper
@@ -166,14 +168,15 @@ ${firstQuestion.helpText ? `💡 ${firstQuestion.helpText}` : ''}`,
     })
   }
 
-  const handleUserResponse = (response: string) => {
+  const handleUserResponse = (response: string | string[]) => {
     const currentQ = getCurrentQuestionData()
     if (!currentQ) return
     
     // Add user message
+    const displayValue = Array.isArray(response) ? response.join(', ') : response
     addMessage({
       role: 'user',
-      content: response
+      content: displayValue
     })
 
     // Store response
@@ -562,46 +565,14 @@ Based on your feedback, I'll update the schema accordingly. The changes will be 
               <ScrollArea className="flex-1 p-4">
                 <div className="max-w-4xl mx-auto space-y-6">
                   {messages.map((message) => (
-                    <div key={message.id} className={cn(
-                      "flex items-start space-x-3",
-                      message.role === 'user' ? 'justify-end' : 'justify-start'
-                    )}>
-                      {message.role === 'assistant' && (
-                        <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center">
-                          <Bot className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                        </div>
-                      )}
-                      
-                      <div className={cn(
-                        "max-w-[70%] p-4 rounded-2xl",
-                        message.role === 'user' 
-                          ? "bg-primary text-primary-foreground ml-auto" 
-                          : "bg-muted"
-                      )}>
-                        <div className="whitespace-pre-wrap text-sm">
-                          {message.content}
-                        </div>
-                        
-                        {message.type === 'schema_preview' && (
-                          <div className="mt-4 space-y-2">
-                            <Button 
-                              variant="secondary" 
-                              size="sm"
-                              onClick={handleShowPreview}
-                            >
-                              <Eye className="h-4 w-4 mr-2" />
-                              Show Preview
-                            </Button>
-                          </div>
-                        )}
-                      </div>
-                      
-                      {message.role === 'user' && (
-                        <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
-                          <User className="h-4 w-4 text-primary" />
-                        </div>
-                      )}
-                    </div>
+                    <ChatMessageComponent 
+                      key={message.id} 
+                      message={message}
+                      onAction={(action) => {
+                        if (action === 'showPreview') handleShowPreview()
+                        if (action === 'exportToEditor') handleExportToEditor()
+                      }}
+                    />
                   ))}
                   
                   {isTyping && (
@@ -633,13 +604,52 @@ Based on your feedback, I'll update the schema accordingly. The changes will be 
                         Begin Schema Generation
                       </Button>
                     </div>
+                  ) : chatState === 'data_collection' ? (
+                    // Show structured question input during data collection
+                    (() => {
+                      const currentQ = getCurrentQuestionData()
+                      return currentQ ? (
+                        <QuestionInput
+                          question={currentQ}
+                          onSubmit={handleUserResponse}
+                          disabled={isProcessing}
+                        />
+                      ) : (
+                        <div className="flex space-x-2">
+                          <div className="flex-1 relative">
+                            <Textarea
+                              value={currentInput}
+                              onChange={(e) => setCurrentInput(e.target.value)}
+                              placeholder="Type your response..."
+                              className="min-h-[60px] pr-12 resize-none"
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter' && !e.shiftKey) {
+                                  e.preventDefault()
+                                  handleSendMessage()
+                                }
+                              }}
+                            />
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="absolute right-2 bottom-2"
+                              onClick={handleSendMessage}
+                              disabled={!currentInput.trim() || isProcessing}
+                            >
+                              <Send className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      )
+                    })()
                   ) : (
+                    // Free-form chat for schema review and refinement
                     <div className="flex space-x-2">
                       <div className="flex-1 relative">
                         <Textarea
                           value={currentInput}
                           onChange={(e) => setCurrentInput(e.target.value)}
-                          placeholder="Type your response..."
+                          placeholder="Ask about the schema or request changes..."
                           className="min-h-[60px] pr-12 resize-none"
                           onKeyDown={(e) => {
                             if (e.key === 'Enter' && !e.shiftKey) {
