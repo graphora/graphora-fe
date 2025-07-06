@@ -17,7 +17,6 @@ import { DatabaseConfig, UserConfig, ConfigRequest } from '@/types/config'
 import { GeminiConfigRequest, UserAIConfigDisplay } from '@/types/ai-config'
 import { toast } from 'sonner'
 import { DomainAppsToggle } from '@/components/config/domain-apps-toggle'
-import { AiAssistantToggle } from '@/components/config/ai-assistant-toggle'
 
 const defaultDbConfig: DatabaseConfig = {
   name: '',
@@ -602,15 +601,6 @@ function ConfigPageContent() {
                       <DomainAppsToggle />
                     </div>
                     
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-1">
-                        <h4 className="text-sm font-medium text-foreground">AI Assistant in Sidebar</h4>
-                        <p className="text-sm text-muted-foreground">
-                          Show or hide AI assistant link in the sidebar navigation
-                        </p>
-                      </div>
-                      <AiAssistantToggle />
-                    </div>
                   </div>
                 </CardContent>
               </Card>

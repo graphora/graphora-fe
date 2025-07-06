@@ -33,7 +33,6 @@ import { clsx as cn } from 'clsx'
 import { Toolbar } from '@/components/command-center/toolbar'
 import { ResizablePanel } from '@/components/command-center/resizable-panel'
 import { CommandPalette } from '@/components/command-center/command-palette'
-import { type AIAssistantState } from '@/lib/types/ai-assistant'
 import { toast } from 'sonner'
 import { useUserConfig } from '@/hooks/useUserConfig'
 
@@ -108,50 +107,6 @@ function TransformPageContent() {
   const [sidebarWidth, setSidebarWidth] = useState(320)
   const [showUploadConfirm, setShowUploadConfirm] = useState(false)
   const [pendingFiles, setPendingFiles] = useState<File[]>([])
-  const [aiAssistantState, setAiAssistantState] = useState<AIAssistantState>({
-    isExpanded: false,
-    isCompact: true,
-    suggestions: [
-      {
-        id: '1',
-        priority: 'high',
-        type: 'pattern',
-        content: {
-          title: 'Potential Entity Match',
-          description: 'Found similar entities in your document that could be merged.',
-          impact: 'Reduces data redundancy and improves graph consistency.',
-          confidence: 0.9
-        }
-      }
-    ],
-    activePatterns: [
-      {
-        id: '1',
-        name: 'Document Structure',
-        description: 'Common document organization pattern detected.',
-        confidence: 0.9,
-        type: 'domain',
-        matches: [
-          { path: 'sections.header', score: 0.9 },
-          { path: 'sections.content', score: 0.85 }
-        ]
-      }
-    ],
-    qualityMetrics: {
-      score: 85,
-      components: {
-        completeness: 90,
-        consistency: 85,
-        optimization: 80,
-        bestPractices: 85
-      },
-      improvements: [],
-      history: [
-        { timestamp: Date.now() - 3600000, score: 80 },
-        { timestamp: Date.now(), score: 85 }
-      ]
-    }
-  })
 
   useEffect(() => {
     if (!sessionId) {
@@ -534,17 +489,11 @@ function TransformPageContent() {
   }, [])
 
   const handleDismissSuggestion = useCallback((id: string) => {
-    setAiAssistantState(prev => ({
-      ...prev,
-      suggestions: prev.suggestions.filter(s => s.id !== id)
-    }))
+    console.log('Dismissing suggestion:', id)
   }, [])
 
   const handleExplainSuggestion = useCallback((id: string) => {
-    setAiAssistantState(prev => ({
-      ...prev,
-      selectedSuggestion: id
-    }))
+    console.log('Explaining suggestion:', id)
   }, [])
 
   const handleCustomizeSuggestion = useCallback((id: string) => {
