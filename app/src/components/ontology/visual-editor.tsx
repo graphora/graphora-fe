@@ -39,7 +39,7 @@ export function VisualEditor() {
 
   return (
     <div className="h-full flex flex-col">
-      <div className="flex items-center justify-between p-2 border-b">
+      <div className="sticky top-0 z-10 bg-background flex items-center justify-between p-2 border-b shadow-sm">
         <div className="flex space-x-2">
           <button
             onClick={() => setViewMode('tree')}

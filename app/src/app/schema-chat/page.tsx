@@ -27,7 +27,8 @@ import {
   Sparkles,
   Eye,
   Edit3,
-  ExternalLink
+  ExternalLink,
+  X
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { EnhancedWorkflowLayout, WorkflowStep } from '@/components/enhanced-workflow-layout'
@@ -68,11 +69,16 @@ export default function SchemaChatPage() {
     messages,
     isTyping,
     error,
+    sessionId,
+    isSessionActive,
     setChatState,
     addMessage,
+    updateMessage,
     setIsTyping,
-    setError
-  } = useSchemaGenerationChat()
+    setError,
+    startSession,
+    refineSchema
+  } = useSchemaGenerationStore()
   
   const {
     currentQuestionSet,
@@ -82,6 +88,7 @@ export default function SchemaChatPage() {
     setCurrentQuestionSet,
     setCurrentQuestion,
     addUserResponse,
+    updateUserResponse,
     setIsProcessing,
     canProceedToNextQuestion,
     getCurrentQuestionSetData,
@@ -106,13 +113,27 @@ export default function SchemaChatPage() {
   
   // Local UI state
   const [currentInput, setCurrentInput] = useState('')
+  const [showPreviousResponses, setShowPreviousResponses] = useState(false)
+  const [editingResponseId, setEditingResponseId] = useState<string | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const chatInputRef = useRef<HTMLTextAreaElement>(null)
 
   // Scroll to bottom when messages change
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
+
+  // Focus chat input when schema is generated and state changes to schema_review
+  useEffect(() => {
+    if (generatedSchema && chatState === 'schema_review' && chatInputRef.current) {
+      // Small delay to ensure the component is rendered
+      const timer = setTimeout(() => {
+        chatInputRef.current?.focus()
+      }, 100)
+      return () => clearTimeout(timer)
+    }
+  }, [generatedSchema, chatState])
 
   // Initialize chat
   useEffect(() => {
@@ -205,7 +226,7 @@ ${nextQ.helpText ? `💡 ${nextQ.helpText}` : ''}`,
             questionId: nextQ.id
           }
         })
-      }, 500)
+      }, 200)
       
     } else if (currentQuestionSet + 1 < QUESTION_SETS.length) {
       // Next question set
@@ -229,14 +250,14 @@ ${nextSet.questions[0].helpText ? `💡 ${nextSet.questions[0].helpText}` : ''}`
             questionId: nextSet.questions[0].id
           }
         })
-      }, 500)
+      }, 200)
       
     } else {
       // All questions completed - move to schema search
       setChatState('schema_search')
       setTimeout(() => {
         handleSchemaSearch()
-      }, 500)
+      }, 200)
     }
   }
 
@@ -255,7 +276,7 @@ ${nextSet.questions[0].helpText ? `💡 ${nextSet.questions[0].helpText}` : ''}`
     setChatState('schema_generation')
     setTimeout(() => {
       handleSchemaGeneration()
-    }, 2000)
+    }, 500)
   }
 
   const handleSchemaGeneration = async () => {
@@ -309,9 +330,46 @@ Based on your responses, I'm creating a schema optimized for your use case.`,
       setIsProcessing(false)
       setIsGenerating(false)
       
-      addMessage({
-        role: 'assistant',
-        content: `🎉 **Schema generated successfully!**
+      // Start a refinement session for multi-turn conversation
+      try {
+        await startSession('schema_refinement', {
+          initial_schema: generatedSchema,
+          generation_context: getAllResponsesAsContext()
+        })
+        
+        addMessage({
+          role: 'assistant',
+          content: `🎉 **Schema generated successfully!**
+
+I've created a custom schema based on your requirements. The schema includes ${data.relatedSchemas?.length || 0} similar schemas for reference.
+
+**Confidence Score**: ${Math.round((data.confidence || 0.85) * 100)}%
+
+Now we can work together to refine it! You can:
+
+✨ **Ask me to modify anything:**
+- "Add timestamps to all entities"
+- "Create a relationship between Customer and Product"
+- "Make email fields required"
+- "Remove deprecated properties"
+
+📋 **Or use these options:**
+1. **Preview** the schema visually
+2. **Export** to the ontology editor
+3. **Continue refining** through conversation
+
+What would you like to modify or explore first?`,
+          type: 'schema_preview',
+          metadata: {
+            schemaPreview: generatedSchema
+          }
+        })
+      } catch (error) {
+        console.error('Failed to start refinement session:', error)
+        // Fallback to original message
+        addMessage({
+          role: 'assistant',
+          content: `🎉 **Schema generated successfully!**
 
 I've created a custom schema based on your requirements. The schema includes ${data.relatedSchemas?.length || 0} similar schemas for reference.
 
@@ -325,11 +383,12 @@ You can now:
 4. **Export** to the ontology editor when ready
 
 Would you like to see the schema preview?`,
-        type: 'schema_preview',
-        metadata: {
-          schemaPreview: generatedSchema
-        }
-      })
+          type: 'schema_preview',
+          metadata: {
+            schemaPreview: generatedSchema
+          }
+        })
+      }
       
     } catch (error) {
       console.error('Schema generation error:', error)
@@ -401,24 +460,46 @@ entities:
     setCurrentInput('')
   }
 
-  const handleSchemaRefinement = (input: string) => {
+  const handleSchemaRefinement = async (input: string) => {
     // Add user message
     addMessage({
       role: 'user',
       content: input
     })
 
-    // Simulate AI response for schema refinement
-    setTimeout(() => {
+    try {
+      setIsProcessing(true)
+      
+      // Use the real multi-turn refinement API
+      await refineSchema(
+        sessionId, // Current session ID
+        input, // User's refinement request
+        generatedSchema || undefined // Current schema state
+      )
+      
+    } catch (error) {
+      console.error('Schema refinement error:', error)
       addMessage({
         role: 'assistant',
-        content: `I understand you want to modify the schema. Let me help you with that.
+        content: `I encountered an error while processing your request: ${error instanceof Error ? error.message : 'Unknown error'}
 
-*Processing your request...*
-
-Based on your feedback, I'll update the schema accordingly. The changes will be reflected in the preview.`
+Please try rephrasing your request or be more specific about the changes you'd like to make.`
       })
-    }, 1000)
+    } finally {
+      setIsProcessing(false)
+    }
+  }
+
+  const handleEditMessage = (messageId: string, newContent: string) => {
+    // Update the message in the store
+    updateMessage(messageId, { content: newContent })
+    
+    // If it's a user message in the schema review phase, we might want to re-process it
+    const message = messages.find(m => m.id === messageId)
+    if (message && message.role === 'user' && chatState === 'schema_review') {
+      // Optionally, you could re-send the edited message for processing
+      // handleSchemaRefinement(newContent)
+    }
   }
 
   const getCurrentProgress = () => {
@@ -486,20 +567,29 @@ Based on your feedback, I'll update the schema accordingly. The changes will be 
               </div>
               
               <div className="flex items-center space-x-2">
-                {chatState === 'schema_review' && (
+                {chatState === 'schema_review' && generatedSchema && (
                   <>
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={handleShowPreview}
-                      disabled={!generatedSchema}
-                    >
-                      <Eye className="h-4 w-4 mr-1.5" />
-                      Preview
-                    </Button>
+                    {viewMode === 'chat' ? (
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={handleShowPreview}
+                      >
+                        <Eye className="h-4 w-4 mr-1.5" />
+                        Preview
+                      </Button>
+                    ) : (
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => setViewMode('chat')}
+                      >
+                        <X className="h-4 w-4 mr-1.5" />
+                        Close Preview
+                      </Button>
+                    )}
                     <Button 
                       onClick={handleExportToEditor}
-                      disabled={!generatedSchema}
                       size="sm"
                     >
                       <ExternalLink className="h-4 w-4 mr-1.5" />
@@ -558,7 +648,7 @@ Based on your feedback, I'll update the schema accordingly. The changes will be 
         )}
 
         {/* Main Content */}
-        <div className="flex-1 overflow-hidden">
+        <div className="flex-1 min-h-0">
           {viewMode === 'chat' ? (
             <div className="flex flex-col h-full">
               {/* Messages */}
@@ -572,20 +662,34 @@ Based on your feedback, I'll update the schema accordingly. The changes will be 
                         if (action === 'showPreview') handleShowPreview()
                         if (action === 'exportToEditor') handleExportToEditor()
                       }}
+                      onEdit={handleEditMessage}
+                      canEdit={message.role === 'user' && chatState === 'schema_review'}
                     />
                   ))}
                   
-                  {isTyping && (
+                  {(isTyping || isProcessing || isGenerating) && (
                     <div className="flex items-start space-x-3">
                       <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center">
                         <Bot className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                       </div>
                       <div className="bg-muted p-4 rounded-2xl">
-                        <div className="flex space-x-1">
-                          <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" />
-                          <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{animationDelay: '0.1s'}} />
-                          <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{animationDelay: '0.2s'}} />
-                        </div>
+                        {isGenerating ? (
+                          <div className="flex items-center space-x-2">
+                            <Loader2 className="h-4 w-4 animate-spin text-blue-600 dark:text-blue-400" />
+                            <span className="text-sm text-muted-foreground">Generating schema...</span>
+                          </div>
+                        ) : isProcessing ? (
+                          <div className="flex items-center space-x-2">
+                            <Loader2 className="h-4 w-4 animate-spin text-blue-600 dark:text-blue-400" />
+                            <span className="text-sm text-muted-foreground">Processing your request...</span>
+                          </div>
+                        ) : (
+                          <div className="flex space-x-1">
+                            <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" />
+                            <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{animationDelay: '0.1s'}} />
+                            <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{animationDelay: '0.2s'}} />
+                          </div>
+                        )}
                       </div>
                     </div>
                   )}
@@ -597,6 +701,221 @@ Based on your feedback, I'll update the schema accordingly. The changes will be 
               {/* Input Area */}
               <div className="border-t p-4">
                 <div className="max-w-4xl mx-auto">
+                  {chatState === 'welcome' ? (
+                    <div className="flex justify-center">
+                      <Button onClick={handleBegin} size="lg">
+                        <Sparkles className="h-4 w-4 mr-2" />
+                        Begin Schema Generation
+                      </Button>
+                    </div>
+                  ) : chatState === 'data_collection' ? (
+                    // Show structured question input during data collection with edit capability
+                    <div className="space-y-4">
+                      {/* Previous responses summary */}
+                      {userResponses.length > 0 && (
+                        <div className="bg-muted/50 p-3 rounded-lg">
+                          <div className="flex items-center justify-between mb-2">
+                            <h4 className="text-sm font-medium">Previous Responses</h4>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setShowPreviousResponses(!showPreviousResponses)}
+                            >
+                              {showPreviousResponses ? 'Hide' : 'Show'} ({userResponses.length})
+                            </Button>
+                          </div>
+                          {showPreviousResponses && (
+                            <div className="space-y-2 max-h-40 overflow-y-auto">
+                              {userResponses.map((response) => {
+                                const question = QUESTION_SETS
+                                  .flatMap(set => set.questions)
+                                  .find(q => q.id === response.questionId)
+                                return question ? (
+                                  <div key={response.questionId} className="text-xs border rounded p-2 bg-background">
+                                    <div className="font-medium text-muted-foreground mb-1">
+                                      {question.prompt}
+                                    </div>
+                                    <div className="flex items-center justify-between">
+                                      <span className="text-foreground">
+                                        {Array.isArray(response.value) ? response.value.join(', ') : response.value}
+                                      </span>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => setEditingResponseId(response.questionId)}
+                                        className="h-6 w-6 p-0"
+                                      >
+                                        <Edit3 className="h-3 w-3" />
+                                      </Button>
+                                    </div>
+                                  </div>
+                                ) : null
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      
+                      {/* Current question or edit mode */}
+                      {editingResponseId ? (
+                        (() => {
+                          const responseToEdit = userResponses.find(r => r.questionId === editingResponseId)
+                          const questionToEdit = QUESTION_SETS
+                            .flatMap(set => set.questions)
+                            .find(q => q.id === editingResponseId)
+                          return questionToEdit && responseToEdit ? (
+                            <div className="border rounded-lg p-4 bg-accent/20">
+                              <div className="flex items-center justify-between mb-3">
+                                <h4 className="font-medium">Editing Response</h4>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => setEditingResponseId(null)}
+                                >
+                                  Cancel
+                                </Button>
+                              </div>
+                              <QuestionInput
+                                question={questionToEdit}
+                                currentValue={responseToEdit.value}
+                                onSubmit={(value) => {
+                                  updateUserResponse(editingResponseId, value)
+                                  setEditingResponseId(null)
+                                }}
+                                disabled={isProcessing}
+                                submitLabel="Update Response"
+                              />
+                            </div>
+                          ) : null
+                        })()
+                      ) : (
+                        (() => {
+                          const currentQ = getCurrentQuestionData()
+                          return currentQ ? (
+                            <QuestionInput
+                              question={currentQ}
+                              onSubmit={handleUserResponse}
+                              disabled={isProcessing}
+                            />
+                          ) : (
+                            <div className="flex space-x-2">
+                              <div className="flex-1 relative">
+                                <Textarea
+                                  value={currentInput}
+                                  onChange={(e) => setCurrentInput(e.target.value)}
+                                  placeholder="Type your response..."
+                                  className="min-h-[60px] pr-12 resize-none"
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter' && !e.shiftKey) {
+                                      e.preventDefault()
+                                      handleSendMessage()
+                                    }
+                                  }}
+                                />
+                                <Button
+                                  size="icon"
+                                  variant="ghost"
+                                  className="absolute right-2 bottom-2"
+                                  onClick={handleSendMessage}
+                                  disabled={!currentInput.trim() || isProcessing}
+                                >
+                                  {isProcessing ? (
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                  ) : (
+                                    <Send className="h-4 w-4" />
+                                  )}
+                                </Button>
+                              </div>
+                            </div>
+                          )
+                        })()
+                      )}
+                    </div>
+                  ) : (
+                    // Free-form chat for schema review and refinement
+                    <div className="flex space-x-2">
+                      <div className="flex-1 relative">
+                        <Textarea
+                          value={currentInput}
+                          onChange={(e) => setCurrentInput(e.target.value)}
+                          placeholder="Ask about the schema or request changes..."
+                          className="min-h-[60px] pr-12 resize-none"
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' && !e.shiftKey) {
+                              e.preventDefault()
+                              handleSendMessage()
+                            }
+                          }}
+                        />
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="absolute right-2 bottom-2"
+                          onClick={handleSendMessage}
+                          disabled={!currentInput.trim() || isProcessing}
+                        >
+                          <Send className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 h-full">
+              {/* Chat Panel */}
+              <div className="border-r flex flex-col min-h-0">
+                <div className="border-b p-3 flex-shrink-0">
+                  <h3 className="font-semibold">Conversation</h3>
+                </div>
+                <ScrollArea className="flex-1">
+                  <div className="p-4 space-y-6">
+                      {messages.map((message) => (
+                        <ChatMessageComponent 
+                          key={message.id} 
+                          message={message}
+                          onAction={(action) => {
+                            if (action === 'showPreview') handleShowPreview()
+                            if (action === 'exportToEditor') handleExportToEditor()
+                          }}
+                          onEdit={handleEditMessage}
+                          canEdit={message.role === 'user' && chatState === 'schema_review'}
+                        />
+                      ))}
+                      
+                      {(isTyping || isProcessing || isGenerating) && (
+                        <div className="flex items-start space-x-3">
+                          <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center">
+                            <Bot className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                          </div>
+                          <div className="bg-muted p-4 rounded-2xl">
+                            {isGenerating ? (
+                              <div className="flex items-center space-x-2">
+                                <Loader2 className="h-4 w-4 animate-spin text-blue-600 dark:text-blue-400" />
+                                <span className="text-sm text-muted-foreground">Generating schema...</span>
+                              </div>
+                            ) : isProcessing ? (
+                              <div className="flex items-center space-x-2">
+                                <Loader2 className="h-4 w-4 animate-spin text-blue-600 dark:text-blue-400" />
+                                <span className="text-sm text-muted-foreground">Processing your request...</span>
+                              </div>
+                            ) : (
+                              <div className="flex space-x-1">
+                                <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" />
+                                <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{animationDelay: '0.1s'}} />
+                                <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{animationDelay: '0.2s'}} />
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                      
+                      <div ref={messagesEndRef} />
+                    </div>
+                </ScrollArea>
+                
+                <div className="border-t p-3 flex-shrink-0">
                   {chatState === 'welcome' ? (
                     <div className="flex justify-center">
                       <Button onClick={handleBegin} size="lg">
@@ -636,7 +955,11 @@ Based on your feedback, I'll update the schema accordingly. The changes will be 
                               onClick={handleSendMessage}
                               disabled={!currentInput.trim() || isProcessing}
                             >
-                              <Send className="h-4 w-4" />
+                              {isProcessing ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <Send className="h-4 w-4" />
+                              )}
                             </Button>
                           </div>
                         </div>
@@ -649,7 +972,7 @@ Based on your feedback, I'll update the schema accordingly. The changes will be 
                         <Textarea
                           value={currentInput}
                           onChange={(e) => setCurrentInput(e.target.value)}
-                          placeholder="Ask about the schema or request changes..."
+                          placeholder="Ask about the schema, request changes, or ask questions..."
                           className="min-h-[60px] pr-12 resize-none"
                           onKeyDown={(e) => {
                             if (e.key === 'Enter' && !e.shiftKey) {
@@ -665,73 +988,36 @@ Based on your feedback, I'll update the schema accordingly. The changes will be 
                           onClick={handleSendMessage}
                           disabled={!currentInput.trim() || isProcessing}
                         >
-                          <Send className="h-4 w-4" />
+                          {isProcessing ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Send className="h-4 w-4" />
+                          )}
                         </Button>
                       </div>
                     </div>
                   )}
                 </div>
               </div>
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 h-full">
-              {/* Chat Panel */}
-              <div className="border-r flex flex-col">
-                <div className="flex-1 overflow-auto p-4">
-                  <div className="space-y-4">
-                    {messages.slice(-5).map((message) => (
-                      <div key={message.id} className={cn(
-                        "flex items-start space-x-2",
-                        message.role === 'user' ? 'justify-end' : 'justify-start'
-                      )}>
-                        <div className={cn(
-                          "max-w-[80%] p-3 rounded-lg text-sm",
-                          message.role === 'user' 
-                            ? "bg-primary text-primary-foreground" 
-                            : "bg-muted"
-                        )}>
-                          {message.content}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                
-                <div className="border-t p-3">
-                  <div className="flex space-x-2">
-                    <Input
-                      value={currentInput}
-                      onChange={(e) => setCurrentInput(e.target.value)}
-                      placeholder="Ask about the schema..."
-                      className="flex-1"
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          handleSendMessage()
-                        }
-                      }}
-                    />
-                    <Button size="icon" onClick={handleSendMessage}>
-                      <Send className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              </div>
               
               {/* Schema Preview Panel */}
-              <div className="flex flex-col">
-                <div className="border-b p-3">
+              <div className="flex flex-col h-full">
+                <div className="border-b p-3 flex-shrink-0">
                   <h3 className="font-semibold">Schema Preview</h3>
                 </div>
-                <div className="flex-1 overflow-auto p-4">
+                <div className="flex-1 overflow-hidden flex flex-col">
                   {generatedSchema ? (
-                    <div className="space-y-4">
+                    <div className="flex-1 p-4 space-y-4 overflow-y-auto">
                       <div className="h-64 border rounded-lg overflow-hidden">
                         <VisualEditor />
                       </div>
                       <div className="h-64 border rounded-lg overflow-hidden">
                         <YAMLEditor 
                           value={generatedSchema} 
-                          onChange={(value) => setGeneratedSchema(value)}
+                          onChange={(value) => {
+                            setGeneratedSchema(value)
+                            updateFromYaml(value)  // Sync with ontology store
+                          }}
                         />
                       </div>
                     </div>
@@ -744,6 +1030,42 @@ Based on your feedback, I'll update the schema accordingly. The changes will be 
                     </div>
                   )}
                 </div>
+                
+                {/* Chat Input Area for Preview Panel */}
+                {generatedSchema && (
+                  <div className="border-t p-3 flex-shrink-0">
+                    <div className="flex space-x-2">
+                      <div className="flex-1 relative">
+                        <Textarea
+                          ref={chatInputRef}
+                          value={currentInput}
+                          onChange={(e) => setCurrentInput(e.target.value)}
+                          placeholder="Ask about the schema, request changes, or ask questions..."
+                          className="min-h-[60px] pr-12 resize-none"
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' && !e.shiftKey) {
+                              e.preventDefault()
+                              handleSendMessage()
+                            }
+                          }}
+                        />
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="absolute right-2 bottom-2"
+                          onClick={handleSendMessage}
+                          disabled={!currentInput.trim() || isProcessing}
+                        >
+                          {isProcessing ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Send className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           )}

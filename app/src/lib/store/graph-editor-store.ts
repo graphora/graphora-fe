@@ -545,7 +545,7 @@ export const useGraphEditorStore = create<GraphEditorState>((set, get) => ({
   toOntology: () => {
     const state = get()
     const ontology: any = {
-      ...(state.ontologyVersion && { version: state.ontologyVersion }),
+      version: state.ontologyVersion || '0.1.0',
       entities: {}
     }
     const nodeMap = new Map<string, Node>(Object.entries(state.graph.nodes))

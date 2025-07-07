@@ -261,7 +261,7 @@ export function GraphView({ ontology, onChange }: GraphViewProps) {
 
   const graphEditor = (
     <div className="h-full flex flex-col">
-      <div className="border-b p-2 flex justify-between items-center">
+      <div className="sticky top-0 z-10 bg-background border-b p-2 flex justify-between items-center shadow-sm">
         <div className="flex gap-1 pr-2 flex-nowrap">
           {/* Hamburger menu only in standard view (not full screen) */}
           <div className={!isFullScreen ? 'block' : 'hidden'}>
@@ -480,11 +480,11 @@ export function GraphView({ ontology, onChange }: GraphViewProps) {
         </div>
       </div>
 
-      <div className="flex-1 relative">
-        <GraphDisplay className="absolute inset-0" />
+      <div className="flex-1 relative overflow-auto">
+        <GraphDisplay className="w-full h-full" />
       </div>
 
-      <div className="border-t p-2 text-xs text-muted-foreground">
+      <div className="sticky bottom-0 z-10 bg-background border-t p-2 text-xs text-muted-foreground shadow-sm">
         <div className="flex justify-between">
           <div>
             <strong>Nodes:</strong> {Object.keys(graph.nodes).length} |

@@ -20,8 +20,8 @@ interface Section {
 }
 
 const DEFAULT_ONTOLOGY = {
-  sections: [],
-  entities: []
+  version: '0.1.0',
+  entities: {}
 }
 
 function processSection(sectionName: string, sectionData: any): Section {
@@ -84,12 +84,12 @@ function convertYamlToOntology(yamlData: any) {
 function convertOntologyToYaml(ontology: any) {
   if (!ontology || typeof ontology !== 'object') {
     // Return an empty structure or a default one if preferred
-    return { version: '1.0.0', entities: {} }; 
+    return { version: '0.1.0', entities: {} }; 
   }
 
   const yamlData: any = {
     // Use version from input ontology, default if missing
-    version: ontology.version || '1.0.0', 
+    version: ontology.version || '0.1.0', 
     entities: {} // Initialize as object
   };
 
@@ -147,7 +147,7 @@ export const useOntologyEditorStore = create<OntologyEditorState>((set) => ({
   updateFromYaml: (yaml: string) => {
     if (!yaml.trim()) {
       // Reset to a default state consistent with object format if needed
-      set({ yaml: '', ontology: { version: '1.0.0', entities: {} } }); 
+      set({ yaml: '', ontology: { version: '0.1.0', entities: {} } }); 
       return;
     }
     try {
@@ -158,7 +158,7 @@ export const useOntologyEditorStore = create<OntologyEditorState>((set) => ({
     } catch (error) {
       console.error('Error parsing YAML:', error);
       // Reset or keep previous state on error
-      set(state => ({ yaml, ontology: state.ontology || { version: '1.0.0', entities: {} } })); 
+      set(state => ({ yaml, ontology: state.ontology || { version: '0.1.0', entities: {} } })); 
     }
   },
   

@@ -1,12 +1,13 @@
 'use client'
 
-import React from 'react'
+import React, { useState } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
-import { Bot, User } from 'lucide-react'
+import { Bot, User, Edit3, Check, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { Textarea } from '@/components/ui/textarea'
 
 interface ChatMessageProps {
   message: {
@@ -27,11 +28,36 @@ interface ChatMessageProps {
     }
   }
   onAction?: (action: string, data?: any) => void
+  onEdit?: (messageId: string, newContent: string) => void
+  canEdit?: boolean
 }
 
-export function ChatMessage({ message, onAction }: ChatMessageProps) {
+export function ChatMessage({ message, onAction, onEdit, canEdit = false }: ChatMessageProps) {
   const isUser = message.role === 'user'
   const isAssistant = message.role === 'assistant'
+  const [isEditing, setIsEditing] = useState(false)
+  const [editContent, setEditContent] = useState(message.content)
+
+  const handleSaveEdit = () => {
+    if (onEdit && editContent.trim() !== message.content) {
+      onEdit(message.id, editContent.trim())
+    }
+    setIsEditing(false)
+  }
+
+  const handleCancelEdit = () => {
+    setEditContent(message.content)
+    setIsEditing(false)
+  }
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault()
+      handleSaveEdit()
+    } else if (e.key === 'Escape') {
+      handleCancelEdit()
+    }
+  }
 
   return (
     <div className={cn(
@@ -45,52 +71,98 @@ export function ChatMessage({ message, onAction }: ChatMessageProps) {
       )}
       
       <div className={cn(
-        "max-w-[70%] p-4 rounded-2xl",
+        "max-w-[70%] p-4 rounded-2xl relative group",
         isUser 
           ? "bg-primary text-primary-foreground ml-auto" 
           : "bg-muted"
       )}>
-        <div className={cn(
-          "prose prose-sm max-w-none",
-          isUser 
-            ? "prose-invert" 
-            : "prose-gray dark:prose-invert"
-        )}>
-          <ReactMarkdown 
-            remarkPlugins={[remarkGfm]}
-            components={{
-              // Customize markdown components
-              p: ({ children }) => <p className="mb-3 last:mb-0">{children}</p>,
-              h1: ({ children }) => <h1 className="text-lg font-bold mb-2">{children}</h1>,
-              h2: ({ children }) => <h2 className="text-base font-semibold mb-2">{children}</h2>,
-              h3: ({ children }) => <h3 className="text-sm font-medium mb-1">{children}</h3>,
-              ul: ({ children }) => <ul className="list-disc pl-4 mb-3 space-y-1">{children}</ul>,
-              ol: ({ children }) => <ol className="list-decimal pl-4 mb-3 space-y-1">{children}</ol>,
-              li: ({ children }) => <li className="text-sm">{children}</li>,
-              code: ({ children, className }) => {
-                const isInline = !className
-                return isInline ? (
-                  <code className="bg-muted px-1 py-0.5 rounded text-xs font-mono">
-                    {children}
-                  </code>
-                ) : (
-                  <pre className="bg-muted p-3 rounded-lg overflow-x-auto">
-                    <code className="text-xs font-mono">{children}</code>
-                  </pre>
-                )
-              },
-              blockquote: ({ children }) => (
-                <blockquote className="border-l-4 border-muted-foreground/30 pl-3 italic">
-                  {children}
-                </blockquote>
-              ),
-              strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
-              em: ({ children }) => <em className="italic">{children}</em>
-            }}
+        {/* Edit button for user messages */}
+        {isUser && canEdit && !isEditing && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 p-0"
+            onClick={() => setIsEditing(true)}
           >
-            {message.content}
-          </ReactMarkdown>
-        </div>
+            <Edit3 className="h-3 w-3" />
+          </Button>
+        )}
+
+        {isEditing ? (
+          <div className="space-y-2">
+            <Textarea
+              value={editContent}
+              onChange={(e) => setEditContent(e.target.value)}
+              onKeyDown={handleKeyDown}
+              className="min-h-[60px] resize-none text-sm"
+              placeholder="Edit your message..."
+              autoFocus
+            />
+            <div className="flex justify-end space-x-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleCancelEdit}
+                className="h-6 px-2 text-xs"
+              >
+                <X className="h-3 w-3 mr-1" />
+                Cancel
+              </Button>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={handleSaveEdit}
+                disabled={!editContent.trim() || editContent.trim() === message.content}
+                className="h-6 px-2 text-xs"
+              >
+                <Check className="h-3 w-3 mr-1" />
+                Save
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <div className={cn(
+            "prose prose-sm max-w-none",
+            isUser 
+              ? "prose-invert" 
+              : "prose-gray dark:prose-invert"
+          )}>
+            <ReactMarkdown 
+              remarkPlugins={[remarkGfm]}
+              components={{
+                // Customize markdown components
+                p: ({ children }) => <p className="mb-3 last:mb-0">{children}</p>,
+                h1: ({ children }) => <h1 className="text-lg font-bold mb-2">{children}</h1>,
+                h2: ({ children }) => <h2 className="text-base font-semibold mb-2">{children}</h2>,
+                h3: ({ children }) => <h3 className="text-sm font-medium mb-1">{children}</h3>,
+                ul: ({ children }) => <ul className="list-disc pl-4 mb-3 space-y-1">{children}</ul>,
+                ol: ({ children }) => <ol className="list-decimal pl-4 mb-3 space-y-1">{children}</ol>,
+                li: ({ children }) => <li className="text-sm">{children}</li>,
+                code: ({ children, className }) => {
+                  const isInline = !className
+                  return isInline ? (
+                    <code className="bg-muted px-1 py-0.5 rounded text-xs font-mono">
+                      {children}
+                    </code>
+                  ) : (
+                    <pre className="bg-muted p-3 rounded-lg overflow-x-auto">
+                      <code className="text-xs font-mono">{children}</code>
+                    </pre>
+                  )
+                },
+                blockquote: ({ children }) => (
+                  <blockquote className="border-l-4 border-muted-foreground/30 pl-3 italic">
+                    {children}
+                  </blockquote>
+                ),
+                strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
+                em: ({ children }) => <em className="italic">{children}</em>
+              }}
+            >
+              {message.content}
+            </ReactMarkdown>
+          </div>
+        )}
         
         {/* Progress indicator for progress messages */}
         {message.type === 'progress' && message.metadata?.progress && (

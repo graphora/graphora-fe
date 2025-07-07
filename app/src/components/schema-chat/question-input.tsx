@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -31,18 +31,43 @@ interface QuestionInputProps {
   onSubmit: (value: string | string[]) => void
   disabled?: boolean
   className?: string
+  currentValue?: string | string[]
+  submitLabel?: string
 }
 
-export function QuestionInput({ question, onSubmit, disabled = false, className }: QuestionInputProps) {
-  const [value, setValue] = useState<string | string[]>('')
+export function QuestionInput({ 
+  question, 
+  onSubmit, 
+  disabled = false, 
+  className,
+  currentValue,
+  submitLabel = 'Submit'
+}: QuestionInputProps) {
+  const [value, setValue] = useState<string | string[]>(currentValue || '')
   const [error, setError] = useState<string | null>(null)
   const [files, setFiles] = useState<File[]>([])
+  const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement>(null)
 
-  // Reset when question changes
+  // Reset when question changes, but use currentValue if provided
   useEffect(() => {
-    setValue(question.type === 'multiselect' ? [] : '')
+    if (currentValue !== undefined) {
+      setValue(currentValue)
+    } else {
+      setValue(question.type === 'multiselect' ? [] : '')
+    }
     setError(null)
     setFiles([])
+  }, [question.id, question.type, currentValue])
+
+  // Focus input when question changes
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (inputRef.current && (question.type === 'text' || question.type === 'textarea')) {
+        inputRef.current.focus()
+      }
+    }, 100) // Small delay to ensure DOM is ready
+
+    return () => clearTimeout(timer)
   }, [question.id, question.type])
 
   const validateInput = (inputValue: string | string[]): string | null => {
@@ -110,6 +135,7 @@ export function QuestionInput({ question, onSubmit, disabled = false, className 
       case 'text':
         return (
           <Input
+            ref={inputRef as React.RefObject<HTMLInputElement>}
             value={value as string}
             onChange={(e) => setValue(e.target.value)}
             placeholder={question.placeholder}
@@ -121,6 +147,7 @@ export function QuestionInput({ question, onSubmit, disabled = false, className 
       case 'textarea':
         return (
           <Textarea
+            ref={inputRef as React.RefObject<HTMLTextAreaElement>}
             value={value as string}
             onChange={(e) => setValue(e.target.value)}
             placeholder={question.placeholder}
@@ -280,7 +307,7 @@ export function QuestionInput({ question, onSubmit, disabled = false, className 
           size="sm"
         >
           <Send className="h-4 w-4 mr-1.5" />
-          Submit
+          {submitLabel}
         </Button>
       </div>
     </div>

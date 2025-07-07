@@ -50,6 +50,10 @@ export interface ChatMessage {
       label: string
     }
     error?: string
+    refined_schema?: string
+    changes_made?: string[]
+    confidence?: number
+    [key: string]: any // Allow additional fields
   }
 }
 
@@ -87,6 +91,10 @@ export interface SchemaGenerationState {
   isTyping: boolean
   error: string | null
   
+  // Session management
+  sessionId: string | null
+  isSessionActive: boolean
+  
   // Question flow
   currentQuestionSet: number
   currentQuestion: number
@@ -117,14 +125,23 @@ export interface SchemaGenerationActions {
   // Chat actions
   setChatState: (state: ChatState) => void
   addMessage: (message: Omit<ChatMessage, 'id' | 'timestamp'>) => void
+  updateMessage: (messageId: string, updates: Partial<ChatMessage>) => void
   clearMessages: () => void
   setIsTyping: (isTyping: boolean) => void
   setError: (error: string | null) => void
+  
+  // Session actions
+  setSessionId: (sessionId: string | null) => void
+  setIsSessionActive: (isActive: boolean) => void
+  startSession: (contextType: string, initialContext?: any) => Promise<string>
+  loadSessionHistory: (sessionId: string) => Promise<void>
+  sendChatMessage: (sessionId: string, message: string) => Promise<void>
   
   // Question flow actions
   setCurrentQuestionSet: (index: number) => void
   setCurrentQuestion: (index: number) => void
   addUserResponse: (response: Omit<UserResponse, 'timestamp'>) => void
+  updateUserResponse: (questionId: string, value: string | string[]) => void
   clearUserResponses: () => void
   setIsProcessing: (isProcessing: boolean) => void
   
@@ -141,6 +158,9 @@ export interface SchemaGenerationActions {
   
   // Progress actions
   setProgress: (progress: { current: number; total: number; label: string } | null) => void
+  
+  // Schema refinement actions
+  refineSchema: (sessionId: string | null, userRequest: string, initialSchema?: string) => Promise<any>
   
   // Utility actions
   reset: () => void
@@ -304,6 +324,8 @@ const initialState: SchemaGenerationState = {
   messages: [],
   isTyping: false,
   error: null,
+  sessionId: null,
+  isSessionActive: false,
   currentQuestionSet: 0,
   currentQuestion: 0,
   userResponses: [],
@@ -339,6 +361,14 @@ export const useSchemaGenerationStore = create<SchemaGenerationState & SchemaGen
         draft.messages.push(newMessage)
       }),
     
+    updateMessage: (messageId, updates) =>
+      set((draft) => {
+        const messageIndex = draft.messages.findIndex(m => m.id === messageId)
+        if (messageIndex !== -1) {
+          Object.assign(draft.messages[messageIndex], updates)
+        }
+      }),
+    
     clearMessages: () => 
       set((draft) => {
         draft.messages = []
@@ -353,6 +383,88 @@ export const useSchemaGenerationStore = create<SchemaGenerationState & SchemaGen
       set((draft) => {
         draft.error = error
       }),
+    
+    // Session actions
+    setSessionId: (sessionId) => 
+      set((draft) => {
+        draft.sessionId = sessionId
+      }),
+    
+    setIsSessionActive: (isActive) => 
+      set((draft) => {
+        draft.isSessionActive = isActive
+      }),
+    
+    startSession: async (contextType, initialContext) => {
+      try {
+        const response = await fetch('/api/v1/chat/sessions/start', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            context_type: contextType,
+            initial_context: initialContext,
+            title: `Schema ${contextType} Session`
+          })
+        })
+        
+        if (!response.ok) {
+          throw new Error('Failed to start session')
+        }
+        
+        const data = await response.json()
+        
+        set((draft) => {
+          draft.sessionId = data.session_id
+          draft.isSessionActive = true
+        })
+        
+        return data.session_id
+      } catch (error) {
+        console.error('Error starting session:', error)
+        set((draft) => {
+          draft.error = error instanceof Error ? error.message : 'Failed to start session'
+        })
+        throw error
+      }
+    },
+    
+    loadSessionHistory: async (sessionId) => {
+      try {
+        const response = await fetch(`/api/v1/chat/sessions/${sessionId}/history`)
+        
+        if (!response.ok) {
+          throw new Error('Failed to load session history')
+        }
+        
+        const data = await response.json()
+        
+        set((draft) => {
+          draft.sessionId = sessionId
+          draft.isSessionActive = true
+          draft.messages = data.messages.map((msg: any) => ({
+            id: msg.id,
+            role: msg.type.includes('user') ? 'user' : 'assistant',
+            content: msg.content,
+            timestamp: new Date(msg.timestamp),
+            type: 'message',
+            metadata: msg.metadata
+          }))
+        })
+      } catch (error) {
+        console.error('Error loading session history:', error)
+        set((draft) => {
+          draft.error = error instanceof Error ? error.message : 'Failed to load session history'
+        })
+        throw error
+      }
+    },
+    
+    sendChatMessage: async (sessionId, message) => {
+      // This is handled by the chat interface directly
+      // Just a placeholder for future use
+    },
     
     // Question flow actions
     setCurrentQuestionSet: (index) => 
@@ -372,6 +484,15 @@ export const useSchemaGenerationStore = create<SchemaGenerationState & SchemaGen
           timestamp: new Date()
         }
         draft.userResponses.push(newResponse)
+      }),
+    
+    updateUserResponse: (questionId, value) =>
+      set((draft) => {
+        const responseIndex = draft.userResponses.findIndex(r => r.questionId === questionId)
+        if (responseIndex !== -1) {
+          draft.userResponses[responseIndex].value = value
+          draft.userResponses[responseIndex].timestamp = new Date()
+        }
       }),
     
     clearUserResponses: () => 
@@ -433,6 +554,71 @@ export const useSchemaGenerationStore = create<SchemaGenerationState & SchemaGen
       set((draft) => {
         draft.progress = progress
       }),
+    
+    // Schema refinement actions
+    refineSchema: async (sessionId, userRequest, initialSchema) => {
+      try {
+        set((draft) => {
+          draft.isProcessing = true
+          draft.error = null
+        })
+        
+        const response = await fetch('/api/v1/chat/schema-refinement', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            session_id: sessionId,
+            initial_schema: initialSchema,
+            user_request: userRequest
+          })
+        })
+        
+        if (!response.ok) {
+          throw new Error('Failed to refine schema')
+        }
+        
+        const data = await response.json()
+        
+        set((draft) => {
+          draft.isProcessing = false
+          if (data.success) {
+            draft.sessionId = data.session_id
+            draft.isSessionActive = true
+            draft.generatedSchema = data.refined_schema || draft.generatedSchema
+            
+            // Add the assistant response as a message
+            if (data.response_content) {
+              const newMessage: ChatMessage = {
+                id: data.message_id || Date.now().toString(),
+                role: 'assistant',
+                content: data.response_content,
+                timestamp: new Date(),
+                type: 'message',
+                metadata: {
+                  refined_schema: data.refined_schema,
+                  changes_made: data.changes_made,
+                  confidence: data.confidence
+                }
+              }
+              draft.messages.push(newMessage)
+            }
+          } else {
+            draft.error = data.error || 'Failed to refine schema'
+          }
+        })
+        
+        return data
+      } catch (error) {
+        console.error('Error refining schema:', error)
+        set((draft) => {
+          draft.isProcessing = false
+          draft.error = error instanceof Error ? error.message : 'Failed to refine schema'
+        })
+        throw error
+      }
+    },
     
     // Utility actions
     reset: () => 
@@ -539,6 +725,7 @@ export const useSchemaGenerationFlow = () => {
     setCurrentQuestionSet: store.setCurrentQuestionSet,
     setCurrentQuestion: store.setCurrentQuestion,
     addUserResponse: store.addUserResponse,
+    updateUserResponse: store.updateUserResponse,
     clearUserResponses: store.clearUserResponses,
     setIsProcessing: store.setIsProcessing,
     
