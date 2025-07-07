@@ -96,7 +96,7 @@ export function EnhancedWorkflowLayout({
               <div className="flex items-center space-x-3">
                 <Button
                   variant="ghost"
-                  className="p-2 rounded-lg text-gray-600 hover:bg-gray-100 active:bg-gray-200 transition-colors duration-150 flex items-center gap-2"
+                  className="p-2 rounded-lg text-foreground hover:bg-muted active:bg-muted/80 transition-colors duration-150 flex items-center gap-2"
                   onClick={() => router.push('/')}
                 >
                   <div className="w-7 h-7 flex items-center justify-center overflow-hidden">
@@ -106,7 +106,7 @@ export function EnhancedWorkflowLayout({
                       className="w-full h-full"
                     />
                   </div>
-                  <span className="font-medium">{projectTitle}</span>
+                  <span className="font-medium text-foreground">{projectTitle}</span>
                 </Button>
               </div>
 

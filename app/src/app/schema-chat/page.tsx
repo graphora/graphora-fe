@@ -553,20 +553,20 @@ Please try rephrasing your request or be more specific about the changes you'd l
     >
       <div className="flex-1 flex flex-col h-full">
         {/* Header */}
-        <div className="bg-background border-b border-border shadow-sm">
+        <div className="bg-background border-b border-border shadow-sm flex-shrink-0 sticky top-0 z-10">
           <div className="px-4 py-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <Bot className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                <div>
-                  <h2 className="text-lg font-semibold text-foreground">AI Schema Generator</h2>
-                  <p className="text-sm text-muted-foreground">
+            <div className="flex items-center justify-between min-h-0">
+              <div className="flex items-center space-x-3 flex-1 min-w-0">
+                <Bot className="h-5 w-5 text-blue-600 dark:text-blue-400 flex-shrink-0" />
+                <div className="min-w-0">
+                  <h2 className="text-lg font-semibold text-foreground truncate">AI Schema Generator</h2>
+                  <p className="text-sm text-muted-foreground truncate">
                     Create custom knowledge graph schemas with guided AI assistance
                   </p>
                 </div>
               </div>
               
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-2 flex-shrink-0 ml-4">
                 {chatState === 'schema_review' && generatedSchema && (
                   <>
                     {viewMode === 'chat' ? (
@@ -839,7 +839,7 @@ Please try rephrasing your request or be more specific about the changes you'd l
                           value={currentInput}
                           onChange={(e) => setCurrentInput(e.target.value)}
                           placeholder="Ask about the schema or request changes..."
-                          className="min-h-[60px] pr-12 resize-none"
+                          className="min-h-[80px] pr-12 resize-none"
                           onKeyDown={(e) => {
                             if (e.key === 'Enter' && !e.shiftKey) {
                               e.preventDefault()
@@ -869,7 +869,7 @@ Please try rephrasing your request or be more specific about the changes you'd l
                 <div className="border-b p-3 flex-shrink-0">
                   <h3 className="font-semibold">Conversation</h3>
                 </div>
-                <ScrollArea className="flex-1">
+                <ScrollArea className="flex-1 min-h-0">
                   <div className="p-4 space-y-6">
                       {messages.map((message) => (
                         <ChatMessageComponent 
@@ -915,7 +915,7 @@ Please try rephrasing your request or be more specific about the changes you'd l
                     </div>
                 </ScrollArea>
                 
-                <div className="border-t p-3 flex-shrink-0">
+                <div className="border-t p-3 min-h-[200px] max-h-[300px] flex flex-col">
                   {chatState === 'welcome' ? (
                     <div className="flex justify-center">
                       <Button onClick={handleBegin} size="lg">
@@ -924,56 +924,58 @@ Please try rephrasing your request or be more specific about the changes you'd l
                       </Button>
                     </div>
                   ) : chatState === 'data_collection' ? (
-                    // Show structured question input during data collection
-                    (() => {
-                      const currentQ = getCurrentQuestionData()
-                      return currentQ ? (
-                        <QuestionInput
-                          question={currentQ}
-                          onSubmit={handleUserResponse}
-                          disabled={isProcessing}
-                        />
-                      ) : (
-                        <div className="flex space-x-2">
-                          <div className="flex-1 relative">
-                            <Textarea
-                              value={currentInput}
-                              onChange={(e) => setCurrentInput(e.target.value)}
-                              placeholder="Type your response..."
-                              className="min-h-[60px] pr-12 resize-none"
-                              onKeyDown={(e) => {
-                                if (e.key === 'Enter' && !e.shiftKey) {
-                                  e.preventDefault()
-                                  handleSendMessage()
-                                }
-                              }}
-                            />
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              className="absolute right-2 bottom-2"
-                              onClick={handleSendMessage}
-                              disabled={!currentInput.trim() || isProcessing}
-                            >
-                              {isProcessing ? (
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                              ) : (
-                                <Send className="h-4 w-4" />
-                              )}
-                            </Button>
+                    <div>
+                      {/* Show structured question input during data collection in split view */}
+                      {(() => {
+                        const currentQ = getCurrentQuestionData()
+                        return currentQ ? (
+                          <QuestionInput
+                            question={currentQ}
+                            onSubmit={handleUserResponse}
+                            disabled={isProcessing}
+                          />
+                        ) : (
+                          <div className="flex space-x-2">
+                            <div className="flex-1 relative">
+                              <Textarea
+                                value={currentInput}
+                                onChange={(e) => setCurrentInput(e.target.value)}
+                                placeholder="Type your response..."
+                                className="min-h-[60px] pr-12 resize-none"
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter' && !e.shiftKey) {
+                                    e.preventDefault()
+                                    handleSendMessage()
+                                  }
+                                }}
+                              />
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                className="absolute right-2 bottom-2"
+                                onClick={handleSendMessage}
+                                disabled={!currentInput.trim() || isProcessing}
+                              >
+                                {isProcessing ? (
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  <Send className="h-4 w-4" />
+                                )}
+                              </Button>
+                            </div>
                           </div>
-                        </div>
-                      )
-                    })()
+                        )
+                      })()}
+                    </div>
                   ) : (
-                    // Free-form chat for schema review and refinement
-                    <div className="flex space-x-2">
-                      <div className="flex-1 relative">
+                    <div className="h-full flex flex-col">
+                      {/* Free-form chat for schema review and other states in split view */}
+                      <div className="flex-1 min-h-0">
                         <Textarea
                           value={currentInput}
                           onChange={(e) => setCurrentInput(e.target.value)}
                           placeholder="Ask about the schema, request changes, or ask questions..."
-                          className="min-h-[60px] pr-12 resize-none"
+                          className="w-full h-half resize-none"
                           onKeyDown={(e) => {
                             if (e.key === 'Enter' && !e.shiftKey) {
                               e.preventDefault()
@@ -981,18 +983,19 @@ Please try rephrasing your request or be more specific about the changes you'd l
                             }
                           }}
                         />
+                      </div>
+                      <div className="pt-3 flex justify-end flex-shrink-0">
                         <Button
-                          size="icon"
-                          variant="ghost"
-                          className="absolute right-2 bottom-2"
+                          size="sm"
                           onClick={handleSendMessage}
                           disabled={!currentInput.trim() || isProcessing}
                         >
                           {isProcessing ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
+                            <Loader2 className="h-2 w-4 animate-spin" />
                           ) : (
-                            <Send className="h-4 w-4" />
+                            <Send className="h-2 w-4" />
                           )}
+                          Send
                         </Button>
                       </div>
                     </div>
@@ -1030,42 +1033,6 @@ Please try rephrasing your request or be more specific about the changes you'd l
                     </div>
                   )}
                 </div>
-                
-                {/* Chat Input Area for Preview Panel */}
-                {generatedSchema && (
-                  <div className="border-t p-3 flex-shrink-0">
-                    <div className="flex space-x-2">
-                      <div className="flex-1 relative">
-                        <Textarea
-                          ref={chatInputRef}
-                          value={currentInput}
-                          onChange={(e) => setCurrentInput(e.target.value)}
-                          placeholder="Ask about the schema, request changes, or ask questions..."
-                          className="min-h-[60px] pr-12 resize-none"
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter' && !e.shiftKey) {
-                              e.preventDefault()
-                              handleSendMessage()
-                            }
-                          }}
-                        />
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          className="absolute right-2 bottom-2"
-                          onClick={handleSendMessage}
-                          disabled={!currentInput.trim() || isProcessing}
-                        >
-                          {isProcessing ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <Send className="h-4 w-4" />
-                          )}
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                )}
               </div>
             </div>
           )}
