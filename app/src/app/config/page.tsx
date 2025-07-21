@@ -291,36 +291,20 @@ function ConfigPageContent() {
     <DashboardLayout>
       <div className="flex-1 flex flex-col overflow-hidden">
         <PageHeader
-          title="Database Configuration"
+          title="Configuration"
           description={
             isWorkflowRedirect 
-              ? "Set up your Neo4j databases to run workflows and manage your knowledge graphs"
-              : "Manage your database connections and system preferences"
+              ? "Set up your databases and AI providers to run workflows and manage your knowledge graphs"
+              : "Manage your database connections, AI providers, and system preferences"
           }
           icon={<Settings className="h-6 w-6" />}
           actions={
-            <div className="flex items-center space-x-3">
-              {returnTo && (
-                <Button variant="outline" onClick={handleBack}>
-                  <ArrowLeft className="h-4 w-4 mr-2" />
-                  Back
-                </Button>
-              )}
-              <Button 
-                onClick={handleSave} 
-                disabled={saving || !stagingDb.uri || !prodDb.uri}
-                className="bg-emerald-600 hover:bg-emerald-700 text-white"
-              >
-                {saving ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Saving...
-                  </>
-                ) : (
-                  'Save Configuration'
-                )}
+            returnTo && (
+              <Button variant="outline" onClick={handleBack}>
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Back
               </Button>
-            </div>
+            )
           }
         />
 
@@ -449,6 +433,27 @@ function ConfigPageContent() {
                 </Card>
               </div>
 
+              {/* Database Save Button */}
+              <div className="flex justify-end">
+                <Button 
+                  onClick={handleSave} 
+                  disabled={saving || !stagingDb.uri || !prodDb.uri}
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                >
+                  {saving ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Saving Database Configuration...
+                    </>
+                  ) : (
+                    <>
+                      <Database className="h-4 w-4 mr-2" />
+                      Save Database Configuration
+                    </>
+                  )}
+                </Button>
+              </div>
+
               {/* Connection Examples */}
               <Card className="enhanced-card">
                 <CardHeader className="enhanced-card-header">
@@ -558,12 +563,12 @@ function ConfigPageContent() {
                       {savingAI ? (
                         <>
                           <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                          Saving...
+                          Saving AI Configuration...
                         </>
                       ) : (
                         <>
                           <Sparkles className="h-4 w-4 mr-2" />
-                          {aiConfig ? 'Update Configuration' : 'Save Configuration'}
+                          {aiConfig ? 'Update AI Configuration' : 'Save AI Configuration'}
                         </>
                       )}
                     </Button>
