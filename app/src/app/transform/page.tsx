@@ -39,7 +39,8 @@ import { useUserConfig } from '@/hooks/useUserConfig'
 const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB
 const ACCEPTED_FILE_TYPES = {
   'application/pdf': ['.pdf'],
-  'text/plain': ['.txt']
+  'text/plain': ['.txt'],
+  'text/markdown': ['.md', '.markdown']
 }
 
 // Sample files array
@@ -516,6 +517,8 @@ function TransformPageContent() {
         mimeType = 'application/pdf'
       } else if (sampleFile.name.endsWith('.docx')) {
         mimeType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+      } else if (sampleFile.name.endsWith('.md') || sampleFile.name.endsWith('.markdown')) {
+        mimeType = 'text/markdown'
       }
       
       const file = new File([blob], sampleFile.name, { type: mimeType })
@@ -826,7 +829,7 @@ function TransformPageContent() {
                             {isDragActive ? "Drop file here" : "Drop file or click"}
                           </p>
                           <p className="text-xs text-muted-foreground mt-1">
-                            PDF, TXT up to 10MB
+                            PDF, TXT, MD up to 10MB
                           </p>
                         </div>
                       </div>
