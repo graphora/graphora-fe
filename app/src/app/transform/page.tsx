@@ -10,13 +10,15 @@ import {
   Rocket,
   FileSymlink,
   Zap,
-  RefreshCcw
+  RefreshCcw,
+  AlertTriangle
 } from 'lucide-react'
 import { useRouter, useSearchParams, usePathname } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Progress } from '@/components/ui/progress'
 import { GraphVisualization } from '@/components/graph-viz'
+import { QualityDashboard } from '@/components/quality/quality-dashboard'
 import { type FileWithPreview, type GraphData, type TransformResponse, type GraphOperation, type Node, type Edge } from '@/types/graph'
 import {
   AlertDialog,
@@ -108,6 +110,7 @@ function TransformPageContent() {
   const [sidebarWidth, setSidebarWidth] = useState(320)
   const [showUploadConfirm, setShowUploadConfirm] = useState(false)
   const [pendingFiles, setPendingFiles] = useState<File[]>([])
+  const [showQualityReview, setShowQualityReview] = useState(false)
 
   useEffect(() => {
     if (!sessionId) {
@@ -153,6 +156,8 @@ function TransformPageContent() {
             setIsUploadPanelExpanded(false)
             console.log('Transform already completed, loading graph data')
             await loadGraphData(urlTransformId)
+            // Check if quality validation is available
+            setShowQualityReview(true)
           } else if (data.status === 'failed' || data.overall_status === 'failed' || data.current_stage === 'failed') {
             setIsProcessing(false)
             setProgress(0) // Reset progress for failed state
@@ -430,6 +435,8 @@ function TransformPageContent() {
           console.log('Transform completed, loading graph data')
           
           await loadGraphData(transformId)
+          // Show quality review after transform completion
+          setShowQualityReview(true)
 
           if (statusInterval) {
             clearInterval(statusInterval)
@@ -483,6 +490,27 @@ function TransformPageContent() {
     setCurrentStep('Initializing merge process...')
     
     router.push(`/merge?session_id=${sessionId}&transform_id=${transformId}`)
+  }
+
+  const handleQualityApprove = () => {
+    console.log('Quality approved for transform:', transformId)
+    setShowQualityReview(false)
+    toast.success('Quality validation approved. Ready for merge.')
+  }
+
+  const handleQualityReject = () => {
+    console.log('Quality rejected for transform:', transformId)
+    setShowQualityReview(false)
+    // Reset to allow new transform
+    setGraphData(null)
+    setTransformId(null)
+    setIsUploadPanelExpanded(true)
+    
+    const newSearchParams = new URLSearchParams(searchParams.toString())
+    newSearchParams.delete('transform_id')
+    router.push(`${pathname}?${newSearchParams.toString()}`)
+    
+    toast.error('Quality validation rejected. Please upload a new document or adjust your ontology.')
   }
 
   const handleApplySuggestion = useCallback((id: string) => {
@@ -762,6 +790,22 @@ function TransformPageContent() {
                     <span className="text-xs text-blue-600 dark:text-blue-400">{currentStep || 'Processing...'}</span>
                   </div>
                 )}
+
+                {/* Quality review indicator */}
+                {showQualityReview && (
+                  <div className="flex items-center space-x-2 bg-amber-50 dark:bg-amber-950 px-3 py-1.5 rounded-lg border border-amber-200 dark:border-amber-800">
+                    <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                    <span className="text-sm text-amber-700 dark:text-amber-300 font-medium">Quality Review Required</span>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setShowQualityReview(true)}
+                      className="h-6 px-2 text-xs bg-amber-100 border-amber-300 text-amber-800 hover:bg-amber-200"
+                    >
+                      Review Now
+                    </Button>
+                  </div>
+                )}
                 
                 <div className="flex flex-col space-y-2">
                   <Button 
@@ -787,9 +831,10 @@ function TransformPageContent() {
                 
                 <Button 
                   onClick={() => setShowMergeConfirm(true)} 
-                  disabled={!graphData || isProcessing}
+                  disabled={!graphData || isProcessing || showQualityReview}
                   size="sm"
-                  className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white disabled:opacity-50"
+                  title={showQualityReview ? "Complete quality review first" : ""}
                 >
                   <GitMerge className="h-4 w-4 mr-1.5" />
                   Merge
@@ -1002,6 +1047,34 @@ function TransformPageContent() {
             <AlertDialogAction onClick={handleConfirmNewUpload} className="bg-primary text-primary-foreground hover:bg-primary/90">
               Replace Document
             </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Quality Review Modal */}
+      <AlertDialog open={showQualityReview} onOpenChange={setShowQualityReview}>
+        <AlertDialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Quality Validation Review</AlertDialogTitle>
+            <AlertDialogDescription>
+              Please review the quality of the extracted data before proceeding with merge.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          
+          <div className="mt-4">
+            {transformId && (
+              <QualityDashboard
+                transformId={transformId}
+                onApprove={handleQualityApprove}
+                onReject={handleQualityReject}
+              />
+            )}
+          </div>
+          
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setShowQualityReview(false)}>
+              Close
+            </AlertDialogCancel>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
