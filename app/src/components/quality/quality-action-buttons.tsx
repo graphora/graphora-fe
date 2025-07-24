@@ -3,6 +3,7 @@
 import React, { useState } from 'react'
 import { 
   XCircle, 
+  CheckCircle,
   MessageSquare,
   AlertTriangle,
   Info,
@@ -27,18 +28,23 @@ import { type QualityResults } from '@/types/quality'
 
 interface QualityActionButtonsProps {
   qualityResults: QualityResults;
+  onApprove: (comment?: string) => Promise<void>;
   onReject: (reason: string) => Promise<void>;
   className?: string;
 }
 
 export function QualityActionButtons({
   qualityResults,
+  onApprove,
   onReject,
   className = ''
 }: QualityActionButtonsProps) {
   const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
+  const [approveDialogOpen, setApproveDialogOpen] = useState(false);
   const [rejectionReason, setRejectionReason] = useState('');
+  const [approvalComment, setApprovalComment] = useState('');
   const [isRejecting, setIsRejecting] = useState(false);
+  const [isApproving, setIsApproving] = useState(false);
 
   const handleReject = async () => {
     if (!rejectionReason.trim()) {
@@ -54,6 +60,19 @@ export function QualityActionButtons({
       console.error('Failed to reject:', error);
     } finally {
       setIsRejecting(false);
+    }
+  };
+
+  const handleApprove = async () => {
+    try {
+      setIsApproving(true);
+      await onApprove(approvalComment.trim() || undefined);
+      setApproveDialogOpen(false);
+      setApprovalComment('');
+    } catch (error) {
+      console.error('Failed to approve:', error);
+    } finally {
+      setIsApproving(false);
     }
   };
 
@@ -160,7 +179,78 @@ export function QualityActionButtons({
         </div>
 
         {/* Action Buttons */}
-        <div className="flex justify-center">
+        <div className="flex justify-center gap-4">
+          {/* Approve Dialog */}
+          <Dialog open={approveDialogOpen} onOpenChange={setApproveDialogOpen}>
+            <DialogTrigger asChild>
+              <Button 
+                variant="default" 
+                size="lg"
+                disabled={isApproving}
+                className="bg-green-600 hover:bg-green-700 text-white"
+              >
+                <CheckCircle className="h-5 w-5 mr-2" />
+                Approve & Continue
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-md bg-background border-border">
+              <DialogHeader>
+                <DialogTitle className="text-foreground">Approve Quality Results</DialogTitle>
+                <DialogDescription className="text-muted-foreground">
+                  This will approve the quality validation and continue with the merge process. The data will be added to the knowledge graph.
+                </DialogDescription>
+              </DialogHeader>
+              
+              <div className="space-y-4">
+                <Alert className="dark:bg-green-950 dark:border-green-800">
+                  <CheckCircle className="h-4 w-4" />
+                  <AlertDescription className="dark:text-green-200">
+                    Quality score: {qualityResults.overall_score}% - {qualityResults.grade} grade
+                  </AlertDescription>
+                </Alert>
+
+                <div className="space-y-2">
+                  <Label htmlFor="approval-comment">Approval Comment (Optional)</Label>
+                  <Textarea
+                    id="approval-comment"
+                    placeholder="Add any comments about the approval (e.g., quality looks good, minor issues acceptable...)"
+                    value={approvalComment}
+                    onChange={(e) => setApprovalComment(e.target.value)}
+                    rows={3}
+                  />
+                </div>
+              </div>
+
+              <DialogFooter className="flex-col sm:flex-row gap-2">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setApproveDialogOpen(false)}
+                  disabled={isApproving}
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  variant="default"
+                  onClick={handleApprove}
+                  disabled={isApproving}
+                  className="bg-green-600 hover:bg-green-700"
+                >
+                  {isApproving ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Approving...
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle className="h-4 w-4 mr-2" />
+                      Confirm Approval
+                    </>
+                  )}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
           {/* Reject Dialog */}
           <Dialog open={rejectDialogOpen} onOpenChange={setRejectDialogOpen}>
             <DialogTrigger asChild>
