@@ -111,6 +111,7 @@ function TransformPageContent() {
   const [showUploadConfirm, setShowUploadConfirm] = useState(false)
   const [pendingFiles, setPendingFiles] = useState<File[]>([])
   const [showQualityReview, setShowQualityReview] = useState(false)
+  const [qualityReviewCompleted, setQualityReviewCompleted] = useState(false)
 
   useEffect(() => {
     if (!sessionId) {
@@ -232,6 +233,8 @@ function TransformPageContent() {
     setProgress(0)
     setIsProcessing(false)
     setIsUploadPanelExpanded(true)
+    setShowQualityReview(false)
+    setQualityReviewCompleted(false)
     const newSearchParams = new URLSearchParams(searchParams.toString())
     newSearchParams.delete('transform_id')
     router.push(`${pathname}?${newSearchParams.toString()}`)
@@ -495,12 +498,14 @@ function TransformPageContent() {
   const handleQualityApprove = () => {
     console.log('Quality approved for transform:', transformId)
     setShowQualityReview(false)
+    setQualityReviewCompleted(true)
     toast.success('Quality validation approved. Ready for merge.')
   }
 
   const handleQualityReject = () => {
     console.log('Quality rejected for transform:', transformId)
     setShowQualityReview(false)
+    setQualityReviewCompleted(false)
     // Reset to allow new transform
     setGraphData(null)
     setTransformId(null)
@@ -807,7 +812,7 @@ function TransformPageContent() {
                   </div>
                 )}
                 
-                <div className="flex flex-col space-y-2">
+                <div className="flex items-center space-x-2">
                   <Button 
                     onClick={handleExtract} 
                     disabled={!file || isProcessing || !!transformId}
@@ -818,6 +823,19 @@ function TransformPageContent() {
                     {isProcessing ? 'Processing...' : 'Transform'}
                   </Button>
                   
+                  {/* Quality Review Button - shown when results available but not currently reviewing */}
+                  {graphData && !isProcessing && !showQualityReview && (
+                    <Button 
+                      onClick={() => setShowQualityReview(true)}
+                      size="sm"
+                      variant="outline"
+                      className="bg-amber-50 border-amber-300 text-amber-800 hover:bg-amber-100"
+                    >
+                      <AlertTriangle className="h-4 w-4 mr-1.5" />
+                      Review Quality
+                    </Button>
+                  )}
+                  
                   <Button 
                     onClick={handleViewTransformStatus}
                     size="sm"
@@ -825,16 +843,16 @@ function TransformPageContent() {
                     className="text-muted-foreground hover:text-foreground"
                   >
                     <Monitor className="h-4 w-4 mr-1.5" />
-                    View Status
+                    Status
                   </Button>
                 </div>
                 
                 <Button 
                   onClick={() => setShowMergeConfirm(true)} 
-                  disabled={!graphData || isProcessing || showQualityReview}
+                  disabled={!graphData || isProcessing || !qualityReviewCompleted}
                   size="sm"
                   className="bg-emerald-600 hover:bg-emerald-700 text-white disabled:opacity-50"
-                  title={showQualityReview ? "Complete quality review first" : ""}
+                  title={!qualityReviewCompleted ? "Complete quality review first" : ""}
                 >
                   <GitMerge className="h-4 w-4 mr-1.5" />
                   Merge
@@ -1053,29 +1071,50 @@ function TransformPageContent() {
 
       {/* Quality Review Modal */}
       <AlertDialog open={showQualityReview} onOpenChange={setShowQualityReview}>
-        <AlertDialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
-          <AlertDialogHeader>
-            <AlertDialogTitle>Quality Validation Review</AlertDialogTitle>
+        <AlertDialogContent className="max-w-7xl max-h-[95vh] p-0 bg-background border-border overflow-hidden">
+          <AlertDialogHeader className="sr-only">
+            <AlertDialogTitle>Data Quality Review</AlertDialogTitle>
             <AlertDialogDescription>
-              Please review the quality of the extracted data before proceeding with merge.
+              Review the quality of the extracted data before proceeding with merge.
             </AlertDialogDescription>
           </AlertDialogHeader>
           
-          <div className="mt-4">
-            {transformId && (
-              <QualityDashboard
-                transformId={transformId}
-                onApprove={handleQualityApprove}
-                onReject={handleQualityReject}
-              />
-            )}
+          <div className="flex flex-col h-[95vh]">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-6 border-b border-border bg-gradient-to-r from-blue-50/80 to-indigo-50/80 dark:from-slate-800/90 dark:to-slate-700/90 backdrop-blur-sm flex-shrink-0">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center">
+                  <AlertTriangle className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100">Data Quality Review</h2>
+                  <p className="text-sm text-slate-600 dark:text-slate-400">
+                    Transform ID: {transformId?.substring(0, 12)}...
+                  </p>
+                </div>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowQualityReview(false)}
+                className="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100"
+              >
+                ✕
+              </Button>
+            </div>
+            
+            {/* Modal Content - scrollable */}
+            <div className="flex-1 overflow-y-auto p-6 bg-muted/30 dark:bg-background min-h-0">
+              {transformId && (
+                <QualityDashboard
+                  transformId={transformId}
+                  onApprove={handleQualityApprove}
+                  onReject={handleQualityReject}
+                  className="bg-background dark:bg-card border border-border rounded-lg shadow-sm"
+                />
+              )}
+            </div>
           </div>
-          
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setShowQualityReview(false)}>
-              Close
-            </AlertDialogCancel>
-          </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
     </div>

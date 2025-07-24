@@ -76,9 +76,9 @@ export function ViolationsTable({ violations, transformId, className = '' }: Vio
       case 'error':
         return <XCircle className="h-4 w-4 text-destructive" />;
       case 'warning':
-        return <AlertTriangle className="h-4 w-4 text-amber-500" />;
+        return <AlertTriangle className="h-4 w-4 text-amber-500 dark:text-amber-400" />;
       default:
-        return <Info className="h-4 w-4 text-blue-500" />;
+        return <Info className="h-4 w-4 text-blue-500 dark:text-blue-400" />;
     }
   };
 
@@ -115,7 +115,7 @@ export function ViolationsTable({ violations, transformId, className = '' }: Vio
       <Card className={className}>
         <CardContent className="text-center py-12">
           <div className="space-y-2">
-            <div className="text-green-600 text-lg">✨ No violations found!</div>
+            <div className="text-green-600 dark:text-green-400 text-lg">✨ No violations found!</div>
             <p className="text-muted-foreground">All quality checks passed successfully.</p>
           </div>
         </CardContent>
@@ -305,13 +305,13 @@ export function ViolationsTable({ violations, transformId, className = '' }: Vio
                                 <div className="space-y-2 text-sm">
                                   <div>
                                     <span className="text-muted-foreground">Expected: </span>
-                                    <span className="font-mono bg-green-100 px-2 py-1 rounded text-green-800">
+                                    <span className="font-mono bg-green-100 dark:bg-green-900 px-2 py-1 rounded text-green-800 dark:text-green-200">
                                       {violation.expected}
                                     </span>
                                   </div>
                                   <div>
                                     <span className="text-muted-foreground">Actual: </span>
-                                    <span className="font-mono bg-red-100 px-2 py-1 rounded text-red-800">
+                                    <span className="font-mono bg-red-100 dark:bg-red-900 px-2 py-1 rounded text-red-800 dark:text-red-200">
                                       {violation.actual}
                                     </span>
                                   </div>
@@ -342,8 +342,8 @@ export function ViolationsTable({ violations, transformId, className = '' }: Vio
                             {violation.suggestion && (
                               <div>
                                 <h4 className="text-sm font-medium mb-2">💡 Suggestion</h4>
-                                <div className="bg-blue-50 border border-blue-200 rounded p-3">
-                                  <p className="text-sm text-blue-800">{violation.suggestion}</p>
+                                <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded p-3">
+                                  <p className="text-sm text-blue-800 dark:text-blue-200">{violation.suggestion}</p>
                                 </div>
                               </div>
                             )}

@@ -14,27 +14,27 @@ interface QualityScoreCardProps {
 
 export function QualityScoreCard({ qualityResults, className = '' }: QualityScoreCardProps) {
   const getScoreColor = (score: number) => {
-    if (score >= 90) return 'text-green-600';
-    if (score >= 80) return 'text-blue-600';
-    if (score >= 70) return 'text-yellow-600';
-    if (score >= 60) return 'text-orange-600';
-    return 'text-red-600';
+    if (score >= 90) return 'text-green-600 dark:text-green-400';
+    if (score >= 80) return 'text-blue-600 dark:text-blue-400';
+    if (score >= 70) return 'text-yellow-600 dark:text-yellow-400';
+    if (score >= 60) return 'text-orange-600 dark:text-orange-400';
+    return 'text-red-600 dark:text-red-400';
   };
 
   const getGradeColor = (grade: string) => {
     switch (grade) {
       case 'A':
-        return 'bg-green-100 text-green-800 border-green-200';
+        return 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 border-green-200 dark:border-green-700';
       case 'B':
-        return 'bg-blue-100 text-blue-800 border-blue-200';
+        return 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 border-blue-200 dark:border-blue-700';
       case 'C':
-        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+        return 'bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200 border-yellow-200 dark:border-yellow-700';
       case 'D':
-        return 'bg-orange-100 text-orange-800 border-orange-200';
+        return 'bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-200 border-orange-200 dark:border-orange-700';
       case 'F':
-        return 'bg-red-100 text-red-800 border-red-200';
+        return 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200 border-red-200 dark:border-red-700';
       default:
-        return 'bg-gray-100 text-gray-800 border-gray-200';
+        return 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 border-gray-200 dark:border-gray-700';
     }
   };
 
@@ -58,9 +58,9 @@ export function QualityScoreCard({ qualityResults, className = '' }: QualityScor
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {/* Score Display */}
-          <div className="text-center space-y-2">
+          <div className="text-center space-y-3">
             <div className="relative inline-flex items-center justify-center">
               <svg className="w-24 h-24 transform -rotate-90" viewBox="0 0 100 100">
                 {/* Background circle */}
@@ -71,7 +71,7 @@ export function QualityScoreCard({ qualityResults, className = '' }: QualityScor
                   stroke="currentColor"
                   strokeWidth="8"
                   fill="none"
-                  className="text-muted"
+                  className="text-muted-foreground/30"
                 />
                 {/* Progress circle */}
                 <circle
@@ -95,12 +95,15 @@ export function QualityScoreCard({ qualityResults, className = '' }: QualityScor
                 </div>
               </div>
             </div>
-            <Badge 
-              variant="outline" 
-              className={`text-lg px-3 py-1 ${getGradeColor(qualityResults.grade)}`}
-            >
-              Grade {qualityResults.grade}
-            </Badge>
+            
+            <div className="space-y-2">
+              <Badge 
+                variant="outline" 
+                className={`text-lg px-3 py-1 ${getGradeColor(qualityResults.grade)}`}
+              >
+                Grade {qualityResults.grade}
+              </Badge>
+            </div>
           </div>
 
           {/* Key Metrics */}
@@ -127,7 +130,7 @@ export function QualityScoreCard({ qualityResults, className = '' }: QualityScor
               </div>
               <Progress 
                 value={qualityResults.metrics.property_completeness_rate} 
-                className="h-2"
+                className={`h-2 ${getProgressColor(qualityResults.metrics.property_completeness_rate)}`}
               />
             </div>
 
@@ -138,7 +141,7 @@ export function QualityScoreCard({ qualityResults, className = '' }: QualityScor
               </div>
               <Progress 
                 value={qualityResults.metrics.avg_entity_confidence * 100} 
-                className="h-2"
+                className={`h-2 ${getProgressColor(qualityResults.metrics.avg_entity_confidence * 100)}`}
               />
             </div>
           </div>
@@ -151,22 +154,22 @@ export function QualityScoreCard({ qualityResults, className = '' }: QualityScor
             </div>
             
             {qualityResults.requires_review ? (
-              <div className="p-4 rounded-lg border border-amber-200 bg-amber-50">
+              <div className="p-4 rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950">
                 <div className="flex items-center space-x-2 mb-2">
                   <div className="w-2 h-2 rounded-full bg-amber-500"></div>
-                  <span className="text-sm font-medium text-amber-800">Manual Review Required</span>
+                  <span className="text-sm font-medium text-amber-800 dark:text-amber-200">Manual Review Required</span>
                 </div>
-                <p className="text-xs text-amber-700">
+                <p className="text-xs text-amber-700 dark:text-amber-300">
                   Quality score or violations require human review before proceeding to merge.
                 </p>
               </div>
             ) : (
-              <div className="p-4 rounded-lg border border-green-200 bg-green-50">
+              <div className="p-4 rounded-lg border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-950">
                 <div className="flex items-center space-x-2 mb-2">
                   <div className="w-2 h-2 rounded-full bg-green-500"></div>
-                  <span className="text-sm font-medium text-green-800">Ready for Auto-Approval</span>
+                  <span className="text-sm font-medium text-green-800 dark:text-green-200">Ready for Auto-Approval</span>
                 </div>
-                <p className="text-xs text-green-700">
+                <p className="text-xs text-green-700 dark:text-green-300">
                   High quality score with minimal issues. Safe to proceed automatically.
                 </p>
               </div>
@@ -183,22 +186,3 @@ export function QualityScoreCard({ qualityResults, className = '' }: QualityScor
     </Card>
   );
 }
-
-// CSS for custom progress colors (add to global styles)
-export const qualityProgressStyles = `
-  .progress-green .progress-indicator {
-    background-color: rgb(34 197 94); /* green-500 */
-  }
-  .progress-blue .progress-indicator {
-    background-color: rgb(59 130 246); /* blue-500 */
-  }
-  .progress-yellow .progress-indicator {
-    background-color: rgb(234 179 8); /* yellow-500 */
-  }
-  .progress-orange .progress-indicator {
-    background-color: rgb(249 115 22); /* orange-500 */
-  }
-  .progress-red .progress-indicator {
-    background-color: rgb(239 68 68); /* red-500 */
-  }
-`;

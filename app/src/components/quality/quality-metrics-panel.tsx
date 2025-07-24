@@ -29,24 +29,24 @@ export function QualityMetricsPanel({
   className = '' 
 }: QualityMetricsPanelProps) {
   const getViolationRateColor = (rate: number) => {
-    if (rate <= 5) return 'text-green-600';
-    if (rate <= 15) return 'text-yellow-600';
-    if (rate <= 30) return 'text-orange-600';
-    return 'text-red-600';
+    if (rate <= 5) return 'text-green-600 dark:text-green-400';
+    if (rate <= 15) return 'text-yellow-600 dark:text-yellow-400';
+    if (rate <= 30) return 'text-orange-600 dark:text-orange-400';
+    return 'text-red-600 dark:text-red-400';
   };
 
   const getConfidenceColor = (confidence: number) => {
-    if (confidence >= 0.9) return 'text-green-600';
-    if (confidence >= 0.8) return 'text-blue-600';
-    if (confidence >= 0.7) return 'text-yellow-600';
-    return 'text-red-600';
+    if (confidence >= 0.9) return 'text-green-600 dark:text-green-400';
+    if (confidence >= 0.8) return 'text-blue-600 dark:text-blue-400';
+    if (confidence >= 0.7) return 'text-yellow-600 dark:text-yellow-400';
+    return 'text-red-600 dark:text-red-400';
   };
 
   const getCoverageColor = (coverage: number) => {
-    if (coverage >= 90) return 'text-green-600';
-    if (coverage >= 75) return 'text-blue-600';
-    if (coverage >= 60) return 'text-yellow-600';
-    return 'text-red-600';
+    if (coverage >= 90) return 'text-green-600 dark:text-green-400';
+    if (coverage >= 75) return 'text-blue-600 dark:text-blue-400';
+    if (coverage >= 60) return 'text-yellow-600 dark:text-yellow-400';
+    return 'text-red-600 dark:text-red-400';
   };
 
   return (

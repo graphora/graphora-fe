@@ -183,17 +183,24 @@ export function QualityDashboard({
   return (
     <div className={`space-y-6 ${className}`}>
       {/* Header with refresh button */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight">Quality Validation Results</h2>
-          <p className="text-muted-foreground">
-            Review the quality of extracted data for transform {transformId.substring(0, 8)}...
-          </p>
+      <div className="flex items-center justify-between pb-4 border-b border-border">
+        <div className="flex items-center space-x-3">
+          <div className="w-8 h-8 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center">
+            <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
+          </div>
+          <div>
+            <h3 className="text-lg font-semibold text-foreground">Validation Complete</h3>
+            <p className="text-sm text-muted-foreground">
+              Data quality analysis for your extracted content
+            </p>
+          </div>
         </div>
         <Button 
           onClick={() => fetchQualityResults(true)} 
           variant="outline"
+          size="sm"
           disabled={refreshing}
+          className="text-muted-foreground border-border hover:bg-muted"
         >
           <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
           Refresh
@@ -218,11 +225,11 @@ export function QualityDashboard({
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {Object.entries(qualityResults.violations_by_severity).map(([severity, count]) => (
-                <div key={severity} className="flex items-center space-x-3 p-3 rounded-lg border">
+                <div key={severity} className="flex items-center space-x-3 p-3 rounded-lg border border-border bg-card">
                   {getSeverityIcon(severity)}
                   <div>
-                    <p className="font-medium capitalize">{severity}</p>
-                    <p className="text-2xl font-bold">{count}</p>
+                    <p className="font-medium capitalize text-foreground">{severity}</p>
+                    <p className="text-2xl font-bold text-foreground">{count}</p>
                   </div>
                 </div>
               ))}
@@ -232,17 +239,25 @@ export function QualityDashboard({
       )}
 
       {/* Detailed Tabs */}
-      <Tabs defaultValue="violations" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="violations" className="flex items-center">
-            <FileText className="h-4 w-4 mr-2" />
-            Violations ({qualityResults.violations.length})
-          </TabsTrigger>
-          <TabsTrigger value="metrics" className="flex items-center">
-            <BarChart3 className="h-4 w-4 mr-2" />
-            Metrics
-          </TabsTrigger>
-        </TabsList>
+      <Tabs defaultValue="violations" className="space-y-6">
+        <div className="border-b border-border">
+          <TabsList className="w-full justify-start bg-transparent border-b-0 p-0">
+            <TabsTrigger 
+              value="violations" 
+              className="flex items-center px-6 py-3 border-b-2 border-transparent data-[state=active]:border-blue-500 data-[state=active]:bg-transparent data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 rounded-none text-muted-foreground data-[state=active]:text-foreground"
+            >
+              <FileText className="h-4 w-4 mr-2" />
+              Issues ({qualityResults.violations.length})
+            </TabsTrigger>
+            <TabsTrigger 
+              value="metrics" 
+              className="flex items-center px-6 py-3 border-b-2 border-transparent data-[state=active]:border-blue-500 data-[state=active]:bg-transparent data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 rounded-none text-muted-foreground data-[state=active]:text-foreground"
+            >
+              <BarChart3 className="h-4 w-4 mr-2" />
+              Analytics
+            </TabsTrigger>
+          </TabsList>
+        </div>
 
         <TabsContent value="violations" className="space-y-4">
           <ViolationsTable 

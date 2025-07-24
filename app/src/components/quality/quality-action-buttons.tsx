@@ -2,13 +2,11 @@
 
 import React, { useState } from 'react'
 import { 
-  CheckCircle, 
   XCircle, 
   MessageSquare,
   AlertTriangle,
   Info,
-  Loader2,
-  ArrowRight
+  Loader2
 } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -29,36 +27,18 @@ import { type QualityResults } from '@/types/quality'
 
 interface QualityActionButtonsProps {
   qualityResults: QualityResults;
-  onApprove: (comment?: string) => Promise<void>;
   onReject: (reason: string) => Promise<void>;
   className?: string;
 }
 
 export function QualityActionButtons({
   qualityResults,
-  onApprove,
   onReject,
   className = ''
 }: QualityActionButtonsProps) {
-  const [approveDialogOpen, setApproveDialogOpen] = useState(false);
   const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
-  const [approvalComment, setApprovalComment] = useState('');
   const [rejectionReason, setRejectionReason] = useState('');
-  const [isApproving, setIsApproving] = useState(false);
   const [isRejecting, setIsRejecting] = useState(false);
-
-  const handleApprove = async () => {
-    try {
-      setIsApproving(true);
-      await onApprove(approvalComment || undefined);
-      setApproveDialogOpen(false);
-      setApprovalComment('');
-    } catch (error) {
-      console.error('Failed to approve:', error);
-    } finally {
-      setIsApproving(false);
-    }
-  };
 
   const handleReject = async () => {
     if (!rejectionReason.trim()) {
@@ -127,46 +107,51 @@ export function QualityActionButtons({
       <CardContent className="space-y-6">
         {/* Recommendation Alert */}
         <Alert className={`border-l-4 ${
-          recommendation.color === 'green' ? 'border-l-green-500 bg-green-50' :
-          recommendation.color === 'blue' ? 'border-l-blue-500 bg-blue-50' :
-          recommendation.color === 'yellow' ? 'border-l-yellow-500 bg-yellow-50' :
-          'border-l-red-500 bg-red-50'
+          recommendation.color === 'green' ? 'border-l-green-500 bg-green-50 dark:bg-green-950' :
+          recommendation.color === 'blue' ? 'border-l-blue-500 bg-blue-50 dark:bg-blue-950' :
+          recommendation.color === 'yellow' ? 'border-l-yellow-500 bg-yellow-50 dark:bg-yellow-950' :
+          'border-l-red-500 bg-red-50 dark:bg-red-950'
         }`}>
           <Info className="h-4 w-4" />
-          <AlertDescription className="font-medium">
+          <AlertDescription className={`font-medium ${
+            recommendation.color === 'green' ? 'text-green-800 dark:text-green-200' :
+            recommendation.color === 'blue' ? 'text-blue-800 dark:text-blue-200' :
+            recommendation.color === 'yellow' ? 'text-yellow-800 dark:text-yellow-200' :
+            'text-red-800 dark:text-red-200'
+          }`}>
             <strong>Recommendation:</strong> {recommendation.message}
           </AlertDescription>
         </Alert>
 
         {/* Summary Stats */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div className="text-center p-4 rounded-lg border">
-            <div className="text-2xl font-bold text-blue-600">
+          <div className="text-center p-4 rounded-lg border border-border bg-card">
+            <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
               {Math.round(qualityResults.overall_score)}
             </div>
             <div className="text-sm text-muted-foreground">Quality Score</div>
           </div>
-          <div className="text-center p-4 rounded-lg border">
-            <div className="text-2xl font-bold text-red-600">
+          <div className="text-center p-4 rounded-lg border border-border bg-card">
+            <div className="text-2xl font-bold text-red-600 dark:text-red-400">
               {errorViolations}
             </div>
             <div className="text-sm text-muted-foreground">Errors</div>
           </div>
-          <div className="text-center p-4 rounded-lg border">
-            <div className="text-2xl font-bold text-amber-600">
+          <div className="text-center p-4 rounded-lg border border-border bg-card">
+            <div className="text-2xl font-bold text-amber-600 dark:text-amber-400">
               {warningViolations}
             </div>
             <div className="text-sm text-muted-foreground">Warnings</div>
           </div>
-          <div className="text-center p-4 rounded-lg border">
+          <div className="text-center p-4 rounded-lg border border-border bg-card">
             <Badge 
               variant="outline" 
               className={`text-lg px-3 py-1 ${
-                qualityResults.grade === 'A' ? 'bg-green-100 text-green-800' :
-                qualityResults.grade === 'B' ? 'bg-blue-100 text-blue-800' :
-                qualityResults.grade === 'C' ? 'bg-yellow-100 text-yellow-800' :
-                qualityResults.grade === 'D' ? 'bg-orange-100 text-orange-800' :
-                'bg-red-100 text-red-800'
+                qualityResults.grade === 'A' ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200' :
+                qualityResults.grade === 'B' ? 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200' :
+                qualityResults.grade === 'C' ? 'bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200' :
+                qualityResults.grade === 'D' ? 'bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-200' :
+                'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200'
               }`}
             >
               Grade {qualityResults.grade}
@@ -175,111 +160,32 @@ export function QualityActionButtons({
         </div>
 
         {/* Action Buttons */}
-        <div className="flex flex-col sm:flex-row gap-4">
-          {/* Approve Dialog */}
-          <Dialog open={approveDialogOpen} onOpenChange={setApproveDialogOpen}>
-            <DialogTrigger asChild>
-              <Button 
-                className="flex-1" 
-                size="lg"
-                disabled={isApproving || isRejecting}
-              >
-                <CheckCircle className="h-5 w-5 mr-2" />
-                Approve & Proceed to Merge
-                <ArrowRight className="h-4 w-4 ml-2" />
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-md">
-              <DialogHeader>
-                <DialogTitle>Approve Quality Results</DialogTitle>
-                <DialogDescription>
-                  This will approve the quality validation and proceed with merging the data into the knowledge graph.
-                </DialogDescription>
-              </DialogHeader>
-              
-              <div className="space-y-4">
-                <div className="grid grid-cols-3 gap-4 text-sm">
-                  <div className="text-center p-3 bg-muted rounded">
-                    <div className="font-bold">{Math.round(qualityResults.overall_score)}</div>
-                    <div className="text-muted-foreground">Score</div>
-                  </div>
-                  <div className="text-center p-3 bg-muted rounded">
-                    <div className="font-bold">{errorViolations}</div>
-                    <div className="text-muted-foreground">Errors</div>
-                  </div>
-                  <div className="text-center p-3 bg-muted rounded">
-                    <div className="font-bold">{warningViolations}</div>
-                    <div className="text-muted-foreground">Warnings</div>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="approval-comment">Approval Comment (Optional)</Label>
-                  <Textarea
-                    id="approval-comment"
-                    placeholder="Add any notes about this approval decision..."
-                    value={approvalComment}
-                    onChange={(e) => setApprovalComment(e.target.value)}
-                    rows={3}
-                  />
-                </div>
-              </div>
-
-              <DialogFooter className="flex-col sm:flex-row gap-2">
-                <Button 
-                  variant="outline" 
-                  onClick={() => setApproveDialogOpen(false)}
-                  disabled={isApproving}
-                >
-                  Cancel
-                </Button>
-                <Button 
-                  onClick={handleApprove}
-                  disabled={isApproving}
-                  className="bg-green-600 hover:bg-green-700"
-                >
-                  {isApproving ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Approving...
-                    </>
-                  ) : (
-                    <>
-                      <CheckCircle className="h-4 w-4 mr-2" />
-                      Confirm Approval
-                    </>
-                  )}
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-
+        <div className="flex justify-center">
           {/* Reject Dialog */}
           <Dialog open={rejectDialogOpen} onOpenChange={setRejectDialogOpen}>
             <DialogTrigger asChild>
               <Button 
                 variant="destructive" 
-                className="flex-1" 
                 size="lg"
-                disabled={isApproving || isRejecting}
+                disabled={isRejecting}
               >
                 <XCircle className="h-5 w-5 mr-2" />
                 Reject & Stop Process
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-md">
+            <DialogContent className="sm:max-w-md bg-background border-border">
               <DialogHeader>
-                <DialogTitle>Reject Quality Results</DialogTitle>
-                <DialogDescription>
+                <DialogTitle className="text-foreground">Reject Quality Results</DialogTitle>
+                <DialogDescription className="text-muted-foreground">
                   This will reject the quality validation and stop the merge process. The data will not be added to the knowledge graph.
                 </DialogDescription>
               </DialogHeader>
               
               <div className="space-y-4">
                 {errorViolations > 0 && (
-                  <Alert variant="destructive">
+                  <Alert variant="destructive" className="dark:bg-red-950 dark:border-red-800">
                     <AlertTriangle className="h-4 w-4" />
-                    <AlertDescription>
+                    <AlertDescription className="dark:text-red-200">
                       {errorViolations} critical error{errorViolations > 1 ? 's' : ''} detected in the data quality validation.
                     </AlertDescription>
                   </Alert>
