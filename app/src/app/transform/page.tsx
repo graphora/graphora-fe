@@ -30,11 +30,20 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog"
 import { EnhancedWorkflowLayout, WorkflowStep } from '@/components/enhanced-workflow-layout'
 import { clsx as cn } from 'clsx'
 import { Toolbar } from '@/components/command-center/toolbar'
 import { ResizablePanel } from '@/components/command-center/resizable-panel'
 import { CommandPalette } from '@/components/command-center/command-palette'
+import { ChunkingConfig } from '@/components/chunking/chunking-config'
 import { toast } from 'sonner'
 import { useUserConfig } from '@/hooks/useUserConfig'
 
@@ -112,6 +121,9 @@ function TransformPageContent() {
   const [pendingFiles, setPendingFiles] = useState<File[]>([])
   const [showQualityReview, setShowQualityReview] = useState(false)
   const [qualityReviewCompleted, setQualityReviewCompleted] = useState(false)
+  const [chunkingConfig, setChunkingConfig] = useState<any>(null)
+  const [fileContent, setFileContent] = useState<string | null>(null)
+  const [showChunkingConfig, setShowChunkingConfig] = useState(false)
 
   useEffect(() => {
     if (!sessionId) {
@@ -210,9 +222,22 @@ function TransformPageContent() {
       return
     }
 
-    setFile(Object.assign(file, {
+    const fileWithPreview = Object.assign(file, {
       preview: URL.createObjectURL(file)
-    }))
+    })
+    
+    setFile(fileWithPreview)
+    
+    // Read file content for chunking analysis
+    if (file.type === 'text/plain' || file.type === 'text/markdown') {
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        setFileContent(e.target?.result as string)
+      }
+      reader.readAsText(file)
+    } else {
+      setFileContent(null) // PDF files can't be read directly for analysis
+    }
   }, [isProcessing, transformId, graphData])
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
@@ -235,6 +260,8 @@ function TransformPageContent() {
     setIsUploadPanelExpanded(true)
     setShowQualityReview(false)
     setQualityReviewCompleted(false)
+    setChunkingConfig(null)
+    setFileContent(null)
     const newSearchParams = new URLSearchParams(searchParams.toString())
     newSearchParams.delete('transform_id')
     router.push(`${pathname}?${newSearchParams.toString()}`)
@@ -298,6 +325,11 @@ function TransformPageContent() {
     try {
       const formData = new FormData()
       formData.append('files', file)
+      
+      // Add chunking configuration if available
+      if (chunkingConfig) {
+        formData.append('chunking_config', JSON.stringify(chunkingConfig))
+      }
 
       const response = await fetch(`/api/transform?session_id=${sessionId}`, {
         method: 'POST',
@@ -556,15 +588,34 @@ function TransformPageContent() {
       
       const file = new File([blob], sampleFile.name, { type: mimeType })
       
-      setFile(Object.assign(file, {
+      const fileWithPreview = Object.assign(file, {
         preview: URL.createObjectURL(file)
-      }))
+      })
       
-      setTimeout(() => {
-        if (sessionId) {
-          handleExtract()
+      setFile(fileWithPreview)
+      
+      // Read file content for chunking analysis if it's a text file
+      if (file.type === 'text/plain' || file.type === 'text/markdown') {
+        const reader = new FileReader()
+        reader.onload = (e) => {
+          setFileContent(e.target?.result as string)
+          // Auto-extract after content is loaded
+          setTimeout(() => {
+            if (sessionId) {
+              handleExtract()
+            }
+          }, 500)
         }
-      }, 500)
+        reader.readAsText(file)
+      } else {
+        setFileContent(null)
+        // Auto-extract for non-text files
+        setTimeout(() => {
+          if (sessionId) {
+            handleExtract()
+          }
+        }, 500)
+      }
       
     } catch (err) {
       console.error('Error loading sample file:', err)
@@ -813,6 +864,17 @@ function TransformPageContent() {
                 )}
                 
                 <div className="flex items-center space-x-2">
+                  <Button 
+                    onClick={() => setShowChunkingConfig(true)}
+                    disabled={!file || isProcessing}
+                    size="sm"
+                    variant="secondary"
+                    className="bg-muted hover:bg-muted/80 text-foreground border-border"
+                  >
+                    <Settings2 className="h-4 w-4 mr-1.5" />
+                    Chunking Config
+                  </Button>
+                  
                   <Button 
                     onClick={handleExtract} 
                     disabled={!file || isProcessing || !!transformId}
@@ -1117,6 +1179,45 @@ function TransformPageContent() {
           </div>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Chunking Configuration Modal */}
+      <Dialog open={showChunkingConfig} onOpenChange={setShowChunkingConfig}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-card border-border text-card-foreground">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-card-foreground">
+              <Settings2 className="h-5 w-5" />
+              Chunking Configuration
+            </DialogTitle>
+            <DialogDescription className="text-muted-foreground">
+              Configure how your document will be split into chunks for processing. Adjust these settings to optimize the transformation for your specific document type.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="mt-4">
+            <ChunkingConfig
+              fileContent={fileContent ?? undefined}
+              fileName={file?.name}
+              onConfigChange={setChunkingConfig}
+            />
+          </div>
+          
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setShowChunkingConfig(false)}
+              className="bg-muted text-muted-foreground border-border hover:bg-muted/80"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => setShowChunkingConfig(false)}
+              className="bg-primary text-primary-foreground hover:bg-primary/90"
+            >
+              Apply Settings
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
