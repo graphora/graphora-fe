@@ -33,7 +33,7 @@ export function UserButton({ user: propUser }: UserButtonProps) {
   
   const user = clerkUser || propUser
   const userName = (clerkUser?.fullName || clerkUser?.firstName || propUser?.name) || 'User'
-  const userEmail = (clerkUser?.primaryEmailAddress?.emailAddress || propUser?.email) || 'user@graphora.io'
+  const userEmail = (clerkUser?.primaryEmailAddress?.emailAddress || propUser?.email) || 'support@graphora.io'
   const userImage = clerkUser?.imageUrl || propUser?.image
   
   const userInitials = userName
