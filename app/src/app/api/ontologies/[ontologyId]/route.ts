@@ -1,11 +1,10 @@
 import { NextResponse } from 'next/server'
 import { getBackendAuthHeaders, isUnauthorizedError } from '@/lib/auth-utils'
 
-type RouteParams = {
-  params: { ontologyId: string }
-}
-
-export async function GET(_request: Request, { params }: RouteParams) {
+export async function GET(
+  _request: Request,
+  { params }: { params: Promise<{ ontologyId: string }> }
+) {
   try {
     const backendBaseUrl = process.env.BACKEND_API_URL || 'http://localhost:8000'
     const { headers } = await getBackendAuthHeaders({
@@ -13,7 +12,7 @@ export async function GET(_request: Request, { params }: RouteParams) {
       accept: 'application/json'
     })
 
-    const ontologyId = params.ontologyId
+    const { ontologyId } = await params
 
     if (!ontologyId) {
       return NextResponse.json({ error: 'Ontology ID is required' }, { status: 400 })
@@ -71,7 +70,10 @@ export async function GET(_request: Request, { params }: RouteParams) {
   }
 }
 
-export async function DELETE(_request: Request, { params }: RouteParams) {
+export async function DELETE(
+  _request: Request,
+  { params }: { params: Promise<{ ontologyId: string }> }
+) {
   try {
     const backendBaseUrl = process.env.BACKEND_API_URL || 'http://localhost:8000'
     const { headers } = await getBackendAuthHeaders({
@@ -79,7 +81,7 @@ export async function DELETE(_request: Request, { params }: RouteParams) {
       accept: 'application/json'
     })
 
-    const ontologyId = params.ontologyId
+    const { ontologyId } = await params
 
     if (!ontologyId) {
       return NextResponse.json({ error: 'Ontology ID is required' }, { status: 400 })
@@ -135,7 +137,10 @@ export async function DELETE(_request: Request, { params }: RouteParams) {
   }
 }
 
-export async function PUT(request: Request, { params }: RouteParams) {
+export async function PUT(
+  request: Request,
+  { params }: { params: Promise<{ ontologyId: string }> }
+) {
   try {
     const backendBaseUrl = process.env.BACKEND_API_URL || 'http://localhost:8000'
     const { headers } = await getBackendAuthHeaders({
@@ -143,7 +148,7 @@ export async function PUT(request: Request, { params }: RouteParams) {
       accept: 'application/json'
     })
 
-    const ontologyId = params.ontologyId
+    const { ontologyId } = await params
 
     if (!ontologyId) {
       return NextResponse.json({ error: 'Ontology ID is required' }, { status: 400 })

@@ -71,7 +71,8 @@ export async function getBackendAuthContext(): Promise<{ userId: string; token: 
   let token = await resolveToken()
 
   if (!token) {
-    const sessionCookieToken = cookies().get('__session')?.value
+    const cookieStore = await cookies()
+    const sessionCookieToken = cookieStore.get('__session')?.value
     if (sessionCookieToken) {
       token = sessionCookieToken
     }
