@@ -12,14 +12,12 @@ import {
   QualityHealthCheck
 } from '@/types/quality';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-
 export class QualityApiClient {
   private static instance: QualityApiClient;
   private baseUrl: string;
 
   private constructor() {
-    this.baseUrl = `${API_BASE_URL}/api/v1/quality`;
+    this.baseUrl = '/api/quality';
   }
 
   public static getInstance(): QualityApiClient {
@@ -29,47 +27,38 @@ export class QualityApiClient {
     return QualityApiClient.instance;
   }
 
-  private async request<T>(
-    endpoint: string, 
-    userId: string,
-    options: RequestInit = {}
-  ): Promise<T> {
-    const url = `${this.baseUrl}${endpoint}`;
-    
-    const defaultHeaders = {
-      'Content-Type': 'application/json',
-      'user-id': userId,
-    };
+  private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+    const url = `${this.baseUrl}${endpoint}`
 
     const response = await fetch(url, {
+      method: 'GET',
       ...options,
       headers: {
-        ...defaultHeaders,
-        ...options.headers,
-      },
-    });
+        'Content-Type': 'application/json',
+        ...options.headers
+      }
+    })
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
-      throw new Error(errorData.detail || errorData.error || `HTTP ${response.status}`);
+      const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
+      throw new Error(errorData.detail || errorData.error || `HTTP ${response.status}`)
     }
 
-    return response.json();
+    return response.json()
   }
 
   /**
    * Get quality validation results for a transform
    */
-  async getQualityResults(transformId: string, userId: string): Promise<QualityResults> {
-    return this.request<QualityResults>(`/results/${transformId}`, userId);
+  async getQualityResults(transformId: string): Promise<QualityResults> {
+    return this.request<QualityResults>(`/results/${transformId}`)
   }
 
   /**
    * Get filtered violations for a transform
    */
   async getViolations(
-    transformId: string, 
-    userId: string,
+    transformId: string,
     filters: ViolationFilters = {}
   ): Promise<{ violations: QualityViolation[]; total_returned: number }> {
     const queryParams = new URLSearchParams();
@@ -83,66 +72,64 @@ export class QualityApiClient {
     const query = queryParams.toString();
     const endpoint = `/violations/${transformId}${query ? `?${query}` : ''}`;
     
-    return this.request(endpoint, userId);
+    return this.request(endpoint)
   }
 
   /**
    * Approve quality results and proceed to merge
    */
   async approveQualityResults(
-    transformId: string, 
-    userId: string,
+    transformId: string,
     comment?: string
   ): Promise<QualityActionResponse> {
-    return this.request<QualityActionResponse>(`/approve/${transformId}`, userId, {
+    return this.request<QualityActionResponse>(`/approve/${transformId}`, {
       method: 'POST',
-      body: JSON.stringify({ approval_comment: comment }),
-    });
+      body: JSON.stringify({ approval_comment: comment })
+    })
   }
 
   /**
    * Reject quality results and stop the process
    */
   async rejectQualityResults(
-    transformId: string, 
-    userId: string,
+    transformId: string,
     reason: string
   ): Promise<QualityActionResponse> {
-    return this.request<QualityActionResponse>(`/reject/${transformId}`, userId, {
+    return this.request<QualityActionResponse>(`/reject/${transformId}`, {
       method: 'POST',
-      body: JSON.stringify({ rejection_reason: reason }),
-    });
+      body: JSON.stringify({ rejection_reason: reason })
+    })
   }
 
   /**
    * Get quality summary for the user
    */
-  async getQualitySummary(userId: string, limit: number = 10): Promise<any[]> {
-    const response = await this.request<{ recent_quality_results: any[] }>(`/summary?limit=${limit}`, userId);
-    return response.recent_quality_results;
+  async getQualitySummary(limit: number = 10): Promise<any[]> {
+    const response = await this.request<{ recent_quality_results: any[] }>(`/summary?limit=${limit}`)
+    return response.recent_quality_results
   }
 
   /**
    * Delete quality results for a transform
    */
-  async deleteQualityResults(transformId: string, userId: string): Promise<void> {
-    await this.request(`/results/${transformId}`, userId, {
-      method: 'DELETE',
-    });
+  async deleteQualityResults(transformId: string): Promise<void> {
+    await this.request(`/results/${transformId}`, {
+      method: 'DELETE'
+    })
   }
 
   /**
    * Check if quality API is available
    */
-  async healthCheck(userId: string = 'anonymous'): Promise<QualityHealthCheck> {
+  async healthCheck(): Promise<QualityHealthCheck> {
     try {
-      return await this.request<QualityHealthCheck>('/health', userId);
+      return await this.request<QualityHealthCheck>('/health')
     } catch (error) {
       return {
         status: 'unavailable',
         quality_api_available: false,
         message: 'Quality validation API is not available'
-      };
+      }
     }
   }
 }

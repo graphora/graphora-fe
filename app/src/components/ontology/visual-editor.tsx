@@ -11,6 +11,13 @@ import { AddRelationshipModal } from './add-relationship-modal'
 import { GraphView } from './graph-view'
 import { cn } from '@/lib/utils'
 
+const isDebugEnabled = process.env.NODE_ENV !== 'production'
+const debug = (...args: unknown[]) => {
+  if (isDebugEnabled) {
+    console.debug('[VisualEditor]', ...args)
+  }
+}
+
 export function VisualEditor() {
   const { ontology, updateFromOntology } = useOntologyEditorStore()
   const [activeView, setActiveView] = useState('graph')
@@ -18,7 +25,7 @@ export function VisualEditor() {
   const [expandedKeys, setExpandedKeys] = useState<string[]>([])
 
   const handleNodeSelect = (key: string) => {
-    console.log('Selected node:', key);
+    debug('Selected node:', key)
   }
 
   const handleToggleExpand = (key: string, isExpanded: boolean) => {
@@ -34,7 +41,7 @@ export function VisualEditor() {
   }
 
   const handleExpandAll = () => {
-    console.log('Expand all not implemented yet');
+    debug('Expand all not implemented yet')
   }
 
   return (

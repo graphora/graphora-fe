@@ -8,6 +8,18 @@ import { Vector } from '@/lib/utils/vector'
 import { NodeEditor } from './node-editor'
 import { RelationshipEditor } from './relationship-editor'
 
+const isDebugEnabled = process.env.NODE_ENV !== 'production'
+const debug = (...args: unknown[]) => {
+  if (isDebugEnabled) {
+    console.debug('[GraphDisplay]', ...args)
+  }
+}
+const debugWarn = (...args: unknown[]) => {
+  if (isDebugEnabled) {
+    console.warn('[GraphDisplay]', ...args)
+  }
+}
+
 interface GraphDisplayProps {
   className?: string
 }
@@ -105,15 +117,16 @@ export function GraphDisplay({ className = '' }: GraphDisplayProps) {
     if (!ctx) return
 
     // Debug: Log the graph data
-    console.log('Drawing graph:', graph)
-    console.log('Nodes:', Object.keys(graph.nodes).length)
-    console.log('Relationships:', Object.keys(graph.relationships).length)
+    debug('Drawing graph', {
+      nodes: Object.keys(graph.nodes).length,
+      relationships: Object.keys(graph.relationships).length
+    })
     
     // Log each relationship for debugging
     Object.values(graph.relationships).forEach(rel => {
       const fromNode = graph.nodes[rel.from]
       const toNode = graph.nodes[rel.to]
-      console.log(`Relationship ${rel.id}: ${rel.type} from ${fromNode?.caption || 'unknown'} to ${toNode?.caption || 'unknown'}`)
+      debug(`Relationship ${rel.id}: ${rel.type} from ${fromNode?.caption || 'unknown'} to ${toNode?.caption || 'unknown'}`)
     })
 
     // Clear the canvas
@@ -162,7 +175,7 @@ export function GraphDisplay({ className = '' }: GraphDisplayProps) {
     ctx.imageSmoothingQuality = 'high'
 
     // Draw relationships
-    console.log('Drawing relationships:', Object.values(graph.relationships).length)
+    debug('Drawing relationships:', Object.values(graph.relationships).length)
     
     // Create a map to track multiple relationships between the same nodes
     // Use directional keys to distinguish relationships in different directions
@@ -564,7 +577,17 @@ export function GraphDisplay({ className = '' }: GraphDisplayProps) {
     }
 
     ctx.restore()
-  }, [graph, selection, viewTransformation, canvasSize, isCreatingRelationship, relationshipStartNode, relationshipEndPoint])
+  }, [
+    graph,
+    selection,
+    viewTransformation,
+    canvasSize,
+    isCreatingRelationship,
+    relationshipStartNode,
+    relationshipEndPoint,
+    canvasBackgroundColor,
+    gridColor
+  ])
 
   // Helper function to check if a point is inside a relationship creation handle
   const isPointInRelationshipHandle = (point: Point, nodeId: string): boolean => {
@@ -610,7 +633,7 @@ export function GraphDisplay({ className = '' }: GraphDisplayProps) {
       const selectedNode = graph.nodes[selectedNodeId]
       
       if (selectedNode && isPointInRelationshipHandle(graphPoint, selectedNodeId)) {
-        console.log('Starting relationship creation')
+        debug('Starting relationship creation')
         setIsCreatingRelationship(true)
         setRelationshipStartNode(selectedNodeId)
         setRelationshipEndPoint(graphPoint)
@@ -764,7 +787,7 @@ export function GraphDisplay({ className = '' }: GraphDisplayProps) {
     
     // Handle relationship creation completion
     if (isCreatingRelationship && relationshipStartNode) {
-      console.log('Completing relationship creation')
+      debug('Completing relationship creation')
       
       // Check if we released on a node
       const nodeRadius = graph.style['node-radius'] || 40
@@ -786,7 +809,7 @@ export function GraphDisplay({ className = '' }: GraphDisplayProps) {
       }
       
       if (targetNodeId) {
-        console.log(`Creating relationship from ${relationshipStartNode} to ${targetNodeId}`)
+        debug(`Creating relationship from ${relationshipStartNode} to ${targetNodeId}`)
         // Create the relationship
         const relId = addRelationship(relationshipStartNode, targetNodeId, 'RELATES_TO')
         
@@ -829,7 +852,7 @@ export function GraphDisplay({ className = '' }: GraphDisplayProps) {
     for (const nodeId in graph.nodes) {
       const node = graph.nodes[nodeId]
       if (node.position.distanceTo(graphPoint) <= nodeRadius) {
-        console.log('Double clicked node:', nodeId);
+        debug('Double clicked node:', nodeId)
         selectNode(nodeId) 
         setEditingNodeId(nodeId)
         setEditingRelationshipId(null) // Close relationship editor if open
@@ -868,7 +891,7 @@ export function GraphDisplay({ className = '' }: GraphDisplayProps) {
            const distanceSq = distance * distance; // Calculate square
 
            if (distanceSq <= threshold * threshold) {
-              console.log('Double clicked relationship:', relationship.id);
+              debug('Double clicked relationship:', relationship.id)
               selectRelationship(relationship.id)
               setEditingRelationshipId(relationship.id)
               setEditingNodeId(null) // Close node editor if open
@@ -879,7 +902,7 @@ export function GraphDisplay({ className = '' }: GraphDisplayProps) {
     }
 
     // 3. If not on a node or relationship, create a new node
-    console.log('Double click on empty space, creating node.');
+    debug('Double click on empty space, creating node.')
     const newNodeId = addNode(graphPoint, 'New Entity', [])
     selectNode(newNodeId) // Select the new node
     setEditingNodeId(newNodeId)

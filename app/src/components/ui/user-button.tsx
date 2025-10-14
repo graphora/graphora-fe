@@ -16,6 +16,13 @@ import { useUser, useClerk } from '@clerk/nextjs'
 import { useRouter } from 'next/navigation'
 import { UsageTrackingModal } from '@/components/usage/usage-tracking-modal'
 
+const isDebugEnabled = process.env.NODE_ENV !== 'production'
+const debug = (...args: unknown[]) => {
+  if (isDebugEnabled) {
+    console.debug('[UserButton]', ...args)
+  }
+}
+
 interface UserButtonProps {
   user?: {
     name?: string
@@ -48,7 +55,7 @@ export function UserButton({ user: propUser }: UserButtonProps) {
       signOut()
     } else {
       // Fallback for non-Clerk implementations
-      console.log('Sign out clicked')
+      debug('Sign out clicked')
     }
   }
 
@@ -57,7 +64,7 @@ export function UserButton({ user: propUser }: UserButtonProps) {
       openUserProfile()
     } else {
       // Fallback for non-Clerk implementations
-      console.log('Profile clicked')
+      debug('Profile clicked')
     }
   }
 

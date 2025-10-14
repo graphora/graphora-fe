@@ -1,20 +1,19 @@
 import { NextResponse } from 'next/server'
-import { auth } from '@clerk/nextjs/server'
+import { getBackendAuthContext, isUnauthorizedError } from '@/lib/auth-utils'
 
 export async function GET(request: Request) {
   try {
-    const { userId } = await auth()
-    if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+    const backendBaseUrl = process.env.BACKEND_API_URL || 'http://localhost:8000'
+    const { userId, token } = await getBackendAuthContext()
 
     const response = await fetch(
-      `${process.env.BACKEND_API_URL}/api/v1/audit/summary`,
+      `${backendBaseUrl}/api/v1/audit/summary`,
       {
         method: 'GET',
         headers: {
           'accept': 'application/json',
-          'user-id': userId
+          'user-id': userId,
+          Authorization: `Bearer ${token}`
         }
       }
     )
@@ -27,6 +26,9 @@ export async function GET(request: Request) {
     const data = await response.json()
     return NextResponse.json(data)
   } catch (error) {
+    if (isUnauthorizedError(error)) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
     console.error('Error fetching audit summary:', error)
     return NextResponse.json(
       { error: 'Failed to fetch audit summary' },

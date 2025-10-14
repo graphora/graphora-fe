@@ -1,16 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { auth } from '@clerk/nextjs/server'
+import { getBackendAuthContext, isUnauthorizedError } from '@/lib/auth-utils'
 
 export async function POST(request: NextRequest) {
   try {
     // Authenticate user
-    const { userId } = await auth()
-    if (!userId) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
-    }
+    const backendBaseUrl = process.env.BACKEND_API_URL || 'http://localhost:8000'
+    const { userId, token } = await getBackendAuthContext()
 
     const body = await request.json()
 
@@ -23,14 +18,13 @@ export async function POST(request: NextRequest) {
     }
 
     // Get backend URL from environment
-    const backendUrl = process.env.BACKEND_API_URL || 'http://localhost:8000'
-    
     // Proxy request to Python backend
-    const backendResponse = await fetch(`${backendUrl}/api/v1/chat/sessions/start`, {
+    const backendResponse = await fetch(`${backendBaseUrl}/api/v1/chat/sessions/start`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'user-id': userId
+        'user-id': userId,
+        Authorization: `Bearer ${token}`
       },
       body: JSON.stringify({
         context_type: body.context_type,
@@ -54,6 +48,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(result)
 
   } catch (error) {
+    if (isUnauthorizedError(error)) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      )
+    }
     console.error('Chat session start proxy error:', error)
     
     if (error instanceof Error && error.name === 'AbortError') {

@@ -1,20 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { auth } from '@clerk/nextjs/server'
+import { getBackendAuthHeaders, isUnauthorizedError } from '@/lib/auth-utils'
 
 // This API route will fetch the list of patients from the backend
 export async function GET(request: NextRequest) {
   try {
-    const { userId } = await auth()
-    if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+    const backendBaseUrl = process.env.BACKEND_API_URL || 'http://localhost:8000'
+    const { headers } = await getBackendAuthHeaders({ 'Content-Type': 'application/json' })
 
-    const response = await fetch(`${process.env.BACKEND_API_URL}/api/v1/domain/healthcare/patients`, {
+    const response = await fetch(`${backendBaseUrl}/api/v1/domain/healthcare/patients`, {
       method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'user-id': userId  // Pass user-id in header (note the hyphen)
-      },
+      headers,
     })
     
     if (!response.ok) {
@@ -24,6 +19,9 @@ export async function GET(request: NextRequest) {
     const data = await response.json()
     return NextResponse.json(data)
   } catch (error) {
+    if (isUnauthorizedError(error)) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
     console.error('Error fetching patients:', error)
     return NextResponse.json(
       { error: 'Failed to fetch patients' },

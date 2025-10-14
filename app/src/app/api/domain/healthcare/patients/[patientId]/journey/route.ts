@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { auth } from '@clerk/nextjs/server'
+import { getBackendAuthContext, isUnauthorizedError } from '@/lib/auth-utils'
 
 // This API route will fetch the journey data for a specific patient
 export async function GET(
@@ -7,18 +7,17 @@ export async function GET(
   { params }: { params: Promise<{ patientId: string }> }
 ) {
   try {
-    const { userId } = await auth()
-    if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+    const backendBaseUrl = process.env.BACKEND_API_URL || 'http://localhost:8000'
+    const { userId, token } = await getBackendAuthContext()
 
     const { patientId } = await params
     
-    const response = await fetch(`${process.env.BACKEND_API_URL}/api/v1/domain/healthcare/patients/${patientId}/journey`, {
+    const response = await fetch(`${backendBaseUrl}/api/v1/domain/healthcare/patients/${patientId}/journey`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
-        'user-id': userId  // Pass user-id in header (note the hyphen)
+        'user-id': userId,
+        Authorization: `Bearer ${token}`
       },
     })
     
@@ -29,6 +28,9 @@ export async function GET(
     const data = await response.json()
     return NextResponse.json(data)
   } catch (error) {
+    if (isUnauthorizedError(error)) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
     const { patientId } = await params
     console.error(`Error fetching journey for patient ${patientId}:`, error)
     return NextResponse.json(

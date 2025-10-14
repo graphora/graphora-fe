@@ -1,4 +1,13 @@
 {
+  "private": true,
+  "scripts": {
+    "dev": "npm --prefix app run dev",
+    "build": "npm --prefix app run build",
+    "start": "npm --prefix app run start",
+    "lint": "npm --prefix app run lint",
+    "test": "npm --prefix app run test",
+    "format": "npm --prefix app run format"
+  },
   "dependencies": {
     "typescript": "^5.8.3"
   }

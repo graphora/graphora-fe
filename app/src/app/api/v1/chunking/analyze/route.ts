@@ -1,21 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { getBackendAuthContext, isUnauthorizedError } from '@/lib/auth-utils'
 
 export async function POST(request: NextRequest) {
   try {
+    const backendBaseUrl = process.env.BACKEND_API_URL || 'http://localhost:8000'
+    const { userId, token } = await getBackendAuthContext()
     const body = await request.json()
     
-    // Get the backend API URL from environment
-    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
-    
     // Forward the request to the backend chunking analyze endpoint
-    const response = await fetch(`${backendUrl}/api/v1/chunking/analyze`, {
+    const response = await fetch(`${backendBaseUrl}/api/v1/chunking/analyze`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        // Forward user ID if available
-        ...(request.headers.get('user-id') && {
-          'user-id': request.headers.get('user-id')!
-        })
+        'user-id': userId,
+        Authorization: `Bearer ${token}`
       },
       body: JSON.stringify(body)
     })
@@ -32,6 +30,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(data)
 
   } catch (error) {
+    if (isUnauthorizedError(error)) {
+      return NextResponse.json(
+        { message: 'Unauthorized' },
+        { status: 401 }
+      )
+    }
     console.error('Error in chunking analyze API:', error)
     return NextResponse.json(
       { message: 'Internal server error' },

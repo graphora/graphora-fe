@@ -1,5 +1,5 @@
-import { auth } from '@clerk/nextjs/server'
 import { NextRequest, NextResponse } from 'next/server'
+import { getBackendAuthHeaders } from '@/lib/auth-utils'
 
 /**
  * Sanitize sensitive data for logging
@@ -27,19 +27,14 @@ function sanitizeForLog(data: any): any {
 
 export async function GET() {
   try {
-    const { userId } = await auth()
-    if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+    const backendBaseUrl = process.env.BACKEND_API_URL || 'http://localhost:8000'
+    const { headers } = await getBackendAuthHeaders({ 'Content-Type': 'application/json' })
 
     // Forward the request to the backend
-    const backendUrl = `${process.env.BACKEND_API_URL}/api/v1/ai-config`
+    const backendUrl = `${backendBaseUrl}/api/v1/ai-config`
     const backendResponse = await fetch(backendUrl, {
       method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'user-id': userId
-      }
+      headers
     })
 
     if (backendResponse.status === 404) {
@@ -61,6 +56,9 @@ export async function GET() {
     const data = await backendResponse.json()
     return NextResponse.json(data)
   } catch (error) {
+    if (error instanceof Error && error.message === 'Unauthorized') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
     console.error('Error in AI config GET API:', error)
     return NextResponse.json(
       { error: 'Internal server error' },
@@ -71,22 +69,16 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   try {
-    const { userId } = await auth()
-    if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+    const backendBaseUrl = process.env.BACKEND_API_URL || 'http://localhost:8000'
+    const { headers } = await getBackendAuthHeaders({ 'Content-Type': 'application/json' })
 
     const body = await req.json()
-    console.log('Creating AI configuration for user:', userId, sanitizeForLog(body))
 
     // Forward the request to the backend
-    const backendUrl = `${process.env.BACKEND_API_URL}/api/v1/ai-config/gemini`
+    const backendUrl = `${backendBaseUrl}/api/v1/ai-config/gemini`
     const backendResponse = await fetch(backendUrl, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'user-id': userId
-      },
+      headers,
       body: JSON.stringify(body)
     })
 
@@ -102,6 +94,9 @@ export async function POST(req: NextRequest) {
     const data = await backendResponse.json()
     return NextResponse.json(data)
   } catch (error) {
+    if (error instanceof Error && error.message === 'Unauthorized') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
     console.error('Error in AI config POST API:', error)
     return NextResponse.json(
       { error: 'Internal server error' },
@@ -112,22 +107,16 @@ export async function POST(req: NextRequest) {
 
 export async function PUT(req: NextRequest) {
   try {
-    const { userId } = await auth()
-    if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+    const backendBaseUrl = process.env.BACKEND_API_URL || 'http://localhost:8000'
+    const { headers } = await getBackendAuthHeaders({ 'Content-Type': 'application/json' })
 
     const body = await req.json()
-    console.log('Updating AI configuration for user:', userId, sanitizeForLog(body))
 
     // Forward the request to the backend
-    const backendUrl = `${process.env.BACKEND_API_URL}/api/v1/ai-config/gemini`
+    const backendUrl = `${backendBaseUrl}/api/v1/ai-config/gemini`
     const backendResponse = await fetch(backendUrl, {
       method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        'user-id': userId
-      },
+      headers,
       body: JSON.stringify(body)
     })
 
@@ -143,6 +132,9 @@ export async function PUT(req: NextRequest) {
     const data = await backendResponse.json()
     return NextResponse.json(data)
   } catch (error) {
+    if (error instanceof Error && error.message === 'Unauthorized') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
     console.error('Error in AI config PUT API:', error)
     return NextResponse.json(
       { error: 'Internal server error' },

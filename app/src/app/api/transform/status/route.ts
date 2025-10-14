@@ -1,12 +1,10 @@
 import { NextResponse } from 'next/server'
-import { auth } from '@clerk/nextjs/server'
+import { getBackendAuthHeaders, isUnauthorizedError } from '@/lib/auth-utils'
 
 export async function GET(request: Request) {
   try {
-    const { userId } = await auth()
-    if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+    const backendBaseUrl = process.env.BACKEND_API_URL || 'http://localhost:8000'
+    const { userId, headers } = await getBackendAuthHeaders({ accept: 'application/json' })
 
     const url = new URL(request.url)
     const sessionId = url.searchParams.get('session_id')
@@ -20,13 +18,10 @@ export async function GET(request: Request) {
     }
 
     const response = await fetch(
-      `${process.env.BACKEND_API_URL}/api/v1/transform/status/${transformId}`,
+      `${backendBaseUrl}/api/v1/transform/status/${transformId}`,
       {
         method: 'GET',
-        headers: {
-          'accept': 'application/json',
-          'user-id': userId
-        }
+        headers
       }
     )
 
@@ -38,6 +33,9 @@ export async function GET(request: Request) {
     const data = await response.json()
     return NextResponse.json(data)
   } catch (error) {
+    if (isUnauthorizedError(error)) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
     console.error('Error checking transform status:', error)
     return NextResponse.json(
       { error: 'Failed to check transform status' },

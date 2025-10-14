@@ -1,15 +1,13 @@
 import { NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs/server';
+import { getBackendAuthContext, isUnauthorizedError } from '@/lib/auth-utils';
 
 export async function POST(
   request: Request,
   { params }: any
 ) {
   try {
-    const { userId } = await auth();
-    if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const backendBaseUrl = process.env.BACKEND_API_URL || 'http://localhost:8000';
+    const { userId, token } = await getBackendAuthContext();
 
     const { mergeId, conflictId } = params;
     
@@ -37,13 +35,14 @@ export async function POST(
 
     try {
       // Construct the URL with the learning_comment query parameter
-      const apiUrl = `${process.env.BACKEND_API_URL}/api/v1/merge/${mergeId}/conflicts/${conflictId}/resolve?resolution=${resolution}&learning_comment=${encodeURIComponent(learningComment)}`;
+      const apiUrl = `${backendBaseUrl}/api/v1/merge/${mergeId}/conflicts/${conflictId}/resolve?resolution=${resolution}&learning_comment=${encodeURIComponent(learningComment)}`;
 
       const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'user-id': userId
+          'user-id': userId,
+          Authorization: `Bearer ${token}`
         },
         body: JSON.stringify(changedProps)
       });
@@ -62,6 +61,9 @@ export async function POST(
       );
     }
   } catch (error) {
+    if (isUnauthorizedError(error)) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
     console.error('Error resolving conflict:', error);
     return NextResponse.json(
       { error: 'Internal server error' },

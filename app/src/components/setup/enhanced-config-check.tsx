@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { useUser } from '@clerk/nextjs'
 import { Button } from '@/components/ui/button'
@@ -9,6 +9,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Loader2, Settings, AlertCircle, Database, RefreshCw, Sparkles } from 'lucide-react'
 import { useSetupCheck } from '@/hooks/useSetupCheck'
 import { SetupWelcomeModal } from './setup-welcome-modal'
+
+const isDebugEnabled = process.env.NODE_ENV !== 'production'
+const debug = (...args: unknown[]) => {
+  if (isDebugEnabled) {
+    console.debug('[EnhancedConfigCheck]', ...args)
+  }
+}
 
 interface EnhancedConfigCheckProps {
   children: React.ReactNode
@@ -33,7 +40,7 @@ export function EnhancedConfigCheck({
   const [hasShownModal, setHasShownModal] = useState(false)
 
   // Check if user has dismissed the modal recently (within 24 hours)
-  const shouldShowModal = () => {
+  const shouldShowModal = useCallback(() => {
     if (!showSetupModal) return false
     
     const dismissed = localStorage.getItem('setup-modal-dismissed')
@@ -45,7 +52,7 @@ export function EnhancedConfigCheck({
       }
     }
     return true
-  }
+  }, [showSetupModal])
 
   useEffect(() => {
     if (!setupStatus.isLoading && !hasShownModal && isLoaded && user) {
@@ -58,7 +65,7 @@ export function EnhancedConfigCheck({
         }
       }
     }
-  }, [setupStatus.isLoading, setupStatus.isFullyConfigured, hasShownModal, isLoaded, user, pathname])
+  }, [setupStatus.isLoading, setupStatus.isFullyConfigured, hasShownModal, isLoaded, user, pathname, shouldShowModal])
 
   const handleModalClose = () => {
     setShowModal(false)
@@ -71,7 +78,7 @@ export function EnhancedConfigCheck({
 
   const handleSkipConfig = () => {
     // Allow user to proceed without full configuration in development mode
-    console.log('User chose to skip configuration')
+    debug('User chose to skip configuration')
   }
 
   if (!isLoaded || setupStatus.isLoading) {

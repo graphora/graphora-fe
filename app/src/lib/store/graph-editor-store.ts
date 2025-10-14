@@ -4,6 +4,18 @@ import { Point } from '@/lib/utils/point'
 import { v4 as uuidv4 } from 'uuid'
 import { produce } from 'immer' // Use Immer for safer state updates
 
+const isDebugEnabled = process.env.NODE_ENV !== 'production'
+const debug = (...args: unknown[]) => {
+  if (isDebugEnabled) {
+    console.debug('[GraphEditorStore]', ...args)
+  }
+}
+const debugWarn = (...args: unknown[]) => {
+  if (isDebugEnabled) {
+    console.warn('[GraphEditorStore]', ...args)
+  }
+}
+
 // Types
 // Re-introducing PropertyDefinition
 export interface PropertyDefinition {
@@ -84,6 +96,7 @@ export interface GraphEditorState {
   // Conversion to/from ontology
   fromOntology: (ontology: any) => void
   toOntology: () => any
+  reset: () => void
 }
 
 const DEFAULT_STYLE = {
@@ -112,6 +125,28 @@ const DEFAULT_RELATIONSHIP_STYLE = {
   'arrow-width': 6,
   'arrow-size': 10
 }
+
+const createBaseState = (): Pick<GraphEditorState, 'graph' | 'selection' | 'viewTransformation' | 'canvasSize' | 'ontologyVersion'> => ({
+  graph: {
+    nodes: {},
+    relationships: {},
+    style: { ...DEFAULT_STYLE }
+  },
+  selection: {
+    nodes: [],
+    relationships: [],
+    isActive: false
+  },
+  viewTransformation: {
+    scale: 1,
+    translate: new Vector(0, 0)
+  },
+  canvasSize: {
+    width: 800,
+    height: 600
+  },
+  ontologyVersion: null
+})
 
 // Generate colors dynamically based on entity name
 const getEntityColor = (entityName: string): string => {
@@ -163,25 +198,7 @@ const adjustColor = (color: string, amount: number): string => {
 }
 
 export const useGraphEditorStore = create<GraphEditorState>((set, get) => ({
-  graph: {
-    nodes: {},
-    relationships: {},
-    style: DEFAULT_STYLE
-  },
-  selection: {
-    nodes: [],
-    relationships: [],
-    isActive: false
-  },
-  viewTransformation: {
-    scale: 1,
-    translate: new Vector(0, 0)
-  },
-  canvasSize: {
-    width: 800,
-    height: 600
-  },
-  ontologyVersion: null, // Initialize version
+  ...createBaseState(),
   
   // Node actions
   addNode: (position, caption = '', labels = [], properties = {}) => {
@@ -279,12 +296,12 @@ export const useGraphEditorStore = create<GraphEditorState>((set, get) => ({
       const relationship = state.graph.relationships[id]
       if (!relationship) return
       
-      console.log('Updating relationship with id:', id);
-      console.log('Updates received:', JSON.stringify(updates));
+      debug('Updating relationship with id:', id)
+      debug('Updates received:', JSON.stringify(updates))
       
       // Specifically handle properties to ensure deep merging
       if (updates.properties) {
-        console.log('Merging relationship properties:', JSON.stringify(updates.properties));
+        debug('Merging relationship properties:', JSON.stringify(updates.properties))
         relationship.properties = { ...relationship.properties, ...updates.properties };
       }
       
@@ -294,7 +311,7 @@ export const useGraphEditorStore = create<GraphEditorState>((set, get) => ({
       if (updates.to) relationship.to = updates.to;
       if (updates.style) relationship.style = { ...relationship.style, ...updates.style };
       
-      console.log('Updated relationship:', JSON.stringify(relationship));
+      debug('Updated relationship:', JSON.stringify(relationship))
     }))
   },
   
@@ -439,7 +456,7 @@ export const useGraphEditorStore = create<GraphEditorState>((set, get) => ({
       state.ontologyVersion = ontology?.version || null
       
       if (!ontology || typeof ontology.entities !== 'object' || ontology.entities === null) {
-        console.warn('[fromOntology] Invalid ontology format (entities missing or not an object):', ontology)
+        debugWarn('[fromOntology] Invalid ontology format (entities missing or not an object):', ontology)
       return
     }
     
@@ -478,7 +495,7 @@ export const useGraphEditorStore = create<GraphEditorState>((set, get) => ({
             if (typeof propData === 'object' && propData !== null && propData.type) {
               nodeProperties[propName] = { ...propData } // Copy full definition
           } else {
-              console.warn(`[fromOntology] Property '${propName}' for entity '${entityName}' has unexpected format:`, propData)
+              debugWarn(`[fromOntology] Property '${propName}' for entity '${entityName}' has unexpected format:`, propData)
               nodeProperties[propName] = { type: String(propData?.type || 'string'), description: propName }
             }
           }
@@ -519,7 +536,7 @@ export const useGraphEditorStore = create<GraphEditorState>((set, get) => ({
                 if (typeof propData === 'object' && propData !== null && propData.type) {
                   relProperties[propName] = { ...propData }
                   } else {
-                  console.warn(`[fromOntology] Property '${propName}' for relationship '${relType}' has unexpected format:`, propData)
+                  debugWarn(`[fromOntology] Property '${propName}' for relationship '${relType}' has unexpected format:`, propData)
                   relProperties[propName] = { type: String(propData?.type || 'string'), description: propName }
                 }
               }
@@ -534,11 +551,11 @@ export const useGraphEditorStore = create<GraphEditorState>((set, get) => ({
               style: { ...DEFAULT_RELATIONSHIP_STYLE }
             }
           } else {
-            console.warn(`[fromOntology] Could not create relationship '${relType}' from '${entityName}' to '${targetEntityName}': Target node ID missing.`)
+            debugWarn(`[fromOntology] Could not create relationship '${relType}' from '${entityName}' to '${targetEntityName}': Target node ID missing.`)
           }
         }
       }
-      console.log('[fromOntology] Conversion complete. Resulting graph state:', state.graph)
+      debug('[fromOntology] Conversion complete. Resulting graph state:', state.graph)
     }))
   },
   
@@ -584,8 +601,8 @@ export const useGraphEditorStore = create<GraphEditorState>((set, get) => ({
       const fromNode = nodeMap.get(rel.from)
       const toNode = nodeMap.get(rel.to)
       
-      console.log(`[toOntology] Processing relationship: ${rel.type} from ${fromNode?.caption} to ${toNode?.caption}`)
-      console.log(`[toOntology] Relationship properties:`, JSON.stringify(rel.properties, null, 2))
+      debug(`[toOntology] Processing relationship: ${rel.type} from ${fromNode?.caption} to ${toNode?.caption}`)
+      debug(`[toOntology] Relationship properties:`, JSON.stringify(rel.properties, null, 2))
       
       if (fromNode?.caption && toNode?.caption && ontology.entities[fromNode.caption]) {
         const fromEntity = ontology.entities[fromNode.caption]
@@ -602,18 +619,18 @@ export const useGraphEditorStore = create<GraphEditorState>((set, get) => ({
         
         // Add relationship properties (only if present)
         if (rel.properties && Object.keys(rel.properties).length > 0) {
-          console.log(`[toOntology] Relationship ${rel.type} has ${Object.keys(rel.properties).length} properties`)
+        debug(`[toOntology] Relationship ${rel.type} has ${Object.keys(rel.properties).length} properties`)
           
           // Initialize properties object for this relationship
           fromEntity.relationships[rel.type].properties = {}
           
           // Process each property
           for (const propName in rel.properties) {
-             console.log(`[toOntology] Processing property '${propName}' for relationship '${rel.type}'`)
+             debug(`[toOntology] Processing property '${propName}' for relationship '${rel.type}'`)
              const sourceDef = rel.properties[propName]
              
              // Detailed logging to track property values
-             console.log(`[toOntology] Property value:`, JSON.stringify(sourceDef, null, 2))
+             debug(`[toOntology] Property value:`, JSON.stringify(sourceDef, null, 2))
              
              // Create property definition
              const propDefinition: any = {}
@@ -630,29 +647,32 @@ export const useGraphEditorStore = create<GraphEditorState>((set, get) => ({
                 
                 // Add the property to relationship
                 fromEntity.relationships[rel.type].properties[propName] = propDefinition
-                console.log(`[toOntology] Added property '${propName}' to relationship '${rel.type}'`)
+                debug(`[toOntology] Added property '${propName}' to relationship '${rel.type}'`)
              } else {
                 // Fallback for malformed data
                 fromEntity.relationships[rel.type].properties[propName] = { 
                   type: 'string', 
           description: propName
         }
-                console.log(`[toOntology] Added default property '${propName}' to relationship '${rel.type}'`)
+                debug(`[toOntology] Added default property '${propName}' to relationship '${rel.type}'`)
              }
           }
           
           // Log the final properties that were added to the ontology
-          console.log(`[toOntology] Final properties for relationship '${rel.type}':`, 
+          debug(`[toOntology] Final properties for relationship '${rel.type}':`, 
                      JSON.stringify(fromEntity.relationships[rel.type].properties, null, 2))
         } else {
-          console.log(`[toOntology] Relationship '${rel.type}' has no properties to add`)
+          debug(`[toOntology] Relationship '${rel.type}' has no properties to add`)
         }
       } else {
-        console.warn(`[toOntology] Cannot process relationship: missing nodes or captions`)
+        debugWarn(`[toOntology] Cannot process relationship: missing nodes or captions`)
       }
     })
     
-    console.log('[toOntology] Final ontology object:', JSON.stringify(ontology, null, 2))
+    debug('[toOntology] Final ontology object:', JSON.stringify(ontology, null, 2))
     return ontology
+  },
+  reset: () => {
+    set(() => createBaseState())
   }
 }))

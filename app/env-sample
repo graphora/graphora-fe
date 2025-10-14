@@ -5,6 +5,7 @@ NEXT_PUBLIC_CLERK_SIGN_IN_URL=/sign-in
 NEXT_PUBLIC_CLERK_SIGN_UP_URL=/sign-up
 
 BACKEND_API_URL=http://localhost:8000
+NEXT_PUBLIC_BACKEND_API_URL=http://localhost:8000
 
 # Prefect Status URLs (Optional)
 # Replace with your actual Prefect instance URLs

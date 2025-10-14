@@ -23,6 +23,13 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useUser } from '@clerk/nextjs'
 
+const isDebugEnabled = process.env.NODE_ENV !== 'production'
+const debug = (...args: unknown[]) => {
+  if (isDebugEnabled) {
+    console.debug('[OntologiesPage]', ...args)
+  }
+}
+
 interface Ontology {
   id: string
   name: string
@@ -55,7 +62,7 @@ export default function OntologiesPage() {
         })
         if (response.ok) {
           const data = await response.json()
-          console.log('Fetched ontologies:', data) // Debug log
+          debug('Fetched ontologies:', data)
           setOntologies(data.ontologies || [])
           setFilteredOntologies(data.ontologies || [])
         } else {

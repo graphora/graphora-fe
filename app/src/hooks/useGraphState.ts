@@ -1,6 +1,13 @@
 import { useState, useCallback, useEffect } from 'react'
 import type { GraphData, GraphOperation, GraphState, Node, Edge, NodeType, EdgeType } from '@/types/graph'
 
+const isDebugEnabled = process.env.NODE_ENV !== 'production'
+const debug = (...args: unknown[]) => {
+  if (isDebugEnabled) {
+    console.debug('[useGraphState]', ...args)
+  }
+}
+
 let historyIdCounter = 0
 function generateHistoryId(): string {
   return `hist_${Date.now()}_${++historyIdCounter}`
@@ -20,7 +27,7 @@ export function useGraphState(initialData: GraphData) {
     if (initialData?.nodes?.length > 0 || initialData?.edges?.length > 0) {
       const savedState = localStorage.getItem(`graph_state_${initialData.id}`)
       if (!savedState) {
-        console.log('Using initial data directly:', initialData)
+        debug('Using initial data directly:', initialData)
         return { data: initialData, history: [], undoStack: [], redoStack: [] }
       }
       
@@ -28,7 +35,7 @@ export function useGraphState(initialData: GraphData) {
         const parsedState = JSON.parse(savedState)
         // If saved state has no data but initialData does, use initialData
         if (!parsedState.data?.nodes?.length && !parsedState.data?.edges?.length) {
-          console.log('Saved state empty, using initial data:', initialData)
+          debug('Saved state empty, using initial data:', initialData)
           return { data: initialData, history: [], undoStack: [], redoStack: [] }
         }
         return parsedState

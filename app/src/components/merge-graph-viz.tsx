@@ -12,6 +12,18 @@ import { type Node, type Edge, type GraphData, type GraphOperation } from '@/typ
 import { toast } from 'react-hot-toast';
 import { useTheme } from 'next-themes';
 
+const isDebugEnabled = process.env.NODE_ENV !== 'production'
+const debug = (...args: unknown[]) => {
+  if (isDebugEnabled) {
+    console.debug('[MergeGraphViz]', ...args)
+  }
+}
+const debugWarn = (...args: unknown[]) => {
+  if (isDebugEnabled) {
+    console.warn('[MergeGraphViz]', ...args)
+  }
+}
+
 const stringToColor = (str: string): string => {
   let hash = 0;
   for (let i = 0; i < str.length; i++) {
@@ -275,7 +287,7 @@ export const MergeGraphVisualization: React.FC<MergeGraphVisualizationProps> = (
 
   const handleZoomIn = () => {
     if (!nvlRef.current) {
-      console.warn('Graph visualization ref not initialized for zoom in');
+      debugWarn('Graph visualization ref not initialized for zoom in')
       return;
     }
     
@@ -303,7 +315,7 @@ export const MergeGraphVisualization: React.FC<MergeGraphVisualizationProps> = (
           nvlRef.current.setZoom(1.2);
         }
       } else {
-        console.warn('No suitable zoom method found on graph ref');
+        debugWarn('No suitable zoom method found on graph ref')
       }
     } catch (err) {
       console.error('Error zooming in:', err);
@@ -312,7 +324,7 @@ export const MergeGraphVisualization: React.FC<MergeGraphVisualizationProps> = (
 
   const handleZoomOut = () => {
     if (!nvlRef.current) {
-      console.warn('Graph visualization ref not initialized for zoom out');
+      debugWarn('Graph visualization ref not initialized for zoom out')
       return;
     }
     
@@ -340,7 +352,7 @@ export const MergeGraphVisualization: React.FC<MergeGraphVisualizationProps> = (
           nvlRef.current.setZoom(0.8);
         }
       } else {
-        console.warn('No suitable zoom method found on graph ref');
+        debugWarn('No suitable zoom method found on graph ref')
       }
     } catch (err) {
       console.error('Error zooming out:', err);
@@ -349,14 +361,14 @@ export const MergeGraphVisualization: React.FC<MergeGraphVisualizationProps> = (
 
   const handleReset = () => {
     if (!nvlRef.current) {
-      console.warn('Graph visualization ref not initialized for reset');
+      debugWarn('Graph visualization ref not initialized for reset')
       return;
     }
     
     try {
       if (typeof nvlRef.current.fit === 'function') {
         nvlRef.current.fit();
-        console.log('Graph reset executed');
+        debug('Graph reset executed')
         onGraphReset?.();
       } else if (typeof nvlRef.current.resetView === 'function') {
         nvlRef.current.resetView();
@@ -365,7 +377,7 @@ export const MergeGraphVisualization: React.FC<MergeGraphVisualizationProps> = (
         nvlRef.current.reset();
         onGraphReset?.();
       } else {
-        console.warn('No suitable reset method found on graph ref');
+        debugWarn('No suitable reset method found on graph ref')
       }
     } catch (err) {
       console.error('Error resetting view:', err);

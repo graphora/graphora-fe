@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import type { GraphData } from '@/types/graph'
 
 interface UseGraphDataProps {
@@ -23,7 +23,7 @@ export function useGraphData({
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     if (!enabled || (!transformId && !mergeId)) return
 
     setLoading(true)
@@ -74,11 +74,11 @@ export function useGraphData({
     } finally {
       setLoading(false)
     }
-  }
+  }, [enabled, mergeId, transformId])
 
   useEffect(() => {
     fetchData()
-  }, [transformId, mergeId, enabled])
+  }, [fetchData])
 
   return {
     graphData,
@@ -86,4 +86,4 @@ export function useGraphData({
     error,
     refetch: fetchData
   }
-} 
+}

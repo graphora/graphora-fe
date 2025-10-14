@@ -13,6 +13,13 @@ import { toast } from './ui/use-toast';
 import { Checkbox } from './ui/checkbox';
 import { useLocalStorage } from '../hooks/use-local-storage';
 
+const isDebugEnabled = process.env.NODE_ENV !== 'production'
+const debug = (...args: unknown[]) => {
+  if (isDebugEnabled) {
+    console.debug('[MergeProgress]', ...args)
+  }
+}
+
 interface MergeProgressProps {
   mergeId: string;
   sessionId: string;
@@ -71,6 +78,7 @@ export function MergeProgress({ mergeId, sessionId, transformId, onViewConflicts
   const [showDetails, setShowDetails] = useState(false);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const startTimeRef = useRef<Date | null>(null);
   const [retryCount, setRetryCount] = useState(0);
   const maxRetries = 3;
   const [isFinalizingMerge, setIsFinalizingMerge] = useState(false);
@@ -82,6 +90,8 @@ export function MergeProgress({ mergeId, sessionId, transformId, onViewConflicts
   const [hasShownConflictNotification, setHasShownConflictNotification] = useState(false);
 
   useEffect(() => {
+    startTimeRef.current = null;
+
     const fetchStatus = async () => {
       try {
         setLoading(true);
@@ -120,8 +130,9 @@ export function MergeProgress({ mergeId, sessionId, transformId, onViewConflicts
           }
         }
         
+        startTimeRef.current = new Date(adaptedProgress.start_time);
         setProgress(adaptedProgress);
-        console.log('Merge status data:', adaptedProgress);
+        debug('Merge status data:', adaptedProgress)
         
         // Handle conflict detection
         if (data.has_conflicts && data.conflict_count > 0 && !hasShownConflictNotification) {
@@ -182,7 +193,7 @@ export function MergeProgress({ mergeId, sessionId, transformId, onViewConflicts
         // Implement exponential backoff for retries
         if (retryCount < maxRetries) {
           const backoffTime = Math.pow(2, retryCount) * 1000; // Exponential backoff
-          console.log(`Retrying in ${backoffTime}ms (attempt ${retryCount + 1}/${maxRetries})`);
+          debug(`Retrying in ${backoffTime}ms (attempt ${retryCount + 1}/${maxRetries})`)
           setTimeout(() => {
             setRetryCount(prev => prev + 1);
           }, backoffTime);
@@ -200,7 +211,10 @@ export function MergeProgress({ mergeId, sessionId, transformId, onViewConflicts
     
     // Start timer for elapsed time
     timerRef.current = setInterval(() => {
-      const startTime = new Date(progress.start_time);
+      const startTime = startTimeRef.current;
+      if (!startTime) {
+        return;
+      }
       const now = new Date();
       const diff = Math.floor((now.getTime() - startTime.getTime()) / 1000);
       const minutes = Math.floor(diff / 60).toString().padStart(2, '0');
@@ -213,7 +227,7 @@ export function MergeProgress({ mergeId, sessionId, transformId, onViewConflicts
       if (intervalRef.current) clearInterval(intervalRef.current);
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [mergeId, retryCount, hasShownConflictNotification, autoNavigateToConflicts, onViewConflicts]);
+  }, [mergeId, retryCount, hasShownConflictNotification, autoNavigateToConflicts, onViewConflicts, hasShownNotification]);
 
   const handleFinalizeMerge = async () => {
     if (!mergeId) return;
@@ -305,7 +319,7 @@ export function MergeProgress({ mergeId, sessionId, transformId, onViewConflicts
       }
       
       const data = await response.json();
-      console.log('Verification result:', data);
+      debug('Verification result:', data)
       
       // Format the verification result
       const formattedResult: VerificationResult = {
@@ -428,7 +442,7 @@ export function MergeProgress({ mergeId, sessionId, transformId, onViewConflicts
 
     // If the merge is completed, mark all stages as completed regardless of what's in progress.stages
     if (progress.overall_status === MergeStatus.COMPLETED) {
-      console.log('Merge is COMPLETED, marking all stages as completed');
+      debug('Merge is COMPLETED, marking all stages as completed')
       return defaultStages.map(stageName => ({
         name: stageName,
         status: 'completed' as MergeStageStatus,

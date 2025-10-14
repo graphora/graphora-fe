@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -24,11 +24,7 @@ export function GeminiConfigForm({ config, onChange, disabled, isExistingConfig 
   const [models, setModels] = useState<AIModel[]>([])
   const [loadingModels, setLoadingModels] = useState(true)
 
-  useEffect(() => {
-    fetchAvailableModels()
-  }, [])
-
-  const fetchAvailableModels = async () => {
+  const fetchAvailableModels = useCallback(async () => {
     try {
       setLoadingModels(true)
       const response = await fetch('/api/ai-models/gemini')
@@ -55,7 +51,11 @@ export function GeminiConfigForm({ config, onChange, disabled, isExistingConfig 
     } finally {
       setLoadingModels(false)
     }
-  }
+  }, [config, onChange])
+
+  useEffect(() => {
+    fetchAvailableModels()
+  }, [fetchAvailableModels])
 
   const handleChange = (field: keyof GeminiConfigRequest, value: string) => {
     onChange({

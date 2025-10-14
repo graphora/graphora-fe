@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useEffect, Suspense } from 'react'
+import { useState, useCallback, useEffect, useMemo, Suspense } from 'react'
 import { useDropzone } from 'react-dropzone'
 import { 
   Loader2, X, Upload, FileText, 
@@ -98,10 +98,23 @@ const workflowSteps: WorkflowStep[] = [
   }
 ]
 
+const isDebugEnabled = process.env.NODE_ENV !== 'production'
+const debug = (...args: unknown[]) => {
+  if (isDebugEnabled) {
+    console.debug('[TransformPage]', ...args)
+  }
+}
+const debugWarn = (...args: unknown[]) => {
+  if (isDebugEnabled) {
+    console.warn('[TransformPage]', ...args)
+  }
+}
+
 function TransformPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const pathname = usePathname()
+  const searchParamsString = useMemo(() => searchParams.toString(), [searchParams])
   const sessionId = searchParams.get('session_id')
   const urlTransformId = searchParams.get('transform_id')
   const { checkConfigBeforeWorkflow } = useUserConfig()
@@ -125,6 +138,57 @@ function TransformPageContent() {
   const [fileContent, setFileContent] = useState<string | null>(null)
   const [showChunkingConfig, setShowChunkingConfig] = useState(false)
 
+  const loadGraphData = useCallback(async (transformId: string) => {
+    if (!transformId) {
+      console.error('No transform ID provided to loadGraphData')
+      return
+    }
+    setTransformId(transformId)
+    try {
+      debug('Loading graph data for transform:', transformId)
+      const response = await fetch(`/api/graph/${transformId}`)
+
+      if (!response.ok) {
+        if (response.status === 404) {
+          debug('Graph data not found, will retry')
+          return
+        }
+        throw new Error('Failed to load graph data')
+      }
+
+      const data = await response.json()
+
+      if (!data.nodes || !data.edges) {
+        debug('Invalid graph data received, will retry')
+        return
+      }
+
+      const processedData = {
+        ...data,
+        id: transformId,
+        nodes: data.nodes.map((node: any) => ({
+          ...node,
+          label: node.label || node.type,
+          properties: node.properties || {}
+        })),
+        edges: data.edges.map((edge: any) => ({
+          ...edge,
+          label: edge.type,
+          properties: edge.properties || {}
+        })),
+        total_nodes: data.nodes.length,
+        total_edges: data.edges.length
+      }
+      debug('Setting processed graph data:', processedData)
+      setGraphData(processedData)
+    } catch (err) {
+      console.error('Error loading graph data:', err)
+      if (!isProcessing) {
+        setError(err instanceof Error ? err.message : 'Failed to load graph data')
+      }
+    }
+  }, [isProcessing])
+
   useEffect(() => {
     if (!sessionId) {
       router.push('/ontology')
@@ -134,7 +198,7 @@ function TransformPageContent() {
   useEffect(() => {
     const loadStateFromUrl = async () => {
       if (urlTransformId && !graphData && !isProcessing && !error) {
-        console.log('Loading state from URL transform_id:', urlTransformId)
+        debug('Loading state from URL transform_id:', urlTransformId)
         setTransformId(urlTransformId)
         
         try {
@@ -146,13 +210,13 @@ function TransformPageContent() {
             if (response.status === 403 && errorData.type === 'access_denied') {
               setError('You do not have permission to access this transform. Please check if you are signed in with the correct account.')
               setTransformId(null)
-              const newSearchParams = new URLSearchParams(searchParams.toString())
+              const newSearchParams = new URLSearchParams(searchParamsString)
               newSearchParams.delete('transform_id')
               router.replace(`${pathname}?${newSearchParams.toString()}`)
             } else if (response.status === 404) {
               setError('Transform process not found for the provided ID.')
               setTransformId(null)
-              const newSearchParams = new URLSearchParams(searchParams.toString())
+              const newSearchParams = new URLSearchParams(searchParamsString)
               newSearchParams.delete('transform_id')
               router.replace(`${pathname}?${newSearchParams.toString()}`)
             } else {
@@ -167,7 +231,7 @@ function TransformPageContent() {
             setProgress(100)
             setIsProcessing(false)
             setIsUploadPanelExpanded(false)
-            console.log('Transform already completed, loading graph data')
+            debug('Transform already completed, loading graph data')
             await loadGraphData(urlTransformId)
             // Check if quality validation is available
             setShowQualityReview(true)
@@ -189,7 +253,7 @@ function TransformPageContent() {
           setError(err instanceof Error ? err.message : 'Failed to load state from transform ID')
           setIsProcessing(false)
           setTransformId(null)
-          const newSearchParams = new URLSearchParams(searchParams.toString())
+          const newSearchParams = new URLSearchParams(searchParamsString)
           newSearchParams.delete('transform_id')
           router.replace(`${pathname}?${newSearchParams.toString()}`)
         }
@@ -199,7 +263,7 @@ function TransformPageContent() {
     if (sessionId) {
       loadStateFromUrl()
     }
-  }, [urlTransformId, sessionId])
+  }, [urlTransformId, sessionId, graphData, isProcessing, error, loadGraphData, router, pathname, searchParamsString])
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     setError(null)
@@ -262,7 +326,7 @@ function TransformPageContent() {
     setQualityReviewCompleted(false)
     setChunkingConfig(null)
     setFileContent(null)
-    const newSearchParams = new URLSearchParams(searchParams.toString())
+    const newSearchParams = new URLSearchParams(searchParamsString)
     newSearchParams.delete('transform_id')
     router.push(`${pathname}?${newSearchParams.toString()}`)
   }
@@ -283,7 +347,7 @@ function TransformPageContent() {
     setIsUploadPanelExpanded(true)
     
     // Remove transform_id from URL
-    const newSearchParams = new URLSearchParams(searchParams.toString())
+    const newSearchParams = new URLSearchParams(searchParamsString)
     newSearchParams.delete('transform_id')
     router.push(`${pathname}?${newSearchParams.toString()}`)
     
@@ -356,7 +420,7 @@ function TransformPageContent() {
       setTransformId(newTransformId)
       setProgress(10)
 
-      const newSearchParams = new URLSearchParams(searchParams.toString())
+      const newSearchParams = new URLSearchParams(searchParamsString)
       newSearchParams.set('transform_id', newTransformId)
       router.push(`${pathname}?${newSearchParams.toString()}`)
 
@@ -365,57 +429,6 @@ function TransformPageContent() {
       setError(err instanceof Error ? err.message : 'Failed to process file')
       setIsProcessing(false)
       setProgress(0)
-    }
-  }
-
-  const loadGraphData = async (transformId: string) => {
-    if (!transformId) {
-      console.error('No transform ID provided to loadGraphData')
-      return
-    }
-    setTransformId(transformId)
-    try {
-      console.log('Loading graph data for transform:', transformId)
-      const response = await fetch(`/api/graph/${transformId}`)
-      
-      if (!response.ok) {
-        if (response.status === 404) {
-          console.log('Graph data not found, will retry')
-          return
-        }
-        throw new Error('Failed to load graph data')
-      }
-      
-      const data = await response.json()
-      
-      if (!data.nodes || !data.edges) {
-        console.log('Invalid graph data received, will retry')
-        return
-      }
-      
-      const processedData = {
-        ...data,
-        id: transformId,
-        nodes: data.nodes.map((node: any) => ({
-          ...node,
-          label: node.label || node.type,
-          properties: node.properties || {}
-        })),
-        edges: data.edges.map((edge: any) => ({
-          ...edge,
-          label: edge.type,
-          properties: edge.properties || {}
-        })),
-        total_nodes: data.nodes.length,
-        total_edges: data.edges.length
-      }
-      console.log('Setting processed graph data:', processedData)
-      setGraphData(processedData)
-    } catch (err) {
-      console.error('Error loading graph data:', err)
-      if (!isProcessing) {
-        setError(err instanceof Error ? err.message : 'Failed to load graph data')
-      }
     }
   }
 
@@ -436,14 +449,14 @@ function TransformPageContent() {
       }
 
       try {
-        console.log('Checking transform status:', transformId)
+        debug('Checking transform status:', transformId)
         const response = await fetch(`/api/transform/status/${transformId}`)
         
         if (!response.ok) {
           const errorData = await response.json()
           
           if (response.status === 403 && errorData.type === 'access_denied') {
-            console.log('Access denied for transform, stopping status checks')
+            debug('Access denied for transform, stopping status checks')
             setError('You do not have permission to access this transform')
             setIsProcessing(false)
             if (statusInterval) {
@@ -453,7 +466,7 @@ function TransformPageContent() {
           }
           
           if (response.status === 404) {
-            console.log('Transform not found, continuing processing')
+            debug('Transform not found, continuing processing')
             return
           }
           
@@ -467,7 +480,7 @@ function TransformPageContent() {
           setProgress(100)
           setIsProcessing(false)
           setIsUploadPanelExpanded(false)
-          console.log('Transform completed, loading graph data')
+          debug('Transform completed, loading graph data')
           
           await loadGraphData(transformId)
           // Show quality review after transform completion
@@ -500,14 +513,14 @@ function TransformPageContent() {
     }
 
     if (transformId && isProcessing) {
-      console.log('Starting status check interval for transform:', transformId)
+      debug('Starting status check interval for transform:', transformId)
       checkStatus()
       statusInterval = setInterval(checkStatus, STATUS_CHECK_INTERVAL)
     }
 
     return () => {
       if (statusInterval) {
-        console.log('Clearing status check interval for transform:', transformId)
+        debug('Clearing status check interval for transform:', transformId)
         clearInterval(statusInterval)
       }
     }
@@ -528,14 +541,14 @@ function TransformPageContent() {
   }
 
   const handleQualityApprove = () => {
-    console.log('Quality approved for transform:', transformId)
+    debug('Quality approved for transform:', transformId)
     setShowQualityReview(false)
     setQualityReviewCompleted(true)
     toast.success('Quality validation approved. Ready for merge.')
   }
 
   const handleQualityReject = () => {
-    console.log('Quality rejected for transform:', transformId)
+    debug('Quality rejected for transform:', transformId)
     setShowQualityReview(false)
     setQualityReviewCompleted(false)
     // Reset to allow new transform
@@ -543,7 +556,7 @@ function TransformPageContent() {
     setTransformId(null)
     setIsUploadPanelExpanded(true)
     
-    const newSearchParams = new URLSearchParams(searchParams.toString())
+    const newSearchParams = new URLSearchParams(searchParamsString)
     newSearchParams.delete('transform_id')
     router.push(`${pathname}?${newSearchParams.toString()}`)
     
@@ -551,19 +564,19 @@ function TransformPageContent() {
   }
 
   const handleApplySuggestion = useCallback((id: string) => {
-    console.log('Applying suggestion:', id)
+    debug('Applying suggestion:', id)
   }, [])
 
   const handleDismissSuggestion = useCallback((id: string) => {
-    console.log('Dismissing suggestion:', id)
+    debug('Dismissing suggestion:', id)
   }, [])
 
   const handleExplainSuggestion = useCallback((id: string) => {
-    console.log('Explaining suggestion:', id)
+    debug('Explaining suggestion:', id)
   }, [])
 
   const handleCustomizeSuggestion = useCallback((id: string) => {
-    console.log('Customizing suggestion:', id)
+    debug('Customizing suggestion:', id)
   }, [])
 
   const handleSampleFileSelect = async (sampleFile: typeof SAMPLE_FILES[0]) => {
@@ -628,13 +641,13 @@ function TransformPageContent() {
     if (url) {
       window.open(url, '_blank');
     } else {
-      console.warn('NEXT_PUBLIC_TRANSFORM_PREFECT_STATUS_URL is not defined.');
+      debugWarn('NEXT_PUBLIC_TRANSFORM_PREFECT_STATUS_URL is not defined.')
     }
   };
 
   const handleRetryTransform = () => {
     // Clear the transform_id from URL and reset state to allow retry
-    const newSearchParams = new URLSearchParams(searchParams.toString())
+    const newSearchParams = new URLSearchParams(searchParamsString)
     newSearchParams.delete('transform_id')
     router.push(`${pathname}?${newSearchParams.toString()}`)
     
@@ -686,7 +699,7 @@ function TransformPageContent() {
   ]
 
   const handleGraphOperation = async (operation: GraphOperation) => {
-    console.log("Graph operation requested:", operation);
+    debug('Graph operation requested:', operation)
     if (!transformId) {
       console.error("Cannot save graph changes: transformId is missing.");
       toast.error("Cannot save changes: No active transform ID.");
@@ -725,7 +738,7 @@ function TransformPageContent() {
         } else {
             // Attempt fallback find if ID match failed (e.g., ID constructed differently)
             // This part might be brittle and depends on how edge IDs are handled.
-            console.warn(`Edge ID ${operation.payload.id} not found directly, attempting fallback find.`);
+            debugWarn(`Edge ID ${operation.payload.id} not found directly, attempting fallback find.`)
             // Add fallback logic if needed, otherwise throw.
             throw new Error("Edge not found for optimistic update.");
         }
@@ -784,7 +797,7 @@ function TransformPageContent() {
       }
 
       const result = await response.json();
-      console.log("Graph changes saved successfully:", result);
+      debug('Graph changes saved successfully:', result)
       toast.success("Graph changes saved successfully.");
 
       // Optionally update state based on `result.data` if the backend returns the full updated graph
