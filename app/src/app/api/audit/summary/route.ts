@@ -4,7 +4,7 @@ import { getBackendAuthContext, isUnauthorizedError } from '@/lib/auth-utils'
 export async function GET(request: Request) {
   try {
     const backendBaseUrl = process.env.BACKEND_API_URL || 'http://localhost:8000'
-    const { userId, token } = await getBackendAuthContext()
+    const { token } = await getBackendAuthContext()
 
     const response = await fetch(
       `${backendBaseUrl}/api/v1/audit/summary`,
@@ -12,7 +12,6 @@ export async function GET(request: Request) {
         method: 'GET',
         headers: {
           'accept': 'application/json',
-          'user-id': userId,
           Authorization: `Bearer ${token}`
         }
       }

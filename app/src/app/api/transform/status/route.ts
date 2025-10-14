@@ -4,7 +4,7 @@ import { getBackendAuthHeaders, isUnauthorizedError } from '@/lib/auth-utils'
 export async function GET(request: Request) {
   try {
     const backendBaseUrl = process.env.BACKEND_API_URL || 'http://localhost:8000'
-    const { userId, headers } = await getBackendAuthHeaders({ accept: 'application/json' })
+    const { headers } = await getBackendAuthHeaders({ accept: 'application/json' })
 
     const url = new URL(request.url)
     const sessionId = url.searchParams.get('session_id')

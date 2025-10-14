@@ -16,7 +16,7 @@ export async function GET(request: Request) {
 
   try {
     const backendBaseUrl = process.env.BACKEND_API_URL || 'http://localhost:8000'
-    const { userId, token } = await getBackendAuthContext()
+    const { token } = await getBackendAuthContext()
 
     const upgradeHeader = request.headers.get('Upgrade');
     if (!upgradeHeader || upgradeHeader.toLowerCase() !== 'websocket') {
@@ -35,7 +35,6 @@ export async function GET(request: Request) {
       headers: {
         'Upgrade': 'websocket',
         'Connection': 'Upgrade',
-        'user-id': userId,
         Authorization: `Bearer ${token}`
       }
     });

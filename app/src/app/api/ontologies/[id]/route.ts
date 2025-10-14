@@ -10,7 +10,7 @@ interface RouteParams {
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
     const backendBaseUrl = process.env.BACKEND_API_URL || 'http://localhost:8000'
-    const { userId, token } = await getBackendAuthContext()
+    const { token } = await getBackendAuthContext()
 
     const { id } = await params
 
@@ -21,7 +21,6 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
-        'user-id': userId,
         Authorization: `Bearer ${token}`,
       },
     })

@@ -155,9 +155,8 @@ function ConfigPageContent() {
       setError(null)
 
       const configRequest: ConfigRequest = {
-        userId: user.id,
-        stagingDb: stagingDb,
-        prodDb: prodDb,
+        stagingDb,
+        prodDb,
       }
 
       // Determine if this is an update or create operation

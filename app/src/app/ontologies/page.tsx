@@ -55,11 +55,7 @@ export default function OntologiesPage() {
     const fetchOntologies = async () => {
       try {
         setError(null)
-        const response = await fetch('/api/v1/ontologies', {
-          headers: {
-            'user-id': user?.id || 'anonymous'
-          }
-        })
+        const response = await fetch('/api/v1/ontologies')
         if (response.ok) {
           const data = await response.json()
           debug('Fetched ontologies:', data)
@@ -113,10 +109,7 @@ export default function OntologiesPage() {
 
     try {
       const response = await fetch(`/api/v1/ontology/${ontologyId}`, {
-        method: 'DELETE',
-        headers: {
-          'user-id': user?.id || 'anonymous'
-        }
+        method: 'DELETE'
       })
 
       if (response.ok) {

@@ -71,22 +71,16 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const backendBaseUrl = process.env.BACKEND_API_URL || 'http://localhost:8000'
-    const { userId, headers } = await getBackendAuthHeaders({ 'Content-Type': 'application/json' })
+    const { headers } = await getBackendAuthHeaders({ 'Content-Type': 'application/json' })
 
     const body = await req.json()
-    
-    // Replace userEmail with userId for backend compatibility
-    const configData = {
-      ...body,
-      userEmail: userId  // Backend expects userEmail field but it contains user_id
-    }
 
     // Forward the request to the backend
     const backendUrl = `${backendBaseUrl}/api/v1/config`
     const backendResponse = await fetch(backendUrl, {
       method: 'POST',
       headers,
-      body: JSON.stringify(configData)
+      body: JSON.stringify(body)
     })
 
     if (!backendResponse.ok) {
@@ -115,22 +109,16 @@ export async function POST(req: NextRequest) {
 export async function PUT(req: NextRequest) {
   try {
     const backendBaseUrl = process.env.BACKEND_API_URL || 'http://localhost:8000'
-    const { userId, headers } = await getBackendAuthHeaders({ 'Content-Type': 'application/json' })
+    const { headers } = await getBackendAuthHeaders({ 'Content-Type': 'application/json' })
 
     const body = await req.json()
-    
-    // Replace userEmail with userId for backend compatibility
-    const configData = {
-      ...body,
-      userEmail: userId  // Backend expects userEmail field but it contains user_id
-    }
 
     // Forward the request to the backend
     const backendUrl = `${backendBaseUrl}/api/v1/config`
     const backendResponse = await fetch(backendUrl, {
       method: 'PUT',
       headers,
-      body: JSON.stringify(configData)
+      body: JSON.stringify(body)
     })
 
     if (!backendResponse.ok) {

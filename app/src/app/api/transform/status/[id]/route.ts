@@ -7,7 +7,7 @@ export async function GET(
 ) {
   try {
     const backendBaseUrl = process.env.BACKEND_API_URL || 'http://localhost:8000'
-    const { userId, headers } = await getBackendAuthHeaders({ accept: 'application/json' })
+    const { headers } = await getBackendAuthHeaders({ accept: 'application/json' })
 
     const { id } = await params
     

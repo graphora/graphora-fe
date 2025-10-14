@@ -38,7 +38,7 @@ export async function GET(
   {params}: any
 ) {
   try {
-    const { userId, token } = await getBackendAuthContext()
+    const { token } = await getBackendAuthContext()
 
     const { id } = await params
     
@@ -51,7 +51,6 @@ export async function GET(
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
-        'user-id': userId,
         Authorization: `Bearer ${token}`
       }
     })
@@ -88,7 +87,7 @@ export async function PUT(
   {params}: any
 ) {
   try {
-    const { userId, token } = await getBackendAuthContext()
+    const { token } = await getBackendAuthContext()
 
     const {id} = await params
     
@@ -104,7 +103,6 @@ export async function PUT(
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
-        'user-id': userId,
         Authorization: `Bearer ${token}`
       },
       body: JSON.stringify(body)

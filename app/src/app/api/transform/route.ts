@@ -4,7 +4,7 @@ import { getBackendAuthHeaders, isUnauthorizedError } from '@/lib/auth-utils'
 export async function POST(req: NextRequest) {
   try {
     const backendBaseUrl = process.env.BACKEND_API_URL || 'http://localhost:8000'
-    const { userId, headers } = await getBackendAuthHeaders()
+    const { headers } = await getBackendAuthHeaders()
 
     // Get session_id from the request URL
     const url = new URL(req.url)

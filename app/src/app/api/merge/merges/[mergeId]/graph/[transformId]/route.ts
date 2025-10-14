@@ -39,7 +39,7 @@ export async function GET(
 ) {
   try {
     const backendBaseUrl = process.env.BACKEND_API_URL || 'http://localhost:8000';
-    const { userId, token } = await getBackendAuthContext();
+    const { token } = await getBackendAuthContext();
 
     const { mergeId, transformId } = await params;
 
@@ -59,7 +59,6 @@ export async function GET(
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
-          'user-id': userId,
           Authorization: `Bearer ${token}`
         }
       });

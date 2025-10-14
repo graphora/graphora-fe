@@ -4,7 +4,7 @@ import { getBackendAuthContext, isUnauthorizedError } from '@/lib/auth-utils';
 export async function POST(request: Request) {
   try {
     const backendBaseUrl = process.env.BACKEND_API_URL || 'http://localhost:8000';
-    const { userId, token } = await getBackendAuthContext();
+    const { token } = await getBackendAuthContext();
 
     // Get the full request body
     const body = await request.json().catch(() => ({}));
@@ -29,7 +29,6 @@ export async function POST(request: Request) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'user-id': userId,
         Authorization: `Bearer ${token}`
       },
       body: JSON.stringify(body) // Pass the entire body to the backend

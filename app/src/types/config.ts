@@ -8,7 +8,7 @@ export interface DatabaseConfig {
 
 export interface UserConfig {
   id?: string
-  userEmail: string
+  userId: string
   stagingDb: DatabaseConfig
   prodDb: DatabaseConfig
   createdAt?: string
@@ -22,7 +22,6 @@ export interface ConfigResponse {
 }
 
 export interface ConfigRequest {
-  userId: string
   stagingDb: DatabaseConfig
   prodDb: DatabaseConfig
 }

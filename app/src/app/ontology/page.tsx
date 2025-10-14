@@ -273,11 +273,7 @@ function OntologyPageContent() {
     setError(null)
     
     try {
-      const response = await fetch(`/api/v1/ontologies/${ontologyId}`, {
-        headers: {
-          'user-id': user?.id || 'anonymous'
-        }
-      })
+      const response = await fetch(`/api/v1/ontologies/${ontologyId}`)
       if (!response.ok) {
         if (response.status === 404) {
           throw new Error('Ontology not found')
@@ -362,7 +358,6 @@ function OntologyPageContent() {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'user-id': user?.id || 'anonymous'
           },
           body: JSON.stringify({
             text: yaml,
@@ -421,7 +416,6 @@ function OntologyPageContent() {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
-            'user-id': user?.id || 'anonymous' // Add required user-id header
           },
           body: JSON.stringify({
             text: yaml,
@@ -453,7 +447,6 @@ function OntologyPageContent() {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'user-id': user?.id || 'anonymous' // Add required user-id header
           },
           body: JSON.stringify({
             text: yaml,

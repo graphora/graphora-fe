@@ -60,7 +60,6 @@ export async function getBackendAuthHeaders(
 ): Promise<{ userId: string; headers: HeadersInit }> {
   const { userId, token } = await getBackendAuthContext()
   const headers = new Headers(baseHeaders)
-  headers.set('user-id', userId)
   headers.set('Authorization', `Bearer ${token}`)
   return {
     userId,

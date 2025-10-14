@@ -4,7 +4,7 @@ import { getBackendAuthContext, isUnauthorizedError } from '@/lib/auth-utils'
 export async function GET(request: NextRequest) {
   try {
     const backendBaseUrl = process.env.BACKEND_API_URL || 'http://localhost:8000'
-    const { userId, token } = await getBackendAuthContext()
+    const { token } = await getBackendAuthContext()
 
     // Use BACKEND_API_URL from env-sample or fallback to localhost
     const apiUrl = `${backendBaseUrl}/api/v1/ontologies`
@@ -13,7 +13,6 @@ export async function GET(request: NextRequest) {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
-        'user-id': userId,
         Authorization: `Bearer ${token}`
       },
     })

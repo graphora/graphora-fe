@@ -5,7 +5,7 @@ export async function POST(request: NextRequest) {
   try {
     // Authenticate user
     const backendBaseUrl = process.env.BACKEND_API_URL || 'http://localhost:8000'
-    const { userId, token } = await getBackendAuthContext()
+    const { token } = await getBackendAuthContext()
 
     const body = await request.json()
 
@@ -23,7 +23,6 @@ export async function POST(request: NextRequest) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'user-id': userId,
         Authorization: `Bearer ${token}`
       },
       body: JSON.stringify({
@@ -95,7 +94,7 @@ export async function GET(request: NextRequest) {
   try {
     // Authenticate user
     const backendBaseUrl = process.env.BACKEND_API_URL || 'http://localhost:8000'
-    const { userId, token } = await getBackendAuthContext()
+    const { token } = await getBackendAuthContext()
 
     const { searchParams } = new URL(request.url)
     const domain = searchParams.get('domain')
@@ -111,7 +110,6 @@ export async function GET(request: NextRequest) {
     const backendResponse = await fetch(`${backendBaseUrl}/api/v1/schema/search?${queryParams.toString()}`, {
       method: 'GET',
       headers: {
-        'user-id': userId,
         Authorization: `Bearer ${token}`
       },
       signal: AbortSignal.timeout(10000) // 10 second timeout
