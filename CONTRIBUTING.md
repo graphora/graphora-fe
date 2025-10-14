@@ -2,6 +2,8 @@
 
 Thank you for your interest in contributing to Graphora! We welcome contributions from the community.
 
+For a concise overview of project structure, commands, and workflows, read the [Repository Guidelines](AGENTS.md) before you start.
+
 ## Table of Contents
 
 - [Code of Conduct](#code-of-conduct)
