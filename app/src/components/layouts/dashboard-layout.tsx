@@ -1,7 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
-import { SidebarNavigation } from '@/components/navigation/sidebar-navigation'
+import React from 'react'
 import { cn } from '@/lib/utils'
 import { EnhancedConfigCheck } from '@/components/setup/enhanced-config-check'
 
@@ -21,13 +20,6 @@ export function DashboardLayout({
   return (
     <EnhancedConfigCheck showSetupModal={true} lightweight={true} requireDbConfig={false} requireAiConfig={false}>
       <div className={cn("flex h-screen bg-background", className)}>
-        {showSidebar && (
-          <SidebarNavigation 
-            defaultCollapsed={sidebarCollapsed}
-            className="flex-shrink-0"
-          />
-        )}
-        
         <div className="flex-1 flex flex-col overflow-hidden">
           {children}
         </div>

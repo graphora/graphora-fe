@@ -7,7 +7,6 @@ import { Check, ChevronRight, Clock, AlertCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Tooltip } from '@/components/ui/tooltip'
-import { SidebarNavigation } from '@/components/navigation/sidebar-navigation'
 import { useRouter } from 'next/navigation'
 import { Logo } from '@/components/ui/logo'
 
@@ -83,9 +82,6 @@ export function EnhancedWorkflowLayout({
 
   return (
     <div className="h-screen flex bg-background">
-      {/* Collapsed Sidebar */}
-      <SidebarNavigation />
-      
       {/* Main Content */}
       <div className="flex-1 flex flex-col">
         {/* Enhanced Header */}
