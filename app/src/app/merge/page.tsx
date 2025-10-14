@@ -161,30 +161,31 @@ function MergePageContent() {
 
   const graphDataMemo = useMemo(() => {
     if (!mergeVisualization) return null;
-    
+
     // Log the structure to understand the format
     debug('MergeVisualization response structure:', mergeVisualization)
-    
+
     // Use a type assertion to treat it as a generic object for safe access
     const visualizationData = mergeVisualization as any;
-    
+
     // Transform to GraphData format with safe fallbacks
+    const nodes = Array.isArray(visualizationData.nodes)
+      ? visualizationData.nodes
+      : Array.isArray(visualizationData.data?.nodes)
+        ? visualizationData.data.nodes
+        : []
+
+    const edges = Array.isArray(visualizationData.edges)
+      ? visualizationData.edges
+      : Array.isArray(visualizationData.data?.edges)
+        ? visualizationData.data.edges
+        : []
+
     const graphData = {
-      nodes: Array.isArray(visualizationData.nodes) 
-        ? visualizationData.nodes 
-        : Array.isArray(visualizationData.data?.nodes)
-          ? visualizationData.data.nodes
-          : [],
-      
-      edges: Array.isArray(visualizationData.edges) 
-        ? visualizationData.edges 
-        : Array.isArray(visualizationData.data?.edges)
-          ? visualizationData.data.edges
-          : [],
-      
-      _reset: Date.now() // Add reset key to force re-render if needed
-    };
-    
+      nodes,
+      edges,
+    }
+
     debug('Transformed GraphData:', graphData)
     return graphData as GraphData; // Explicitly cast to GraphData type
   }, [mergeVisualization]);

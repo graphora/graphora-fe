@@ -24,17 +24,7 @@ const nextConfig = {
     
     return config
   },
-  async rewrites() {
-    // Use environment variable for backend API URL, fallback to localhost for development
-    const backendUrl = process.env.BACKEND_API_URL || 'http://localhost:8000'
-
-    return [
-      {
-        source: '/api/v1/:path*',
-        destination: `${backendUrl}/api/v1/:path*`
-      }
-    ]
-  },
+  // API routes under app/api already proxy to the backend; no rewrites needed.
   // Add experimental features for better proxy handling
   experimental: {
     proxyTimeout: 60000, // 60 seconds timeout

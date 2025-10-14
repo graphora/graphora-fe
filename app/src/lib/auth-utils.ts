@@ -1,6 +1,16 @@
 import { auth, clerkClient } from '@clerk/nextjs/server'
+import { cookies } from 'next/headers'
 
 const DEFAULT_TOKEN_TEMPLATE = process.env.CLERK_BACKEND_TOKEN_TEMPLATE || 'session_token'
+
+function isTemplateMissingError(error: unknown): boolean {
+  if (typeof error !== 'object' || error === null) {
+    return false
+  }
+
+  const candidate = error as { clerkError?: boolean; status?: number }
+  return Boolean(candidate.clerkError && candidate.status === 404)
+}
 
 export async function getUserEmail(): Promise<string | null> {
   try {
@@ -44,11 +54,39 @@ export async function getBackendAuthContext(): Promise<{ userId: string; token: 
     throw new Error('Unauthorized')
   }
 
-  const token = await getToken({ template: DEFAULT_TOKEN_TEMPLATE })
+  const resolveToken = async (): Promise<string | null> => {
+    try {
+      return await getToken({ template: DEFAULT_TOKEN_TEMPLATE })
+    } catch (error) {
+      if (isTemplateMissingError(error)) {
+        console.warn(
+          `Clerk token template "${DEFAULT_TOKEN_TEMPLATE}" not found. Falling back to default session token.`
+        )
+        return null
+      }
+      throw error
+    }
+  }
+
+  let token = await resolveToken()
+
+  if (!token) {
+    const sessionCookieToken = cookies().get('__session')?.value
+    if (sessionCookieToken) {
+      token = sessionCookieToken
+    }
+  }
+
+  if (!token) {
+    token = await getToken().catch(error => {
+      console.error('Failed to obtain Clerk token without template:', error)
+      throw error
+    })
+  }
 
   if (!token) {
     throw new Error(
-      `Failed to obtain Clerk token with template "${DEFAULT_TOKEN_TEMPLATE}". Ensure the template exists and is assigned to the application.`
+      `Failed to obtain Clerk token. Provide a token template via CLERK_BACKEND_TOKEN_TEMPLATE or enable default session tokens.`
     )
   }
 
