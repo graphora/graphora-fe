@@ -2,6 +2,13 @@
 
 import { useState, useEffect } from 'react'
 
+const isDebugEnabled = process.env.NODE_ENV !== 'production'
+const debug = (...args: unknown[]) => {
+  if (isDebugEnabled) {
+    console.debug('[useNetworkStatus]', ...args)
+  }
+}
+
 export function useNetworkStatus() {
   const [isOnline, setIsOnline] = useState(true)
   const [wasOffline, setWasOffline] = useState(false)
@@ -17,14 +24,14 @@ export function useNetworkStatus() {
       setIsOnline(true)
       if (wasOffline) {
         // Show reconnected notification
-        console.log('Network connection restored')
+        debug('Network connection restored')
       }
     }
 
     const handleOffline = () => {
       setIsOnline(false)
       setWasOffline(true)
-      console.log('Network connection lost')
+      debug('Network connection lost')
     }
 
     window.addEventListener('online', handleOnline)

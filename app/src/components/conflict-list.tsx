@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from 'react'
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Loader2, AlertCircle, CheckCircle2, Filter, SortAsc, SortDesc, Wand2 } from 'lucide-react'
-import { type ConflictListItem, type ConflictListFilters, type ConflictListResponse } from '@/types/merge'
+import { type ConflictListItem, type ConflictListFilters } from '@/types/merge'
 import { cn } from '@/lib/utils'
 import { ConflictDetailsView } from '@/components/conflict-details-view'
 
@@ -61,7 +61,32 @@ export function ConflictList({
   const [conflictTypes, setConflictTypes] = useState<string[]>([])
   const [allResolved, setAllResolved] = useState(false)
 
-  const fetchConflicts = async () => {
+  const convertChangeLogToConflictItem = useCallback((changeLog: ChangeLog): ConflictListItem => {
+    const propCount = Object.keys(changeLog.prop_changes).length
+    const severity = propCount > 5 ? 'critical' : propCount > 2 ? 'major' : 'minor'
+
+    return {
+      id: changeLog.id,
+      merge_id: mergeId,
+      entity_id: changeLog.staging_node.id,
+      entity_name: changeLog.staging_node.properties.name || changeLog.staging_node.id,
+      entity_type: changeLog.staging_node.type,
+      conflict_type: 'property_conflict',
+      severity: {
+        level: severity as 'critical' | 'major' | 'minor' | 'info',
+        label: severity.charAt(0).toUpperCase() + severity.slice(1),
+        color: severity === 'critical' ? 'red' : severity === 'major' ? 'orange' : 'yellow'
+      },
+      description: `${propCount} properties have conflicting values`,
+      resolved: false,
+      resolution_status: 'unresolved',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      raw_changelog: changeLog
+    }
+  }, [mergeId])
+
+  const fetchConflicts = useCallback(async () => {
     try {
       setLoading(true)
       setError(null)
@@ -116,39 +141,11 @@ export function ConflictList({
     } finally {
       setLoading(false)
     }
-  }
-
-  // Function to convert ChangeLog to ConflictListItem
-  const convertChangeLogToConflictItem = (changeLog: ChangeLog): ConflictListItem => {
-    // Determine the severity based on the number of property changes
-    const propCount = Object.keys(changeLog.prop_changes).length;
-    const severity = propCount > 5 ? 'critical' : propCount > 2 ? 'major' : 'minor';
-  
-    return {
-      id: changeLog.id,
-      merge_id: mergeId,
-      entity_id: changeLog.staging_node.id,
-      entity_name: changeLog.staging_node.properties.name || changeLog.staging_node.id,
-      entity_type: changeLog.staging_node.type,
-      conflict_type: 'property_conflict', // Default type
-      severity: {
-        level: severity as 'critical' | 'major' | 'minor' | 'info',
-        label: severity.charAt(0).toUpperCase() + severity.slice(1),
-        color: severity === 'critical' ? 'red' : severity === 'major' ? 'orange' : 'yellow'
-      },
-      description: `${Object.keys(changeLog.prop_changes).length} properties have conflicting values`,
-      resolved: false,
-      resolution_status: 'unresolved',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-      // Store the original changelog data to use in conflict resolution
-      raw_changelog: changeLog
-    }
-  }
+  }, [filters, mergeId, searchQuery, convertChangeLogToConflictItem])
 
   useEffect(() => {
     fetchConflicts()
-  }, [mergeId, filters, searchQuery])
+  }, [fetchConflicts])
 
   const handleFilterChange = (key: keyof ConflictListFilters, value: any) => {
     setFilters(prev => ({

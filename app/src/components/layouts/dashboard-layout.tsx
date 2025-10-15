@@ -22,12 +22,12 @@ export function DashboardLayout({
     <EnhancedConfigCheck showSetupModal={true} lightweight={true} requireDbConfig={false} requireAiConfig={false}>
       <div className={cn("flex h-screen bg-background", className)}>
         {showSidebar && (
-          <SidebarNavigation 
+          <SidebarNavigation
             defaultCollapsed={sidebarCollapsed}
             className="flex-shrink-0"
           />
         )}
-        
+
         <div className="flex-1 flex flex-col overflow-hidden">
           {children}
         </div>
@@ -46,4 +46,4 @@ export function DashboardLayoutWithAI({ children }: { children: React.ReactNode 
       {children}
     </EnhancedConfigCheck>
   )
-} 
+}

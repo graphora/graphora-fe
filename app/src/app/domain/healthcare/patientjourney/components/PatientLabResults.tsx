@@ -7,6 +7,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
 import { Loader2 } from 'lucide-react'
 
+const isDebugEnabled = process.env.NODE_ENV !== 'production'
+const debug = (...args: unknown[]) => {
+  if (isDebugEnabled) {
+    console.debug('[PatientLabResults]', ...args)
+  }
+}
+
 interface PatientLabResultsProps {
   patientData: any;
 }
@@ -20,7 +27,7 @@ export function PatientLabResults({ patientData }: PatientLabResultsProps) {
 
   // Debug the incoming data structure
   useEffect(() => {
-    console.log('PatientLabResults - patientData:', patientData)
+    debug('Received patient data for lab results:', patientData)
 
     // Process the laboratory results data
     if (patientData?.laboratoryResults) {
@@ -62,7 +69,7 @@ export function PatientLabResults({ patientData }: PatientLabResultsProps) {
     if (!processedData || !trendChartRef.current || !distributionChartRef.current) return;
 
     const labResults = processedData.laboratoryResults || [];
-    console.log('Lab results count for charts:', labResults.length);
+    debug('Lab results count for charts:', labResults.length)
 
     // Process lab results data
     setLoading(false);

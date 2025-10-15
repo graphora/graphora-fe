@@ -7,9 +7,9 @@ import { Check, ChevronRight, Clock, AlertCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Tooltip } from '@/components/ui/tooltip'
-import { SidebarNavigation } from '@/components/navigation/sidebar-navigation'
 import { useRouter } from 'next/navigation'
 import { Logo } from '@/components/ui/logo'
+import { SidebarNavigation } from '@/components/navigation/sidebar-navigation'
 
 export type WorkflowStep = {
   id: string
@@ -27,6 +27,8 @@ export interface EnhancedWorkflowLayoutProps {
   hasUnsavedChanges?: boolean
   projectTitle?: string
   onStepClick?: (stepId: string) => void
+  showSidebar?: boolean
+  sidebarCollapsed?: boolean
 }
 
 export function EnhancedWorkflowLayout({
@@ -37,6 +39,8 @@ export function EnhancedWorkflowLayout({
   hasUnsavedChanges = false,
   projectTitle = "Graphora Workflow",
   onStepClick,
+  showSidebar = true,
+  sidebarCollapsed = true,
 }: EnhancedWorkflowLayoutProps) {
   const [isCollapsed, setIsCollapsed] = useState(true)
   const router = useRouter()
@@ -83,9 +87,13 @@ export function EnhancedWorkflowLayout({
 
   return (
     <div className="h-screen flex bg-background">
-      {/* Collapsed Sidebar */}
-      <SidebarNavigation />
-      
+      {showSidebar && (
+        <SidebarNavigation
+          defaultCollapsed={sidebarCollapsed}
+          className="flex-shrink-0"
+        />
+      )}
+
       {/* Main Content */}
       <div className="flex-1 flex flex-col">
         {/* Enhanced Header */}

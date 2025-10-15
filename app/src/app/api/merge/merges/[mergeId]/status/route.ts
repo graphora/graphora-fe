@@ -1,15 +1,13 @@
 import { NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs/server';
+import { getBackendAuthContext, isUnauthorizedError } from '@/lib/auth-utils';
 
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ mergeId: string }> }
 ) {
   try {
-    const { userId } = await auth();
-    if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const backendBaseUrl = process.env.BACKEND_API_URL || 'http://localhost:8000';
+    const { token } = await getBackendAuthContext();
 
     const { mergeId } = await params;
 
@@ -22,11 +20,11 @@ export async function GET(
 
     try {
       // Fetch from the backend API
-      const response = await fetch(`${process.env.BACKEND_API_URL}/api/v1/merge/${mergeId}/status`, {
+      const response = await fetch(`${backendBaseUrl}/api/v1/merge/${mergeId}/status`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
-          'user-id': userId  // Pass user-id in header (note the hyphen)
+          Authorization: `Bearer ${token}`
         }
       });
 
@@ -51,6 +49,9 @@ export async function GET(
       );
     }
   } catch (error) {
+    if (isUnauthorizedError(error)) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
     console.error('Error getting merge status:', error);
     return NextResponse.json(
       { error: 'Internal server error' },

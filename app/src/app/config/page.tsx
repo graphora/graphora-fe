@@ -18,6 +18,13 @@ import { GeminiConfigRequest, UserAIConfigDisplay } from '@/types/ai-config'
 import { toast } from 'sonner'
 import { DomainAppsToggle } from '@/components/config/domain-apps-toggle'
 
+const isDebugEnabled = process.env.NODE_ENV !== 'production'
+const debug = (...args: unknown[]) => {
+  if (isDebugEnabled) {
+    console.debug('[ConfigPage]', ...args)
+  }
+}
+
 const defaultDbConfig: DatabaseConfig = {
   name: '',
   uri: '',
@@ -73,7 +80,7 @@ function ConfigPageContent() {
       
       if (response.status === 404) {
         // Configuration not found - this is expected for new users
-        console.log('No configuration found for user, using defaults')
+        debug('No configuration found for user, using defaults')
         setConfig(null)
         return
       }
@@ -83,7 +90,7 @@ function ConfigPageContent() {
       }
 
       const data = await response.json()
-      console.log('Fetched configuration:', data)
+      debug('Fetched configuration:', data)
       
       setConfig(data)
       if (data.stagingDb) {
@@ -112,7 +119,7 @@ function ConfigPageContent() {
       
       if (response.status === 404) {
         // AI configuration not found - this is expected for new users
-        console.log('No AI configuration found for user, using defaults')
+        debug('No AI configuration found for user, using defaults')
         setAiConfig(null)
         return
       }
@@ -122,7 +129,7 @@ function ConfigPageContent() {
       }
 
       const data = await response.json()
-      console.log('Fetched AI configuration:', data)
+      debug('Fetched AI configuration:', data)
       
       setAiConfig(data)
       if (data) {
@@ -148,16 +155,15 @@ function ConfigPageContent() {
       setError(null)
 
       const configRequest: ConfigRequest = {
-        userId: user.id,
-        stagingDb: stagingDb,
-        prodDb: prodDb,
+        stagingDb,
+        prodDb,
       }
 
       // Determine if this is an update or create operation
       const isUpdate = config !== null
       const method = isUpdate ? 'PUT' : 'POST'
 
-      console.log(`${isUpdate ? 'Updating' : 'Creating'} configuration:`, configRequest)
+      debug(`${isUpdate ? 'Updating' : 'Creating'} configuration:`, configRequest)
 
       const response = await fetch('/api/config', {
         method: method,
@@ -173,7 +179,7 @@ function ConfigPageContent() {
       }
 
       const savedConfig = await response.json()
-      console.log('Configuration saved successfully:', savedConfig)
+      debug('Configuration saved successfully:', savedConfig)
       
       setConfig(savedConfig)
       toast.success(`Configuration ${isUpdate ? 'updated' : 'created'} successfully`)
@@ -213,7 +219,7 @@ function ConfigPageContent() {
       const isUpdate = aiConfig !== null
       const method = isUpdate ? 'PUT' : 'POST'
 
-      console.log(`${isUpdate ? 'Updating' : 'Creating'} AI configuration:`, {
+      debug(`${isUpdate ? 'Updating' : 'Creating'} AI configuration:`, {
         default_model_name: geminiConfig.default_model_name
       })
 
@@ -231,7 +237,7 @@ function ConfigPageContent() {
       }
 
       const savedConfig = await response.json()
-      console.log('AI Configuration saved successfully:', savedConfig)
+      debug('AI Configuration saved successfully:', savedConfig)
       
       setAiConfig(savedConfig)
       // Clear the API key field for security

@@ -19,6 +19,18 @@ import { Textarea } from '@/components/ui/textarea'
 import { Separator } from '@/components/ui/separator'
 import { Trash2 } from 'lucide-react'
 
+const isDebugEnabled = process.env.NODE_ENV !== 'production'
+const debug = (...args: unknown[]) => {
+  if (isDebugEnabled) {
+    console.debug('[NodeEditor]', ...args)
+  }
+}
+const debugWarn = (...args: unknown[]) => {
+  if (isDebugEnabled) {
+    console.warn('[NodeEditor]', ...args)
+  }
+}
+
 interface NodeEditorProps {
   nodeId: string | null
   onClose: () => void
@@ -59,7 +71,7 @@ export function NodeEditor({ nodeId, onClose }: NodeEditorProps) {
                 index: prop.index || false
              };
           } else {
-             console.warn(`Malformed property data for ${key} on node ${nodeId}:`, prop);
+             debugWarn(`Malformed property data for ${key} on node ${nodeId}:`, prop)
              initialProperties[key] = {
                 type: 'str',
                 ...defaultPropertyDefinition,
@@ -86,13 +98,13 @@ export function NodeEditor({ nodeId, onClose }: NodeEditorProps) {
     // Check if a new property is staged and valid
     const newKey = newPropertyKey.trim();
     if (newKey !== '' && !finalProperties[newKey]) {
-       console.log('Including staged new property:', newKey);
+      debug('Including staged new property:', newKey)
        finalProperties[newKey] = newPropertyDef;
        // Clear the new property form after including it
        setNewPropertyKey('');
        setNewPropertyDef({ type: 'str', ...defaultPropertyDefinition }); 
     } else if (newKey !== '' && finalProperties[newKey]) {
-       console.warn('New property key already exists, not adding automatically on save:', newKey);
+      debugWarn('New property key already exists, not adding automatically on save:', newKey)
        // Optionally alert the user?
        // alert(`Property "${newKey}" already exists. Please use the Add button or change the name.`);
     }
@@ -124,7 +136,7 @@ export function NodeEditor({ nodeId, onClose }: NodeEditorProps) {
            };
         });
      } else if (newKey === '') {
-        console.log("Key cleared, property remains for now");
+        debug('Key cleared, property remains for now')
      }
   }
 

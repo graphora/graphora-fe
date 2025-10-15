@@ -1,15 +1,13 @@
 import { NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs/server';
+import { getBackendAuthContext, isUnauthorizedError } from '@/lib/auth-utils';
 
 export async function POST(
   request: Request,
   { params }: any
 ) {
   try {
-    const { userId } = await auth();
-    if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const backendBaseUrl = process.env.BACKEND_API_URL || 'http://localhost:8000';
+    const { token } = await getBackendAuthContext();
 
     const { sessionId, transformId } = params;
 
@@ -27,7 +25,7 @@ export async function POST(
     const mergeId = requestBody.merge_id || mergeIdParam || null;
 
     // Construct the API URL
-    const apiUrl = `${process.env.BACKEND_API_URL}/api/v1/merge/${sessionId}/${transformId}/start`;
+    const apiUrl = `${backendBaseUrl}/api/v1/merge/${sessionId}/${transformId}/start`;
     
     // Add merge_id query parameter if provided
     const finalUrl = mergeId ? `${apiUrl}?merge_id=${mergeId}` : apiUrl;
@@ -36,7 +34,7 @@ export async function POST(
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'user-id': userId
+        Authorization: `Bearer ${token}`
       }
     });
 
@@ -52,6 +50,9 @@ export async function POST(
     const data = await response.json();
     return NextResponse.json(data);
   } catch (error) {
+    if (isUnauthorizedError(error)) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
     console.error('Error starting merge:', error);
     return NextResponse.json(
       { error: 'Internal server error' },

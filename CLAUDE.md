@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Development Commands
 
-**Working Directory**: `/Users/vendhan/Dev/ws/graphora-fe/app`
+**Working Directory**: `app/`
 
 ```bash
 # Development
@@ -12,6 +12,8 @@ npm run dev          # Start development server with Turbopack
 npm run build        # Production build
 npm run start        # Start production server
 npm run lint         # Run ESLint
+npm run test         # Run Vitest suite (see vitest.setup.ts)
+npm run format       # Format sources with Prettier
 
 # Development server runs on http://localhost:3000
 ```

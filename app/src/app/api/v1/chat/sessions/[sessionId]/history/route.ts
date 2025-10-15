@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { auth } from '@clerk/nextjs/server'
+import { getBackendAuthContext, isUnauthorizedError } from '@/lib/auth-utils'
 
 export async function GET(
   request: NextRequest,
@@ -7,29 +7,22 @@ export async function GET(
 ) {
   try {
     // Authenticate user
-    const { userId } = await auth()
-    if (!userId) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
-    }
+    const backendBaseUrl = process.env.BACKEND_API_URL || 'http://localhost:8000'
+    const { token } = await getBackendAuthContext()
 
     const { sessionId } = await params
     const { searchParams } = new URL(request.url)
     const limit = searchParams.get('limit') || '50'
 
     // Get backend URL from environment
-    const backendUrl = process.env.BACKEND_API_URL || 'http://localhost:8000'
-    
     // Proxy request to Python backend
     const backendResponse = await fetch(
-      `${backendUrl}/api/v1/chat/sessions/${sessionId}/history?limit=${limit}`,
+      `${backendBaseUrl}/api/v1/chat/sessions/${sessionId}/history?limit=${limit}`,
       {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
-          'user-id': userId
+          Authorization: `Bearer ${token}`
         },
         signal: AbortSignal.timeout(30000) // 30 second timeout
       }
@@ -48,6 +41,12 @@ export async function GET(
     return NextResponse.json(result)
 
   } catch (error) {
+    if (isUnauthorizedError(error)) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      )
+    }
     console.error('Session history proxy error:', error)
     
     if (error instanceof Error && error.name === 'AbortError') {

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
-import { auth } from '@clerk/nextjs/server'
 import type { OntologyResponse } from '@/types/api'
+import { getBackendAuthHeaders, isUnauthorizedError } from '@/lib/auth-utils'
 
 // Utility function to sanitize passwords from logs
 function sanitizeForLog(text: string): string {
@@ -36,10 +36,12 @@ function sanitizePasswordsFromObject(obj: any): any {
 
 export async function POST(request: Request) {
   try {
-    const { userId } = await auth()
-    if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+    const backendBaseUrl = process.env.BACKEND_API_URL || 'http://localhost:8000'
+    const { headers } = await getBackendAuthHeaders({
+      'Content-Type': 'application/json',
+      accept: 'application/json',
+      Connection: 'keep-alive'
+    })
 
     const body = await request.json()
     
@@ -48,14 +50,9 @@ export async function POST(request: Request) {
     const timeoutId = setTimeout(() => controller.abort(), 30000) // 30 second timeout
     
     try {
-      const response = await fetch(`${process.env.BACKEND_API_URL}/api/v1/ontology`, {
+      const response = await fetch(`${backendBaseUrl}/api/v1/ontology`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'accept': 'application/json',
-          'user-id': userId,
-          'Connection': 'keep-alive'
-        },
+        headers,
         body: JSON.stringify({
           text: body.text
         }),
@@ -87,6 +84,9 @@ export async function POST(request: Request) {
       throw fetchError
     }
   } catch (error) {
+    if (isUnauthorizedError(error)) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
     console.error('Error in ontology API:', error)
     const response: OntologyResponse = {
       id: '',
@@ -99,10 +99,12 @@ export async function POST(request: Request) {
 
 export async function PUT(request: Request) {
   try {
-    const { userId } = await auth()
-    if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+    const backendBaseUrl = process.env.BACKEND_API_URL || 'http://localhost:8000'
+    const { headers } = await getBackendAuthHeaders({
+      'Content-Type': 'application/json',
+      accept: 'application/json',
+      Connection: 'keep-alive'
+    })
 
     const body = await request.json()
     const { ontologyId, text } = body
@@ -116,14 +118,9 @@ export async function PUT(request: Request) {
     const timeoutId = setTimeout(() => controller.abort(), 30000) // 30 second timeout
     
     try {
-      const response = await fetch(`${process.env.BACKEND_API_URL}/api/v1/ontology/${ontologyId}`, {
+      const response = await fetch(`${backendBaseUrl}/api/v1/ontology/${ontologyId}`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'accept': 'application/json',
-          'user-id': userId,
-          'Connection': 'keep-alive'
-        },
+        headers,
         body: JSON.stringify({
           text: text
         }),
@@ -155,6 +152,9 @@ export async function PUT(request: Request) {
       throw fetchError
     }
   } catch (error) {
+    if (isUnauthorizedError(error)) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
     console.error('Error in ontology API:', error)
     const response: OntologyResponse = {
       id: '',

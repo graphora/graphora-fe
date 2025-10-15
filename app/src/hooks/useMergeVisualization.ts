@@ -2,6 +2,18 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { MergeVisualizationResponse } from '@/types/merge'
 import type { GraphData, GraphOperation, Node, Edge } from '@/types/graph'
 
+const isDebugEnabled = process.env.NODE_ENV !== 'production'
+const debug = (...args: unknown[]) => {
+  if (isDebugEnabled) {
+    console.debug('[useMergeVisualization]', ...args)
+  }
+}
+const debugWarn = (...args: unknown[]) => {
+  if (isDebugEnabled) {
+    console.warn('[useMergeVisualization]', ...args)
+  }
+}
+
 export function useMergeVisualization(mergeId: string, transformId: string) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -52,31 +64,31 @@ export function useMergeVisualization(mergeId: string, transformId: string) {
       setLoading(true)
       setError(null)
 
-      console.log(`useMergeVisualization: Fetching data for mergeId: ${mergeId}, transformId: ${transformId}`)
+      debug(`Fetching data for mergeId: ${mergeId}, transformId: ${transformId}`)
       const response = await fetch(`/api/merge/merges/${mergeId}/graph/${transformId}`)
       
       if (!response.ok) {
         if (response.status === 404) {
-          console.warn('useMergeVisualization: Graph data not found (404), setting empty graph')
+          debugWarn('Graph data not found (404), setting empty graph')
           setGraphData({ nodes: [], edges: [] })
           return
         }
         const errorText = await response.text()
-        console.error(`useMergeVisualization: API error (${response.status}):`, errorText)
+        console.error(`[useMergeVisualization] API error (${response.status}):`, errorText)
         throw new Error(`Failed to fetch visualization data: ${response.statusText}`)
       }
 
       const responseData = await response.json()
-      console.log('useMergeVisualization: Raw API response:', responseData)
+      debug('Raw API response:', responseData)
       
       if (!responseData) {
-        console.error('useMergeVisualization: Empty response from API')
+        console.error('[useMergeVisualization] Empty response from API')
         throw new Error('Invalid response format')
       }
 
       const currentDataString = JSON.stringify(responseData)
       if (currentDataString === prevDataRef.current) {
-        console.log('useMergeVisualization: Data unchanged, skipping update')
+        debug('Data unchanged, skipping update')
         return // Data hasn't changed, no need to update
       }
 
@@ -84,7 +96,7 @@ export function useMergeVisualization(mergeId: string, transformId: string) {
       setData(responseData)
       
       const transformedGraphData = transformGraphData(responseData.data || responseData)
-      console.log('useMergeVisualization: Transformed graph data:', transformedGraphData)
+      debug('Transformed graph data:', transformedGraphData)
       setGraphData(transformedGraphData)
     } catch (err) {
       console.error('useMergeVisualization: Error fetching data:', err)

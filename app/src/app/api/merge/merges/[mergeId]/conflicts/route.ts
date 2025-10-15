@@ -1,15 +1,13 @@
 import { NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs/server';
+import { getBackendAuthContext, isUnauthorizedError } from '@/lib/auth-utils';
 
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ mergeId: string }> }
 ) {
   try {
-    const { userId } = await auth();
-    if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const backendBaseUrl = process.env.BACKEND_API_URL || 'http://localhost:8000';
+    const { token } = await getBackendAuthContext();
 
     const { mergeId } = await params;
 
@@ -21,11 +19,11 @@ export async function GET(
     }
 
     try {
-      const response = await fetch(`${process.env.BACKEND_API_URL}/api/v1/merge/${mergeId}/conflicts`, {
+      const response = await fetch(`${backendBaseUrl}/api/v1/merge/${mergeId}/conflicts`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
-          'user-id': userId
+          Authorization: `Bearer ${token}`
         }
       });
 
@@ -43,6 +41,9 @@ export async function GET(
       );
     }
   } catch (error) {
+    if (isUnauthorizedError(error)) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
     console.error('Error getting conflicts:', error);
     return NextResponse.json(
       { error: 'Internal server error' },

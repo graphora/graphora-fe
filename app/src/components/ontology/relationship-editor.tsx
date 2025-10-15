@@ -19,6 +19,18 @@ import { Textarea } from '@/components/ui/textarea'
 import { Separator } from '@/components/ui/separator'
 import { Trash2 } from 'lucide-react'
 
+const isDebugEnabled = process.env.NODE_ENV !== 'production'
+const debug = (...args: unknown[]) => {
+  if (isDebugEnabled) {
+    console.debug('[RelationshipEditor]', ...args)
+  }
+}
+const debugWarn = (...args: unknown[]) => {
+  if (isDebugEnabled) {
+    console.warn('[RelationshipEditor]', ...args)
+  }
+}
+
 interface RelationshipEditorProps {
   relationshipId: string | null
   onClose: () => void
@@ -59,7 +71,7 @@ export function RelationshipEditor({ relationshipId, onClose }: RelationshipEdit
                 index: prop.index || false
              };
           } else {
-             console.warn(`Malformed property data for ${key} on relationship ${relationshipId}:`, prop);
+             debugWarn(`Malformed property data for ${key} on relationship ${relationshipId}:`, prop)
              initialProperties[key] = {
                 type: 'str',
                 ...defaultPropertyDefinition,
@@ -108,7 +120,7 @@ export function RelationshipEditor({ relationshipId, onClose }: RelationshipEdit
            };
         });
      } else if (newKey === '') {
-        console.log("Key cleared, property remains for now");
+        debug('Key cleared, property remains for now')
      }
   }
 

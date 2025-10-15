@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { auth } from '@clerk/nextjs/server'
+import { getBackendAuthContext, isUnauthorizedError } from '@/lib/auth-utils'
 
 interface SaveGraphRequest {
   nodes: {
@@ -38,23 +38,20 @@ export async function GET(
   {params}: any
 ) {
   try {
-    const { userId } = await auth()
-    if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+    const { token } = await getBackendAuthContext()
 
     const { id } = await params
     
     // Build API URL (graph operations always use staging database)
-    const apiUrl = `${process.env.BACKEND_API_URL}/api/v1/graph/${id}`
-    console.log('Fetching graph data from:', apiUrl)
+    const backendUrl = process.env.BACKEND_API_URL || 'http://localhost:8000'
+    const apiUrl = `${backendUrl}/api/v1/graph/${id}`
 
     const response = await fetch(apiUrl, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
-        'user-id': userId  // Pass user-id in header (note the hyphen)
+        Authorization: `Bearer ${token}`
       }
     })
 
@@ -74,6 +71,9 @@ export async function GET(
 
     return NextResponse.json(data)
   } catch (error) {
+    if (isUnauthorizedError(error)) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
     console.error('Error fetching graph data:', error)
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Failed to fetch graph data' }, 
@@ -87,27 +87,23 @@ export async function PUT(
   {params}: any
 ) {
   try {
-    const { userId } = await auth()
-    if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+    const { token } = await getBackendAuthContext()
 
     const {id} = await params
     
     // Build API URL (graph operations always use staging database)
-    const apiUrl = `${process.env.BACKEND_API_URL}/api/v1/graph/${id}`
+    const backendUrl = process.env.BACKEND_API_URL || 'http://localhost:8000'
+    const apiUrl = `${backendUrl}/api/v1/graph/${id}`
     
     // Parse and validate request body
     const body: SaveGraphRequest = await request.json()
-    
-    console.log('Saving graph data to:', apiUrl)
     
     // Forward the request to backend API
     const response = await fetch(apiUrl, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
-        'user-id': userId  // Pass user-id in header (note the hyphen)
+        Authorization: `Bearer ${token}`
       },
       body: JSON.stringify(body)
     })
@@ -127,6 +123,9 @@ export async function PUT(
     const data = await response.json()
     return NextResponse.json(data)
   } catch (error) {
+    if (isUnauthorizedError(error)) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
     console.error('Error saving graph:', error)
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Failed to save graph' },

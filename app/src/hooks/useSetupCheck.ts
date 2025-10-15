@@ -3,6 +3,13 @@ import { useUser } from '@clerk/nextjs'
 import { UserConfig } from '@/types/config'
 import { UserAIConfigDisplay } from '@/types/ai-config'
 
+const isDebugEnabled = process.env.NODE_ENV !== 'production'
+const debug = (...args: unknown[]) => {
+  if (isDebugEnabled) {
+    console.debug('[useSetupCheck]', ...args)
+  }
+}
+
 export interface SetupStatus {
   isLoading: boolean
   hasDbConfig: boolean
@@ -59,7 +66,7 @@ export function useSetupCheck() {
         hasAiConfig = !!(aiConfig?.api_key_masked && aiConfig?.default_model_name)
       } else if (aiResponse.status !== 404) {
         // AI config is optional, so we don't throw an error for 404
-        console.log('AI configuration not found (this is optional)')
+        debug('AI configuration not found (optional)')
       }
 
       const isFullyConfigured = hasDbConfig && hasAiConfig

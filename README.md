@@ -58,6 +58,8 @@ npm run dev          # Start development server with Turbopack
 npm run build        # Production build
 npm run start        # Start production server
 npm run lint         # Run ESLint
+npm run test         # Run Vitest unit tests (Graph editor smoke coverage)
+npm run format       # Format source files with Prettier
 ```
 
 ### Project Structure
@@ -112,6 +114,7 @@ Create a `.env.local` file in the `app/` directory:
 ```bash
 # Backend API
 BACKEND_API_URL=http://localhost:8000
+NEXT_PUBLIC_BACKEND_API_URL=http://localhost:8000
 
 # Clerk Authentication
 NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=your_publishable_key
@@ -119,6 +122,10 @@ CLERK_SECRET_KEY=your_secret_key
 ```
 
 See `.env.example` for all available options.
+
+## Sample Data
+
+The example documents in `app/data/` and `app/public/samples/` come from publicly available SEC Form 10-K filings. They are included for demonstration only and may be replaced with your own content before redistribution. Remove any proprietary materials prior to publishing custom builds.
 
 ## Contributing
 

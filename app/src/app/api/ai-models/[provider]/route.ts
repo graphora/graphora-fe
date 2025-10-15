@@ -1,18 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { getBackendAuthContext, isUnauthorizedError } from '@/lib/auth-utils'
 
 export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ provider: string }> }
 ) {
   try {
+    const backendBaseUrl = process.env.BACKEND_API_URL || 'http://localhost:8000'
+    const { token } = await getBackendAuthContext()
     const { provider } = await params
 
     // Forward the request to the backend
-    const backendUrl = `${process.env.BACKEND_API_URL}/api/v1/ai-models/${provider}`
+    const backendUrl = `${backendBaseUrl}/api/v1/ai-models/${provider}`
     const backendResponse = await fetch(backendUrl, {
       method: 'GET',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`
       }
     })
 
@@ -28,6 +32,9 @@ export async function GET(
     const data = await backendResponse.json()
     return NextResponse.json(data)
   } catch (error) {
+    if (isUnauthorizedError(error)) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
     console.error('Error in AI models GET API:', error)
     return NextResponse.json(
       { error: 'Internal server error' },

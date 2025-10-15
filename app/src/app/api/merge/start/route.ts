@@ -1,12 +1,10 @@
 import { NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs/server';
+import { getBackendAuthContext, isUnauthorizedError } from '@/lib/auth-utils';
 
 export async function POST(request: Request) {
   try {
-    const { userId } = await auth();
-    if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const backendBaseUrl = process.env.BACKEND_API_URL || 'http://localhost:8000';
+    const { token } = await getBackendAuthContext();
 
     // Get the full request body
     const body = await request.json().catch(() => ({}));
@@ -19,10 +17,9 @@ export async function POST(request: Request) {
       );
     }
 
-    console.log(`Starting merge for user ${userId}: sessionId=${sessionId}, transformId=${transformId}`);
 
     // Construct the API URL (merges use production database)
-    const apiUrl = `${process.env.BACKEND_API_URL}/api/v1/merge/${sessionId}/${transformId}/start`;
+    const apiUrl = `${backendBaseUrl}/api/v1/merge/${sessionId}/${transformId}/start`;
     
     // Add merge_id query parameter if provided
     const finalUrl = mergeId ? `${apiUrl}?merge_id=${mergeId}` : apiUrl;
@@ -32,7 +29,7 @@ export async function POST(request: Request) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'user-id': userId  // Pass user-id in header (note the hyphen)
+        Authorization: `Bearer ${token}`
       },
       body: JSON.stringify(body) // Pass the entire body to the backend
     });
@@ -53,9 +50,11 @@ export async function POST(request: Request) {
     }
 
     const data = await response.json();
-    console.log(`Merge started successfully for user ${userId}`);
     return NextResponse.json(data);
   } catch (error) {
+    if (isUnauthorizedError(error)) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
     console.error('Error starting merge:', error);
     return NextResponse.json(
       { error: 'Internal server error' },

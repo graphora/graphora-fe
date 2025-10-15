@@ -37,6 +37,18 @@ import {
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu'
 
+const isDebugEnabled = process.env.NODE_ENV !== 'production'
+const debug = (...args: unknown[]) => {
+  if (isDebugEnabled) {
+    console.debug('[GraphView]', ...args)
+  }
+}
+const debugWarn = (...args: unknown[]) => {
+  if (isDebugEnabled) {
+    console.warn('[GraphView]', ...args)
+  }
+}
+
 interface GraphViewProps {
   ontology: any
   onChange: (ontology: any) => void
@@ -65,17 +77,17 @@ export function GraphView({ ontology, onChange }: GraphViewProps) {
 
   // Initialize the graph from the ontology
   useEffect(() => {
-    console.log('Initializing graph from ontology:', ontology);
+    debug('Initializing graph from ontology:', ontology)
 
     if (!ontology || !ontology.entities) {
-      console.warn('Invalid ontology data:', ontology);
+      debugWarn('Invalid ontology data:', ontology)
       return;
     }
     
     try {
       // Convert ontology to graph
       fromOntology(ontology);
-      console.log('Successfully converted ontology to graph');
+      debug('Successfully converted ontology to graph')
       
       // Wait a bit for the graph to fully render
       setTimeout(() => {
@@ -91,7 +103,7 @@ export function GraphView({ ontology, onChange }: GraphViewProps) {
   const handleSave = () => {
     try {
       const newOntology = toOntology();
-      console.log('Converted graph to ontology:', newOntology);
+      debug('Converted graph to ontology:', newOntology)
       onChange(newOntology);
     } catch (error) {
       console.error('Error converting graph to ontology:', error);

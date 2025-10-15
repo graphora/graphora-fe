@@ -19,6 +19,13 @@ import { cn } from '@/lib/utils'
 import Link from 'next/link'
 import { useUserConfig } from '@/hooks/useUserConfig'
 
+const isDebugEnabled = process.env.NODE_ENV !== 'production'
+const debug = (...args: unknown[]) => {
+  if (isDebugEnabled) {
+    console.debug('[OntologyPage]', ...args)
+  }
+}
+
 type ViewMode = 'code' | 'visual' | 'split'
 
 interface ParsedOntology {
@@ -266,11 +273,7 @@ function OntologyPageContent() {
     setError(null)
     
     try {
-      const response = await fetch(`/api/v1/ontologies/${ontologyId}`, {
-        headers: {
-          'user-id': user?.id || 'anonymous'
-        }
-      })
+      const response = await fetch(`/api/v1/ontologies/${ontologyId}`)
       if (!response.ok) {
         if (response.status === 404) {
           throw new Error('Ontology not found')
@@ -348,14 +351,13 @@ function OntologyPageContent() {
         }
         // Use the existing ontology ID as session ID
         sessionId = loadedOntology.id
-        console.log('Using existing ontology ID as session:', sessionId)
+        debug('Using existing ontology ID as session:', sessionId)
       } else {
         // Creating a new ontology - need to create it first
         const response = await fetch('/api/v1/ontology', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'user-id': user?.id || 'anonymous'
           },
           body: JSON.stringify({
             text: yaml,
@@ -368,7 +370,7 @@ function OntologyPageContent() {
         }
 
         const data = await response.json()
-        console.log('Ontology API response:', data) // Debug log
+        debug('Ontology API response:', data)
         
         // Check if the backend returned an error
         if (data.status === 'error') {
@@ -384,7 +386,7 @@ function OntologyPageContent() {
           throw new Error(`No session ID received from server. Response: ${JSON.stringify(data)}`)
         }
         
-        console.log('Created new ontology with ID:', sessionId)
+        debug('Created new ontology with ID:', sessionId)
       }
       
       // Navigate to transform page with session ID
@@ -414,7 +416,6 @@ function OntologyPageContent() {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
-            'user-id': user?.id || 'anonymous' // Add required user-id header
           },
           body: JSON.stringify({
             text: yaml,
@@ -446,7 +447,6 @@ function OntologyPageContent() {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'user-id': user?.id || 'anonymous' // Add required user-id header
           },
           body: JSON.stringify({
             text: yaml,
@@ -469,7 +469,7 @@ function OntologyPageContent() {
       setError(null)
 
       // Show success message or toast here if needed
-      console.log('Ontology saved successfully')
+      debug('Ontology saved successfully')
       
     } catch (err) {
       console.error('Error saving ontology:', err)
@@ -507,19 +507,19 @@ function OntologyPageContent() {
   }, [updateFromYaml])
 
   const handleApplySuggestion = useCallback((id: string) => {
-    console.log('Applying suggestion:', id)
+    debug('Applying suggestion:', id)
   }, [])
 
   const handleDismissSuggestion = useCallback((id: string) => {
-    console.log('Dismissing suggestion:', id)
+    debug('Dismissing suggestion:', id)
   }, [])
 
   const handleExplainSuggestion = useCallback((id: string) => {
-    console.log('Explaining suggestion:', id)
+    debug('Explaining suggestion:', id)
   }, [])
 
   const handleCustomizeSuggestion = useCallback((id: string) => {
-    console.log('Customizing suggestion:', id)
+    debug('Customizing suggestion:', id)
   }, [])
 
   const tools = [

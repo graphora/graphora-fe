@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { useUser } from '@clerk/nextjs'
 import { 
   AlertTriangle, 
@@ -38,13 +38,14 @@ export function QualityDashboard({
   className = '' 
 }: QualityDashboardProps) {
   const { user } = useUser();
+  const userId = user?.id;
   const [qualityResults, setQualityResults] = useState<QualityResults | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
-  const fetchQualityResults = async (showRefreshIndicator = false) => {
-    if (!user?.id) {
+  const fetchQualityResults = useCallback(async (showRefreshIndicator = false) => {
+    if (!userId) {
       setError('User not authenticated');
       setLoading(false);
       return;
@@ -58,7 +59,7 @@ export function QualityDashboard({
       }
       setError(null);
 
-      const results = await qualityApi.getQualityResults(transformId, user.id);
+      const results = await qualityApi.getQualityResults(transformId);
       setQualityResults(results);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to load quality results';
@@ -68,16 +69,16 @@ export function QualityDashboard({
       setLoading(false);
       setRefreshing(false);
     }
-  };
+  }, [transformId, userId]);
 
   const handleApprove = async (comment?: string) => {
-    if (!user?.id) {
+    if (!userId) {
       setError('User not authenticated');
       return;
     }
 
     try {
-      await qualityApi.approveQualityResults(transformId, user.id, comment);
+      await qualityApi.approveQualityResults(transformId, comment);
       onApprove?.();
     } catch (err) {
       console.error('Failed to approve quality results:', err);
@@ -86,13 +87,13 @@ export function QualityDashboard({
   };
 
   const handleReject = async (reason: string) => {
-    if (!user?.id) {
+    if (!userId) {
       setError('User not authenticated');
       return;
     }
 
     try {
-      await qualityApi.rejectQualityResults(transformId, user.id, reason);
+      await qualityApi.rejectQualityResults(transformId, reason);
       onReject?.();
     } catch (err) {
       console.error('Failed to reject quality results:', err);
@@ -104,7 +105,7 @@ export function QualityDashboard({
     if (transformId) {
       fetchQualityResults();
     }
-  }, [transformId]);
+  }, [transformId, fetchQualityResults]);
 
   if (loading) {
     return (

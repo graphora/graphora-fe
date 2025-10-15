@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs/server';
+import { getBackendAuthContext, isUnauthorizedError } from '@/lib/auth-utils';
 
 // Utility function to sanitize passwords from logs
 function sanitizeForLog(text: string): string {
@@ -38,10 +38,8 @@ export async function GET(
   { params }: any
 ) {
   try {
-    const { userId } = await auth();
-    if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const backendBaseUrl = process.env.BACKEND_API_URL || 'http://localhost:8000';
+    const { token } = await getBackendAuthContext();
 
     const { mergeId, transformId } = await params;
 
@@ -52,17 +50,16 @@ export async function GET(
       );
     }
 
-    console.log(`Fetching merge graph for user ${userId}: mergeId=${mergeId}, transformId=${transformId}`);
 
     try {
       // Build API URL (merge operations use production database)
-      const apiUrl = `${process.env.BACKEND_API_URL}/api/v1/merge/graph/${mergeId}/${transformId}`;
+      const apiUrl = `${backendBaseUrl}/api/v1/merge/graph/${mergeId}/${transformId}`;
       
       const response = await fetch(apiUrl, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
-          'user-id': userId  // Pass user-id in header (note the hyphen)
+          Authorization: `Bearer ${token}`
         }
       });
 
@@ -73,7 +70,6 @@ export async function GET(
       }
 
       const data = await response.json();
-      console.log(`Successfully fetched merge graph for user ${userId}`);
       return NextResponse.json(data);
     } catch (error) {
       console.error('Error fetching merge graph:', error);
@@ -83,6 +79,9 @@ export async function GET(
       );
     }
   } catch (error) {
+    if (isUnauthorizedError(error)) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
     console.error('Error getting merge graph:', error);
     return NextResponse.json(
       { error: 'Internal server error' },

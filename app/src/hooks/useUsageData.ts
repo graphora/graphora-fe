@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 
 export interface UsageSummary {
   current_period: {
@@ -92,7 +92,7 @@ export function useUsageSummary() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       setLoading(true)
       const response = await fetch('/api/usage/summary')
@@ -108,11 +108,11 @@ export function useUsageSummary() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
   useEffect(() => {
     fetchData()
-  }, [])
+  }, [fetchData])
 
   return { data, loading, error, refetch: fetchData }
 }
@@ -122,7 +122,7 @@ export function useUsageReport(startDate?: string, endDate?: string, days?: numb
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       setLoading(true)
       const params = new URLSearchParams()
@@ -145,11 +145,11 @@ export function useUsageReport(startDate?: string, endDate?: string, days?: numb
     } finally {
       setLoading(false)
     }
-  }
+  }, [days, endDate, startDate])
 
   useEffect(() => {
     fetchData()
-  }, [startDate, endDate, days])
+  }, [fetchData])
 
   return { data, loading, error, refetch: fetchData }
 }
@@ -159,7 +159,7 @@ export function useModelUsage(days: number = 30) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       setLoading(true)
       const response = await fetch(`/api/usage/models?days=${days}`)
@@ -175,11 +175,11 @@ export function useModelUsage(days: number = 30) {
     } finally {
       setLoading(false)
     }
-  }
+  }, [days])
 
   useEffect(() => {
     fetchData()
-  }, [days])
+  }, [fetchData])
 
   return { data, loading, error, refetch: fetchData }
 }
@@ -189,7 +189,7 @@ export function useUsageLimits() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       setLoading(true)
       const response = await fetch('/api/usage/limits')
@@ -205,11 +205,11 @@ export function useUsageLimits() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
   useEffect(() => {
     fetchData()
-  }, [])
+  }, [fetchData])
 
   return { data, loading, error, refetch: fetchData }
 } 

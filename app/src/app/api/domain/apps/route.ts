@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { auth } from '@clerk/nextjs/server'
+import { getBackendAuthHeaders, isUnauthorizedError } from '@/lib/auth-utils'
 
 // Mock domain apps data to use as fallback
 const mockDomainApps = {
@@ -37,10 +37,8 @@ const mockDomainApps = {
 // This API route will fetch the list of domain apps from the backend
 export async function GET(request: NextRequest) {
   try {
-    const { userId } = await auth()
-    if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+    const backendBaseUrl = process.env.BACKEND_API_URL || 'http://localhost:8000'
+    const { headers } = await getBackendAuthHeaders({ 'Content-Type': 'application/json' })
 
     // Check if backend API URL is configured
     if (!process.env.BACKEND_API_URL) {
@@ -49,12 +47,9 @@ export async function GET(request: NextRequest) {
     }
 
     try {
-      const response = await fetch(`${process.env.BACKEND_API_URL}/api/v1/domain/apps`, {
+      const response = await fetch(`${backendBaseUrl}/api/v1/domain/apps`, {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'user-id': userId  // Pass user-id in header (note the hyphen)
-        },
+        headers,
       })
       
       if (!response.ok) {
@@ -75,6 +70,9 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(mockDomainApps)
     }
   } catch (error) {
+    if (isUnauthorizedError(error)) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
     console.error('Error in domain apps API:', error)
     
     // Return mock data as final fallback

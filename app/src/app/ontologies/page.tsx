@@ -23,6 +23,13 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useUser } from '@clerk/nextjs'
 
+const isDebugEnabled = process.env.NODE_ENV !== 'production'
+const debug = (...args: unknown[]) => {
+  if (isDebugEnabled) {
+    console.debug('[OntologiesPage]', ...args)
+  }
+}
+
 interface Ontology {
   id: string
   name: string
@@ -48,14 +55,10 @@ export default function OntologiesPage() {
     const fetchOntologies = async () => {
       try {
         setError(null)
-        const response = await fetch('/api/v1/ontologies', {
-          headers: {
-            'user-id': user?.id || 'anonymous'
-          }
-        })
+        const response = await fetch('/api/v1/ontologies')
         if (response.ok) {
           const data = await response.json()
-          console.log('Fetched ontologies:', data) // Debug log
+          debug('Fetched ontologies:', data)
           setOntologies(data.ontologies || [])
           setFilteredOntologies(data.ontologies || [])
         } else {
@@ -106,10 +109,7 @@ export default function OntologiesPage() {
 
     try {
       const response = await fetch(`/api/v1/ontology/${ontologyId}`, {
-        method: 'DELETE',
-        headers: {
-          'user-id': user?.id || 'anonymous'
-        }
+        method: 'DELETE'
       })
 
       if (response.ok) {

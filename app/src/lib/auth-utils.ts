@@ -1,4 +1,16 @@
-import { auth } from '@clerk/nextjs/server'
+import { auth, clerkClient } from '@clerk/nextjs/server'
+import { cookies } from 'next/headers'
+
+const DEFAULT_TOKEN_TEMPLATE = process.env.CLERK_BACKEND_TOKEN_TEMPLATE || 'session_token'
+
+function isTemplateMissingError(error: unknown): boolean {
+  if (typeof error !== 'object' || error === null) {
+    return false
+  }
+
+  const candidate = error as { clerkError?: boolean; status?: number }
+  return Boolean(candidate.clerkError && candidate.status === 404)
+}
 
 export async function getUserEmail(): Promise<string | null> {
   try {
@@ -7,36 +19,20 @@ export async function getUserEmail(): Promise<string | null> {
       return null
     }
 
-    // Check if CLERK_SECRET_KEY is available
-    if (!process.env.CLERK_SECRET_KEY) {
-      console.error('CLERK_SECRET_KEY environment variable is not set')
-      throw new Error('Server configuration error: CLERK_SECRET_KEY not configured')
+    const client = await clerkClient()
+    const user = await client.users.getUser(userId)
+    const primaryEmail = user.primaryEmailAddressId
+      ? user.emailAddresses.find(address => address.id === user.primaryEmailAddressId)?.emailAddress
+      : undefined
+    const fallbackEmail = user.emailAddresses[0]?.emailAddress
+
+    const email = primaryEmail || fallbackEmail || null
+
+    if (!email) {
+      throw new Error(`No email address configured for user ${userId}`)
     }
 
-    // Get user email from Clerk
-    const userResponse = await fetch(`https://api.clerk.dev/v1/users/${userId}`, {
-      headers: {
-        'Authorization': `Bearer ${process.env.CLERK_SECRET_KEY}`,
-        'Content-Type': 'application/json',
-      },
-    })
-
-    if (!userResponse.ok) {
-      console.error('Failed to get user info from Clerk:', userResponse.status, userResponse.statusText)
-      const errorText = await userResponse.text()
-      console.error('Clerk API error response:', errorText)
-      throw new Error(`Failed to get user info from Clerk: ${userResponse.status}`)
-    }
-
-    const userData = await userResponse.json()
-    const userEmail = userData.email_addresses?.[0]?.email_address
-
-    if (!userEmail) {
-      console.error('No email address found for user:', userId)
-      throw new Error('No email address found for user')
-    }
-
-    return userEmail
+    return email
   } catch (error) {
     console.error('Error getting user email:', error)
     throw error
@@ -49,4 +45,67 @@ export async function getUserEmailOrThrow(): Promise<string> {
     throw new Error('User email not found')
   }
   return email
-} 
+}
+
+export async function getBackendAuthContext(): Promise<{ userId: string; token: string }> {
+  const { userId, getToken } = await auth()
+
+  if (!userId) {
+    throw new Error('Unauthorized')
+  }
+
+  const resolveToken = async (): Promise<string | null> => {
+    try {
+      return await getToken({ template: DEFAULT_TOKEN_TEMPLATE })
+    } catch (error) {
+      if (isTemplateMissingError(error)) {
+        console.warn(
+          `Clerk token template "${DEFAULT_TOKEN_TEMPLATE}" not found. Falling back to default session token.`
+        )
+        return null
+      }
+      throw error
+    }
+  }
+
+  let token = await resolveToken()
+
+  if (!token) {
+    const cookieStore = await cookies()
+    const sessionCookieToken = cookieStore.get('__session')?.value
+    if (sessionCookieToken) {
+      token = sessionCookieToken
+    }
+  }
+
+  if (!token) {
+    token = await getToken().catch(error => {
+      console.error('Failed to obtain Clerk token without template:', error)
+      throw error
+    })
+  }
+
+  if (!token) {
+    throw new Error(
+      `Failed to obtain Clerk token. Provide a token template via CLERK_BACKEND_TOKEN_TEMPLATE or enable default session tokens.`
+    )
+  }
+
+  return { userId, token }
+}
+
+export async function getBackendAuthHeaders(
+  baseHeaders: HeadersInit = {}
+): Promise<{ userId: string; headers: HeadersInit }> {
+  const { userId, token } = await getBackendAuthContext()
+  const headers = new Headers(baseHeaders)
+  headers.set('Authorization', `Bearer ${token}`)
+  return {
+    userId,
+    headers: Object.fromEntries(headers.entries())
+  }
+}
+
+export function isUnauthorizedError(error: unknown): boolean {
+  return error instanceof Error && error.message === 'Unauthorized'
+}

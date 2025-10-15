@@ -9,6 +9,18 @@ import { type Node, type Edge, type GraphData, type GraphOperation } from '@/typ
 import { toast } from 'react-hot-toast';
 import { Loader2 } from 'lucide-react';
 
+const isDebugEnabled = process.env.NODE_ENV !== 'production'
+const debug = (...args: unknown[]) => {
+  if (isDebugEnabled) {
+    console.debug('[GraphViz]', ...args)
+  }
+}
+const debugWarn = (...args: unknown[]) => {
+  if (isDebugEnabled) {
+    console.warn('[GraphViz]', ...args)
+  }
+}
+
 const hslToRgb = (h: number, s: number, l: number): [number, number, number] => {
   s /= 100;
   l /= 100;
@@ -155,7 +167,7 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
-    console.log('Raw graphData:', graphData);
+    debug('Raw graphData:', graphData)
   }, [graphData]);
 
   const processedData = useCallback(() => {
@@ -164,7 +176,7 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({
 
     const nodes: ProcessedNode[] = graphData.nodes.map((node, index) => {
       if (!node.id || typeof node.id !== 'string') {
-        console.warn(`Node at index ${index} has invalid ID, assigning fallback:`, node);
+        debugWarn(`Node at index ${index} has invalid ID, assigning fallback:`, node);
         node.id = `fallback-node-${index}`;
       }
       const nodeType = node.type || 'default';
@@ -192,19 +204,19 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({
         const targetId = edge.target;
 
         if (!sourceId) {
-          console.warn(`Edge ${index} has invalid source (sourceId: ${sourceId}), skipping:`, edge);
+          debugWarn(`Edge ${index} has invalid source (sourceId: ${sourceId}), skipping:`, edge);
           return null;
         }
         if (!targetId) {
-          console.warn(`Edge ${index} has invalid target (targetId: ${targetId}), skipping:`, edge);
+          debugWarn(`Edge ${index} has invalid target (targetId: ${targetId}), skipping:`, edge);
           return null;
         }
         if (!nodeMap.has(sourceId)) {
-          console.warn(`Edge ${index} sourceId ${sourceId} does not match any node, skipping:`, edge);
+          debugWarn(`Edge ${index} sourceId ${sourceId} does not match any node, skipping:`, edge);
           return null;
         }
         if (!nodeMap.has(targetId)) {
-          console.warn(`Edge ${index} targetId ${targetId} does not match any node, skipping:`, edge);
+          debugWarn(`Edge ${index} targetId ${targetId} does not match any node, skipping:`, edge);
           return null;
         }
 
@@ -277,11 +289,11 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({
     onDrag: (nodes: ProcessedNode[]) => {},
     onPan: (position: { x: number; y: number }) => {},
     onNodeHover: (node: ProcessedNode | null | undefined) => {
-      console.log('onNodeHover called with:', node); // Debug log
+      debug('onNodeHover called with:', node) // Debug log
       setHoveredNode(node ?? null); // Ensure undefined is converted to null
     },
     onRelationshipHover: (rel: ProcessedRel | null | undefined) => {
-      console.log('onRelationshipHover called with:', rel); // Debug log
+      debug('onRelationshipHover called with:', rel) // Debug log
       setHoveredLink(rel ?? null); // Ensure undefined is converted to null
     },
     onNodeClick: (node: ProcessedNode) => {
@@ -290,7 +302,7 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({
         setSelectedElement({ type: 'node', data: originalNode });
         setEditedProperties({ name: originalNode.properties?.name, ...originalNode.properties });
       } else {
-        console.warn("Clicked node not found in original graphData:", node);
+        debugWarn('Clicked node not found in original graphData:', node);
       }
       setHoveredNode(null);
       setHoveredLink(null);
@@ -304,7 +316,7 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({
         setSelectedElement({ type: 'link', data: originalEdge });
         setEditedProperties({ ...originalEdge.properties });
       } else {
-        console.warn("Clicked relationship not found in original graphData edges based on ProcessedRel:", rel);
+        debugWarn('Clicked relationship not found in original graphData edges based on ProcessedRel:', rel);
       }
       setHoveredNode(null);
       setHoveredLink(null);
@@ -375,7 +387,7 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({
         if (onGraphOperation && operation) {
           await onGraphOperation(operation);
         } else {
-          console.warn('onGraphOperation prop not provided to GraphVisualization.');
+          debugWarn('onGraphOperation prop not provided to GraphVisualization.');
         }
 
         if (selectedElement.type === 'node') {

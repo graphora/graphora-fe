@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { getBackendAuthContext, isUnauthorizedError } from '@/lib/auth-utils';
 
 // This is a WebSocket upgrade handler
 export async function GET(request: Request) {
@@ -14,6 +15,9 @@ export async function GET(request: Request) {
   }
 
   try {
+    const backendBaseUrl = process.env.BACKEND_API_URL || 'http://localhost:8000'
+    const { token } = await getBackendAuthContext()
+
     const upgradeHeader = request.headers.get('Upgrade');
     if (!upgradeHeader || upgradeHeader.toLowerCase() !== 'websocket') {
       return NextResponse.json(
@@ -23,8 +27,7 @@ export async function GET(request: Request) {
     }
 
     // Convert HTTP backend URL to WebSocket URL for server-side usage
-    const backendUrl = process.env.BACKEND_API_URL || 'http://localhost:8000'
-    const backendWsUrl = backendUrl.replace('http://', 'ws://').replace('https://', 'wss://')
+    const backendWsUrl = backendBaseUrl.replace('http://', 'ws://').replace('https://', 'wss://')
     const wsUrl = `${backendWsUrl}/merge?transform_id=${transformId}&session_id=${sessionId}`;
     
     const response = await fetch(wsUrl, {
@@ -32,11 +35,15 @@ export async function GET(request: Request) {
       headers: {
         'Upgrade': 'websocket',
         'Connection': 'Upgrade',
+        Authorization: `Bearer ${token}`
       }
     });
 
     return response;
   } catch (error) {
+    if (isUnauthorizedError(error)) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
     console.error('Error upgrading to WebSocket:', error);
     return NextResponse.json(
       { error: 'Failed to establish WebSocket connection' },
