@@ -57,7 +57,6 @@ Graphora is a knowledge graph platform that transforms unstructured data into st
 ## Domain Applications
 
 The app supports domain-specific workflows:
-- **Healthcare**: Patient journey analysis, lab results (`/src/app/domain/healthcare/`)
 - **Financial**: Form 10K processing, regulatory documents
 - **Generic**: Flexible ontology-driven data modeling
 

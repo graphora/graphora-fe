@@ -1,17 +1,16 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
-import { 
-  ChevronLeft, 
+import {
+  ChevronLeft,
   ChevronRight,
   Home,
   Settings,
   Database,
   Zap,
-  BarChart3,
   Bot
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -40,24 +39,6 @@ export function SidebarNavigation({ className, defaultCollapsed = true }: Sideba
   const router = useRouter()
   const pathname = usePathname()
   const [isCollapsed, setIsCollapsed] = useState(defaultCollapsed)
-  const [isDomainAppsVisible, setIsDomainAppsVisible] = useState(false)
-
-  useEffect(() => {
-    // Get the settings from localStorage, default to false (hidden)
-    const domainAppsStored = localStorage.getItem('domainAppsVisible')
-    setIsDomainAppsVisible(domainAppsStored === 'true')
-    
-    // Listen for changes to domain apps visibility
-    const handleDomainAppsVisibilityChange = (event: CustomEvent) => {
-      setIsDomainAppsVisible(event.detail.visible)
-    }
-
-    window.addEventListener('domainAppsVisibilityChanged', handleDomainAppsVisibilityChange as EventListener)
-    
-    return () => {
-      window.removeEventListener('domainAppsVisibilityChanged', handleDomainAppsVisibilityChange as EventListener)
-    }
-  }, [])
 
   const allNavigationItems: NavigationItem[] = [
     {
@@ -90,13 +71,6 @@ export function SidebarNavigation({ className, defaultCollapsed = true }: Sideba
       description: 'Start the knowledge graph workflow'
     },
     {
-      id: 'applications',
-      name: 'Applications',
-      icon: <BarChart3 className="w-5 h-5" />,
-      path: '/domain-apps',
-      description: 'Visualize domain-specific insights'
-    },
-    {
       id: 'configuration',
       name: 'Configuration',
       icon: <Settings className="w-5 h-5" />,
@@ -106,12 +80,7 @@ export function SidebarNavigation({ className, defaultCollapsed = true }: Sideba
   ]
 
   // Filter navigation items based on visibility settings
-  const navigationItems = allNavigationItems.filter(item => {
-    if (item.id === 'applications' && !isDomainAppsVisible) {
-      return false
-    }
-    return true
-  })
+  const navigationItems = allNavigationItems
 
   const isActivePath = (path: string) => {
     if (path === '/') {

@@ -10,13 +10,12 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
-import { Loader2, Settings, AlertCircle, CheckCircle, Database, User, Bell, Shield, ArrowLeft, Sparkles } from 'lucide-react'
+import { Loader2, Settings, AlertCircle, CheckCircle, Database, Bell, Shield, ArrowLeft, Sparkles } from 'lucide-react'
 import { DatabaseConfigForm } from '@/components/config/database-config-form'
 import { GeminiConfigForm } from '@/components/config/gemini-config-form'
 import { DatabaseConfig, UserConfig, ConfigRequest } from '@/types/config'
 import { GeminiConfigRequest, UserAIConfigDisplay } from '@/types/ai-config'
 import { toast } from 'sonner'
-import { DomainAppsToggle } from '@/components/config/domain-apps-toggle'
 
 const isDebugEnabled = process.env.NODE_ENV !== 'production'
 const debug = (...args: unknown[]) => {
@@ -333,7 +332,7 @@ function ConfigPageContent() {
           )}
 
           <Tabs defaultValue={tabParam || "databases"} className="space-y-6">
-            <TabsList className="grid w-full grid-cols-5 bg-muted">
+            <TabsList className="grid w-full grid-cols-4 bg-muted">
               <TabsTrigger value="databases" className="data-[state=active]:bg-background">
                 <Database className="h-4 w-4 mr-2" />
                 Databases
@@ -341,10 +340,6 @@ function ConfigPageContent() {
               <TabsTrigger value="ai-config" className="data-[state=active]:bg-background">
                 <Sparkles className="h-4 w-4 mr-2" />
                 AI Config
-              </TabsTrigger>
-              <TabsTrigger value="profile">
-                <User className="h-4 w-4 mr-2" />
-                Profile
               </TabsTrigger>
               <TabsTrigger value="notifications" disabled>
                 <Bell className="h-4 w-4 mr-2" />
@@ -592,31 +587,6 @@ function ConfigPageContent() {
             </TabsContent>
 
             {/* Placeholder tabs for future features */}
-            <TabsContent value="profile" className="space-y-6">
-              <Card className="enhanced-card">
-                <CardHeader className="enhanced-card-header">
-                  <CardTitle className="flex items-center space-x-2">
-                    <User className="h-5 w-5 text-primary" />
-                    <span>Preferences</span>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="enhanced-card-content space-y-6">
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-1">
-                        <h4 className="text-sm font-medium text-foreground">Domain Applications in Sidebar</h4>
-                        <p className="text-sm text-muted-foreground">
-                          Show or hide domain applications link in the sidebar navigation
-                        </p>
-                      </div>
-                      <DomainAppsToggle />
-                    </div>
-                    
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
             <TabsContent value="notifications" className="space-y-6">
               <Card className="enhanced-card">
                 <CardContent className="enhanced-card-content p-6">
