@@ -34,51 +34,59 @@ interface StatusIndicatorProps {
 
 const variants = {
   success: {
-    bgColor: 'bg-success/15',
+    bgColor: 'bg-success/12',
     textColor: 'text-success',
-    borderColor: 'border-success/30',
+    borderColor: 'border-success/25',
+    shadow: 'shadow-soft',
     icon: CheckCircle,
   },
   warning: {
-    bgColor: 'bg-warning/15',
+    bgColor: 'bg-warning/12',
     textColor: 'text-warning',
-    borderColor: 'border-warning/30',
+    borderColor: 'border-warning/25',
+    shadow: 'shadow-soft',
     icon: AlertTriangle,
   },
   error: {
-    bgColor: 'bg-destructive/15',
+    bgColor: 'bg-destructive/12',
     textColor: 'text-destructive',
-    borderColor: 'border-destructive/30',
+    borderColor: 'border-destructive/25',
+    shadow: 'shadow-soft',
     icon: XCircle,
   },
   info: {
-    bgColor: 'bg-info/15',
+    bgColor: 'bg-info/12',
     textColor: 'text-info',
-    borderColor: 'border-info/30',
+    borderColor: 'border-info/25',
+    shadow: 'shadow-soft',
     icon: Info,
   },
   loading: {
     bgColor: 'bg-muted',
     textColor: 'text-muted-foreground',
     borderColor: 'border-border',
+    shadow: 'shadow-soft',
     icon: Loader2,
   },
   pending: {
-    bgColor: 'bg-info/15',
+    bgColor: 'bg-info/12',
     textColor: 'text-info',
-    borderColor: 'border-info/30',
+    borderColor: 'border-info/25',
+    shadow: 'shadow-soft',
     icon: Clock,
   },
   inactive: {
     bgColor: 'bg-muted',
     textColor: 'text-muted-foreground',
     borderColor: 'border-border',
+    shadow: 'shadow-soft',
     icon: Circle,
   },
   paused: {
     bgColor: 'bg-warning/10',
     textColor: 'text-warning',
     borderColor: 'border-warning/20',
+    shadow: 'shadow-soft',
     icon: Pause,
   },
 }
@@ -118,9 +126,10 @@ export function StatusIndicator({
 
   return (
     <div className={cn(
-      "inline-flex items-center space-x-2 rounded-full border",
+      "inline-flex items-center space-x-2 rounded-full border backdrop-blur-glass",
       config.bgColor,
       config.borderColor,
+      config.shadow,
       sizeStyles.padding,
       className
     )}>

@@ -109,6 +109,23 @@ const config = {
       },
       fontSize: fontSizeAliases,
       spacing: spacingTokens,
+      boxShadow: {
+        soft: 'var(--shadow-soft)',
+        medium: 'var(--shadow-medium)',
+        large: 'var(--shadow-large)',
+        glass: '0 18px 45px rgba(15, 23, 42, 0.16)',
+      },
+      borderRadius: {
+        xl: 'var(--border-radius-lg)',
+      },
+      backdropBlur: {
+        glass: '18px',
+        panel: '24px',
+      },
+      backgroundImage: {
+        'glass-overlay': 'linear-gradient(140deg, rgba(255,255,255,0.22), rgba(255,255,255,0.05))',
+        'glass-overlay-dark': 'linear-gradient(140deg, rgba(148,163,184,0.16), rgba(15,23,42,0.25))',
+      },
       borderRadius: {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
