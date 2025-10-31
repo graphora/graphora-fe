@@ -151,13 +151,15 @@ export function SidebarNavigation({ className, defaultCollapsed = true }: Sideba
   }
 
   return (
-    <div className={cn(
-      "flex flex-col bg-background border-r border-border transition-all duration-300 h-full",
-      isCollapsed ? "w-16" : "w-64",
-      className
-    )}>
+    <aside
+      className={cn(
+        "group/sidebar relative flex h-full min-h-screen flex-col border-r border-border/60 bg-background/85 backdrop-blur-panel shadow-soft transition-all duration-300",
+        isCollapsed ? "w-[4.25rem]" : "w-64",
+        className
+      )}
+    >
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-border">
+      <div className="flex items-center justify-between border-b border-border/60 px-4 py-3">
         {!isCollapsed && (
           <div className="flex items-center space-x-3">
             <div className="w-12 h-12 rounded-lg flex items-center justify-center overflow-hidden">
@@ -189,16 +191,16 @@ export function SidebarNavigation({ className, defaultCollapsed = true }: Sideba
       </div>
 
       {/* Navigation Items */}
-      <div className="flex-1 flex flex-col p-4">
-          <div className="space-y-1 flex-1">
-            {navigationItems.map((item) => (
-              <NavItem key={item.id} item={item} />
-            ))}
-          </div>
+      <div className="flex flex-1 flex-col px-3 pb-6 pt-4">
+        <div className="flex-1 space-y-1.5">
+          {navigationItems.map((item) => (
+            <NavItem key={item.id} item={item} />
+          ))}
+        </div>
 
         {/* Need Help Section - integrated into main flow */}
         {!isCollapsed && (
-          <div className="mt-6 p-3 bg-muted rounded-lg">
+          <div className="mt-6 rounded-xl border border-border/50 bg-muted/50 p-3 shadow-soft">
             <div className="text-body-sm font-medium text-foreground mb-1">
               Need Help?
             </div>
@@ -221,8 +223,8 @@ export function SidebarNavigation({ className, defaultCollapsed = true }: Sideba
       </div>
 
       {/* User Section */}
-      <div className="p-4 border-t border-border">
-        <div className="flex items-center justify-between mb-3">
+      <div className="border-t border-border/60 px-4 py-3">
+        <div className="flex items-center justify-between">
           {!isCollapsed && (
             <div className="flex items-center space-x-2 flex-1">
               <UserButton />
@@ -239,30 +241,22 @@ export function SidebarNavigation({ className, defaultCollapsed = true }: Sideba
             </div>
           )}
           
-          {!isCollapsed && (
-            <div className="flex items-center space-x-1">
-              <ThemeToggle />
-            </div>
-          )}
         </div>
-        
+
         {isCollapsed && (
           <div className="flex justify-center mt-2">
             <ThemeToggle />
           </div>
         )}
+
+        {!isCollapsed && (
+          <div className="mt-3 flex items-center justify-between text-body-xs text-muted-foreground">
+            <ThemeToggle />
+            <span>Version 2.0.1</span>
+          </div>
+        )}
       </div>
 
-      {/* Version Info */}
-      {!isCollapsed && (
-        <div className="p-4">
-          <div className="bg-muted rounded-lg p-3">
-            <div className="text-body-xs text-muted-foreground">
-              Version 2.0.1
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
+    </aside>
   )
 } 

@@ -1,14 +1,16 @@
 'use client'
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { CheckCircle, Database, Sparkles, ArrowRight, Settings, AlertCircle } from 'lucide-react'
+import { Progress } from '@/components/ui/progress'
+import { CheckCircle, Database, Sparkles, ArrowRight, Settings, AlertCircle, Shield, HelpCircle } from 'lucide-react'
 import { SetupStatus } from '@/hooks/useSetupCheck'
 import { ThemeToggle } from '@/components/ui/theme-toggle'
+import { cn } from '@/lib/utils'
 
 interface SetupWelcomeModalProps {
   isOpen: boolean
@@ -21,6 +23,29 @@ export function SetupWelcomeModal({ isOpen, onClose, setupStatus, onRefresh }: S
   const router = useRouter()
   const [isNavigating, setIsNavigating] = useState(false)
 
+  const totalSteps = 2
+  const completedSteps = useMemo(
+    () => [setupStatus.hasDbConfig, setupStatus.hasAiConfig].filter(Boolean).length,
+    [setupStatus.hasAiConfig, setupStatus.hasDbConfig]
+  )
+  const setupProgress = (completedSteps / totalSteps) * 100
+
+  const setupChecklist = useMemo(
+    () => [
+      {
+        label: 'Database connections',
+        completed: setupStatus.hasDbConfig,
+        accent: 'text-success',
+      },
+      {
+        label: 'AI integration',
+        completed: setupStatus.hasAiConfig,
+        accent: 'text-info',
+      },
+    ],
+    [setupStatus.hasAiConfig, setupStatus.hasDbConfig]
+  )
+
   const handleNavigateToConfig = async (section?: string) => {
     setIsNavigating(true)
     const configUrl = section ? `/config?tab=${section}` : '/config'
@@ -29,191 +54,250 @@ export function SetupWelcomeModal({ isOpen, onClose, setupStatus, onRefresh }: S
   }
 
   const handleSkipForNow = () => {
-    // Store in localStorage that user has seen this modal for this session
     localStorage.setItem('setup-modal-dismissed', Date.now().toString())
     onClose()
   }
 
-  const canSkip = setupStatus.hasDbConfig // Can only skip if DB is configured
+  const canSkip = setupStatus.hasDbConfig
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl bg-card text-card-foreground border border-border">
-        <DialogHeader>
-          <div className="flex items-center justify-between">
-            <DialogTitle className="flex items-center gap-2 text-heading text-card-foreground">
-              <Settings className="h-6 w-6 text-primary" />
-              Welcome to Graphora! Let's get you set up
-            </DialogTitle>
-            <ThemeToggle />
-          </div>
-          <DialogDescription className="text-body text-muted-foreground">
-            To get the most out of Graphora, we need to configure a few things. 
-            Let's check what you need to set up.
-          </DialogDescription>
-        </DialogHeader>
+    <Dialog
+      open={isOpen}
+      onOpenChange={(open) => {
+        if (!open) onClose()
+      }}
+    >
+      <DialogContent className="glass-surface max-w-5xl overflow-hidden border border-white/15 p-0 text-card-foreground shadow-large">
+        <div className="grid gap-px bg-white/10 md:grid-cols-[1fr_1.2fr] lg:grid-cols-[1.05fr_1.25fr]">
+          <aside className="relative flex flex-col justify-between gap-8 bg-gradient-to-br from-primary/25 via-background/30 to-background/65 p-8 text-left backdrop-blur-panel">
+            <div className="space-y-6">
+              <div className="flex items-start justify-between">
+                <Badge
+                  variant={setupStatus.isFullyConfigured ? 'success' : 'info'}
+                  className="uppercase tracking-[0.18em] text-[0.6rem]"
+                >
+                  {setupStatus.isFullyConfigured ? 'Setup Complete' : 'Setup Incomplete'}
+                </Badge>
+                <ThemeToggle />
+              </div>
 
-        <div className="space-y-4">
-          {/* Database Configuration */}
-          <Card className={`transition-colors ${setupStatus.hasDbConfig ? 'border-success/20 bg-success/10' : 'border-warning/20 bg-warning/10'}`}>
-            <CardHeader>
-              <CardTitle className="flex items-center justify-between text-heading-sm text-card-foreground">
-                <span className="flex items-center gap-2">
-                  <Database className={`h-5 w-5 ${setupStatus.hasDbConfig ? 'text-success' : 'text-warning'}`} />
-                  <span className="text-card-foreground">Database Configuration</span>
-                </span>
-                <div className="flex items-center gap-2">
-                  <Badge variant={setupStatus.hasDbConfig ? 'success' : 'warning'}>
-                    {setupStatus.hasDbConfig ? (
-                      <>
-                        <CheckCircle className="h-3 w-3 mr-1" />
-                        Configured
-                      </>
-                    ) : (
-                      <>
-                        <AlertCircle className="h-3 w-3 mr-1" />
-                        Required
-                      </>
-                    )}
-                  </Badge>
+              <div className="space-y-3">
+                <DialogTitle className="flex items-center gap-3 text-display-sm">
+                  <span className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/30 bg-white/10 shadow-glass">
+                    <Settings className="h-5 w-5 text-primary" />
+                  </span>
+                  Welcome to Graphora
+                </DialogTitle>
+                <DialogDescription className="max-w-md text-body text-foreground/80">
+                  Configure the essential services so your workspace is production-ready for document ingestion, AI enrichment, and merge workflows.
+                </DialogDescription>
+              </div>
+
+              <div className="space-y-4 rounded-2xl border border-white/15 bg-white/8 p-6 shadow-inner backdrop-blur-xl">
+                <div className="flex items-center justify-between text-[0.7rem] font-medium uppercase tracking-[0.22em] text-foreground/60">
+                  <span>Setup Progress</span>
+                  <span className="text-foreground/80">
+                    {completedSteps}/{totalSteps} complete
+                  </span>
                 </div>
-              </CardTitle>
-              <CardDescription className="text-body-sm text-muted-foreground">
-                Neo4j database connections for staging and production environments. 
-                These are required for storing and managing your knowledge graphs.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {setupStatus.hasDbConfig ? (
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between text-body-sm">
-                    <span className="font-medium text-card-foreground">Staging Database:</span>
-                    <span className="text-success">✓ Configured</span>
-                  </div>
-                  <div className="flex items-center justify-between text-body-sm">
-                    <span className="font-medium text-card-foreground">Production Database:</span>
-                    <span className="text-success">✓ Configured</span>
-                  </div>
+                <Progress
+                  value={setupProgress}
+                  className="h-2 overflow-hidden rounded-full bg-white/15"
+                  indicatorClassName="bg-gradient-to-r from-primary via-primary/90 to-info"
+                />
+                <div className="space-y-3">
+                  {setupChecklist.map((item) => (
+                    <div key={item.label} className="flex items-center justify-between gap-3 text-sm">
+                      <span className="flex items-center gap-2 text-foreground/90">
+                        {item.completed ? (
+                          <CheckCircle className={cn('h-4 w-4', item.accent)} />
+                        ) : (
+                          <AlertCircle className="h-4 w-4 text-warning" />
+                        )}
+                        {item.label}
+                      </span>
+                      <Badge variant={item.completed ? 'success' : 'warning'} className="tracking-[0.08em]">
+                        {item.completed ? 'Ready' : 'Pending'}
+                      </Badge>
+                    </div>
+                  ))}
                 </div>
-              ) : (
+              </div>
+            </div>
+
+            <div className="rounded-xl border border-white/10 bg-white/7 p-5 text-xs text-foreground/75 shadow-inner">
+              <div className="flex items-start gap-3">
+                <Shield className="h-4 w-4 text-primary" />
                 <div className="space-y-2">
-                  <p className="text-body-sm text-muted-foreground">
-                    You'll need to provide connection details for both staging and production Neo4j databases.
+                  <p className="font-medium uppercase tracking-[0.16em] text-foreground/80">Security first</p>
+                  <p>
+                    Database credentials and API keys are encrypted with hardware-backed keys before they ever leave your browser. Graphora never stores plain-text secrets.
                   </p>
-                  <Button 
-                    onClick={() => handleNavigateToConfig('databases')} 
-                    className="w-full"
-                    disabled={isNavigating}
+                  <button
+                    type="button"
+                    onClick={onRefresh}
+                    className="inline-flex items-center gap-2 font-medium text-primary transition-colors hover:text-primary/80"
                   >
-                    <Database className="h-4 w-4 mr-2" />
-                    Configure Databases
-                    <ArrowRight className="h-4 w-4 ml-2" />
-                  </Button>
+                    <HelpCircle className="h-3.5 w-3.5" />
+                    Need assistance? Refresh status
+                  </button>
                 </div>
-              )}
-            </CardContent>
-          </Card>
+              </div>
+            </div>
+          </aside>
 
-          {/* AI Configuration */}
-          <Card className={`transition-colors ${setupStatus.hasAiConfig ? 'border-info/20 bg-info/10' : 'border-border bg-muted/30'}`}>
-            <CardHeader>
-              <CardTitle className="flex items-center justify-between text-heading-sm text-card-foreground">
-                <span className="flex items-center gap-2">
-                  <Sparkles className={`h-5 w-5 ${setupStatus.hasAiConfig ? 'text-info' : 'text-muted-foreground'}`} />
-                  <span className="text-card-foreground">AI Configuration</span>
-                </span>
-                <div className="flex items-center gap-2">
-                  <Badge variant={setupStatus.hasAiConfig ? 'info' : 'neutral'}>
-                    {setupStatus.hasAiConfig ? (
-                      <>
-                        <CheckCircle className="h-3 w-3 mr-1" />
-                        Configured
-                      </>
-                    ) : (
-                      'Recommended'
-                    )}
-                  </Badge>
-                </div>
-              </CardTitle>
-              <CardDescription className="text-body-sm text-muted-foreground">
-                Gemini AI integration for intelligent document processing, entity extraction, 
-                and conflict resolution. This enhances your knowledge graph capabilities.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {setupStatus.hasAiConfig ? (
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between text-body-sm">
-                    <span className="font-medium text-card-foreground">Provider:</span>
-                    <span className="text-info">{setupStatus.aiConfig?.provider_display_name}</span>
-                  </div>
-                  <div className="flex items-center justify-between text-body-sm">
-                    <span className="font-medium text-card-foreground">API Key:</span>
-                    <span className="text-info font-mono">{setupStatus.aiConfig?.api_key_masked}</span>
-                  </div>
-                  <div className="flex items-center justify-between text-body-sm">
-                    <span className="font-medium text-card-foreground">Default Model:</span>
-                    <span className="text-info">{setupStatus.aiConfig?.default_model_display_name}</span>
-                  </div>
-                </div>
+          <section className="stack-gap bg-background/85 p-8 backdrop-blur-panel">
+            <div className="stack-gap">
+              <Card
+                variant="glass"
+                className={cn(
+                  'border-white/15 shadow-glass backdrop-blur-panel transition-all duration-200',
+                  setupStatus.hasDbConfig
+                    ? 'bg-gradient-to-br from-success/15 via-background/40 to-background/10'
+                    : 'bg-gradient-to-br from-warning/20 via-background/35 to-background/10'
+                )}
+              >
+                <CardHeader className="pb-4">
+                  <CardTitle className="flex items-center justify-between text-heading">
+                    <span className="flex items-center gap-2">
+                      <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-white/20 bg-white/10 shadow-glass">
+                        <Database className={cn('h-4 w-4', setupStatus.hasDbConfig ? 'text-success' : 'text-warning')} />
+                      </span>
+                      Database configuration
+                    </span>
+                    <Badge variant={setupStatus.hasDbConfig ? 'success' : 'warning'}>
+                      {setupStatus.hasDbConfig ? 'Configured' : 'Required'}
+                    </Badge>
+                  </CardTitle>
+                  <CardDescription>
+                    Connect staging and production Neo4j databases so workflow results can be persisted automatically.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {setupStatus.hasDbConfig ? (
+                    <div className="grid gap-3 text-sm md:grid-cols-2">
+                      <div className="rounded-lg border border-success/25 bg-success/10 px-4 py-3 text-success">
+                        <p className="font-medium uppercase tracking-[0.14em] text-success/70">Staging</p>
+                        <p className="text-display-xs">✓</p>
+                        <p className="text-xs text-success/80">Connected</p>
+                      </div>
+                      <div className="rounded-lg border border-success/25 bg-success/10 px-4 py-3 text-success">
+                        <p className="font-medium uppercase tracking-[0.14em] text-success/70">Production</p>
+                        <p className="text-display-xs">✓</p>
+                        <p className="text-xs text-success/80">Connected</p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      <p className="text-body text-muted-foreground">
+                        Provide unique URIs and credentials for both staging and production Neo4j clusters. Test each connection after saving to ensure Graphora can reach them.
+                      </p>
+                      <Button
+                        onClick={() => handleNavigateToConfig('databases')}
+                        className="glass-button w-full justify-center text-sm"
+                        disabled={isNavigating}
+                      >
+                        <Database className="mr-2 h-4 w-4" />
+                        Configure databases
+                        <ArrowRight className="ml-2 h-4 w-4" />
+                      </Button>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card
+                variant="glass"
+                className={cn(
+                  'border-white/15 shadow-glass backdrop-blur-panel transition-all duration-200',
+                  setupStatus.hasAiConfig
+                    ? 'bg-gradient-to-br from-info/15 via-background/40 to-background/10'
+                    : 'bg-gradient-to-br from-info/10 via-background/35 to-background/10'
+                )}
+              >
+                <CardHeader className="pb-4">
+                  <CardTitle className="flex items-center justify-between text-heading">
+                    <span className="flex items-center gap-2">
+                      <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-white/20 bg-white/10 shadow-glass">
+                        <Sparkles className={cn('h-4 w-4', setupStatus.hasAiConfig ? 'text-info' : 'text-muted-foreground')} />
+                      </span>
+                      AI configuration
+                    </span>
+                    <Badge variant={setupStatus.hasAiConfig ? 'info' : 'neutral'}>
+                      {setupStatus.hasAiConfig ? 'Configured' : 'Recommended'}
+                    </Badge>
+                  </CardTitle>
+                  <CardDescription>
+                    Unlock AI-powered summarisation, conflict resolution, and schema insights with Gemini.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {setupStatus.hasAiConfig ? (
+                    <div className="grid gap-3 text-sm">
+                      <div className="flex items-center justify-between rounded-lg border border-info/20 bg-info/10 px-4 py-3 text-info">
+                        <span className="uppercase tracking-[0.14em] text-info/70">Provider</span>
+                        <span className="font-medium">{setupStatus.aiConfig?.provider_display_name}</span>
+                      </div>
+                      <div className="flex items-center justify-between rounded-lg border border-info/20 bg-info/10 px-4 py-3 text-info">
+                        <span className="uppercase tracking-[0.14em] text-info/70">API key</span>
+                        <span className="font-mono text-sm">{setupStatus.aiConfig?.api_key_masked}</span>
+                      </div>
+                      <div className="flex items-center justify-between rounded-lg border border-info/20 bg-info/10 px-4 py-3 text-info">
+                        <span className="uppercase tracking-[0.14em] text-info/70">Default model</span>
+                        <span className="font-medium">{setupStatus.aiConfig?.default_model_display_name}</span>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      <p className="text-body text-muted-foreground">
+                        Add your Gemini API key and select a default model to enable intelligent enrichment and QA assistance across workflows.
+                      </p>
+                      <Button
+                        onClick={() => handleNavigateToConfig('ai-config')}
+                        variant="outline"
+                        className="w-full justify-center border-info/30 text-info hover:bg-info/15"
+                        disabled={isNavigating}
+                      >
+                        <Sparkles className="mr-2 h-4 w-4" />
+                        Configure AI integration
+                        <ArrowRight className="ml-2 h-4 w-4" />
+                      </Button>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+
+            <div className="grid gap-3 pt-2 sm:grid-cols-2">
+              {setupStatus.isFullyConfigured ? (
+                <Button onClick={onClose} className="glass-button w-full justify-center text-sm">
+                  <CheckCircle className="mr-2 h-4 w-4" />
+                  Enter workspace
+                </Button>
               ) : (
-                <div className="space-y-2">
-                  <p className="text-body-sm text-muted-foreground">
-                    Configure your Gemini API key to enable AI-powered features like smart conflict resolution 
-                    and automated entity extraction.
-                  </p>
-                  <Button 
-                    onClick={() => handleNavigateToConfig('ai-config')} 
-                    variant="outline"
-                    className="w-full"
-                    disabled={isNavigating}
-                  >
-                    <Sparkles className="h-4 w-4 mr-2" />
-                    Configure AI Integration
-                    <ArrowRight className="h-4 w-4 ml-2" />
-                  </Button>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Action Buttons */}
-          <div className="flex flex-col sm:flex-row gap-3 pt-4">
-            {setupStatus.isFullyConfigured ? (
-              <Button onClick={onClose} className="flex-1">
-                <CheckCircle className="h-4 w-4 mr-2" />
-                Get Started with Graphora
-              </Button>
-            ) : (
-              <>
-                <Button 
-                  onClick={() => handleNavigateToConfig()} 
-                  className="flex-1"
+                <Button
+                  onClick={() => handleNavigateToConfig()}
+                  className="glass-button w-full justify-center text-sm"
                   disabled={isNavigating}
                 >
-                  <Settings className="h-4 w-4 mr-2" />
-                  Go to Configuration
+                  <Settings className="mr-2 h-4 w-4" />
+                  Open configuration
                 </Button>
-                {canSkip && (
-                  <Button 
-                    onClick={handleSkipForNow} 
-                    variant="outline"
-                    className="flex-1"
-                  >
-                    Continue Without AI
-                  </Button>
-                )}
-              </>
-            )}
-          </div>
+              )}
 
-          {!setupStatus.hasDbConfig && (
-            <p className="text-body-xs text-muted-foreground text-center">
-              Database configuration is required to use Graphora's core features.
-            </p>
-          )}
+              {canSkip && !setupStatus.isFullyConfigured && (
+                <Button
+                  onClick={handleSkipForNow}
+                  variant="outline"
+                  className="w-full justify-center text-sm"
+                >
+                  Skip for now
+                </Button>
+              )}
+            </div>
+          </section>
         </div>
       </DialogContent>
     </Dialog>
   )
-} 
+}

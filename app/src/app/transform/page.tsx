@@ -15,6 +15,7 @@ import {
 } from 'lucide-react'
 import { useRouter, useSearchParams, usePathname } from 'next/navigation'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Progress } from '@/components/ui/progress'
 import { GraphVisualization } from '@/components/graph-viz'
@@ -33,10 +34,7 @@ import {
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
-  DialogHeader,
   DialogTitle,
-  DialogFooter,
 } from "@/components/ui/dialog"
 import { EnhancedWorkflowLayout, WorkflowStep } from '@/components/enhanced-workflow-layout'
 import { clsx as cn } from 'clsx'
@@ -135,6 +133,12 @@ function TransformPageContent() {
   const [showQualityReview, setShowQualityReview] = useState(false)
   const [qualityReviewCompleted, setQualityReviewCompleted] = useState(false)
   const [chunkingConfig, setChunkingConfig] = useState<any>(null)
+  const hasCustomChunking = Boolean(chunkingConfig)
+  const formattedFileSize = file
+    ? file.size < 1024 * 1024
+      ? `${(file.size / 1024).toFixed(1)} KB`
+      : `${(file.size / (1024 * 1024)).toFixed(2)} MB`
+    : null
   const [fileContent, setFileContent] = useState<string | null>(null)
   const [showChunkingConfig, setShowChunkingConfig] = useState(false)
 
@@ -1195,40 +1199,103 @@ function TransformPageContent() {
 
       {/* Chunking Configuration Modal */}
       <Dialog open={showChunkingConfig} onOpenChange={setShowChunkingConfig}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-card border-border text-card-foreground">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-card-foreground">
-              <Settings2 className="h-5 w-5" />
-              Chunking Configuration
-            </DialogTitle>
-            <DialogDescription className="text-muted-foreground">
-              Configure how your document will be split into chunks for processing. Adjust these settings to optimize the transformation for your specific document type.
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="mt-4">
-            <ChunkingConfig
-              fileContent={fileContent ?? undefined}
-              fileName={file?.name}
-              onConfigChange={setChunkingConfig}
-            />
+        <DialogContent className="glass-surface max-w-5xl max-h-[90vh] overflow-hidden border border-white/15 p-0 text-card-foreground shadow-large">
+          <div className="grid h-full md:grid-cols-[320px_minmax(0,1fr)]">
+            <aside className="flex flex-col justify-between gap-8 bg-gradient-to-br from-primary/18 via-background/30 to-background/60 p-8 text-left backdrop-blur-panel">
+              <div className="space-y-6">
+                <div className="space-y-2">
+                  <p className="text-xs uppercase tracking-[0.24em] text-foreground/55">Document</p>
+                  <h2 className="text-heading text-foreground">
+                    {file?.name ?? 'No document selected'}
+                  </h2>
+                  <p className="text-sm text-foreground/70">
+                    {file ? `${formattedFileSize ?? '—'} • ${file.type || 'unknown type'}` : 'Upload a document to tailor chunking.'}
+                  </p>
+                </div>
+                <div className="space-y-3 rounded-xl border border-white/15 bg-white/10 p-5 shadow-inner">
+                  <p className="text-xs uppercase tracking-[0.2em] text-foreground/55">Current configuration</p>
+                  {hasCustomChunking ? (
+                    <div className="space-y-3 text-sm text-foreground/80">
+                      <div className="flex items-center justify-between">
+                        <span>Strategy</span>
+                        <Badge variant="glass" className="uppercase tracking-[0.14em]">
+                          {chunkingConfig?.strategy ?? 'hybrid'}
+                        </Badge>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span>Min size</span>
+                        <span>{chunkingConfig?.min_chunk_size ?? 500} chars</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span>Max size</span>
+                        <span>{chunkingConfig?.max_chunk_size ?? 3000} chars</span>
+                      </div>
+                      {chunkingConfig?.chunk_overlap && (
+                        <div className="flex items-center justify-between">
+                          <span>Overlap</span>
+                          <span>{chunkingConfig.chunk_overlap} chars</span>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-foreground/65">
+                      Using adaptive hybrid chunking. Enable custom settings to fine-tune chunk sizes and overlap for this document.
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <div className="space-y-3 rounded-xl border border-white/12 bg-white/8 p-5 text-xs text-foreground/75 shadow-inner">
+                <p className="font-medium uppercase tracking-[0.16em] text-foreground/70">Recommendations</p>
+                <ul className="space-y-2 text-foreground/80">
+                  <li>• Smaller chunks improve retrieval accuracy for dense documents.</li>
+                  <li>• Increase overlap when preserving context across sections.</li>
+                  <li>• Structural strategy works best for reports with headings and lists.</li>
+                </ul>
+              </div>
+            </aside>
+
+            <div className="flex h-full flex-col bg-background/92 backdrop-blur-panel">
+              <header className="flex items-center justify-between border-b border-white/10 p-8 pb-6">
+                <div className="flex items-center gap-3">
+                  <span className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-primary/70 text-white shadow-glass">
+                    <Settings2 className="h-5 w-5" />
+                  </span>
+                  <div className="space-y-1">
+                    <h2 className="text-display-xs text-foreground">Chunking configuration</h2>
+                    <p className="text-sm text-foreground/70">
+                      Tune how the document is segmented before embedding and graph generation.
+                    </p>
+                  </div>
+                </div>
+              </header>
+
+              <div className="flex-1 overflow-y-auto px-8 py-6">
+                <ChunkingConfig
+                  fileContent={fileContent ?? undefined}
+                  fileName={file?.name}
+                  onConfigChange={setChunkingConfig}
+                  className="border-white/15 bg-white/10 shadow-glass backdrop-blur-panel"
+                />
+              </div>
+
+              <footer className="flex items-center justify-end gap-3 border-t border-white/10 bg-white/5 px-8 py-6">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowChunkingConfig(false)}
+                  className="border-white/20 text-foreground hover:bg-white/10"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={() => setShowChunkingConfig(false)}
+                  className="glass-button border-white/15 text-sm text-primary-foreground"
+                >
+                  Apply settings
+                </Button>
+              </footer>
+            </div>
           </div>
-          
-          <DialogFooter className="gap-2">
-            <Button
-              variant="outline"
-              onClick={() => setShowChunkingConfig(false)}
-              className="bg-muted text-muted-foreground border-border hover:bg-muted/80"
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={() => setShowChunkingConfig(false)}
-              className="bg-primary text-primary-foreground hover:bg-primary/90"
-            >
-              Apply Settings
-            </Button>
-          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

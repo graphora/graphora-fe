@@ -86,25 +86,27 @@ export function EnhancedWorkflowLayout({
   }
 
   return (
-    <div className="h-screen flex bg-background">
+    <div className="relative flex min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
+      <div className="pointer-events-none absolute inset-0 opacity-55 [background-image:radial-gradient(circle_at_15%_20%,rgba(37,99,235,0.12),transparent_55%),radial-gradient(circle_at_85%_15%,rgba(91,33,182,0.12),transparent_50%),radial-gradient(circle_at_50%_90%,rgba(14,165,233,0.1),transparent_45%)]" aria-hidden />
       {showSidebar && (
         <SidebarNavigation
           defaultCollapsed={sidebarCollapsed}
-          className="flex-shrink-0"
+          className="relative z-10 flex-shrink-0"
         />
       )}
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col">
+      <div className="relative z-10 flex-1 overflow-hidden">
+        <div className="flex min-h-screen flex-col bg-background/92 backdrop-blur-sm">
         {/* Enhanced Header */}
-        <div className="bg-background border-b border-border shadow-sm">
-          <div className="px-4 py-4">
-            <div className="flex items-center justify-between">
+        <div className="border-b border-border/60 bg-background/95 shadow-sm">
+          <div className="page-shell py-section-sm">
+            <div className="flex flex-wrap items-center justify-between gap-3">
               {/* Left: Project Info */}
               <div className="flex items-center space-x-3">
                 <Button
                   variant="ghost"
-                  className="p-2 rounded-lg text-foreground hover:bg-muted active:bg-muted/80 transition-colors duration-150 flex items-center gap-2"
+                  className="flex items-center gap-2 rounded-xl border border-border/60 bg-muted/40 px-3 py-2 text-foreground hover:bg-muted/60"
                   onClick={() => router.push('/')}
                 >
                   <div className="w-7 h-7 flex items-center justify-center overflow-hidden">
@@ -121,8 +123,8 @@ export function EnhancedWorkflowLayout({
               {/* Right: Status Indicators and Controls */}
               <div className="flex items-center space-x-3">
                 {hasUnsavedChanges && (
-                  <Badge variant="outline" className="bg-amber-50 dark:bg-amber-950 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800">
-                    <AlertCircle className="h-3 w-3 mr-1" />
+                  <Badge variant="warning" tone="soft" className="px-2 py-1">
+                    <AlertCircle className="mr-1 h-3 w-3" />
                     Unsaved Changes
                   </Badge>
                 )}
@@ -141,9 +143,9 @@ export function EnhancedWorkflowLayout({
 
           {/* Workflow Steps */}
           {!isCollapsed && (
-            <div className="border-t border-border bg-muted/30">
-              <div className="px-4 py-6">
-                <div className="flex items-center justify-center space-x-2 overflow-x-auto">
+            <div className="border-t border-border/60 bg-background/80">
+              <div className="page-shell py-content-lg">
+                <div className="flex items-center justify-center gap-3 overflow-x-auto">
                   {steps.map((step, index) => {
                     const isCompleted = index < currentStepIndex || step.status === 'completed'
                     const isCurrent = index === currentStepIndex || step.status === 'current'
@@ -182,15 +184,15 @@ export function EnhancedWorkflowLayout({
                         >
                           <div
                             className={cn(
-                              "flex flex-col items-center space-y-2 p-3 rounded-lg transition-all min-w-[120px]",
-                              isClickable ? "cursor-pointer" : "cursor-not-allowed",
-                              isCurrent && "bg-blue-50 dark:bg-blue-950/30 border-2 border-blue-200 dark:border-blue-800/50",
-                              isCompleted && !isCurrent && "hover:bg-muted/50"
+                              "flex min-w-[130px] flex-col items-center gap-2 rounded-2xl border border-border/50 bg-muted/40 px-4 py-3 text-center transition-all",
+                              isClickable ? "cursor-pointer" : "cursor-not-allowed opacity-60",
+                              isCurrent && "border-primary/40 bg-primary/10 shadow-soft",
+                              isCompleted && !isCurrent && "hover:bg-muted/60"
                             )}
                             onClick={() => handleStepClick(step, index)}
                           >
                             <div className={cn(
-                              "w-10 h-10 rounded-full flex items-center justify-center border-2 transition-colors",
+                              "flex h-11 w-11 items-center justify-center rounded-full border-2 transition-colors",
                               isCompleted 
                                 ? "bg-emerald-100 dark:bg-emerald-950/30 border-emerald-500 dark:border-emerald-600 text-emerald-700 dark:text-emerald-400"
                                 : isCurrent 
@@ -235,5 +237,6 @@ export function EnhancedWorkflowLayout({
         </div>
       </div>
     </div>
+  </div>
   )
-} 
+}

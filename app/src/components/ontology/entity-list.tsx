@@ -2,7 +2,8 @@
 
 import { useOntologyEditorStore } from '@/lib/store/ontology-editor-store'
 import { Button } from '@/components/ui/button'
-import { PlusCircle, FolderTree, FileDown, ChevronRight, ChevronDown } from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
+import { FolderTree, FileDown, ChevronRight, ChevronDown } from 'lucide-react'
 import yaml from 'js-yaml'
 import { useState } from 'react'
 
@@ -11,7 +12,7 @@ interface EntityListProps {
 }
 
 export function EntityList({ onLoadSample }: EntityListProps) {
-  const { yaml: yamlContent, updateFromYaml } = useOntologyEditorStore()
+  const { yaml: yamlContent } = useOntologyEditorStore()
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set())
 
   // Parse YAML to get sections and entities
@@ -28,52 +29,6 @@ export function EntityList({ onLoadSample }: EntityListProps) {
     }
   })() : { sections: [], entities: [] }
 
-  const handleAddEntity = () => {
-    const newEntity = {
-      NewEntity: {
-        properties: {
-          name: {
-            type: 'str',
-            description: 'Description',
-            unique: true,
-            required: true
-          }
-        }
-      }
-    }
-    
-    try {
-      const currentYaml = yamlContent || ''
-      let parsed:any = {}
-      
-      try {
-        parsed = yaml.load(currentYaml) || {}
-      } catch (e) {
-        console.error('Failed to parse current YAML:', e)
-        parsed = {}
-      }
-
-      if (!parsed.entities) {
-        parsed.entities = {}
-      }
-
-      parsed.entities = {
-        ...parsed.entities,
-        ...newEntity
-      }
-
-      const updatedYaml = yaml.dump(parsed, {
-        indent: 2,
-        lineWidth: -1,
-        quotingType: '"'
-      })
-      
-      updateFromYaml(updatedYaml)
-    } catch (e) {
-      console.error('Failed to add entity:', e)
-    }
-  }
-
   const toggleSection = (section: string) => {
     setExpandedSections(prev => {
       const next = new Set(prev)
@@ -87,59 +42,80 @@ export function EntityList({ onLoadSample }: EntityListProps) {
   }
 
   return (
-    <div className="space-y-4">
-      <div className="space-y-2">
-        {/* <Button variant="outline" className="w-full gap-2" onClick={handleAddEntity}>
-          <PlusCircle className="h-4 w-4" />
-          Add Entity
-        </Button> */}
-        <Button variant="outline" className="w-full gap-2" onClick={onLoadSample}>
-          <FileDown className="h-4 w-4" />
-          Load Sample
-        </Button>
-      </div>
-      
-      <div className="space-y-2">
-        <div className="font-medium text-sm text-gray-500 mb-2">Sections</div>
-        {sections.map(([name, items]) => (
-          <div key={name} className="space-y-1">
-            <div
-              className="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-100 cursor-pointer"
-              onClick={() => toggleSection(name)}
-            >
-              {expandedSections.has(name) ? (
-                <ChevronDown className="h-4 w-4" />
-              ) : (
-                <ChevronRight className="h-4 w-4" />
-              )}
-              <span className="text-sm">{name}</span>
-            </div>
-            {expandedSections.has(name) && Array.isArray(items) && (
-              <div className="ml-6 space-y-1">
-                {items.map((item: string) => (
-                  <div
-                    key={item}
-                    className="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-100"
-                  >
-                    <FolderTree className="h-4 w-4 text-blue-500" />
-                    <span className="text-sm">{item}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        ))}
-
-        <div className="font-medium text-sm text-gray-500 mt-4 mb-2">Entities</div>
-        {entities.map(([name]) => (
-          <div
-            key={name}
-            className="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-100 cursor-pointer"
+    <div className="space-y-5">
+      <div className="rounded-xl border border-white/15 bg-white/8 p-4 shadow-glass backdrop-blur-panel">
+        <p className="text-xs uppercase tracking-[0.2em] text-foreground/55">Quick actions</p>
+        <div className="mt-3 flex flex-col gap-2">
+          <Button
+            variant="outline"
+            className="glass-button w-full justify-center gap-2 border-white/20 text-sm text-foreground"
+            onClick={onLoadSample}
           >
-            <FolderTree className="h-4 w-4 text-blue-500" />
-            <span className="text-sm">{name}</span>
-          </div>
-        ))}
+            <FileDown className="h-4 w-4" />
+            Load sample ontology
+          </Button>
+        </div>
+      </div>
+
+      <div className="rounded-2xl border border-white/15 bg-white/8 p-4 shadow-glass backdrop-blur-panel">
+        <p className="mb-3 text-xs uppercase tracking-[0.2em] text-foreground/55">Sections</p>
+        <div className="space-y-2">
+          {sections.length === 0 && (
+            <p className="text-sm text-foreground/60">No sections available.</p>
+          )}
+          {sections.map(([name, items]) => (
+            <div key={name} className="space-y-1">
+              <button
+                type="button"
+                className="flex w-full items-center justify-between rounded-lg border border-transparent px-3 py-2 text-sm text-foreground/80 transition hover:border-primary/30 hover:bg-white/10"
+                onClick={() => toggleSection(name)}
+              >
+                <span className="flex items-center gap-2">
+                  {expandedSections.has(name) ? (
+                    <ChevronDown className="h-4 w-4 text-primary" />
+                  ) : (
+                    <ChevronRight className="h-4 w-4 text-foreground/50" />
+                  )}
+                  {name}
+                </span>
+                <Badge variant="glass" className="text-[0.6rem] uppercase tracking-[0.14em]">
+                  {Array.isArray(items) ? items.length : 0}
+                </Badge>
+              </button>
+              {expandedSections.has(name) && Array.isArray(items) && (
+                <div className="ml-6 space-y-1">
+                  {items.map((item: string) => (
+                    <div
+                      key={item}
+                      className="flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm text-foreground/75 transition hover:bg-white/10"
+                    >
+                      <FolderTree className="h-4 w-4 text-primary" />
+                      {item}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="rounded-2xl border border-white/15 bg-white/8 p-4 shadow-glass backdrop-blur-panel">
+        <p className="mb-3 text-xs uppercase tracking-[0.2em] text-foreground/55">Entities</p>
+        <div className="space-y-1">
+          {entities.length === 0 && (
+            <p className="text-sm text-foreground/60">No entities defined yet.</p>
+          )}
+          {entities.map(([name]) => (
+            <div
+              key={name}
+              className="flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm text-foreground/75 transition hover:bg-white/10"
+            >
+              <FolderTree className="h-4 w-4 text-primary" />
+              {name}
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   )

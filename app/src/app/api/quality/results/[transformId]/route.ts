@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getBackendAuthHeaders, isUnauthorizedError } from '@/lib/auth-utils'
+import { resolveRouteParams } from '@/app/api/_utils/route-helpers'
 
 export async function GET(
   request: Request,
@@ -8,7 +9,7 @@ export async function GET(
   try {
     const backendBaseUrl = process.env.BACKEND_API_URL || 'http://localhost:8000'
     const { headers } = await getBackendAuthHeaders({ 'Content-Type': 'application/json' })
-    const { transformId } = (context?.params ?? {}) as { transformId: string }
+    const { transformId } = await resolveRouteParams<{ transformId: string }>(context?.params)
 
     const response = await fetch(`${backendBaseUrl}/api/v1/quality/results/${transformId}`, {
       method: 'GET',
@@ -45,7 +46,7 @@ export async function DELETE(
   try {
     const backendBaseUrl = process.env.BACKEND_API_URL || 'http://localhost:8000'
     const { headers } = await getBackendAuthHeaders()
-    const { transformId } = (context?.params ?? {}) as { transformId: string }
+    const { transformId } = await resolveRouteParams<{ transformId: string }>(context?.params)
 
     const response = await fetch(`${backendBaseUrl}/api/v1/quality/results/${transformId}`, {
       method: 'DELETE',

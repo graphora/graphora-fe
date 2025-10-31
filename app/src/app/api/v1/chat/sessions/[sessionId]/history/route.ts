@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getBackendAuthContext, isUnauthorizedError } from '@/lib/auth-utils'
+import { resolveRouteParams } from '@/app/api/_utils/route-helpers'
 
 export async function GET(
   request: Request,
@@ -10,7 +11,7 @@ export async function GET(
     const backendBaseUrl = process.env.BACKEND_API_URL || 'http://localhost:8000'
     const { token } = await getBackendAuthContext()
 
-    const { sessionId } = (context?.params ?? {}) as { sessionId: string }
+    const { sessionId } = await resolveRouteParams<{ sessionId: string }>(context?.params)
     const { searchParams } = new URL(request.url)
     const limit = searchParams.get('limit') || '50'
 

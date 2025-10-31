@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getBackendAuthHeaders, isUnauthorizedError } from '@/lib/auth-utils'
+import { resolveRouteParams } from '@/app/api/_utils/route-helpers'
 
 export async function GET(
   _request: Request,
@@ -12,7 +13,7 @@ export async function GET(
       accept: 'application/json'
     })
 
-    const { ontologyId } = (context?.params ?? {}) as { ontologyId: string }
+    const { ontologyId } = await resolveRouteParams<{ ontologyId: string }>(context?.params)
 
     if (!ontologyId) {
       return NextResponse.json({ error: 'Ontology ID is required' }, { status: 400 })
@@ -81,7 +82,7 @@ export async function DELETE(
       accept: 'application/json'
     })
 
-    const { ontologyId } = (context?.params ?? {}) as { ontologyId: string }
+    const { ontologyId } = await resolveRouteParams<{ ontologyId: string }>(context?.params)
 
     if (!ontologyId) {
       return NextResponse.json({ error: 'Ontology ID is required' }, { status: 400 })
@@ -148,7 +149,7 @@ export async function PUT(
       accept: 'application/json'
     })
 
-    const { ontologyId } = (context?.params ?? {}) as { ontologyId: string }
+    const { ontologyId } = await resolveRouteParams<{ ontologyId: string }>(context?.params)
 
     if (!ontologyId) {
       return NextResponse.json({ error: 'Ontology ID is required' }, { status: 400 })

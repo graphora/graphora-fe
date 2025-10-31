@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getBackendAuthContext, isUnauthorizedError } from '@/lib/auth-utils'
+import { resolveRouteParams } from '@/app/api/_utils/route-helpers'
 
 export async function GET(
   _request: Request,
@@ -8,7 +9,7 @@ export async function GET(
   try {
     const backendBaseUrl = process.env.BACKEND_API_URL || 'http://localhost:8000'
     const { token } = await getBackendAuthContext()
-    const { provider } = (context?.params ?? {}) as { provider: string }
+    const { provider } = await resolveRouteParams<{ provider: string }>(context?.params)
 
     // Forward the request to the backend
     const backendUrl = `${backendBaseUrl}/api/v1/ai-models/${provider}`

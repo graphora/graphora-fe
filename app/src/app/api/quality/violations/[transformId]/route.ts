@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getBackendAuthHeaders, isUnauthorizedError } from '@/lib/auth-utils'
+import { resolveRouteParams } from '@/app/api/_utils/route-helpers'
 
 export async function GET(
   request: Request,
@@ -8,7 +9,7 @@ export async function GET(
   try {
     const backendBaseUrl = process.env.BACKEND_API_URL || 'http://localhost:8000'
     const { headers } = await getBackendAuthHeaders({ 'Content-Type': 'application/json' })
-    const { transformId } = (context?.params ?? {}) as { transformId: string }
+    const { transformId } = await resolveRouteParams<{ transformId: string }>(context?.params)
 
     const searchParams = new URL(request.url).searchParams
     const endpoint = `${backendBaseUrl}/api/v1/quality/violations/${transformId}?${searchParams.toString()}`

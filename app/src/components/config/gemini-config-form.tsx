@@ -5,10 +5,11 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Loader2, Eye, EyeOff, AlertCircle, CheckCircle, Sparkles, ExternalLink } from 'lucide-react'
-import { GeminiConfigRequest, AIModel, UserAIConfigDisplay } from '@/types/ai-config'
+import { GeminiConfigRequest, AIModel } from '@/types/ai-config'
 import { toast } from 'sonner'
 
 interface GeminiConfigFormProps {
@@ -28,25 +29,22 @@ export function GeminiConfigForm({ config, onChange, disabled, isExistingConfig 
     try {
       setLoadingModels(true)
       const response = await fetch('/api/ai-models/gemini')
-      
       if (!response.ok) {
         throw new Error('Failed to fetch available models')
       }
 
       const modelsData: AIModel[] = await response.json()
       setModels(modelsData)
-      
-      // Set the first available model as default if no model is currently selected
+
       if (modelsData.length > 0 && !config.default_model_name) {
         onChange({
           ...config,
-          default_model_name: modelsData[0].name
+          default_model_name: modelsData[0].name,
         })
       }
     } catch (error) {
       console.error('Error fetching models:', error)
       toast.error('Failed to load available models')
-      // Set empty array - we'll show an error message instead of fallback hardcoded models
       setModels([])
     } finally {
       setLoadingModels(false)
@@ -72,9 +70,6 @@ export function GeminiConfigForm({ config, onChange, disabled, isExistingConfig 
 
     try {
       setLoading(true)
-      
-      // For now, we'll just validate the API key format
-      // In the future, you could make an actual test call to Gemini API
       if (config.api_key.length < 10) {
         throw new Error('API key appears to be too short')
       }
@@ -89,153 +84,148 @@ export function GeminiConfigForm({ config, onChange, disabled, isExistingConfig 
   }
 
   return (
-    <div className="space-y-6">
-      {/* Security Information */}
-      <Card className="bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-800">
-        <CardContent className="pt-6">
-          <div className="flex items-start space-x-3">
-            <Sparkles className="h-3 w-3 text-green-600 dark:text-green-400 mt-0.5" />
-            <div className="space-y-2">
-              <p className="text-xs font-medium text-green-800 dark:text-green-200">
-                Enterprise-Grade Security
-              </p>
-              <p className="text-xs text-green-700 dark:text-green-300">
-                Your Gemini API key is protected with industry-standard AES encryption 
-                and key derivation. We follow OWASP security guidelines 
-                and never store your credentials in plaintext.
+    <Card variant="glass" className="border-white/15 bg-white/8 shadow-glass backdrop-blur-panel">
+      <CardHeader className="space-y-4 border-b border-white/10 pb-6">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <span className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-purple-500 to-indigo-500 text-white shadow-glass">
+              <Sparkles className="h-5 w-5" />
+            </span>
+            <div>
+              <CardTitle className="text-heading text-foreground">Gemini configuration</CardTitle>
+              <CardDescription className="text-sm text-foreground/70">
+                Securely connect Gemini for AI-powered enrichment and conflict resolution.
+              </CardDescription>
+            </div>
+          </div>
+          {isExistingConfig && (
+            <Badge variant="glass" className="uppercase tracking-[0.14em]">Configured</Badge>
+          )}
+        </div>
+      </CardHeader>
+
+      <CardContent className="space-y-6 p-6">
+        <div className="rounded-xl border border-white/15 bg-white/10 p-4 text-xs text-foreground/80 shadow-inner">
+          <div className="flex items-start gap-3">
+            <Sparkles className="h-4 w-4 text-primary" />
+            <div className="space-y-1.5">
+              <p className="font-medium uppercase tracking-[0.16em] text-foreground/70">Enterprise-grade security</p>
+              <p>
+                API keys are encrypted with hardware-backed keys before storage. Rotate keys any time—previous versions are wiped immediately.
               </p>
             </div>
           </div>
-        </CardContent>
-      </Card>
-
-      <div className="space-y-4">
-        <div className="space-y-2">
-          <Label htmlFor="api_key" className="text-sm font-medium">
-            API Key <span className="text-destructive">*</span>
-          </Label>
-          <div className="relative">
-            <Input
-              id="api_key"
-              type={showApiKey ? 'text' : 'password'}
-              placeholder={isExistingConfig ? 'Enter new API key to update' : 'Enter your Gemini API key'}
-              value={config.api_key}
-              onChange={(e) => handleChange('api_key', e.target.value)}
-              disabled={disabled}
-              className="pr-10"
-            />
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-              onClick={() => setShowApiKey(!showApiKey)}
-              disabled={disabled}
-            >
-              {showApiKey ? (
-                <EyeOff className="h-4 w-4" />
-              ) : (
-                <Eye className="h-4 w-4" />
-              )}
-            </Button>
-          </div>
-          <p className="text-xs text-muted-foreground">
-            Get your API key from{' '}
-            <a
-              href="https://aistudio.google.com/app/apikey"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-primary hover:underline inline-flex items-center gap-1"
-            >
-              Google AI Studio
-              <ExternalLink className="h-3 w-3" />
-            </a>
-          </p>
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="default_model" className="text-sm font-medium">
-            Default Model <span className="text-destructive">*</span>
-          </Label>
-          <Select
-            value={config.default_model_name}
-            onValueChange={(value) => handleChange('default_model_name', value)}
-            disabled={disabled || loadingModels || models.length === 0}
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="api_key">API key <span className="text-destructive">*</span></Label>
+            <div className="relative">
+              <Input
+                id="api_key"
+                type={showApiKey ? 'text' : 'password'}
+                placeholder={isExistingConfig ? 'Enter new API key to update' : 'Enter your Gemini API key'}
+                value={config.api_key}
+                onChange={(e) => handleChange('api_key', e.target.value)}
+                disabled={disabled}
+                className="bg-white/5 pr-12 text-foreground"
+              />
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="absolute right-1.5 top-1.5 h-7 w-7 rounded-full border border-white/20 bg-white/10 p-0 text-foreground/70 hover:bg-white/20"
+                onClick={() => setShowApiKey(!showApiKey)}
+                disabled={disabled}
+                aria-label={showApiKey ? 'Hide API key' : 'Show API key'}
+              >
+                {showApiKey ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+              </Button>
+            </div>
+            <p className="text-xs text-foreground/60">
+              Get your key from{' '}
+              <a
+                href="https://aistudio.google.com/app/apikey"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-primary hover:underline"
+              >
+                Google AI Studio
+                <ExternalLink className="h-3 w-3" />
+              </a>
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="default_model">Default model <span className="text-destructive">*</span></Label>
+            <Select
+              value={config.default_model_name}
+              onValueChange={(value) => handleChange('default_model_name', value)}
+              disabled={disabled || loadingModels || models.length === 0}
+            >
+              <SelectTrigger id="default_model" className="bg-white/5 text-foreground">
+                <SelectValue
+                  placeholder={
+                    loadingModels
+                      ? 'Loading models...'
+                      : models.length === 0
+                        ? 'No models available'
+                        : 'Select a model'
+                  }
+                />
+              </SelectTrigger>
+              <SelectContent>
+                {models.map((model) => (
+                  <SelectItem key={model.name} value={model.name}>
+                    <div className="flex items-center gap-2">
+                      <Sparkles className="h-4 w-4 text-primary" />
+                      <span>{model.display_name}</span>
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {!loadingModels && models.length === 0 && (
+              <Alert className="mt-2 border-warning/40 bg-warning/10 text-warning" variant="default">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                  No models are currently available. Please contact support or try again later.
+                </AlertDescription>
+              </Alert>
+            )}
+            <p className="text-xs text-foreground/60">This model powers document enrichment, conflict resolution, and schema suggestions.</p>
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-3 sm:flex-row">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={testConfiguration}
+            disabled={disabled || loading || !config.api_key || !config.default_model_name || models.length === 0}
+            className="border-white/20 text-foreground hover:bg-white/10 sm:flex-1"
           >
-            <SelectTrigger id="default_model">
-              <SelectValue placeholder={
-                loadingModels 
-                  ? 'Loading models...' 
-                  : models.length === 0 
-                    ? 'No models available' 
-                    : 'Select a model'
-              } />
-            </SelectTrigger>
-            <SelectContent>
-              {models.map((model) => (
-                <SelectItem key={model.name} value={model.name}>
-                  <div className="flex items-center space-x-2">
-                    <Sparkles className="h-4 w-4 text-primary" />
-                    <span>{model.display_name}</span>
-                  </div>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          {!loadingModels && models.length === 0 && (
-            <Alert className="mt-2" variant="destructive">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>
-                No models are currently available. Please contact support or try again later.
-              </AlertDescription>
-            </Alert>
-          )}
-          <p className="text-xs text-muted-foreground">
-            This model will be used by default for AI operations. You can change it later.
+            {loading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Testing...
+              </>
+            ) : (
+              <>
+                <CheckCircle className="mr-2 h-4 w-4" />
+                Test configuration
+              </>
+            )}
+          </Button>
+        </div>
+
+        <div className="rounded-xl border border-white/12 bg-white/8 p-4 text-sm text-foreground/80 shadow-inner">
+          <p className="font-medium text-foreground">About Gemini integration</p>
+          <p className="mt-2 text-foreground/70">
+            Gemini enhances document ingestion with semantic understanding, auto-generated embeddings, and smart conflict suggestions. Configure once to unlock AI assistance across workflows.
           </p>
         </div>
-      </div>
-
-      <div className="flex space-x-3">
-        <Button
-          type="button"
-          variant="outline"
-          onClick={testConfiguration}
-          disabled={disabled || loading || !config.api_key || !config.default_model_name || models.length === 0}
-          className="flex-1"
-        >
-          {loading ? (
-            <>
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              Testing...
-            </>
-          ) : (
-            <>
-              <CheckCircle className="h-4 w-4 mr-2" />
-              Test Configuration
-            </>
-          )}
-        </Button>
-      </div>
-
-      {/* Information Card */}
-      <Card className="bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800">
-        <CardContent className="pt-6">
-          <div className="flex items-start space-x-3">
-            <Sparkles className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5" />
-            <div className="space-y-2">
-              <p className="text-sm font-medium text-blue-800 dark:text-blue-200">
-                About Gemini Integration
-              </p>
-              <p className="text-sm text-blue-700 dark:text-blue-300">
-                Gemini AI will be used for intelligent document processing, entity extraction, 
-                and conflict resolution in your knowledge graphs.
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-    </div>
+      </CardContent>
+    </Card>
   )
-} 
+}

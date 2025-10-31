@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getBackendAuthHeaders, isUnauthorizedError } from '@/lib/auth-utils'
+import { resolveRouteParams } from '@/app/api/_utils/route-helpers'
 
 export async function GET(
   request: Request,
@@ -9,7 +10,7 @@ export async function GET(
     const backendBaseUrl = process.env.BACKEND_API_URL || 'http://localhost:8000'
     const { headers } = await getBackendAuthHeaders({ accept: 'application/json' })
 
-    const { id } = (context?.params ?? {}) as { id: string }
+    const { id } = await resolveRouteParams<{ id: string }>(context?.params)
     
     const response = await fetch(
       `${backendBaseUrl}/api/v1/transform/status/${id}`,

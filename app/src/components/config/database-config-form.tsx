@@ -5,10 +5,12 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Loader2, Database, AlertCircle, CheckCircle, Eye, EyeOff } from 'lucide-react'
 import { DatabaseConfig, ConnectionTestResponse } from '@/types/config'
 import { toast } from 'sonner'
+import { cn } from '@/lib/utils'
 
 interface DatabaseConfigFormProps {
   title: string
@@ -29,7 +31,6 @@ export function DatabaseConfigForm({ title, description, config, onChange, disab
       ...config,
       [field]: value,
     })
-    // Clear test result when config changes
     if (testResult) {
       setTestResult(null)
     }
@@ -87,40 +88,59 @@ export function DatabaseConfigForm({ title, description, config, onChange, disab
   const isFormValid = config.uri && config.username && (isExistingConfig || config.password)
 
   return (
-    <Card className="w-full">
-      <CardHeader>
-        {/* <CardTitle className="flex items-center gap-2">
-          <Database className="h-5 w-5" />
-          {title}
-        </CardTitle> */}
-        <CardDescription>{description}</CardDescription>
+    <Card variant="glass" className="w-full border-white/15 bg-white/8 shadow-glass backdrop-blur-panel">
+      <CardHeader className="space-y-4 border-b border-white/10 pb-6">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <span className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-primary/70 to-primary/40 text-white shadow-glass">
+              <Database className="h-5 w-5" />
+            </span>
+            <div>
+              <CardTitle className="text-heading text-foreground">{title}</CardTitle>
+              <CardDescription className="text-sm text-foreground/70">{description}</CardDescription>
+            </div>
+          </div>
+          {isExistingConfig && (
+            <Badge variant="glass" className="uppercase tracking-[0.14em]">Configured</Badge>
+          )}
+        </div>
       </CardHeader>
-      <CardContent className="space-y-4">
-        {/* Security Information */}
-        <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800">
-          <div className="flex items-start space-x-2">
-            <Database className="h-3 w-3 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
-            <div className="text-xs space-y-1">
-              <p className="font-medium text-blue-800 dark:text-blue-200">
-                Secure Credential Storage
-              </p>
-              <p className="text-blue-700 dark:text-blue-300">
-                Your database credentials are encrypted using industry-standard AES encryption 
-                with key derivation before being stored. Your passwords are never stored in plaintext.
+      <CardContent className="space-y-6 p-6">
+        <div className="rounded-xl border border-white/15 bg-white/10 p-4 text-xs text-foreground/80 shadow-inner">
+          <div className="flex items-start gap-3">
+            <Database className="h-4 w-4 text-primary" />
+            <div className="space-y-1.5">
+              <p className="font-medium uppercase tracking-[0.16em] text-foreground/70">Secure credential storage</p>
+              <p>
+                Credentials are encrypted using AES with per-user keys before they leave the browser. Passwords are never stored in plain text and can be rotated safely at any time.
               </p>
             </div>
           </div>
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor={`${title.toLowerCase()}-name`}>Database Name</Label>
-          <Input
-            id={`${title.toLowerCase()}-name`}
-            placeholder="e.g., Staging Neo4j, Production Neo4j"
-            value={config.name || ''}
-            onChange={(e) => handleChange('name', e.target.value)}
-            disabled={disabled}
-          />
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="space-y-2">
+            <Label htmlFor={`${title.toLowerCase()}-name`}>Database name</Label>
+            <Input
+              id={`${title.toLowerCase()}-name`}
+              placeholder="e.g., Staging Neo4j"
+              value={config.name || ''}
+              onChange={(e) => handleChange('name', e.target.value)}
+              disabled={disabled}
+              className="bg-white/5 text-foreground"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor={`${title.toLowerCase()}-username`}>Username</Label>
+            <Input
+              id={`${title.toLowerCase()}-username`}
+              placeholder="neo4j"
+              value={config.username || ''}
+              onChange={(e) => handleChange('username', e.target.value)}
+              disabled={disabled}
+              className="bg-white/5 text-foreground"
+            />
+          </div>
         </div>
 
         <div className="space-y-2">
@@ -131,21 +151,9 @@ export function DatabaseConfigForm({ title, description, config, onChange, disab
             value={config.uri || ''}
             onChange={(e) => handleChange('uri', e.target.value)}
             disabled={disabled}
+            className="bg-white/5 text-foreground"
           />
-          <p className="text-xs text-gray-500">
-            Use neo4j:// for Neo4j 4.0+ or bolt:// for older versions
-          </p>
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor={`${title.toLowerCase()}-username`}>Username</Label>
-          <Input
-            id={`${title.toLowerCase()}-username`}
-            placeholder="neo4j"
-            value={config.username || ''}
-            onChange={(e) => handleChange('username', e.target.value)}
-            disabled={disabled}
-          />
+          <p className="text-xs text-foreground/60">Use neo4j:// for Aura or clustered deployments, bolt:// for standalone instances.</p>
         </div>
 
         <div className="space-y-2">
@@ -154,44 +162,39 @@ export function DatabaseConfigForm({ title, description, config, onChange, disab
             <Input
               id={`${title.toLowerCase()}-password`}
               type={showPassword ? 'text' : 'password'}
-              // placeholder={isExistingConfig ? "Leave blank to keep existing password" : "password"}
-              // value={isExistingConfig ? '' : (config.password || '')}
               onChange={(e) => handleChange('password', e.target.value)}
               disabled={disabled}
-              className="pr-10"
+              className="bg-white/5 pr-12 text-foreground"
             />
             <Button
               type="button"
               variant="ghost"
               size="sm"
-              className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+              className="absolute right-1.5 top-1.5 h-7 w-7 rounded-full border border-white/20 bg-white/10 p-0 text-foreground/70 hover:bg-white/20"
               onClick={() => setShowPassword(!showPassword)}
               disabled={disabled}
+              aria-label={showPassword ? 'Hide password' : 'Show password'}
             >
-              {showPassword ? (
-                <EyeOff className="h-4 w-4" />
-              ) : (
-                <Eye className="h-4 w-4" />
-              )}
+              {showPassword ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
             </Button>
           </div>
-          {/* {isExistingConfig && (
-            <p className="text-xs text-gray-500">
-              Password is already configured. Only fill this if you want to update it.
-            </p>
-          )} */}
         </div>
 
         {testResult && (
-          <Alert className={testResult.success ? "border-green-200 bg-green-50" : "border-red-200 bg-red-50"}>
-            {testResult.success ? (
-              <CheckCircle className="h-4 w-4 text-green-600" />
-            ) : (
-              <AlertCircle className="h-4 w-4 text-red-600" />
+          <Alert
+            className={cn(
+              'border-white/20 bg-white/10 text-sm',
+              testResult.success ? 'text-success' : 'text-destructive'
             )}
-            <AlertDescription className={testResult.success ? "text-green-800" : "text-red-800"}>
+          >
+            {testResult.success ? (
+              <CheckCircle className="h-4 w-4 text-success" />
+            ) : (
+              <AlertCircle className="h-4 w-4 text-destructive" />
+            )}
+            <AlertDescription>
               {testResult.message}
-              {testResult.error && ` - ${testResult.error}`}
+              {testResult.error && ` – ${testResult.error}`}
             </AlertDescription>
           </Alert>
         )}
@@ -200,18 +203,18 @@ export function DatabaseConfigForm({ title, description, config, onChange, disab
           variant="outline"
           onClick={testConnection}
           disabled={disabled || testing || !isFormValid}
-          className="w-full"
+          className="border-white/20 text-foreground hover:bg-white/10"
         >
           {testing ? (
             <>
-              <Loader2 className="h-4 w-4 animate-spin mr-2" />
-              Testing Connection...
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Testing connection...
             </>
           ) : (
-            'Test Connection'
+            'Test connection'
           )}
         </Button>
       </CardContent>
     </Card>
   )
-} 
+}

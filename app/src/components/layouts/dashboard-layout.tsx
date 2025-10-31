@@ -20,16 +20,23 @@ export function DashboardLayout({
 }: DashboardLayoutProps) {
   return (
     <EnhancedConfigCheck showSetupModal={true} lightweight={true} requireDbConfig={false} requireAiConfig={false}>
-      <div className={cn("flex h-screen bg-background", className)}>
+      <div className={cn(
+        "relative flex min-h-screen bg-gradient-to-br from-background via-background to-muted/20",
+        className
+      )}>
+        <div className="pointer-events-none absolute inset-0 opacity-60 [background-image:radial-gradient(circle_at_0%_0%,rgba(59,130,246,0.12),transparent_55%),radial-gradient(circle_at_100%_0%,rgba(129,140,248,0.1),transparent_45%),radial-gradient(circle_at_50%_100%,rgba(14,165,233,0.12),transparent_50%)]" aria-hidden />
+
         {showSidebar && (
           <SidebarNavigation
             defaultCollapsed={sidebarCollapsed}
-            className="flex-shrink-0"
+            className="relative z-10 flex-shrink-0"
           />
         )}
 
-        <div className="flex-1 flex flex-col overflow-hidden">
-          {children}
+        <div className="relative z-10 flex-1 overflow-hidden">
+          <div className="flex min-h-screen flex-col bg-background/92 backdrop-blur-sm">
+            {children}
+          </div>
         </div>
       </div>
     </EnhancedConfigCheck>

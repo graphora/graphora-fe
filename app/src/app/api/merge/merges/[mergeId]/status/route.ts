@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getBackendAuthContext, isUnauthorizedError } from '@/lib/auth-utils';
+import { resolveRouteParams } from '@/app/api/_utils/route-helpers'
 
 export async function GET(
   request: Request,
@@ -9,7 +10,7 @@ export async function GET(
     const backendBaseUrl = process.env.BACKEND_API_URL || 'http://localhost:8000';
     const { token } = await getBackendAuthContext();
 
-    const { mergeId } = (context?.params ?? {}) as { mergeId: string };
+    const { mergeId } = await resolveRouteParams<{ mergeId: string }>(context?.params)
 
     if (!mergeId) {
       return NextResponse.json(
