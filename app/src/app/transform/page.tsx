@@ -940,7 +940,7 @@ function TransformPageContent() {
         <div className="p-6">
           <div className="grid grid-cols-4 gap-6 h-full">
             {/* Upload Panel - 25% width */}
-            <div className="col-span-1 space-y-6">
+            <div className="col-span-1 space-y-content">
               {/* File Upload Section */}
               <div className="enhanced-card">
                 <div className="enhanced-card-header">
@@ -1040,7 +1040,7 @@ function TransformPageContent() {
                 <div className="enhanced-card-content h-[600px] relative">
                   {isProcessing ? (
                     <div className="h-full flex items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-slate-800 dark:via-slate-700 dark:to-slate-900">
-                      <div className="text-center space-y-6 max-w-md">
+                      <div className="text-center space-y-content max-w-md">
                         <div className="w-20 h-20 bg-white dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto shadow-xl border-2 border-blue-200 dark:border-slate-600">
                           <Loader2 className="h-10 w-10 animate-spin text-blue-600 dark:text-blue-400" />
                         </div>

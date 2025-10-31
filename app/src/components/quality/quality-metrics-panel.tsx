@@ -16,6 +16,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
 import { type QualityMetrics } from '@/types/quality'
+import { cn } from '@/lib/utils'
 
 interface QualityMetricsPanelProps {
   metrics: QualityMetrics;
@@ -50,10 +51,10 @@ export function QualityMetricsPanel({
   };
 
   return (
-    <div className={`space-y-6 ${className}`}>
+    <div className={cn('space-y-section', className)}>
       {/* Overview Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-content">
-        <Card>
+        <Card variant="glass">
           <CardContent className="p-6">
             <div className="flex items-center space-x-2">
               <Database className="h-8 w-8 text-info" />
@@ -65,7 +66,7 @@ export function QualityMetricsPanel({
           </CardContent>
         </Card>
 
-        <Card>
+        <Card variant="glass">
           <CardContent className="p-6">
             <div className="flex items-center space-x-2">
               <Network className="h-8 w-8 text-primary" />
@@ -77,7 +78,7 @@ export function QualityMetricsPanel({
           </CardContent>
         </Card>
 
-        <Card>
+        <Card variant="glass">
           <CardContent className="p-6">
             <div className="flex items-center space-x-2">
               <Target className="h-8 w-8 text-success" />
@@ -89,7 +90,7 @@ export function QualityMetricsPanel({
           </CardContent>
         </Card>
 
-        <Card>
+        <Card variant="glass">
           <CardContent className="p-6">
             <div className="flex items-center space-x-2">
               <AlertTriangle className="h-8 w-8 text-warning" />
@@ -103,17 +104,17 @@ export function QualityMetricsPanel({
       </div>
 
       {/* Violation Rates */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center">
-            <TrendingUp className="h-5 w-5 mr-2" />
+      <Card variant="glass">
+        <CardHeader className="p-6 pb-3">
+          <CardTitle className="flex items-center gap-2 text-heading">
+            <TrendingUp className="h-5 w-5 text-info" />
             Violation Rates
           </CardTitle>
           <CardDescription>
             Percentage of entities and relationships with quality issues
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-6">
+        <CardContent className="p-6 space-y-content">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-content">
             <div className="space-y-2">
               <div className="flex items-center justify-between">
@@ -167,17 +168,17 @@ export function QualityMetricsPanel({
       </Card>
 
       {/* Confidence Scores */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center">
-            <CheckCircle className="h-5 w-5 mr-2" />
+      <Card variant="glass">
+        <CardHeader className="p-6 pb-3">
+          <CardTitle className="flex items-center gap-2 text-heading">
+            <CheckCircle className="h-5 w-5 text-success" />
             Confidence Scores
           </CardTitle>
           <CardDescription>
             Average confidence levels for extracted data
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-6">
+        <CardContent className="p-6 space-y-content">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-content">
             <div className="space-y-2">
               <div className="flex items-center justify-between">
@@ -229,18 +230,18 @@ export function QualityMetricsPanel({
       </Card>
 
       {/* Property Completeness & Coverage */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-content">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <Target className="h-5 w-5 mr-2" />
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-section">
+        <Card variant="glass">
+          <CardHeader className="p-6 pb-content-sm">
+            <CardTitle className="flex items-center gap-2 text-heading">
+              <Target className="h-5 w-5 text-success" />
               Property Completeness
             </CardTitle>
             <CardDescription>
               Percentage of required properties that are populated
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="p-6 pt-0 space-y-content">
             <div className="text-center">
               <div className={`text-display-lg font-semibold ${getCoverageColor(metrics.property_completeness_rate)}`}>
                 {Math.round(metrics.property_completeness_rate)}%
@@ -259,17 +260,17 @@ export function QualityMetricsPanel({
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <Users className="h-5 w-5 mr-2" />
+        <Card variant="glass">
+          <CardHeader className="p-6 pb-content-sm">
+            <CardTitle className="flex items-center gap-2 text-heading">
+              <Users className="h-5 w-5 text-info" />
               Entity Type Coverage
             </CardTitle>
             <CardDescription className="text-body-sm">
               Distribution of entities across different types
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-3">
+          <CardContent className="p-6 pt-0 space-y-content">
             {Object.entries(metrics.entity_type_coverage).map(([entityType, count]) => {
               const percentage = (count / metrics.total_entities) * 100;
               return (
@@ -278,7 +279,7 @@ export function QualityMetricsPanel({
                     <span className="text-body-sm font-medium">{entityType}</span>
                     <div className="flex items-center space-x-2">
                       <span className="text-body-sm text-muted-foreground">{count}</span>
-                      <Badge variant="outline" className="text-body-xs">
+                      <Badge variant="neutral" className="text-body-xs">
                         {Math.round(percentage)}%
                       </Badge>
                     </div>
@@ -293,20 +294,20 @@ export function QualityMetricsPanel({
 
       {/* Entity Quality Summary */}
       {Object.keys(entityQualitySummary).length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <BarChart3 className="h-5 w-5 mr-2" />
+        <Card variant="glass">
+          <CardHeader className="p-6 pb-content-sm">
+            <CardTitle className="flex items-center gap-2 text-heading">
+              <BarChart3 className="h-5 w-5 text-primary" />
               Entity Quality Summary
             </CardTitle>
             <CardDescription className="text-body-sm">
               Quality breakdown by entity type and metric
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-6 pt-0">
             <div className="space-y-content">
-              {Object.entries(entityQualitySummary).map(([entityType, summary]) => (
-                <div key={entityType} className="border rounded-lg p-4">
+                {Object.entries(entityQualitySummary).map(([entityType, summary]) => (
+                <div key={entityType} className="border border-border/60 rounded-[var(--border-radius)] p-4 bg-white/5 backdrop-blur-sm">
                   <h4 className="text-heading-sm font-semibold mb-3">{entityType}</h4>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-content text-body-sm">
                     {Object.entries(summary).map(([metric, value]) => (

@@ -140,8 +140,8 @@ export function QualityActionButtons({
   const warningViolations = qualityResults.violations.filter(v => v.severity === 'warning').length;
 
   return (
-    <Card className={className}>
-      <CardHeader>
+    <Card variant="glass" className={className}>
+      <CardHeader className="p-6 pb-3">
         <CardTitle className="flex items-center">
           <MessageSquare className="h-5 w-5 mr-2" />
           Quality Review Actions
@@ -150,7 +150,7 @@ export function QualityActionButtons({
           Review the quality results and decide whether to proceed with merge
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-6">
+      <CardContent className="p-6 space-y-section">
         {/* Recommendation Alert */}
         <Alert 
           variant={toneVariant[recommendation.tone]}
@@ -163,26 +163,26 @@ export function QualityActionButtons({
         </Alert>
 
         {/* Summary Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-content">
-          <div className="text-center p-4 rounded-lg border border-border bg-card">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-content-lg">
+          <div className="text-center p-4 rounded-[var(--border-radius)] border border-border/60 bg-white/5 backdrop-blur-sm">
             <div className="text-display-sm font-semibold text-info">
               {Math.round(qualityResults.overall_score)}
             </div>
             <div className="text-body-sm text-muted-foreground">Quality Score</div>
           </div>
-          <div className="text-center p-4 rounded-lg border border-border bg-card">
+          <div className="text-center p-4 rounded-[var(--border-radius)] border border-border/60 bg-white/5 backdrop-blur-sm">
             <div className="text-display-sm font-semibold text-destructive">
               {errorViolations}
             </div>
             <div className="text-body-sm text-muted-foreground">Errors</div>
           </div>
-          <div className="text-center p-4 rounded-lg border border-border bg-card">
+          <div className="text-center p-4 rounded-[var(--border-radius)] border border-border/60 bg-white/5 backdrop-blur-sm">
             <div className="text-display-sm font-semibold text-warning">
               {warningViolations}
             </div>
             <div className="text-body-sm text-muted-foreground">Warnings</div>
           </div>
-          <div className="text-center p-4 rounded-lg border border-border bg-card">
+          <div className="text-center p-4 rounded-[var(--border-radius)] border border-border/60 bg-white/5 backdrop-blur-sm">
             <Badge 
               variant="outline" 
               className={cn('text-lg px-3 py-1', gradeBadgeClasses[qualityResults.grade] ?? gradeBadgeClasses.default)}
@@ -193,14 +193,15 @@ export function QualityActionButtons({
         </div>
 
         {/* Action Buttons */}
-        <div className="flex justify-center gap-4">
+        <div className="flex flex-wrap justify-center gap-content">
           {/* Approve Dialog */}
           <Dialog open={approveDialogOpen} onOpenChange={setApproveDialogOpen}>
           <DialogTrigger asChild>
             <Button 
-              variant="success" 
+              variant="glass" 
               size="lg"
               disabled={isApproving}
+              className="px-6"
             >
               <CheckCircle className="h-5 w-5 mr-2" />
               Approve & Continue
@@ -242,8 +243,8 @@ export function QualityActionButtons({
                 >
                   Cancel
                 </Button>
-              <Button 
-                variant="success"
+                <Button 
+                  variant="success"
                 onClick={handleApprove}
                 disabled={isApproving}
               >
@@ -270,6 +271,7 @@ export function QualityActionButtons({
                 variant="destructive" 
                 size="lg"
                 disabled={isRejecting}
+                className="px-6"
               >
                 <XCircle className="h-5 w-5 mr-2" />
                 Reject & Stop Process

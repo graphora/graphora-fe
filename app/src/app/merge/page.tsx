@@ -835,8 +835,8 @@ function MergePageContent() {
 
       {/* Main Content */}
       <div className="flex-1 overflow-auto">
-        <div className="max-w-7xl mx-auto p-6 space-y-6">
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+        <div className="mx-auto max-w-7xl px-section-inline py-section space-y-section">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-content">
             <div className="flex items-center justify-between gap-4">
               <TabsList className="w-full">
                 <TabsTrigger value="progress" className="flex-1">
@@ -907,7 +907,7 @@ function MergePageContent() {
                 )}
               </div>
             </div>
-            <TabsContent value="progress" className="space-y-6">
+            <TabsContent value="progress" className="space-y-content">
               <div className="enhanced-card">
                 <div className="enhanced-card-header">
                   <h3 className="text-lg font-semibold text-foreground">Merge Progress</h3>
@@ -917,7 +917,7 @@ function MergePageContent() {
                 </div>
                 <div className="enhanced-card-content">
                   {currentMergeId ? (
-                    <div className="space-y-6">
+                    <div className="space-y-content">
                       <MergeProgress
                         mergeId={currentMergeId || ''}
                         sessionId={sessionId}
@@ -980,7 +980,7 @@ function MergePageContent() {
               </div>
             </TabsContent>
             
-            <TabsContent value="conflicts" className="space-y-6">
+            <TabsContent value="conflicts" className="space-y-content">
               <div className="enhanced-card">
                 <div className="enhanced-card-header">
                   <h3 className="text-lg font-semibold text-foreground">Conflict Resolution</h3>
@@ -1013,7 +1013,7 @@ function MergePageContent() {
               </div>
             </TabsContent>
             
-            <TabsContent value="visualization" className="space-y-6">
+            <TabsContent value="visualization" className="space-y-content">
               <div className="enhanced-card">
                 <div className="enhanced-card-header">
                   <h3 className="text-lg font-semibold text-foreground">Merge Visualization</h3>

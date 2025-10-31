@@ -47,18 +47,18 @@ export function QualityScoreCard({ qualityResults, className = '' }: QualityScor
   };
 
   return (
-    <Card className={className}>
-      <CardHeader>
-        <CardTitle className="flex items-center">
-          <Trophy className="h-5 w-5 mr-2" />
+    <Card variant="glass" className={className}>
+      <CardHeader className="p-6 pb-content-sm">
+        <CardTitle className="flex items-center gap-2">
+          <Trophy className="h-5 w-5 text-primary" />
           Quality Score
         </CardTitle>
         <CardDescription>
           Overall data quality assessment for this extraction
         </CardDescription>
       </CardHeader>
-      <CardContent>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <CardContent className="p-6 pt-0">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-content-lg">
           {/* Score Display */}
           <div className="text-center space-y-content-sm">
             <div className="relative inline-flex items-center justify-center">
@@ -107,7 +107,7 @@ export function QualityScoreCard({ qualityResults, className = '' }: QualityScor
           </div>
 
           {/* Key Metrics */}
-          <div className="space-y-4">
+          <div className="space-y-content">
             <div>
               <div className="flex items-center justify-between text-body-sm">
                 <span className="text-muted-foreground">Entities Processed</span>
@@ -147,7 +147,7 @@ export function QualityScoreCard({ qualityResults, className = '' }: QualityScor
           </div>
 
           {/* Status & Review */}
-          <div className="space-y-4">
+          <div className="space-y-content">
             <div className="flex items-center space-x-2">
               <Target className="h-4 w-4 text-muted-foreground" />
               <span className="text-body-sm font-medium">Review Status</span>
@@ -156,7 +156,7 @@ export function QualityScoreCard({ qualityResults, className = '' }: QualityScor
             {qualityResults.requires_review ? (
               <div className="p-4 rounded-lg border border-warning/30 bg-warning/10">
                 <div className="flex items-center space-x-2 mb-2">
-                  <div className="w-2 h-2 rounded-full bg-warning"></div>
+                  <div className="w-2.5 h-2.5 rounded-full bg-warning"></div>
                   <span className="text-body-sm font-medium text-warning">Manual Review Required</span>
                 </div>
                 <p className="text-body-xs text-warning/80">
@@ -166,7 +166,7 @@ export function QualityScoreCard({ qualityResults, className = '' }: QualityScor
             ) : (
               <div className="p-4 rounded-lg border border-success/30 bg-success/10">
                 <div className="flex items-center space-x-2 mb-2">
-                  <div className="w-2 h-2 rounded-full bg-success"></div>
+                  <div className="w-2.5 h-2.5 rounded-full bg-success"></div>
                   <span className="text-body-sm font-medium text-success">Ready for Auto-Approval</span>
                 </div>
                 <p className="text-body-xs text-success/90">

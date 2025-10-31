@@ -23,6 +23,7 @@ import { QualityMetricsPanel } from './quality-metrics-panel'
 import { QualityActionButtons } from './quality-action-buttons'
 import { type QualityResults, type QualityViolation } from '@/types/quality'
 import { qualityApi } from '@/lib/quality-api'
+import { cn } from '@/lib/utils'
 
 interface QualityDashboardProps {
   transformId: string;
@@ -109,10 +110,10 @@ export function QualityDashboard({
 
   if (loading) {
     return (
-      <div className={`space-y-6 ${className}`}>
-        <Card>
+      <div className={cn('space-y-section', className)}>
+        <Card variant="glass">
           <CardContent className="flex items-center justify-center py-12">
-            <div className="text-center space-y-4">
+            <div className="text-center space-y-content-sm">
               <Loader2 className="h-8 w-8 animate-spin mx-auto text-muted-foreground" />
               <p className="text-muted-foreground">Loading quality validation results...</p>
             </div>
@@ -124,18 +125,18 @@ export function QualityDashboard({
 
   if (error) {
     return (
-      <div className={`space-y-6 ${className}`}>
+      <div className={cn('space-y-section', className)}>
         <Alert variant="destructive">
           <XCircle className="h-4 w-4" />
           <AlertDescription>
             {error}
           </AlertDescription>
         </Alert>
-        <Card>
+        <Card variant="glass">
           <CardContent className="flex items-center justify-center py-12">
-            <div className="text-center space-y-4">
+            <div className="text-center space-y-content-sm">
               <p className="text-muted-foreground">Quality validation results unavailable</p>
-              <Button onClick={() => fetchQualityResults()} variant="outline">
+              <Button onClick={() => fetchQualityResults()} variant="glass">
                 <RefreshCw className="h-4 w-4 mr-2" />
                 Retry
               </Button>
@@ -148,7 +149,7 @@ export function QualityDashboard({
 
   if (!qualityResults) {
     return (
-      <div className={`space-y-6 ${className}`}>
+      <div className={cn('space-y-section', className)}>
         <Alert>
           <Info className="h-4 w-4" />
           <AlertDescription>
@@ -182,9 +183,9 @@ export function QualityDashboard({
   };
 
   return (
-    <div className={`space-y-6 ${className}`}>
+    <div className={cn('space-y-section', className)}>
       {/* Header with refresh button */}
-      <div className="flex items-center justify-between pb-content border-b border-border">
+      <div className="flex flex-wrap items-center justify-between gap-content pb-content-sm border-b border-border/70">
         <div className="flex items-center space-x-3">
           <div className="w-8 h-8 bg-success/15 rounded-full flex items-center justify-center">
             <CheckCircle className="h-4 w-4 text-success" />
@@ -198,10 +199,10 @@ export function QualityDashboard({
         </div>
         <Button 
           onClick={() => fetchQualityResults(true)} 
-          variant="outline"
+          variant="glass"
           size="sm"
           disabled={refreshing}
-          className="text-muted-foreground border-border hover:bg-muted"
+          className="px-4"
         >
           <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
           Refresh
@@ -209,13 +210,13 @@ export function QualityDashboard({
       </div>
 
       {/* Quality Score Card */}
-      <QualityScoreCard qualityResults={qualityResults} />
+      <QualityScoreCard qualityResults={qualityResults} className="shadow-soft" />
 
       {/* Violations Summary */}
       {qualityResults.violations.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center text-heading">
+        <Card variant="glass">
+          <CardHeader className="p-6 pb-content-sm">
+            <CardTitle className="flex items-center text-heading gap-2">
               <AlertTriangle className="h-5 w-5 mr-2" />
               Violations Summary
             </CardTitle>
@@ -223,13 +224,16 @@ export function QualityDashboard({
               {qualityResults.violations.length} quality issues found
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-content">
+          <CardContent className="p-6 pt-0">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-content-lg">
               {Object.entries(qualityResults.violations_by_severity).map(([severity, count]) => (
-                <div key={severity} className="flex items-center space-x-3 p-3 rounded-lg border border-border bg-card">
+                <div
+                  key={severity}
+                  className="flex items-center gap-3 rounded-[var(--border-radius)] border border-border/60 bg-white/5 px-4 py-3 backdrop-blur-sm"
+                >
                   {getSeverityIcon(severity)}
                   <div>
-                    <p className="text-body-sm font-medium capitalize text-foreground">{severity}</p>
+                    <p className="text-body-sm font-medium capitalize text-foreground/90">{severity}</p>
                     <p className="text-display-sm font-semibold text-foreground">{count}</p>
                   </div>
                 </div>
@@ -240,19 +244,19 @@ export function QualityDashboard({
       )}
 
       {/* Detailed Tabs */}
-      <Tabs defaultValue="violations" className="space-y-6">
-        <div className="border-b border-border">
-          <TabsList className="w-full justify-start bg-transparent border-b-0 p-0">
+      <Tabs defaultValue="violations" className="space-y-content">
+        <div className="border-b border-border/60">
+          <TabsList className="w-full justify-start bg-transparent border-b-0">
             <TabsTrigger 
               value="violations" 
-              className="flex items-center px-6 py-3 border-b-2 border-transparent data-[state=active]:border-blue-500 data-[state=active]:bg-transparent data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 rounded-none text-muted-foreground data-[state=active]:text-foreground"
+              className="flex items-center"
             >
               <FileText className="h-4 w-4 mr-2" />
               Issues ({qualityResults.violations.length})
             </TabsTrigger>
             <TabsTrigger 
               value="metrics" 
-              className="flex items-center px-6 py-3 border-b-2 border-transparent data-[state=active]:border-blue-500 data-[state=active]:bg-transparent data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 rounded-none text-muted-foreground data-[state=active]:text-foreground"
+              className="flex items-center"
             >
               <BarChart3 className="h-4 w-4 mr-2" />
               Analytics
@@ -260,14 +264,14 @@ export function QualityDashboard({
           </TabsList>
         </div>
 
-        <TabsContent value="violations" className="space-y-4">
+        <TabsContent value="violations" className="space-y-content">
           <ViolationsTable 
             violations={qualityResults.violations}
             transformId={transformId}
           />
         </TabsContent>
 
-        <TabsContent value="metrics" className="space-y-4">
+        <TabsContent value="metrics" className="space-y-content">
           <QualityMetricsPanel 
             metrics={qualityResults.metrics}
             entityQualitySummary={qualityResults.entity_quality_summary}

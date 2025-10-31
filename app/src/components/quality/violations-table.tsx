@@ -112,9 +112,9 @@ export function ViolationsTable({ violations, transformId, className = '' }: Vio
 
   if (violations.length === 0) {
     return (
-      <Card className={className}>
+      <Card variant="glass" className={className}>
         <CardContent className="text-center py-12">
-          <div className="space-y-2">
+          <div className="space-y-content-sm">
             <div className="text-green-600 dark:text-green-400 text-lg">✨ No violations found!</div>
             <p className="text-muted-foreground">All quality checks passed successfully.</p>
           </div>
@@ -124,19 +124,19 @@ export function ViolationsTable({ violations, transformId, className = '' }: Vio
   }
 
   return (
-    <Card className={className}>
-      <CardHeader>
-        <CardTitle className="flex items-center justify-between">
+    <Card variant="glass" className={className}>
+      <CardHeader className="p-6 pb-3">
+        <CardTitle className="flex items-center justify-between text-heading">
           <span>Quality Violations</span>
-          <Badge variant="outline">{filteredViolations.length} of {violations.length}</Badge>
+          <Badge variant="neutral">{filteredViolations.length} of {violations.length}</Badge>
         </CardTitle>
         <CardDescription>
           Detailed view of all quality issues found during validation
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="p-6 space-y-content">
         {/* Filters */}
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-content">
           <div className="space-y-2">
             <label className="text-sm font-medium">Search</label>
             <div className="relative">
@@ -206,7 +206,7 @@ export function ViolationsTable({ violations, transformId, className = '' }: Vio
 
           <div className="space-y-2">
             <label className="text-sm font-medium">Actions</label>
-            <Button onClick={clearFilters} variant="outline" className="w-full">
+            <Button onClick={clearFilters} variant="glass" className="w-full">
               <Filter className="h-4 w-4 mr-2" />
               Clear Filters
             </Button>
@@ -214,7 +214,7 @@ export function ViolationsTable({ violations, transformId, className = '' }: Vio
         </div>
 
         {/* Violations Table */}
-        <div className="rounded-md border">
+        <div className="rounded-[var(--border-radius)] border border-border/60 overflow-hidden backdrop-blur-sm bg-white/5">
           <Table>
             <TableHeader>
               <TableRow>

@@ -502,7 +502,7 @@ export function MergeProgress({ mergeId, sessionId, transformId, onViewConflicts
 
   if (loading && !progress.merge_id) {
     return (
-      <Card className="w-full">
+      <Card variant="glass" className="w-full">
         <CardContent className="pt-6 flex justify-center items-center h-64">
           <div className="flex flex-col items-center gap-content-sm">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -515,7 +515,7 @@ export function MergeProgress({ mergeId, sessionId, transformId, onViewConflicts
 
   if (error) {
     return (
-      <Card className="w-full border-red-200">
+      <Card variant="glass" className="w-full border-red-200/40">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-heading">
             <AlertCircle className="h-5 w-5 text-destructive" />
@@ -538,8 +538,8 @@ export function MergeProgress({ mergeId, sessionId, transformId, onViewConflicts
   const isReadyToFinalize = progress.overall_status === MergeStatus.READY_TO_MERGE;
 
   return (
-    <Card className="w-full flex flex-col max-h-[calc(100vh-100px)] min-h-[500px]">
-      <CardHeader className="flex-shrink-0">
+    <Card variant="glass" className="w-full flex flex-col max-h-[calc(100vh-100px)] min-h-[500px] shadow-soft">
+      <CardHeader className="flex-shrink-0 p-6 pb-content-sm">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
           <div>
             <CardTitle>Merge Progress</CardTitle>
@@ -567,10 +567,11 @@ export function MergeProgress({ mergeId, sessionId, transformId, onViewConflicts
           </div>
         </div>
       </CardHeader>
-      <CardContent className="overflow-y-auto flex-grow">
-        {/* Conflict Alert */}
-        {progress.overall_status === MergeStatus.HUMAN_REVIEW && progress.conflict_count > 0 && ( 
-          <Alert variant="warning" className="animate-fadeIn mb-content">
+      <CardContent className="flex-grow overflow-y-auto p-6">
+        <div className="space-y-content">
+          {/* Conflict Alert */}
+          {progress.overall_status === MergeStatus.HUMAN_REVIEW && progress.conflict_count > 0 && (
+          <Alert variant="warning" className="animate-fadeIn glass-surface">
             <AlertTriangle className="h-5 w-5 text-warning" />
             <div className="font-medium text-warning text-body">Action Required: Conflicts Detected</div>
             <AlertDescription className="text-warning/80 text-body-sm">
@@ -601,9 +602,9 @@ export function MergeProgress({ mergeId, sessionId, transformId, onViewConflicts
           </Alert>
         )}
 
-        {/* Ready to Merge Notification */}
-        {progress.overall_status === MergeStatus.READY_TO_MERGE && (
-          <Alert variant="success" className="animate-fadeIn mb-content">
+          {/* Ready to Merge Notification */}
+          {progress.overall_status === MergeStatus.READY_TO_MERGE && (
+          <Alert variant="success" className="animate-fadeIn">
             <CheckCircle2 className="h-5 w-5 text-success" />
             <div className="font-medium text-success text-body">Merged!</div>
             <AlertDescription className="text-success/90 text-body-sm">
@@ -612,9 +613,9 @@ export function MergeProgress({ mergeId, sessionId, transformId, onViewConflicts
           </Alert>
         )}
 
-        {/* Completed Merge Notification */}
-        {progress.overall_status === MergeStatus.COMPLETED && (
-          <Alert variant="success" className="animate-fadeIn mb-content">
+          {/* Completed Merge Notification */}
+          {progress.overall_status === MergeStatus.COMPLETED && (
+          <Alert variant="success" className="animate-fadeIn">
             <CheckCircle2 className="h-5 w-5 text-success" />
             <div className="font-medium text-success text-body">Merge Completed Successfully!</div>
             <AlertDescription className="text-success/90 text-body-sm">
@@ -623,11 +624,10 @@ export function MergeProgress({ mergeId, sessionId, transformId, onViewConflicts
           </Alert>
         )}
 
-        {/* Verification Results */}
-        {verificationResult && (
+          {/* Verification Results */}
+          {verificationResult && (
           <Alert 
             variant={verificationResult.status === 'success' ? 'success' : 'warning'}
-            className="mb-content"
           >
             {verificationResult.status === 'success' ? (
               <CheckCircle2 className="h-5 w-5 text-success" />
@@ -643,8 +643,8 @@ export function MergeProgress({ mergeId, sessionId, transformId, onViewConflicts
           </Alert>
         )}
 
-        {/* Overall Progress */}
-        <div className="space-y-2 mb-content">
+          {/* Overall Progress */}
+        <div className="space-y-2">
           <div className="flex justify-between text-body-sm">
             <span>Overall Progress</span>
             <span>{progress.overall_status}</span>
@@ -656,8 +656,8 @@ export function MergeProgress({ mergeId, sessionId, transformId, onViewConflicts
           />
         </div>
 
-        {/* Stage Progress */}
-        <div className="space-y-content mb-content">
+          {/* Stage Progress */}
+        <div className="space-y-content">
           <h4 className="text-body-sm font-medium">Stages</h4>
           <div className="space-y-content-sm">
             {getStagesArray().map((stage, index) => (
@@ -681,8 +681,8 @@ export function MergeProgress({ mergeId, sessionId, transformId, onViewConflicts
           </div>
         </div>
 
-        {/* Time Information */}
-        <div className="grid grid-cols-2 gap-content mb-content">
+          {/* Time Information */}
+        <div className="grid grid-cols-2 gap-content">
           <div>
             <div className="flex items-center gap-2 text-body-sm text-muted-foreground mb-1">
               <Clock className="h-4 w-4" />
@@ -702,10 +702,11 @@ export function MergeProgress({ mergeId, sessionId, transformId, onViewConflicts
             </div>
           </div> */}
         </div>
+        </div>
       </CardContent>
       
       {/* Action Buttons - Fixed at the bottom */}
-      <CardFooter className="flex flex-col sm:flex-row justify-between gap-content-sm pt-content border-t mt-auto flex-shrink-0 sticky bottom-0 z-10 pb-content">
+      <CardFooter className="sticky bottom-0 z-10 mt-auto flex flex-col gap-content-sm border-t border-border/60 bg-background/80 px-6 py-content backdrop-blur-sm sm:flex-row sm:justify-between">
         <div>
           {onCancel && (progress.overall_status === MergeStatus.STARTED || 
                          progress.overall_status === MergeStatus.AUTO_RESOLVE ||
