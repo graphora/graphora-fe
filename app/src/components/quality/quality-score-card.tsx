@@ -58,11 +58,11 @@ export function QualityScoreCard({ qualityResults, className = '' }: QualityScor
         </CardDescription>
       </CardHeader>
       <CardContent className="p-6 pt-0">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-content-lg">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 xl:gap-6">
           {/* Score Display */}
           <div className="text-center space-y-content-sm">
             <div className="relative inline-flex items-center justify-center">
-              <svg className="w-24 h-24 transform -rotate-90" viewBox="0 0 100 100">
+              <svg className="w-28 h-28 transform -rotate-90" viewBox="0 0 100 100">
                 {/* Background circle */}
                 <circle
                   cx="50"
@@ -88,7 +88,7 @@ export function QualityScoreCard({ qualityResults, className = '' }: QualityScor
               </svg>
               <div className="absolute inset-0 flex items-center justify-center">
                 <div className="text-center">
-                  <div className={`text-display-sm font-semibold ${getScoreColor(qualityResults.overall_score)}`}>
+                  <div className={`text-[2.75rem] leading-none font-semibold tracking-tight ${getScoreColor(qualityResults.overall_score)}`}>
                     {Math.round(qualityResults.overall_score)}
                   </div>
                   <div className="text-body-xs text-muted-foreground">out of 100</div>
@@ -107,7 +107,7 @@ export function QualityScoreCard({ qualityResults, className = '' }: QualityScor
           </div>
 
           {/* Key Metrics */}
-          <div className="space-y-content">
+            <div className="space-y-content-sm">
             <div>
               <div className="flex items-center justify-between text-body-sm">
                 <span className="text-muted-foreground">Entities Processed</span>
@@ -147,7 +147,7 @@ export function QualityScoreCard({ qualityResults, className = '' }: QualityScor
           </div>
 
           {/* Status & Review */}
-          <div className="space-y-content">
+            <div className="space-y-content-sm">
             <div className="flex items-center space-x-2">
               <Target className="h-4 w-4 text-muted-foreground" />
               <span className="text-body-sm font-medium">Review Status</span>

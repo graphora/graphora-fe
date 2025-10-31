@@ -1,6 +1,8 @@
 import type { Config } from 'tailwindcss'
 
-const fontSizeScale = {
+type FontSizeConfig = [string, { lineHeight: string; fontWeight?: string }]
+
+const fontSizeScale: Record<string, FontSizeConfig> = {
   xs: ['var(--font-size-xs)', { lineHeight: 'var(--line-height-snug)' }],
   sm: ['var(--font-size-sm)', { lineHeight: 'var(--line-height-relaxed)' }],
   base: ['var(--font-size-base)', { lineHeight: 'var(--line-height-relaxed)' }],
@@ -14,9 +16,9 @@ const fontSizeScale = {
   '7xl': ['4.5rem', { lineHeight: '1', fontWeight: '700' }],
   '8xl': ['6rem', { lineHeight: '1', fontWeight: '700' }],
   '9xl': ['8rem', { lineHeight: '1', fontWeight: '700' }],
-} as const
+}
 
-const fontSizeAliases = {
+const fontSizeAliases: Record<string, FontSizeConfig> = {
   'body-xs': fontSizeScale.xs,
   'body-sm': fontSizeScale.sm,
   body: fontSizeScale.base,
@@ -115,9 +117,6 @@ const config = {
         large: 'var(--shadow-large)',
         glass: '0 18px 45px rgba(15, 23, 42, 0.16)',
       },
-      borderRadius: {
-        xl: 'var(--border-radius-lg)',
-      },
       backdropBlur: {
         glass: '18px',
         panel: '24px',
@@ -127,9 +126,10 @@ const config = {
         'glass-overlay-dark': 'linear-gradient(140deg, rgba(148,163,184,0.16), rgba(15,23,42,0.25))',
       },
       borderRadius: {
-        lg: "var(--radius)",
-        md: "calc(var(--radius) - 2px)",
-        sm: "calc(var(--radius) - 4px)",
+        xl: 'var(--border-radius-lg)',
+        lg: 'var(--radius)',
+        md: 'calc(var(--radius) - 2px)',
+        sm: 'calc(var(--radius) - 4px)',
       },
       keyframes: {
         "accordion-down": {

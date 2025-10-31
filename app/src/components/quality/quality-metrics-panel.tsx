@@ -230,7 +230,7 @@ export function QualityMetricsPanel({
       </Card>
 
       {/* Property Completeness & Coverage */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-section">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 xl:gap-6">
         <Card variant="glass">
           <CardHeader className="p-6 pb-content-sm">
             <CardTitle className="flex items-center gap-2 text-heading">
@@ -241,7 +241,7 @@ export function QualityMetricsPanel({
               Percentage of required properties that are populated
             </CardDescription>
           </CardHeader>
-          <CardContent className="p-6 pt-0 space-y-content">
+          <CardContent className="p-6 pt-0 space-y-content-sm">
             <div className="text-center">
               <div className={`text-display-lg font-semibold ${getCoverageColor(metrics.property_completeness_rate)}`}>
                 {Math.round(metrics.property_completeness_rate)}%
@@ -270,7 +270,7 @@ export function QualityMetricsPanel({
               Distribution of entities across different types
             </CardDescription>
           </CardHeader>
-          <CardContent className="p-6 pt-0 space-y-content">
+          <CardContent className="p-6 pt-0 space-y-content-sm">
             {Object.entries(metrics.entity_type_coverage).map(([entityType, count]) => {
               const percentage = (count / metrics.total_entities) * 100;
               return (
@@ -305,7 +305,7 @@ export function QualityMetricsPanel({
             </CardDescription>
           </CardHeader>
           <CardContent className="p-6 pt-0">
-            <div className="space-y-content">
+            <div className="space-y-content-sm">
                 {Object.entries(entityQualitySummary).map(([entityType, summary]) => (
                 <div key={entityType} className="border border-border/60 rounded-[var(--border-radius)] p-4 bg-white/5 backdrop-blur-sm">
                   <h4 className="text-heading-sm font-semibold mb-3">{entityType}</h4>

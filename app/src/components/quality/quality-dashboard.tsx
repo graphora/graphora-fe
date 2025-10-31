@@ -108,9 +108,11 @@ export function QualityDashboard({
     }
   }, [transformId, fetchQualityResults]);
 
+  const wrapperClasses = 'flex flex-col gap-section-sm'
+
   if (loading) {
     return (
-      <div className={cn('space-y-section', className)}>
+      <div className={cn(wrapperClasses, className)}>
         <Card variant="glass">
           <CardContent className="flex items-center justify-center py-12">
             <div className="text-center space-y-content-sm">
@@ -125,7 +127,7 @@ export function QualityDashboard({
 
   if (error) {
     return (
-      <div className={cn('space-y-section', className)}>
+      <div className={cn(wrapperClasses, className)}>
         <Alert variant="destructive">
           <XCircle className="h-4 w-4" />
           <AlertDescription>
@@ -149,7 +151,7 @@ export function QualityDashboard({
 
   if (!qualityResults) {
     return (
-      <div className={cn('space-y-section', className)}>
+      <div className={cn(wrapperClasses, className)}>
         <Alert>
           <Info className="h-4 w-4" />
           <AlertDescription>
@@ -183,16 +185,16 @@ export function QualityDashboard({
   };
 
   return (
-    <div className={cn('space-y-section', className)}>
+    <div className={cn(wrapperClasses, className)}>
       {/* Header with refresh button */}
-      <div className="flex flex-wrap items-center justify-between gap-content pb-content-sm border-b border-border/70">
-        <div className="flex items-center space-x-3">
-          <div className="w-8 h-8 bg-success/15 rounded-full flex items-center justify-center">
+      <div className="flex flex-wrap items-center justify-between gap-content-sm pb-content-sm border-b border-border/60">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 bg-success/15 rounded-xl flex items-center justify-center">
             <CheckCircle className="h-4 w-4 text-success" />
           </div>
           <div>
-            <h3 className="text-heading font-semibold text-foreground">Validation Complete</h3>
-            <p className="text-body-sm text-muted-foreground">
+            <h3 className="text-heading font-semibold text-foreground tracking-tight">Validation Complete</h3>
+            <p className="text-body-sm text-muted-foreground/80">
               Data quality analysis for your extracted content
             </p>
           </div>
@@ -225,7 +227,7 @@ export function QualityDashboard({
             </CardDescription>
           </CardHeader>
           <CardContent className="p-6 pt-0">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-content-lg">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {Object.entries(qualityResults.violations_by_severity).map(([severity, count]) => (
                 <div
                   key={severity}
@@ -244,7 +246,7 @@ export function QualityDashboard({
       )}
 
       {/* Detailed Tabs */}
-      <Tabs defaultValue="violations" className="space-y-content">
+      <Tabs defaultValue="violations" className="space-y-content-sm">
         <div className="border-b border-border/60">
           <TabsList className="w-full justify-start bg-transparent border-b-0">
             <TabsTrigger 
@@ -264,14 +266,14 @@ export function QualityDashboard({
           </TabsList>
         </div>
 
-        <TabsContent value="violations" className="space-y-content">
+        <TabsContent value="violations" className="space-y-content-sm">
           <ViolationsTable 
             violations={qualityResults.violations}
             transformId={transformId}
           />
         </TabsContent>
 
-        <TabsContent value="metrics" className="space-y-content">
+        <TabsContent value="metrics" className="space-y-content-sm">
           <QualityMetricsPanel 
             metrics={qualityResults.metrics}
             entityQualitySummary={qualityResults.entity_quality_summary}

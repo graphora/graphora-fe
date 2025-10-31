@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { Progress } from './ui/progress';
 import { Badge } from './ui/badge';
+import type { BadgeProps } from './ui/badge';
 import { Button } from './ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from './ui/card';
 import { Separator } from './ui/separator';
@@ -385,27 +386,35 @@ export function MergeProgress({ mergeId, sessionId, transformId, onViewConflicts
     return formatTime(Math.round(remainingTime));
   };
 
-  const statusBadgeMap = {
-    [MergeStatus.STARTED]: { label: 'Started', variant: 'info' as const },
-    [MergeStatus.AUTO_RESOLVE]: { label: 'Auto Resolving', variant: 'info' as const },
-    [MergeStatus.HUMAN_REVIEW]: { label: 'Needs Review', variant: 'warning' as const },
-    [MergeStatus.READY_TO_MERGE]: { label: 'Ready to Finalize', variant: 'success' as const, className: 'animate-pulse-subtle' },
-    [MergeStatus.MERGE_IN_PROGRESS]: { label: 'Merging', variant: 'info' as const },
-    [MergeStatus.COMPLETED]: { label: 'Completed', variant: 'success' as const },
-    [MergeStatus.FAILED]: { label: 'Failed', variant: 'destructive' as const },
-    [MergeStatus.CANCELLED]: { label: 'Cancelled', variant: 'neutral' as const },
-    READY_TO_FINALIZE: { label: 'Ready to Finalize', variant: 'success' as const, className: 'animate-pulse-subtle' },
-  } as const;
+  type BadgeVariant = NonNullable<BadgeProps['variant']>
+  type StatusBadgeConfig = {
+    label: string
+    variant: BadgeVariant
+    className?: string
+  }
+
+  const statusBadgeMap: Record<string, StatusBadgeConfig> = {
+    [MergeStatus.STARTED]: { label: 'Started', variant: 'info' },
+    [MergeStatus.AUTO_RESOLVE]: { label: 'Auto Resolving', variant: 'info' },
+    [MergeStatus.HUMAN_REVIEW]: { label: 'Needs Review', variant: 'warning' },
+    [MergeStatus.READY_TO_MERGE]: { label: 'Ready to Finalize', variant: 'success', className: 'animate-pulse-subtle' },
+    [MergeStatus.MERGE_IN_PROGRESS]: { label: 'Merging', variant: 'info' },
+    [MergeStatus.COMPLETED]: { label: 'Completed', variant: 'success' },
+    [MergeStatus.FAILED]: { label: 'Failed', variant: 'destructive' },
+    [MergeStatus.CANCELLED]: { label: 'Cancelled', variant: 'neutral' },
+    READY_TO_FINALIZE: { label: 'Ready to Finalize', variant: 'success', className: 'animate-pulse-subtle' },
+  }
 
   const getStatusBadge = (status: string) => {
-    const config = statusBadgeMap[status as keyof typeof statusBadgeMap] ?? {
+    const fallback: StatusBadgeConfig = {
       label: status,
-      variant: 'neutral' as const,
-      className: undefined,
-    };
+      variant: 'neutral',
+    }
+
+    const config = statusBadgeMap[status as keyof typeof statusBadgeMap] ?? fallback;
 
     return (
-      <Badge variant={config.variant} className={cn(config.className)}>
+      <Badge variant={config.variant} className={config.className}>
         {config.label}
       </Badge>
     );
@@ -568,7 +577,7 @@ export function MergeProgress({ mergeId, sessionId, transformId, onViewConflicts
         </div>
       </CardHeader>
       <CardContent className="flex-grow overflow-y-auto p-6">
-        <div className="space-y-content">
+        <div className="space-y-content-sm">
           {/* Conflict Alert */}
           {progress.overall_status === MergeStatus.HUMAN_REVIEW && progress.conflict_count > 0 && (
           <Alert variant="warning" className="animate-fadeIn glass-surface">
@@ -657,7 +666,7 @@ export function MergeProgress({ mergeId, sessionId, transformId, onViewConflicts
         </div>
 
           {/* Stage Progress */}
-        <div className="space-y-content">
+        <div className="space-y-content-sm">
           <h4 className="text-body-sm font-medium">Stages</h4>
           <div className="space-y-content-sm">
             {getStagesArray().map((stage, index) => (
@@ -682,7 +691,7 @@ export function MergeProgress({ mergeId, sessionId, transformId, onViewConflicts
         </div>
 
           {/* Time Information */}
-        <div className="grid grid-cols-2 gap-content">
+        <div className="grid grid-cols-2 gap-4">
           <div>
             <div className="flex items-center gap-2 text-body-sm text-muted-foreground mb-1">
               <Clock className="h-4 w-4" />

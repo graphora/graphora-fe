@@ -150,7 +150,7 @@ export function QualityActionButtons({
           Review the quality results and decide whether to proceed with merge
         </CardDescription>
       </CardHeader>
-      <CardContent className="p-6 space-y-section">
+      <CardContent className="p-6 space-y-content">
         {/* Recommendation Alert */}
         <Alert 
           variant={toneVariant[recommendation.tone]}
@@ -163,7 +163,7 @@ export function QualityActionButtons({
         </Alert>
 
         {/* Summary Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-content-lg">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="text-center p-4 rounded-[var(--border-radius)] border border-border/60 bg-white/5 backdrop-blur-sm">
             <div className="text-display-sm font-semibold text-info">
               {Math.round(qualityResults.overall_score)}
