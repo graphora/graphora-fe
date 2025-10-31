@@ -8,10 +8,10 @@ import { PageHeader } from '@/components/layouts/page-header'
 import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { IconBadge } from '@/components/ui/icon-badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
-import { Loader2, Settings, AlertCircle, CheckCircle, Database, Bell, Shield, ArrowLeft, Sparkles } from 'lucide-react'
+import { cn } from '@/lib/utils'
+import { Loader2, ArrowLeft } from 'lucide-react'
 import { DatabaseConfigForm } from '@/components/config/database-config-form'
 import { GeminiConfigForm } from '@/components/config/gemini-config-form'
 import { DatabaseConfig, UserConfig, ConfigRequest } from '@/types/config'
@@ -303,11 +303,6 @@ function ConfigPageContent() {
               ? "Set up your databases and AI providers to run workflows and manage your knowledge graphs"
               : "Manage your database connections, AI providers, and system preferences"
           }
-          icon={(
-            <IconBadge variant="primary" size="md">
-              <Settings className="h-5 w-5" />
-            </IconBadge>
-          )}
           actions={
             returnTo && (
               <Button variant="outline" onClick={handleBack}>
@@ -321,8 +316,7 @@ function ConfigPageContent() {
         <div className="flex-1 overflow-auto">
           <div className="page-shell py-section stack-gap">
           {isWorkflowRedirect && (
-            <Alert className="mb-6 border-amber-200 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-800">
-              <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+            <Alert className="border-amber-200 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-800">
               <AlertDescription className="text-amber-800 dark:text-amber-300">
                 <strong>Both Database & AI Configuration Required:</strong> You need to configure both staging & production Neo4j databases and an AI provider before you can run workflows. 
                 Once configured, you'll be redirected back to continue your workflow.
@@ -332,53 +326,28 @@ function ConfigPageContent() {
 
           {error && (
             <Alert className="border-destructive/50 bg-destructive/10" variant="destructive">
-              <AlertCircle className="h-4 w-4" />
               <AlertDescription>{error}</AlertDescription>
             </Alert>
           )}
 
           <Tabs defaultValue={tabParam || "databases"} className="stack-gap">
             <TabsList className="w-full justify-start">
-              <TabsTrigger value="databases">
-                <Database className="h-4 w-4 mr-2" />
-                Databases
-              </TabsTrigger>
-              <TabsTrigger value="ai-config">
-                <Sparkles className="h-4 w-4 mr-2" />
-                AI Config
-              </TabsTrigger>
-              <TabsTrigger value="notifications" disabled>
-                <Bell className="h-4 w-4 mr-2" />
-                Notifications
-              </TabsTrigger>
-              <TabsTrigger value="security" disabled>
-                <Shield className="h-4 w-4 mr-2" />
-                Security
-              </TabsTrigger>
+              <TabsTrigger value="databases">Databases</TabsTrigger>
+              <TabsTrigger value="ai-config">AI Config</TabsTrigger>
             </TabsList>
 
             <TabsContent value="databases" className="stack-gap">
               {/* Configuration Status */}
               <Card className="enhanced-card">
                 <CardHeader className="enhanced-card-header">
-                  <CardTitle className="flex items-center justify-between">
-                    <span className="flex items-center gap-3">
-                      <IconBadge variant="primary" size="sm">
-                        <Database className="h-4 w-4" />
-                      </IconBadge>
-                      <span>Configuration Status</span>
-                    </span>
-                    {config ? (
-                      <Badge className="bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800">
-                        <CheckCircle className="h-3 w-3 mr-1" />
-                        Configured
-                      </Badge>
-                    ) : (
-                      <Badge variant="outline" className="bg-amber-50 dark:bg-amber-950 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800">
-                        <AlertCircle className="h-3 w-3 mr-1" />
-                        Setup Required
-                      </Badge>
-                    )}
+                  <CardTitle className="flex items-center justify-between text-heading-sm">
+                    <span className="font-medium">Configuration Status</span>
+                    <Badge className={cn(
+                      'border border-transparent bg-muted/60 text-foreground/80 dark:text-foreground',
+                      config ? 'bg-emerald-100/60 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300' : 'bg-amber-100/60 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300'
+                    )}>
+                      {config ? 'Configured' : 'Setup Required'}
+                    </Badge>
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="enhanced-card-content">
@@ -390,7 +359,6 @@ function ConfigPageContent() {
                     
                     {!config && (
                       <Alert>
-                        <Settings className="h-4 w-4" />
                         <AlertDescription>
                           You'll need to provide connection details for both your staging and production Neo4j databases.
                           These databases must have different URIs to ensure proper separation of environments.
@@ -405,12 +373,7 @@ function ConfigPageContent() {
               <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
                 <Card className="enhanced-card">
                   <CardHeader className="enhanced-card-header">
-                    <CardTitle className="flex items-center gap-3">
-                      <IconBadge variant="primary" size="sm">
-                        <Database className="h-4 w-4" />
-                      </IconBadge>
-                      <span>Staging Database</span>
-                    </CardTitle>
+                    <CardTitle className="text-heading-sm font-medium">Staging Database</CardTitle>
                   </CardHeader>
                   <CardContent className="enhanced-card-content">
                     <DatabaseConfigForm
@@ -426,12 +389,7 @@ function ConfigPageContent() {
 
                 <Card className="enhanced-card">
                   <CardHeader className="enhanced-card-header">
-                    <CardTitle className="flex items-center gap-3">
-                      <IconBadge variant="success" size="sm">
-                        <Database className="h-4 w-4" />
-                      </IconBadge>
-                      <span>Production Database</span>
-                    </CardTitle>
+                    <CardTitle className="text-heading-sm font-medium">Production Database</CardTitle>
                   </CardHeader>
                   <CardContent className="enhanced-card-content">
                     <DatabaseConfigForm
@@ -459,10 +417,7 @@ function ConfigPageContent() {
                       Saving Database Configuration...
                     </>
                   ) : (
-                    <>
-                      <Database className="h-4 w-4 mr-2" />
-                      Save Database Configuration
-                    </>
+                    'Save Database Configuration'
                   )}
                 </Button>
               </div>
@@ -493,11 +448,9 @@ function ConfigPageContent() {
 
             <TabsContent value="ai-config" className="stack-gap">
               {isWorkflowRedirect && (
-                <Alert className="mb-6 border-amber-200 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-800">
-                  <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                <Alert className="border-amber-200 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-800">
                   <AlertDescription className="text-amber-800 dark:text-amber-300">
-                    <strong>AI Configuration Required:</strong> You need to configure an AI provider to enable intelligent document processing and entity extraction in workflows. 
-                    Once configured, you'll be redirected back to continue your workflow.
+                    <strong>AI Configuration Required:</strong> Configure an AI provider to enable intelligent document processing and entity extraction in workflows. You'll be redirected once setup is complete.
                   </AlertDescription>
                 </Alert>
               )}
@@ -505,24 +458,14 @@ function ConfigPageContent() {
               {/* AI Configuration Status */}
               <Card className="enhanced-card">
                 <CardHeader className="enhanced-card-header">
-                  <CardTitle className="flex items-center justify-between">
-                    <span className="flex items-center gap-3">
-                      <IconBadge variant="info" size="sm">
-                        <Sparkles className="h-4 w-4" />
-                      </IconBadge>
-                      <span>AI Configuration Status</span>
-                    </span>
-                    {aiConfig ? (
-                      <Badge className="bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800">
-                        <CheckCircle className="h-3 w-3 mr-1" />
-                        Configured
-                      </Badge>
-                    ) : (
-                      <Badge variant="outline" className="bg-amber-50 dark:bg-amber-950 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800">
-                        <AlertCircle className="h-3 w-3 mr-1" />
-                        Setup Required
-                      </Badge>
-                    )}
+                  <CardTitle className="flex items-center justify-between text-heading-sm">
+                    <span className="font-medium">AI Configuration Status</span>
+                    <Badge className={cn(
+                      'border border-transparent bg-muted/60 text-foreground/80 dark:text-foreground',
+                      aiConfig ? 'bg-emerald-100/60 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300' : 'bg-amber-100/60 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300'
+                    )}>
+                      {aiConfig ? 'Configured' : 'Setup Required'}
+                    </Badge>
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="enhanced-card-content">
@@ -551,10 +494,8 @@ function ConfigPageContent() {
                     
                     {!aiConfig && (
                       <Alert>
-                        <Sparkles className="h-4 w-4" />
                         <AlertDescription>
-                          You'll need to provide a Gemini API key and select a default model to enable AI features.
-                          Get your API key from Google AI Studio.
+                          Provide a Gemini API key and select a default model to enable AI features. You can manage keys from Google AI Studio.
                         </AlertDescription>
                       </Alert>
                     )}
@@ -565,11 +506,8 @@ function ConfigPageContent() {
               {/* Gemini Configuration Form */}
               <Card className="enhanced-card">
                 <CardHeader className="enhanced-card-header">
-                  <CardTitle className="flex items-center justify-between">
-                    <span className="flex items-center space-x-2">
-                      <Sparkles className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                      <span>Google Gemini AI Studio</span>
-                    </span>
+                  <CardTitle className="flex items-center justify-between text-heading-sm">
+                    <span className="font-medium">Google Gemini AI Studio</span>
                     <Button 
                       onClick={handleSaveAI} 
                       disabled={savingAI || !geminiConfig.api_key || !geminiConfig.default_model_name}
@@ -581,10 +519,7 @@ function ConfigPageContent() {
                           Saving AI Configuration...
                         </>
                       ) : (
-                        <>
-                          <Sparkles className="h-4 w-4 mr-2" />
-                          {aiConfig ? 'Update AI Configuration' : 'Save AI Configuration'}
-                        </>
+                        (aiConfig ? 'Update AI Configuration' : 'Save AI Configuration')
                       )}
                     </Button>
                   </CardTitle>
@@ -600,28 +535,6 @@ function ConfigPageContent() {
               </Card>
             </TabsContent>
 
-            {/* Placeholder tabs for future features */}
-            <TabsContent value="notifications" className="space-y-6">
-              <Card className="enhanced-card">
-                <CardContent className="enhanced-card-content p-6">
-                  <div className="text-center text-muted-foreground">
-                    <Bell className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                    <p>Notification preferences will be available in a future update.</p>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="security" className="space-y-6">
-              <Card className="enhanced-card">
-                <CardContent className="enhanced-card-content p-6">
-                  <div className="text-center text-muted-foreground">
-                    <Shield className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                    <p>Security settings will be available in a future update.</p>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
           </Tabs>
           </div>
         </div>

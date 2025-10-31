@@ -7,11 +7,10 @@ import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Loader2, Database, AlertCircle, CheckCircle, Eye, EyeOff } from 'lucide-react'
+import { Loader2, Eye, EyeOff } from 'lucide-react'
 import { DatabaseConfig, ConnectionTestResponse } from '@/types/config'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
-import { IconBadge } from '@/components/ui/icon-badge'
 
 interface DatabaseConfigFormProps {
   title: string
@@ -91,31 +90,25 @@ export function DatabaseConfigForm({ title, description, config, onChange, disab
   return (
     <Card variant="glass" className="w-full border-white/15 bg-white/8 shadow-glass backdrop-blur-panel">
       <CardHeader className="space-y-4 border-b border-white/10 pb-6">
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <IconBadge variant="primary" size="md">
-              <Database className="h-5 w-5" />
-            </IconBadge>
-            <div>
-              <CardTitle className="text-heading text-foreground">{title}</CardTitle>
-              <CardDescription className="text-sm text-foreground/70">{description}</CardDescription>
-            </div>
+        <div className="flex items-start justify-between gap-3">
+          <div className="space-y-1">
+            <CardTitle className="text-heading text-foreground">{title}</CardTitle>
+            <CardDescription className="text-sm text-foreground/70">{description}</CardDescription>
           </div>
           {isExistingConfig && (
-            <Badge variant="glass" className="uppercase tracking-[0.14em]">Configured</Badge>
+            <Badge variant="outline" className="border-white/20 bg-white/10 text-foreground/70">
+              Configured
+            </Badge>
           )}
         </div>
       </CardHeader>
       <CardContent className="space-y-6 p-6">
         <div className="rounded-xl border border-white/15 bg-white/10 p-4 text-xs text-foreground/80 shadow-inner">
-          <div className="flex items-start gap-3">
-            <Database className="h-4 w-4 text-primary" />
-            <div className="space-y-1.5">
-              <p className="font-medium uppercase tracking-[0.16em] text-foreground/70">Secure credential storage</p>
-              <p>
-                Credentials are encrypted using AES with per-user keys before they leave the browser. Passwords are never stored in plain text and can be rotated safely at any time.
-              </p>
-            </div>
+          <div className="space-y-1.5">
+            <p className="font-medium uppercase tracking-[0.16em] text-foreground/70">Secure credential storage</p>
+            <p>
+              Credentials are encrypted using AES with per-user keys before they leave the browser. Passwords are never stored in plain text and can be rotated safely at any time.
+            </p>
           </div>
         </div>
 
@@ -188,11 +181,6 @@ export function DatabaseConfigForm({ title, description, config, onChange, disab
               testResult.success ? 'text-success' : 'text-destructive'
             )}
           >
-            {testResult.success ? (
-              <CheckCircle className="h-4 w-4 text-success" />
-            ) : (
-              <AlertCircle className="h-4 w-4 text-destructive" />
-            )}
             <AlertDescription>
               {testResult.message}
               {testResult.error && ` – ${testResult.error}`}

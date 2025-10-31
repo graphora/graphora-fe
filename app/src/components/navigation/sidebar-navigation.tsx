@@ -104,20 +104,20 @@ export function SidebarNavigation({ className, defaultCollapsed = true }: Sideba
       <button
         onClick={() => handleNavigation(item.path)}
         className={cn(
-          "w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg transition-all duration-200 text-left group",
+          "w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg transition-all duration-200 text-left group border border-transparent",
           isActive 
-            ? "bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300 shadow-sm border border-blue-100 dark:border-blue-800" 
-            : "text-muted-foreground hover:text-foreground hover:bg-muted",
+            ? "bg-primary/12 text-foreground font-medium shadow-soft border-primary/40 dark:bg-white/10 dark:border-white/15" 
+            : "text-muted-foreground hover:text-foreground hover:bg-muted/60",
           isCollapsed && "justify-center px-2"
         )}
       >
         <div className={cn(
           "flex-shrink-0 transition-colors",
-          isActive ? "text-blue-600 dark:text-blue-400" : "text-muted-foreground group-hover:text-foreground"
+          isActive ? "text-primary" : "text-muted-foreground group-hover:text-foreground"
         )}>
           {item.icon}
         </div>
-        
+
         {!isCollapsed && (
           <>
             <span className="flex-1 font-medium text-body-sm">{item.name}</span>

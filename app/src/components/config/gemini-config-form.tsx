@@ -8,10 +8,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Loader2, Eye, EyeOff, AlertCircle, CheckCircle, Sparkles, ExternalLink } from 'lucide-react'
+import { Loader2, Eye, EyeOff } from 'lucide-react'
 import { GeminiConfigRequest, AIModel } from '@/types/ai-config'
 import { toast } from 'sonner'
-import { IconBadge } from '@/components/ui/icon-badge'
 
 interface GeminiConfigFormProps {
   config: GeminiConfigRequest
@@ -87,34 +86,28 @@ export function GeminiConfigForm({ config, onChange, disabled, isExistingConfig 
   return (
     <Card variant="glass" className="border-white/15 bg-white/8 shadow-glass backdrop-blur-panel">
       <CardHeader className="space-y-4 border-b border-white/10 pb-6">
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <IconBadge variant="info" size="md">
-              <Sparkles className="h-5 w-5" />
-            </IconBadge>
-            <div>
-              <CardTitle className="text-heading text-foreground">Gemini configuration</CardTitle>
-              <CardDescription className="text-sm text-foreground/70">
-                Securely connect Gemini for AI-powered enrichment and conflict resolution.
-              </CardDescription>
-            </div>
+        <div className="flex items-start justify-between gap-3">
+          <div className="space-y-1">
+            <CardTitle className="text-heading text-foreground">Gemini configuration</CardTitle>
+            <CardDescription className="text-sm text-foreground/70">
+              Securely connect Gemini for AI-powered enrichment and conflict resolution.
+            </CardDescription>
           </div>
           {isExistingConfig && (
-            <Badge variant="glass" className="uppercase tracking-[0.14em]">Configured</Badge>
+            <Badge variant="outline" className="border-white/20 bg-white/10 text-foreground/70">
+              Configured
+            </Badge>
           )}
         </div>
       </CardHeader>
 
       <CardContent className="space-y-6 p-6">
         <div className="rounded-xl border border-white/15 bg-white/10 p-4 text-xs text-foreground/80 shadow-inner">
-          <div className="flex items-start gap-3">
-            <Sparkles className="h-4 w-4 text-primary" />
-            <div className="space-y-1.5">
-              <p className="font-medium uppercase tracking-[0.16em] text-foreground/70">Enterprise-grade security</p>
-              <p>
-                API keys are encrypted with hardware-backed keys before storage. Rotate keys any time—previous versions are wiped immediately.
-              </p>
-            </div>
+          <div className="space-y-1.5">
+            <p className="font-medium uppercase tracking-[0.16em] text-foreground/70">Enterprise-grade security</p>
+            <p>
+              API keys are encrypted with hardware-backed keys before storage. Rotate keys any time—previous versions are wiped immediately.
+            </p>
           </div>
         </div>
 
@@ -149,10 +142,9 @@ export function GeminiConfigForm({ config, onChange, disabled, isExistingConfig 
                 href="https://aistudio.google.com/app/apikey"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 text-primary hover:underline"
+                className="text-primary hover:underline"
               >
                 Google AI Studio
-                <ExternalLink className="h-3 w-3" />
               </a>
             </p>
           </div>
@@ -178,17 +170,13 @@ export function GeminiConfigForm({ config, onChange, disabled, isExistingConfig 
               <SelectContent>
                 {models.map((model) => (
                   <SelectItem key={model.name} value={model.name}>
-                    <div className="flex items-center gap-2">
-                      <Sparkles className="h-4 w-4 text-primary" />
-                      <span>{model.display_name}</span>
-                    </div>
+                    {model.display_name}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
             {!loadingModels && models.length === 0 && (
               <Alert className="mt-2 border-warning/40 bg-warning/10 text-warning" variant="default">
-                <AlertCircle className="h-4 w-4" />
                 <AlertDescription>
                   No models are currently available. Please contact support or try again later.
                 </AlertDescription>
@@ -212,10 +200,7 @@ export function GeminiConfigForm({ config, onChange, disabled, isExistingConfig 
                 Testing...
               </>
             ) : (
-              <>
-                <CheckCircle className="mr-2 h-4 w-4" />
-                Test configuration
-              </>
+              'Test configuration'
             )}
           </Button>
         </div>

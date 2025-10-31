@@ -7,25 +7,13 @@ import { PageHeader } from '@/components/layouts/page-header'
 import { StatusIndicator } from '@/components/ui/status-indicator'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { IconBadge } from '@/components/ui/icon-badge'
 import { StatTile } from '@/components/ui/stat-tile'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
-import { 
-  BarChart3, 
-  Database, 
-  FileText, 
-  GitMerge, 
+import {
   TrendingUp,
   TrendingDown,
-  Activity,
-  CheckCircle,
-  Upload,
-  Play,
-  History,
-  AlertTriangle,
-  ExternalLink,
-  Loader2
+  Activity
 } from 'lucide-react'
 import Link from 'next/link'
 import { useUserConfig } from '@/hooks/useUserConfig'
@@ -70,37 +58,25 @@ export default function DashboardPage() {
     {
       title: 'Ontologies Created',
       value: auditSummary?.by_type?.ontology_stored || '0',
-      change: null,
       trend: 'up',
-      icon: <Database className="h-5 w-5" />,
-      iconBadgeProps: { variant: 'primary' as const },
       description: 'Total ontologies stored'
     },
     {
       title: 'Transforms Completed',
       value: auditSummary?.by_type?.transform_completed || '0',
-      change: null,
       trend: 'up',
-      icon: <FileText className="h-5 w-5" />,
-      iconBadgeProps: { variant: 'info' as const },
       description: 'Documents processed successfully'
     },
     {
       title: 'Merges Executed',
       value: auditSummary?.by_type?.merge_completed || '0',
-      change: null,
       trend: 'up',
-      icon: <GitMerge className="h-5 w-5" />,
-      iconBadgeProps: { variant: 'success' as const },
       description: 'Successful merge operations'
     },
     {
       title: 'Active Conflicts',
       value: conflictsSummary?.total_conflicts?.toString() || '0',
-      change: null,
       trend: conflictsSummary?.total_conflicts > 0 ? 'down' : 'up',
-      icon: <AlertTriangle className="h-5 w-5" />,
-      iconBadgeProps: { variant: 'warning' as const },
       description: 'Merge conflicts needing review'
     }
   ]
@@ -116,6 +92,23 @@ export default function DashboardPage() {
     }
   }
 
+  const getOperationAccent = (type: string) => {
+    switch (type) {
+      case 'ontology_stored':
+        return 'bg-sky-400/80'
+      case 'transform_started':
+        return 'bg-cyan-400/80'
+      case 'transform_completed':
+        return 'bg-emerald-400/80'
+      case 'merge_started':
+        return 'bg-amber-400/80'
+      case 'merge_completed':
+        return 'bg-lime-400/80'
+      default:
+        return 'bg-muted-foreground/40'
+    }
+  }
+
   const handleRunWorkflow = () => {
     if (checkConfigBeforeWorkflow()) {
       window.location.href = '/ontology'
@@ -128,11 +121,6 @@ export default function DashboardPage() {
         <PageHeader
           title="Dashboard"
           description="Overview of your knowledge graph projects and workflow progress"
-          icon={(
-            <IconBadge variant="info" size="md">
-              <BarChart3 className="h-5 w-5" />
-            </IconBadge>
-          )}
           actions={
             <div className="flex items-center gap-3">
               <Button
@@ -140,7 +128,6 @@ export default function DashboardPage() {
                 className="px-5 py-2.5 text-body font-semibold shadow-medium"
                 onClick={handleRunWorkflow}
               >
-                <Play className="h-4 w-4 mr-2" />
                 Run Workflow
               </Button>
             </div>
@@ -157,9 +144,7 @@ export default function DashboardPage() {
                 value={metric.value}
                 label={metric.title}
                 description={metric.description}
-                icon={metric.icon}
                 trend={getTrendIcon(metric.trend)}
-                iconBadgeProps={metric.iconBadgeProps}
               />
             ))}
           </div>
@@ -169,8 +154,7 @@ export default function DashboardPage() {
             <Card variant="glass">
               <CardHeader className="p-6 pb-4">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="flex items-center gap-2 text-heading">
-                    <History className="h-5 w-5 text-primary" />
+                  <CardTitle className="text-heading">
                     Recent Activity
                   </CardTitle>
                 </div>
@@ -182,11 +166,13 @@ export default function DashboardPage() {
                     className="flex items-center gap-4 rounded-[var(--border-radius)] border border-border/60 bg-white/6 px-5 py-4 backdrop-blur-sm transition hover:bg-white/10 dark:hover:bg-white/5"
                   >
                     <div className="flex-shrink-0">
-                      {activity.operation_type === 'ontology_stored' && <Database className="h-4 w-4 text-blue-500" />}
-                      {activity.operation_type === 'transform_started' && <Upload className="h-4 w-4 text-sky-500" />}
-                      {activity.operation_type === 'transform_completed' && <FileText className="h-4 w-4 text-green-500" />}
-                      {activity.operation_type === 'merge_started' && <GitMerge className="h-4 w-4 text-orange-500" />}
-                      {activity.operation_type === 'merge_completed' && <CheckCircle className="h-4 w-4 text-emerald-500" />}
+                      <span
+                        className={cn(
+                          'inline-flex h-2.5 w-2.5 rounded-full',
+                          getOperationAccent(activity.operation_type)
+                        )}
+                        aria-hidden
+                      />
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="font-medium text-foreground capitalize">
@@ -208,7 +194,6 @@ export default function DashboardPage() {
                   </div>
                 )) || (
                   <div className="text-center text-muted-foreground py-10">
-                    <History className="h-8 w-8 mx-auto mb-2 opacity-50" />
                     <p>No recent activity</p>
                   </div>
                 )}
@@ -219,8 +204,7 @@ export default function DashboardPage() {
             <Card variant="glass">
               <CardHeader className="p-6 pb-4">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="flex items-center gap-2 text-heading">
-                    <AlertTriangle className="h-5 w-5 text-warning" />
+                  <CardTitle className="text-heading">
                     Merge Conflicts
                   </CardTitle>
                   {conflictsSummary?.total_conflicts > 0 && (
@@ -248,7 +232,6 @@ export default function DashboardPage() {
                       <div className="flex items-center gap-2 ml-auto">
                         <Link href={`/merge?merge_id=${conflict.merge_id}`}>
                           <Button size="sm" variant="glass" className="px-3 py-2">
-                            <ExternalLink className="h-3 w-3 mr-1" />
                             Resolve
                           </Button>
                         </Link>
@@ -265,7 +248,6 @@ export default function DashboardPage() {
                   </div>
                 )) || (
                   <div className="text-center text-muted-foreground py-10">
-                    <CheckCircle className="h-8 w-8 mx-auto mb-2 text-emerald-500" />
                     <p>No conflicts detected</p>
                     <p className="text-xs mt-1">All merges completed successfully</p>
                   </div>
@@ -279,8 +261,7 @@ export default function DashboardPage() {
             <Card variant="glass">
               <CardHeader className="p-6 pb-4">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="flex items-center gap-2 text-heading">
-                    <Database className="h-5 w-5 text-info" />
+                  <CardTitle className="text-heading">
                     Data Validation
                   </CardTitle>
                   <Badge variant="muted">Coming Soon</Badge>
@@ -288,7 +269,6 @@ export default function DashboardPage() {
               </CardHeader>
               <CardContent className="flex flex-col gap-4 p-6">
                 <div className="rounded-[var(--border-radius)] border border-dashed border-border/50 bg-white/6 px-6 py-10 text-center backdrop-blur-sm">
-                  <Database className="h-12 w-12 mx-auto mb-4 text-primary/60" />
                   <h3 className="text-heading-sm font-semibold mb-2">Data Quality Reports</h3>
                   <p className="text-body-sm text-muted-foreground max-w-2xl mx-auto">
                     Comprehensive validation metrics will surface here to help you maintain schema alignment and detect anomalies across your knowledge graphs.
