@@ -153,7 +153,7 @@ export function SidebarNavigation({ className, defaultCollapsed = true }: Sideba
   return (
     <aside
       className={cn(
-        "group/sidebar relative flex h-full min-h-screen flex-col border-r border-border/60 bg-background/85 backdrop-blur-panel shadow-soft transition-all duration-300",
+        "group/sidebar sticky top-0 flex h-screen flex-col overflow-y-auto border-r border-border/60 bg-background/90 backdrop-blur-panel shadow-soft transition-all duration-300",
         isCollapsed ? "w-[4.25rem]" : "w-64",
         className
       )}
@@ -175,19 +175,24 @@ export function SidebarNavigation({ className, defaultCollapsed = true }: Sideba
             </div>
           </div>
         )}
-        
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => setIsCollapsed(!isCollapsed)}
-          className="text-muted-foreground hover:text-foreground p-1.5"
-        >
-          {isCollapsed ? (
-            <ChevronRight className="h-4 w-4" />
-          ) : (
-            <ChevronLeft className="h-4 w-4" />
+        <div className="flex items-center gap-2">
+          {!isCollapsed && (
+            <ThemeToggle />
           )}
-        </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setIsCollapsed(!isCollapsed)}
+            className="text-muted-foreground hover:text-foreground p-1.5"
+            aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          >
+            {isCollapsed ? (
+              <ChevronRight className="h-4 w-4" />
+            ) : (
+              <ChevronLeft className="h-4 w-4" />
+            )}
+          </Button>
+        </div>
       </div>
 
       {/* Navigation Items */}
@@ -243,15 +248,12 @@ export function SidebarNavigation({ className, defaultCollapsed = true }: Sideba
           
         </div>
 
-        {isCollapsed && (
-          <div className="flex justify-center mt-2">
+        {isCollapsed ? (
+          <div className="mt-2 flex justify-center">
             <ThemeToggle />
           </div>
-        )}
-
-        {!isCollapsed && (
-          <div className="mt-3 flex items-center justify-between text-body-xs text-muted-foreground">
-            <ThemeToggle />
+        ) : (
+          <div className="mt-3 flex items-center justify-end text-body-xs text-muted-foreground">
             <span>Version 2.0.1</span>
           </div>
         )}

@@ -29,11 +29,11 @@ export function DashboardLayout({
         {showSidebar && (
           <SidebarNavigation
             defaultCollapsed={sidebarCollapsed}
-            className="relative z-10 flex-shrink-0"
+            className="relative z-20 flex-shrink-0"
           />
         )}
 
-        <div className="relative z-10 flex-1 overflow-hidden">
+        <div className="relative z-10 flex-1 overflow-y-auto overflow-x-hidden">
           <div className="flex min-h-screen flex-col bg-background/92 backdrop-blur-sm">
             {children}
           </div>

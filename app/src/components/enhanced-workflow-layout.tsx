@@ -10,6 +10,7 @@ import { Tooltip } from '@/components/ui/tooltip'
 import { useRouter } from 'next/navigation'
 import { Logo } from '@/components/ui/logo'
 import { SidebarNavigation } from '@/components/navigation/sidebar-navigation'
+import { ThemeToggle } from '@/components/ui/theme-toggle'
 
 export type WorkflowStep = {
   id: string
@@ -91,15 +92,15 @@ export function EnhancedWorkflowLayout({
       {showSidebar && (
         <SidebarNavigation
           defaultCollapsed={sidebarCollapsed}
-          className="relative z-10 flex-shrink-0"
+          className="relative z-20 flex-shrink-0"
         />
       )}
 
       {/* Main Content */}
-      <div className="relative z-10 flex-1 overflow-hidden">
+      <div className="relative z-10 flex-1 overflow-y-auto overflow-x-hidden">
         <div className="flex min-h-screen flex-col bg-background/92 backdrop-blur-sm">
         {/* Enhanced Header */}
-        <div className="border-b border-border/60 bg-background/95 shadow-sm">
+        <div className="sticky top-0 z-30 border-b border-border/70 bg-background/90 shadow-sm supports-[backdrop-filter]:bg-background/70 backdrop-blur">
           <div className="page-shell py-section-sm">
             <div className="flex flex-wrap items-center justify-between gap-3">
               {/* Left: Project Info */}
@@ -128,6 +129,7 @@ export function EnhancedWorkflowLayout({
                     Unsaved Changes
                   </Badge>
                 )}
+                <ThemeToggle />
                 
                 <Button 
                   variant="ghost" 
@@ -143,7 +145,7 @@ export function EnhancedWorkflowLayout({
 
           {/* Workflow Steps */}
           {!isCollapsed && (
-            <div className="border-t border-border/60 bg-background/80">
+            <div className="border-t border-border/60 bg-gradient-to-b from-background/95 via-background/85 to-background/75">
               <div className="page-shell py-content-lg">
                 <div className="flex items-center justify-center gap-3 overflow-x-auto">
                   {steps.map((step, index) => {

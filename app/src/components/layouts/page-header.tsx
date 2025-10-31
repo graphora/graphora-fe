@@ -34,7 +34,7 @@ export function PageHeader({
   return (
     <div
       className={cn(
-        'border-b border-border/60 bg-background/95 backdrop-blur-sm supports-[backdrop-filter]:bg-background/80 shadow-sm mb-section p-4',
+        'sticky top-0 z-40 border-b border-border/60 bg-background/90 backdrop-blur-sm supports-[backdrop-filter]:bg-background/70 shadow-sm mb-section p-4',
         className
       )}
     >

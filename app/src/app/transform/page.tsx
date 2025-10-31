@@ -941,10 +941,10 @@ function TransformPageContent() {
           </div>
         </div>
 
-        <div className="p-6">
-          <div className="grid grid-cols-4 gap-6 h-full">
-            {/* Upload Panel - 25% width */}
-            <div className="col-span-1 space-y-content">
+        <div className="page-shell py-section stack-gap">
+          <div className="grid gap-6 lg:grid-cols-[minmax(0,340px)_1fr]">
+            {/* Upload Panel */}
+            <div className="stack-gap">
               {/* File Upload Section */}
               <div className="enhanced-card">
                 <div className="enhanced-card-header">
@@ -1032,8 +1032,8 @@ function TransformPageContent() {
               </div>
             </div>
 
-            {/* Graph Visualization Panel - 75% width */}
-            <div className="col-span-3">
+            {/* Graph Visualization Panel */}
+            <div className="h-full">
               <div className="enhanced-card h-full text-sm text-muted-foreground">
                 <div className="enhanced-card-header">
                   <h3 className="text-lg font-semibold text-foreground">Knowledge Graph</h3>

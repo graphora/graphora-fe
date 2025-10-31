@@ -4,7 +4,6 @@ import {
   SignedOut,
   UserButton
 } from '@clerk/nextjs'
-import { Inter } from 'next/font/google'
 import { Toaster } from '@/components/ui/toaster'
 import { Toaster as SonnerToaster } from 'sonner'
 import { ThemeProvider } from '@/providers/theme-provider'
@@ -12,8 +11,6 @@ import { NetworkStatus } from '@/components/ui/network-status'
 import { cn } from '@/lib/utils'
 import type { Metadata } from 'next'
 import './globals.css'
-
-const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
   title: 'Graphora - Knowledge Graph Platform',
@@ -32,7 +29,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={cn(inter.className, 'min-h-screen')}>
+      <body className={cn('min-h-screen font-sans')}>
         <ClerkProvider>
           <ThemeProvider
             attribute="class"
