@@ -24,7 +24,7 @@ export function DashboardLayout({
         "relative flex min-h-screen bg-gradient-to-br from-background via-background to-muted/20",
         className
       )}>
-        <div className="pointer-events-none absolute inset-0 opacity-60 [background-image:radial-gradient(circle_at_0%_0%,rgba(59,130,246,0.12),transparent_55%),radial-gradient(circle_at_100%_0%,rgba(129,140,248,0.1),transparent_45%),radial-gradient(circle_at_50%_100%,rgba(14,165,233,0.12),transparent_50%)]" aria-hidden />
+        <div className="pointer-events-none absolute inset-0 opacity-60 [background-image:radial-gradient(circle_at_0%_0%,rgba(56,189,248,0.14),transparent_55%),radial-gradient(circle_at_100%_0%,rgba(45,212,191,0.12),transparent_45%),radial-gradient(circle_at_50%_100%,rgba(37,99,235,0.12),transparent_50%)]" aria-hidden />
 
         {showSidebar && (
           <SidebarNavigation

@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
+import { IconBadge } from '@/components/ui/icon-badge'
 import { CheckCircle, Database, Sparkles, ArrowRight, Settings, AlertCircle, Shield, HelpCircle } from 'lucide-react'
 import { SetupStatus } from '@/hooks/useSetupCheck'
 import { ThemeToggle } from '@/components/ui/theme-toggle'
@@ -35,12 +36,10 @@ export function SetupWelcomeModal({ isOpen, onClose, setupStatus, onRefresh }: S
       {
         label: 'Database connections',
         completed: setupStatus.hasDbConfig,
-        accent: 'text-success',
       },
       {
         label: 'AI integration',
         completed: setupStatus.hasAiConfig,
-        accent: 'text-info',
       },
     ],
     [setupStatus.hasAiConfig, setupStatus.hasDbConfig]
@@ -83,9 +82,9 @@ export function SetupWelcomeModal({ isOpen, onClose, setupStatus, onRefresh }: S
 
               <div className="space-y-3">
                 <DialogTitle className="flex items-center gap-3 text-display-sm">
-                  <span className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/30 bg-white/10 shadow-glass">
-                    <Settings className="h-5 w-5 text-primary" />
-                  </span>
+                  <IconBadge variant="primary" size="md">
+                    <Settings className="h-5 w-5" />
+                  </IconBadge>
                   Welcome to Graphora
                 </DialogTitle>
                 <DialogDescription className="max-w-md text-body text-foreground/80">
@@ -108,12 +107,18 @@ export function SetupWelcomeModal({ isOpen, onClose, setupStatus, onRefresh }: S
                 <div className="space-y-3">
                   {setupChecklist.map((item) => (
                     <div key={item.label} className="flex items-center justify-between gap-3 text-sm">
-                      <span className="flex items-center gap-2 text-foreground/90">
-                        {item.completed ? (
-                          <CheckCircle className={cn('h-4 w-4', item.accent)} />
-                        ) : (
-                          <AlertCircle className="h-4 w-4 text-warning" />
-                        )}
+                      <span className="flex items-center gap-3 text-foreground/90">
+                        <IconBadge
+                          variant={item.completed ? 'success' : 'warning'}
+                          size="sm"
+                          className="h-8 w-8"
+                        >
+                          {item.completed ? (
+                            <CheckCircle className="h-4 w-4" />
+                          ) : (
+                            <AlertCircle className="h-4 w-4" />
+                          )}
+                        </IconBadge>
                         {item.label}
                       </span>
                       <Badge variant={item.completed ? 'success' : 'warning'} className="tracking-[0.08em]">
@@ -159,10 +164,10 @@ export function SetupWelcomeModal({ isOpen, onClose, setupStatus, onRefresh }: S
               >
                 <CardHeader className="pb-4">
                   <CardTitle className="flex items-center justify-between text-heading">
-                    <span className="flex items-center gap-2">
-                      <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-white/20 bg-white/10 shadow-glass">
+                    <span className="flex items-center gap-3">
+                      <IconBadge variant={setupStatus.hasDbConfig ? 'success' : 'warning'} size="sm">
                         <Database className={cn('h-4 w-4', setupStatus.hasDbConfig ? 'text-success' : 'text-warning')} />
-                      </span>
+                      </IconBadge>
                       Database configuration
                     </span>
                     <Badge variant={setupStatus.hasDbConfig ? 'success' : 'warning'}>
@@ -217,10 +222,10 @@ export function SetupWelcomeModal({ isOpen, onClose, setupStatus, onRefresh }: S
               >
                 <CardHeader className="pb-4">
                   <CardTitle className="flex items-center justify-between text-heading">
-                    <span className="flex items-center gap-2">
-                      <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-white/20 bg-white/10 shadow-glass">
+                    <span className="flex items-center gap-3">
+                      <IconBadge variant="info" size="sm">
                         <Sparkles className={cn('h-4 w-4', setupStatus.hasAiConfig ? 'text-info' : 'text-muted-foreground')} />
-                      </span>
+                      </IconBadge>
                       AI configuration
                     </span>
                     <Badge variant={setupStatus.hasAiConfig ? 'info' : 'neutral'}>

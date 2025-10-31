@@ -847,7 +847,7 @@ function TransformPageContent() {
           <div className="px-6 py-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-3">
-                <Zap className="h-6 w-6 text-purple-600" />
+                <Zap className="h-6 w-6 text-sky-600" />
                 <div>
                   <h2 className="text-lg font-semibold text-foreground">Document Transform</h2>
                   <p className="text-sm text-muted-foreground">Upload and transform documents into knowledge graphs</p>
@@ -896,7 +896,7 @@ function TransformPageContent() {
                     onClick={handleExtract} 
                     disabled={!file || isProcessing || !!transformId}
                     size="sm"
-                    className="bg-purple-600 hover:bg-purple-700 text-white"
+                    className="bg-sky-600 hover:bg-sky-700 text-white"
                   >
                     <Rocket className="h-4 w-4 mr-1.5" />
                     {isProcessing ? 'Processing...' : 'Transform'}
@@ -1043,7 +1043,7 @@ function TransformPageContent() {
                 </div>
                 <div className="enhanced-card-content h-[600px] relative">
                   {isProcessing ? (
-                    <div className="h-full flex items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-slate-800 dark:via-slate-700 dark:to-slate-900">
+                    <div className="h-full flex items-center justify-center bg-gradient-to-br from-sky-50 via-cyan-50 to-emerald-50 dark:from-slate-800 dark:via-slate-700 dark:to-slate-900">
                       <div className="text-center space-y-content max-w-md">
                         <div className="w-20 h-20 bg-white dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto shadow-xl border-2 border-blue-200 dark:border-slate-600">
                           <Loader2 className="h-10 w-10 animate-spin text-blue-600 dark:text-blue-400" />
@@ -1062,7 +1062,7 @@ function TransformPageContent() {
                             <span>Parsing document structure</span>
                           </div>
                           <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
-                            <div className="w-2 h-2 bg-purple-500 rounded-full animate-pulse"></div>
+                            <div className="w-2 h-2 bg-cyan-500 rounded-full animate-pulse"></div>
                             <span>Extracting entities and relationships</span>
                           </div>
                           <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
@@ -1160,7 +1160,7 @@ function TransformPageContent() {
           
           <div className="flex flex-col h-[95vh]">
             {/* Modal Header */}
-            <div className="flex items-center justify-between p-6 border-b border-border bg-gradient-to-r from-blue-50/80 to-indigo-50/80 dark:from-slate-800/90 dark:to-slate-700/90 backdrop-blur-sm flex-shrink-0">
+            <div className="flex items-center justify-between p-6 border-b border-border bg-gradient-to-r from-sky-50/80 via-teal-50/70 to-emerald-50/70 dark:from-slate-800/90 dark:via-slate-750/85 dark:to-slate-700/90 backdrop-blur-sm flex-shrink-0">
               <div className="flex items-center space-x-3">
                 <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center">
                   <AlertTriangle className="h-5 w-5 text-blue-600 dark:text-blue-400" />

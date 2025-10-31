@@ -66,7 +66,7 @@ export function PageHeader({
         <div className="flex flex-col gap-content lg:flex-row lg:items-end lg:justify-between">
           <div className="flex items-start gap-4">
             {(icon || logo) && (
-              <div className="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500 to-purple-600 text-white shadow-medium">
+              <div className="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-sky-500 via-cyan-500 to-emerald-500 text-white shadow-medium">
                 {logo ? (
                   <Logo
                     width={56}

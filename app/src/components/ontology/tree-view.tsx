@@ -50,7 +50,7 @@ function TreeNode({ name, type, data, level = 0, expanded = false, onToggle }: T
 
           {data.properties && (
             <div style={{ paddingLeft: `${indent + 20}px` }}>
-              <div className="text-sm text-muted-foreground py-1 font-semibold text-purple-800">Properties:</div>
+              <div className="text-sm text-muted-foreground py-1 font-semibold text-teal-700 dark:text-emerald-300">Properties:</div>
               {Object.entries(data.properties).map(([propName, propData]: [string, any]) => (
                 <div key={`prop-${name}-${propName}`} className="py-1 px-2">
                   <span className="font-mono text-sm text-blue-800">{propName}</span>

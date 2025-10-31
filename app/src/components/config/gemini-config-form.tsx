@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Loader2, Eye, EyeOff, AlertCircle, CheckCircle, Sparkles, ExternalLink } from 'lucide-react'
 import { GeminiConfigRequest, AIModel } from '@/types/ai-config'
 import { toast } from 'sonner'
+import { IconBadge } from '@/components/ui/icon-badge'
 
 interface GeminiConfigFormProps {
   config: GeminiConfigRequest
@@ -88,9 +89,9 @@ export function GeminiConfigForm({ config, onChange, disabled, isExistingConfig 
       <CardHeader className="space-y-4 border-b border-white/10 pb-6">
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <span className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-purple-500 to-indigo-500 text-white shadow-glass">
+            <IconBadge variant="info" size="md">
               <Sparkles className="h-5 w-5" />
-            </span>
+            </IconBadge>
             <div>
               <CardTitle className="text-heading text-foreground">Gemini configuration</CardTitle>
               <CardDescription className="text-sm text-foreground/70">

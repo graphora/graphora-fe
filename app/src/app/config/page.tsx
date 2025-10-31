@@ -8,6 +8,7 @@ import { PageHeader } from '@/components/layouts/page-header'
 import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { IconBadge } from '@/components/ui/icon-badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
 import { Loader2, Settings, AlertCircle, CheckCircle, Database, Bell, Shield, ArrowLeft, Sparkles } from 'lucide-react'
@@ -302,7 +303,11 @@ function ConfigPageContent() {
               ? "Set up your databases and AI providers to run workflows and manage your knowledge graphs"
               : "Manage your database connections, AI providers, and system preferences"
           }
-          icon={<Settings className="h-6 w-6" />}
+          icon={(
+            <IconBadge variant="primary" size="md">
+              <Settings className="h-5 w-5" />
+            </IconBadge>
+          )}
           actions={
             returnTo && (
               <Button variant="outline" onClick={handleBack}>
@@ -313,7 +318,8 @@ function ConfigPageContent() {
           }
         />
 
-        <div className="flex-1 overflow-auto p-6">
+        <div className="flex-1 overflow-auto">
+          <div className="page-shell py-section stack-gap">
           {isWorkflowRedirect && (
             <Alert className="mb-6 border-amber-200 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-800">
               <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
@@ -325,19 +331,19 @@ function ConfigPageContent() {
           )}
 
           {error && (
-            <Alert className="mb-6" variant="destructive">
+            <Alert className="border-destructive/50 bg-destructive/10" variant="destructive">
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>{error}</AlertDescription>
             </Alert>
           )}
 
-          <Tabs defaultValue={tabParam || "databases"} className="space-y-6">
-            <TabsList className="grid w-full grid-cols-4 bg-muted">
-              <TabsTrigger value="databases" className="data-[state=active]:bg-background">
+          <Tabs defaultValue={tabParam || "databases"} className="stack-gap">
+            <TabsList className="w-full justify-start">
+              <TabsTrigger value="databases">
                 <Database className="h-4 w-4 mr-2" />
                 Databases
               </TabsTrigger>
-              <TabsTrigger value="ai-config" className="data-[state=active]:bg-background">
+              <TabsTrigger value="ai-config">
                 <Sparkles className="h-4 w-4 mr-2" />
                 AI Config
               </TabsTrigger>
@@ -351,13 +357,15 @@ function ConfigPageContent() {
               </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="databases" className="space-y-6">
+            <TabsContent value="databases" className="stack-gap">
               {/* Configuration Status */}
               <Card className="enhanced-card">
                 <CardHeader className="enhanced-card-header">
                   <CardTitle className="flex items-center justify-between">
-                    <span className="flex items-center space-x-2">
-                      <Database className="h-5 w-5 text-primary" />
+                    <span className="flex items-center gap-3">
+                      <IconBadge variant="primary" size="sm">
+                        <Database className="h-4 w-4" />
+                      </IconBadge>
                       <span>Configuration Status</span>
                     </span>
                     {config ? (
@@ -394,11 +402,13 @@ function ConfigPageContent() {
               </Card>
 
               {/* Database Configuration Forms */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
                 <Card className="enhanced-card">
                   <CardHeader className="enhanced-card-header">
-                    <CardTitle className="flex items-center space-x-2">
-                      <Database className="h-5 w-5 text-primary" />
+                    <CardTitle className="flex items-center gap-3">
+                      <IconBadge variant="primary" size="sm">
+                        <Database className="h-4 w-4" />
+                      </IconBadge>
                       <span>Staging Database</span>
                     </CardTitle>
                   </CardHeader>
@@ -416,8 +426,10 @@ function ConfigPageContent() {
 
                 <Card className="enhanced-card">
                   <CardHeader className="enhanced-card-header">
-                    <CardTitle className="flex items-center space-x-2">
-                      <Database className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+                    <CardTitle className="flex items-center gap-3">
+                      <IconBadge variant="success" size="sm">
+                        <Database className="h-4 w-4" />
+                      </IconBadge>
                       <span>Production Database</span>
                     </CardTitle>
                   </CardHeader>
@@ -479,7 +491,7 @@ function ConfigPageContent() {
               </Card>
             </TabsContent>
 
-            <TabsContent value="ai-config" className="space-y-6">
+            <TabsContent value="ai-config" className="stack-gap">
               {isWorkflowRedirect && (
                 <Alert className="mb-6 border-amber-200 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-800">
                   <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
@@ -494,8 +506,10 @@ function ConfigPageContent() {
               <Card className="enhanced-card">
                 <CardHeader className="enhanced-card-header">
                   <CardTitle className="flex items-center justify-between">
-                    <span className="flex items-center space-x-2">
-                      <Sparkles className="h-5 w-5 text-primary" />
+                    <span className="flex items-center gap-3">
+                      <IconBadge variant="info" size="sm">
+                        <Sparkles className="h-4 w-4" />
+                      </IconBadge>
                       <span>AI Configuration Status</span>
                     </span>
                     {aiConfig ? (
@@ -609,6 +623,7 @@ function ConfigPageContent() {
               </Card>
             </TabsContent>
           </Tabs>
+          </div>
         </div>
       </div>
     </DashboardLayout>

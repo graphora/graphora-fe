@@ -11,6 +11,7 @@ import { Loader2, Database, AlertCircle, CheckCircle, Eye, EyeOff } from 'lucide
 import { DatabaseConfig, ConnectionTestResponse } from '@/types/config'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
+import { IconBadge } from '@/components/ui/icon-badge'
 
 interface DatabaseConfigFormProps {
   title: string
@@ -92,9 +93,9 @@ export function DatabaseConfigForm({ title, description, config, onChange, disab
       <CardHeader className="space-y-4 border-b border-white/10 pb-6">
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <span className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-primary/70 to-primary/40 text-white shadow-glass">
+            <IconBadge variant="primary" size="md">
               <Database className="h-5 w-5" />
-            </span>
+            </IconBadge>
             <div>
               <CardTitle className="text-heading text-foreground">{title}</CardTitle>
               <CardDescription className="text-sm text-foreground/70">{description}</CardDescription>

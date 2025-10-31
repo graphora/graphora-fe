@@ -95,7 +95,7 @@ export function UsageTrackingModal({ isOpen, onClose }: UsageTrackingModalProps)
       label: 'Tokens',
       value: summaryLoading ? '…' : formatNumber(summary?.current_period.tokens_used ?? 0),
       icon: Zap,
-      accent: 'from-purple-500 via-fuchsia-400 to-pink-400',
+      accent: 'from-sky-500 via-cyan-400 to-emerald-400',
     },
   ] as const
 
@@ -293,7 +293,7 @@ export function UsageTrackingModal({ isOpen, onClose }: UsageTrackingModalProps)
           <div className="flex flex-col bg-background/92 backdrop-blur-panel">
             <header className="flex items-center justify-between border-b border-white/10 p-8 pb-6">
               <div className="flex items-center gap-3">
-                <span className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 text-white shadow-glass">
+                <span className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-sky-500 via-cyan-500 to-emerald-500 text-white shadow-glass">
                   <BarChart3 className="h-5 w-5" />
                 </span>
                 <div className="space-y-1">

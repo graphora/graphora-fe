@@ -7,6 +7,8 @@ import { PageHeader } from '@/components/layouts/page-header'
 import { StatusIndicator } from '@/components/ui/status-indicator'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { IconBadge } from '@/components/ui/icon-badge'
+import { StatTile } from '@/components/ui/stat-tile'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 import { 
@@ -71,6 +73,7 @@ export default function DashboardPage() {
       change: null,
       trend: 'up',
       icon: <Database className="h-5 w-5" />,
+      iconBadgeProps: { variant: 'primary' as const },
       description: 'Total ontologies stored'
     },
     {
@@ -79,6 +82,7 @@ export default function DashboardPage() {
       change: null,
       trend: 'up',
       icon: <FileText className="h-5 w-5" />,
+      iconBadgeProps: { variant: 'info' as const },
       description: 'Documents processed successfully'
     },
     {
@@ -87,6 +91,7 @@ export default function DashboardPage() {
       change: null,
       trend: 'up',
       icon: <GitMerge className="h-5 w-5" />,
+      iconBadgeProps: { variant: 'success' as const },
       description: 'Successful merge operations'
     },
     {
@@ -95,6 +100,7 @@ export default function DashboardPage() {
       change: null,
       trend: conflictsSummary?.total_conflicts > 0 ? 'down' : 'up',
       icon: <AlertTriangle className="h-5 w-5" />,
+      iconBadgeProps: { variant: 'warning' as const },
       description: 'Merge conflicts needing review'
     }
   ]
@@ -122,7 +128,11 @@ export default function DashboardPage() {
         <PageHeader
           title="Dashboard"
           description="Overview of your knowledge graph projects and workflow progress"
-          icon={<BarChart3 className="h-6 w-6" />}
+          icon={(
+            <IconBadge variant="info" size="md">
+              <BarChart3 className="h-5 w-5" />
+            </IconBadge>
+          )}
           actions={
             <div className="flex items-center gap-3">
               <Button
@@ -138,46 +148,19 @@ export default function DashboardPage() {
         />
 
         <div className="flex-1 overflow-auto">
-          <div className="page-shell py-section-sm stack-gap p-6">
+          <div className="page-shell py-section stack-gap p-6">
           {/* Metrics Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5 xl:gap-6">
             {metrics.map((metric, index) => (
-              <Card key={index} variant="glass" className="shadow-soft">
-                <CardContent className="flex flex-col gap-3 p-6">
-                  <div className="flex flex-wrap items-start justify-between gap-4">
-                    <div className="flex items-center gap-4">
-                      <div className="h-11 w-11 rounded-full bg-gradient-to-br from-primary/18 to-primary/6 flex items-center justify-center text-primary shadow-soft">
-                        {metric.icon}
-                      </div>
-                      <div className="space-y-1.5">
-                        <div className="text-4xl md:text-[2.75rem] font-semibold text-foreground leading-tight">
-                          {metric.value}
-                        </div>
-                        <div className="text-body-sm text-muted-foreground/80">
-                          {metric.title}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                      {getTrendIcon(metric.trend)}
-                      {metric.change && (
-                        <span
-                          className={cn(
-                            'text-body-xs font-medium',
-                            metric.trend === 'up' && 'text-emerald-500',
-                            metric.trend === 'down' && 'text-destructive'
-                          )}
-                        >
-                          {metric.change}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  <div className="text-body-xs text-muted-foreground/80">
-                    {metric.description}
-                  </div>
-                </CardContent>
-              </Card>
+              <StatTile
+                key={index}
+                value={metric.value}
+                label={metric.title}
+                description={metric.description}
+                icon={metric.icon}
+                trend={getTrendIcon(metric.trend)}
+                iconBadgeProps={metric.iconBadgeProps}
+              />
             ))}
           </div>
 
@@ -200,7 +183,7 @@ export default function DashboardPage() {
                   >
                     <div className="flex-shrink-0">
                       {activity.operation_type === 'ontology_stored' && <Database className="h-4 w-4 text-blue-500" />}
-                      {activity.operation_type === 'transform_started' && <Upload className="h-4 w-4 text-purple-500" />}
+                      {activity.operation_type === 'transform_started' && <Upload className="h-4 w-4 text-sky-500" />}
                       {activity.operation_type === 'transform_completed' && <FileText className="h-4 w-4 text-green-500" />}
                       {activity.operation_type === 'merge_started' && <GitMerge className="h-4 w-4 text-orange-500" />}
                       {activity.operation_type === 'merge_completed' && <CheckCircle className="h-4 w-4 text-emerald-500" />}

@@ -88,7 +88,7 @@ export function EnhancedWorkflowLayout({
 
   return (
     <div className="relative flex min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
-      <div className="pointer-events-none absolute inset-0 opacity-55 [background-image:radial-gradient(circle_at_15%_20%,rgba(37,99,235,0.12),transparent_55%),radial-gradient(circle_at_85%_15%,rgba(91,33,182,0.12),transparent_50%),radial-gradient(circle_at_50%_90%,rgba(14,165,233,0.1),transparent_45%)]" aria-hidden />
+      <div className="pointer-events-none absolute inset-0 opacity-55 [background-image:radial-gradient(circle_at_15%_20%,rgba(56,189,248,0.14),transparent_55%),radial-gradient(circle_at_85%_15%,rgba(45,212,191,0.12),transparent_50%),radial-gradient(circle_at_50%_90%,rgba(37,99,235,0.12),transparent_45%)]" aria-hidden />
       {showSidebar && (
         <SidebarNavigation
           defaultCollapsed={sidebarCollapsed}
