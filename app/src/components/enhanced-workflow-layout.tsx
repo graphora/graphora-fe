@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react'
 import { useBeforeUnload } from '@/hooks/use-before-unload'
 import { cn } from '@/lib/utils'
-import { Check, ChevronRight, Clock, AlertCircle } from 'lucide-react'
+import { Check, ChevronRight, Clock, AlertCircle, ChevronDown } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Tooltip } from '@/components/ui/tooltip'
@@ -29,6 +29,7 @@ export interface EnhancedWorkflowLayoutProps {
   onStepClick?: (stepId: string) => void
   showSidebar?: boolean
   sidebarCollapsed?: boolean
+  headerActions?: React.ReactNode
 }
 
 export function EnhancedWorkflowLayout({
@@ -41,6 +42,7 @@ export function EnhancedWorkflowLayout({
   onStepClick,
   showSidebar = true,
   sidebarCollapsed = true,
+  headerActions,
 }: EnhancedWorkflowLayoutProps) {
   const [isCollapsed, setIsCollapsed] = useState(true)
   const router = useRouter()
@@ -99,52 +101,40 @@ export function EnhancedWorkflowLayout({
       <div className="relative z-10 flex-1 overflow-y-auto overflow-x-hidden">
         <div className="flex min-h-screen flex-col bg-background/92 backdrop-blur-sm">
         {/* Enhanced Header */}
-        <div className="sticky top-0 z-30 border-b border-border/70 bg-background/90 shadow-sm supports-[backdrop-filter]:bg-background/70 backdrop-blur">
-          <div className="page-shell py-section-sm">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              {/* Left: Project Info */}
-              <div className="flex items-center space-x-3">
-                <button
-                  type="button"
-                  onClick={() => router.push('/')}
-                  className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-body-sm font-medium text-muted-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-background hover:text-foreground"
-                >
-                  <div className="h-7 w-7 flex items-center justify-center overflow-hidden rounded-md border border-border/50 bg-muted/40">
-                    <Logo
-                      width={28}
-                      height={28}
-                      className="h-full w-full"
-                    />
-                  </div>
-                  <span className="truncate">{projectTitle}</span>
-                </button>
-              </div>
-
-              {/* Right: Status Indicators and Controls */}
-              <div className="flex items-center space-x-3">
+        <div className="sticky top-0 z-30 border-b border-border/40 bg-background/95 shadow-sm backdrop-blur-md">
+          <div className="page-shell py-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex items-center gap-2.5">
+                <h1 className="text-lg font-semibold text-foreground truncate">
+                  {projectTitle}
+                </h1>
                 {hasUnsavedChanges && (
-                  <Badge variant="warning" tone="soft" className="px-2 py-1">
+                  <Badge variant="warning" className="px-2 py-0.5 text-xs">
                     <AlertCircle className="mr-1 h-3 w-3" />
-                    Unsaved Changes
+                    Unsaved
                   </Badge>
                 )}
-                <Button
-                  variant="link"
-                  size="sm"
+              </div>
+
+              <div className="flex items-center gap-2">
+                {headerActions}
+                <button
+                  type="button"
                   onClick={() => setIsCollapsed(!isCollapsed)}
-                  className="px-0 text-body-sm text-muted-foreground hover:text-foreground"
+                  className="inline-flex items-center gap-1.5 rounded-md border border-border/50 bg-background/80 px-2.5 py-1 text-xs font-medium text-muted-foreground transition hover:text-foreground hover:bg-background hover:border-border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
                 >
-                  {isCollapsed ? 'Show steps' : 'Hide steps'}
-                </Button>
+                  <span>{isCollapsed ? 'Show steps' : 'Hide steps'}</span>
+                  <ChevronDown className={cn('h-3.5 w-3.5 transition-transform', !isCollapsed && 'rotate-180')} />
+                </button>
               </div>
             </div>
           </div>
 
           {/* Workflow Steps */}
           {!isCollapsed && (
-            <div className="border-t border-border/60 bg-gradient-to-b from-background/95 via-background/85 to-background/75">
-              <div className="page-shell py-content-lg">
-                <div className="flex items-center justify-center gap-3 overflow-x-auto">
+            <div className="border-t border-border/40 bg-muted/20">
+              <div className="page-shell py-4">
+                <div className="flex items-center justify-center gap-2 overflow-x-auto">
                   {steps.map((step, index) => {
                     const isCompleted = index < currentStepIndex || step.status === 'completed'
                     const isCurrent = index === currentStepIndex || step.status === 'current'
@@ -155,16 +145,16 @@ export function EnhancedWorkflowLayout({
                     return (
                       <div key={step.id} className="flex items-center">
                         {index > 0 && (
-                          <div className="flex items-center mx-3">
-                            <ChevronRight 
+                          <div className="flex items-center mx-1.5">
+                            <ChevronRight
                               className={cn(
-                                "h-5 w-5 transition-colors",
-                                isCompleted ? "text-emerald-600 dark:text-emerald-400" : "text-muted-foreground"
-                              )} 
+                                "h-4 w-4 transition-colors",
+                                isCompleted ? "text-emerald-500" : "text-muted-foreground/40"
+                              )}
                             />
                           </div>
                         )}
-                        
+
                         <Tooltip
                           content={
                             <div className="space-y-1">
@@ -183,37 +173,38 @@ export function EnhancedWorkflowLayout({
                         >
                           <div
                             className={cn(
-                              "flex min-w-[130px] flex-col items-center gap-2 rounded-2xl border border-border/50 bg-muted/40 px-4 py-3 text-center transition-all",
+                              "flex min-w-[100px] flex-col items-center gap-1.5 rounded-lg border px-3 py-2 text-center transition-all",
                               isClickable ? "cursor-pointer" : "cursor-not-allowed opacity-60",
-                              isCurrent && "border-primary/40 bg-primary/10 shadow-soft",
-                              isCompleted && !isCurrent && "hover:bg-muted/60"
+                              isCurrent && "border-primary bg-primary/5 shadow-sm",
+                              isCompleted && !isCurrent && "border-border/40 bg-background hover:bg-muted/50",
+                              !isCompleted && !isCurrent && "border-border/30 bg-muted/30"
                             )}
                             onClick={() => handleStepClick(step, index)}
                           >
                             <div className={cn(
-                              "flex h-11 w-11 items-center justify-center rounded-full border-2 transition-colors",
-                              isCompleted 
-                                ? "bg-emerald-100 dark:bg-emerald-950/30 border-emerald-500 dark:border-emerald-600 text-emerald-700 dark:text-emerald-400"
-                                : isCurrent 
-                                  ? "bg-blue-100 dark:bg-blue-950/30 border-blue-500 dark:border-blue-600 text-blue-700 dark:text-blue-400"
+                              "flex h-8 w-8 items-center justify-center rounded-full border-2 transition-colors",
+                              isCompleted
+                                ? "bg-emerald-500 border-emerald-500 text-white"
+                                : isCurrent
+                                  ? "bg-primary/10 border-primary text-primary"
                                   : isBlocked
-                                    ? "bg-red-100 dark:bg-red-950/30 border-red-500 dark:border-red-600 text-red-700 dark:text-red-400"
+                                    ? "bg-red-100 border-red-500 text-red-600"
                                     : "bg-muted border-muted-foreground/30 text-muted-foreground"
                             )}>
                               {isCompleted ? (
-                                <Check className="h-5 w-5" />
+                                <Check className="h-4 w-4" />
                               ) : isBlocked ? (
-                                <AlertCircle className="h-5 w-5" />
+                                <AlertCircle className="h-4 w-4" />
                               ) : (
-                                <span className="text-sm font-semibold">{index + 1}</span>
+                                <span className="text-xs font-semibold">{index + 1}</span>
                               )}
                             </div>
-                            
+
                             <div className="text-center">
                               <div className={cn(
-                                "text-sm font-medium",
-                                isCurrent ? "text-blue-700 dark:text-blue-400" : 
-                                isCompleted ? "text-emerald-700 dark:text-emerald-400" : 
+                                "text-xs font-medium",
+                                isCurrent ? "text-primary" :
+                                isCompleted ? "text-emerald-600" :
                                 "text-muted-foreground"
                               )}>
                                 {step.title}

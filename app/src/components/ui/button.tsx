@@ -20,7 +20,7 @@ const buttonVariants = cva(
         link:
           "underline-offset-4 text-primary hover:underline",
         glass:
-          "backdrop-blur-panel border border-white/15 bg-white/8 text-foreground/90 shadow-glass hover:bg-white/12 hover:border-white/25",
+          "backdrop-blur-panel border-2 border-border/40 bg-background/60 text-foreground shadow-soft hover:bg-background/80 hover:border-border/60 dark:border-white/15 dark:bg-white/8 dark:hover:bg-white/12 dark:hover:border-white/25",
         subtle:
           "bg-muted/60 text-foreground/80 shadow-soft hover:bg-muted",
         success:

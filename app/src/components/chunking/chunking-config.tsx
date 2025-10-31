@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { cn } from '@/lib/utils'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -268,15 +268,15 @@ export function ChunkingConfig({ fileContent, fileName, onConfigChange, classNam
   }
 
   return (
-    <Card className={className}>
-      <CardHeader className="pb-4">
+    <div className={cn("rounded-lg border bg-card text-card-foreground", className)}>
+      <div className="pb-4 p-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center">
               <Settings2 className="h-4 w-4 text-blue-600 dark:text-blue-400" />
             </div>
             <div>
-              <CardTitle className="text-base font-semibold">Chunking Configuration</CardTitle>
+              <h3 className="text-base font-semibold">Chunking Configuration</h3>
               <p className="text-xs text-muted-foreground mt-1">
                 Configure how your document is split for processing
               </p>
@@ -284,20 +284,20 @@ export function ChunkingConfig({ fileContent, fileName, onConfigChange, classNam
           </div>
           
           <Button
-            variant="outline"
+            variant="default"
             size="sm"
             onClick={handleAnalyzeDocument}
             disabled={isAnalyzing || !fileContent}
-            className="bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100 dark:bg-blue-950 dark:border-blue-800 dark:text-blue-300"
+            className="bg-gradient-to-r from-primary to-primary/90 text-primary-foreground shadow-md hover:shadow-lg hover:scale-105 transition-all"
           >
             {isAnalyzing ? (
               <>
-                <Loader2 className="h-3 w-3 mr-1.5 animate-spin" />
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                 Analyzing...
               </>
             ) : (
               <>
-                <Brain className="h-3 w-3 mr-1.5" />
+                <Brain className="h-4 w-4 mr-2" />
                 Analyze Document
               </>
             )}
@@ -317,9 +317,9 @@ export function ChunkingConfig({ fileContent, fileName, onConfigChange, classNam
             </div>
           </div>
         )}
-      </CardHeader>
+      </div>
 
-      <CardContent className="space-y-4">
+      <div className="space-y-4 p-6 pt-0">
         {/* Analysis Results */}
         {analysis && (
           <div className="space-y-4 p-4 bg-muted/50 rounded-lg border">
@@ -711,7 +711,7 @@ export function ChunkingConfig({ fileContent, fileName, onConfigChange, classNam
             </AlertDescription>
           </Alert>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   )
 }

@@ -405,12 +405,12 @@
   }
 
   .enhanced-card-header {
-    padding: var(--space-content-lg) var(--space-content);
-    padding-bottom: var(--space-content-sm);
+    padding: var(--space-content-lg) var(--space-content-lg);
+    padding-bottom: var(--space-content-md);
   }
 
   .enhanced-card-content {
-    padding: 0 var(--space-content) var(--space-content-lg);
+    padding: 0 var(--space-content-lg) var(--space-content-lg);
   }
 
   /* Status Indicators with consistent styling */

@@ -113,9 +113,11 @@ export default function SchemaChatPage() {
     }
   }, [generatedSchema, chatState])
 
-  // Initialize chat
+  // Initialize chat - only once on mount
+  const hasInitialized = useRef(false)
   useEffect(() => {
-    if (messages.length === 0) {
+    if (messages.length === 0 && !hasInitialized.current) {
+      hasInitialized.current = true
       addMessage({
         role: 'assistant',
         content: `Welcome to the AI Schema Generator! 🤖
@@ -133,7 +135,7 @@ Ready to get started? Click "Begin" to start the process.`,
         type: 'message'
       })
     }
-  }, [messages.length, addMessage])
+  }, [])
 
   const addTypingMessage = () => {
     setIsTyping(true)
@@ -520,53 +522,42 @@ Please try rephrasing your request or be more specific about the changes you'd l
   ]
 
   return (
-    <EnhancedWorkflowLayout 
-      steps={workflowSteps} 
+    <EnhancedWorkflowLayout
+      steps={workflowSteps}
       currentStepId="schema-generation"
       hasUnsavedChanges={false}
       projectTitle="AI Schema Generator"
       onStepClick={(stepId) => {
         if (stepId === 'ontology') router.push('/ontology')
       }}
+      headerActions={
+        chatState === 'schema_review' && generatedSchema ? (
+          <div className="flex items-center gap-2">
+            {viewMode === 'chat' ? (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleShowPreview}
+              >
+                Open preview
+              </Button>
+            ) : (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setViewMode('chat')}
+              >
+                Hide preview
+              </Button>
+            )}
+            <Button size="sm" onClick={handleExportToEditor}>
+              Export to editor
+            </Button>
+          </div>
+        ) : undefined
+      }
     >
       <div className="flex-1 flex flex-col h-full">
-        {/* Header */}
-        <div className="sticky top-0 z-20 border-b border-border/60 bg-background/95 backdrop-blur-sm">
-          <div className="page-shell py-section-sm">
-            <div className="flex flex-wrap items-center justify-between gap-4">
-              <div className="min-w-0 space-y-1">
-                <h2 className="text-heading-sm font-semibold text-foreground truncate">AI Schema Generator</h2>
-                <p className="text-body-sm text-muted-foreground">
-                  Guided assistance to design and refine your knowledge graph schema
-                </p>
-              </div>
-              {chatState === 'schema_review' && generatedSchema && (
-                <div className="flex items-center gap-2">
-                  {viewMode === 'chat' ? (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleShowPreview}
-                    >
-                      Open preview
-                    </Button>
-                  ) : (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setViewMode('chat')}
-                    >
-                      Hide preview
-                    </Button>
-                  )}
-                  <Button size="sm" onClick={handleExportToEditor}>
-                    Export to editor
-                  </Button>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
 
         {/* Progress Bar */}
         <div className="border-b border-border/60 bg-muted/15">

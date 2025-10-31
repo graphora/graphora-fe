@@ -256,17 +256,15 @@ export function ConflictList({
   }
 
   return (
-    <div className={cn("h-screen flex flex-col", className)}>
-
-
+    <div className={cn("h-full flex flex-col", className)}>
       <div className="flex-1 flex overflow-hidden" ref={containerRef}>
-        <div 
-          className="relative bg-background border-r border-border"
+        <div
+          className="relative bg-card border-r border-border"
           style={{ width: `${leftWidth}%` }}
         >
           <div className="h-full flex flex-col">
             {/* Filters - Fixed at top */}
-            <div className="p-4 border-b border-border bg-background shrink-0">
+            <div className="p-4 border-b border-border bg-card shrink-0">
               <div className="flex items-center gap-2 flex-wrap">
                 <Input
                   placeholder="Search conflicts..."
@@ -407,7 +405,7 @@ export function ConflictList({
 
             {/* Pagination - Fixed at bottom */}
             {convertedConflicts.length >= filters.limit! && (
-              <div className="p-2 border-t bg-background shrink-0">
+              <div className="p-2 border-t bg-card shrink-0">
                 <div className="flex items-center justify-between text-xs">
                   <span>
                     {filters.offset! + 1} - {Math.min(filters.offset! + filters.limit!, convertedConflicts.length)} of {convertedConflicts.length}
@@ -442,7 +440,7 @@ export function ConflictList({
         </div>
 
         <div 
-          className="bg-background flex-1 overflow-auto"
+          className="bg-card flex-1 overflow-auto"
           style={{ width: `${100 - leftWidth}%` }}
         >
           {selectedConflictForDetails ? (

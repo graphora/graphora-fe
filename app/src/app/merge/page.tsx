@@ -835,8 +835,8 @@ function MergePageContent() {
 
       {/* Main Content */}
       <div className="flex-1 overflow-auto">
-        <div className="mx-auto max-w-7xl px-section-inline py-section space-y-section">
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-content">
+        <div className="page-shell py-section stack-gap">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-10 space-y-6">
             <div className="flex items-center justify-between gap-4">
               <TabsList className="w-full">
                 <TabsTrigger value="progress" className="flex-1">
@@ -865,13 +865,13 @@ function MergePageContent() {
               
               <div className="flex items-center space-x-2 flex-shrink-0 ml-4">
                 {/* Timer Display */}
-                {startTime && 
-                  status !== MergeStatus.COMPLETED && 
-                  status !== MergeStatus.FAILED && 
+                {startTime &&
+                  status !== MergeStatus.COMPLETED &&
+                  status !== MergeStatus.FAILED &&
                   status !== MergeStatus.CANCELLED && (
-                  <div className="flex items-center text-sm text-muted-foreground bg-muted px-2 py-1 rounded" title="Elapsed Time">
-                    <Clock className="h-4 w-4 mr-1" />
-                    <span>{formatElapsedTime(elapsedTime)}</span>
+                  <div className="flex items-center text-sm text-muted-foreground bg-muted px-2 py-1 rounded whitespace-nowrap" title="Elapsed Time">
+                    <Clock className="h-4 w-4 mr-1 flex-shrink-0" />
+                    <span className="font-mono">{formatElapsedTime(elapsedTime)}</span>
                   </div>
                 )}
                 
@@ -907,121 +907,56 @@ function MergePageContent() {
                 )}
               </div>
             </div>
-            <TabsContent value="progress" className="space-y-content">
-              <div className="enhanced-card">
-                <div className="enhanced-card-header">
-                  <h3 className="text-lg font-semibold text-foreground">Merge Progress</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Track the progress of your merge process and resolve any conflicts
-                  </p>
-                </div>
-                <div className="enhanced-card-content">
-                  {currentMergeId ? (
-                    <div className="space-y-content">
-                      <MergeProgress
-                        mergeId={currentMergeId || ''}
-                        sessionId={sessionId}
-                        transformId={transformId}
-                        onViewConflicts={handleViewConflicts}
-                        onCancel={handleCancelMerge}
-                        onFinalize={handleAutoResolveComplete}
-                      />
-
-                      {/* Completed Merge Notification */}
-                      {status === MergeStatus.COMPLETED && (
-                        <Alert className="bg-green-50 border-green-200 animate-fadeIn mb-4">
-                          <CheckCircle2 className="h-5 w-5 text-green-600" />
-                          <div className="font-medium text-green-800">Merge Completed Successfully!</div>
-                          <AlertDescription className="text-green-700">
-                            Excellent! The merge has been completed successfully. All data has been merged into the production database.
-                          </AlertDescription>
-                        </Alert>
-                      )}
-
-                      {/* Failed Merge Notification */}
-                      {status === MergeStatus.FAILED && (
-                        <Alert className="bg-red-50 border-red-200 animate-fadeIn mb-4">
-                          <AlertCircle className="h-5 w-5 text-red-600" />
-                          <div className="font-medium text-red-800">Merge Failed</div>
-                          <AlertDescription className="text-red-700">
-                            <p className="mb-3">
-                              The merge process encountered an error and could not be completed. You can retry the merge process.
-                            </p>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={handleRetry}
-                              disabled={isRetrying}
-                              className="bg-white hover:bg-red-50 text-red-600 border-red-300"
-                            >
-                              {isRetrying ? (
-                                <>
-                                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                                  Retrying...
-                                </>
-                              ) : (
-                                <>
-                                  <RefreshCcw className="h-4 w-4 mr-2" />
-                                  Retry Merge
-                                </>
-                              )}
-                            </Button>
-                          </AlertDescription>
-                        </Alert>
-                      )}
-                    </div>
-                  ) : (
-                    <div className="flex flex-col items-center justify-center py-12">
-                      <Loader2 className="h-8 w-8 animate-spin mb-4 text-primary" />
+            <TabsContent value="progress" className="space-y-4">
+                {currentMergeId ? (
+                  <MergeProgress
+                    mergeId={currentMergeId || ''}
+                    sessionId={sessionId}
+                    transformId={transformId}
+                    onViewConflicts={handleViewConflicts}
+                    onCancel={handleCancelMerge}
+                    onFinalize={handleAutoResolveComplete}
+                    onRetry={handleRetry}
+                    isRetrying={isRetrying}
+                  />
+                ) : (
+                  <div className="enhanced-card">
+                    <div className="enhanced-card-content flex flex-col items-center justify-center gap-3 py-12">
+                      <Loader2 className="h-8 w-8 animate-spin text-primary" />
                       <p className="text-muted-foreground">Initializing merge process...</p>
+                    </div>
+                  </div>
+                )}
+            </TabsContent>
+            
+            <TabsContent value="conflicts" className="space-y-4">
+              <div className="enhanced-card">
+                <div className="enhanced-card-content h-[600px] relative p-0 overflow-hidden rounded-lg">
+                  {currentMergeId ? (
+                    <ConflictList
+                      mergeId={currentMergeId}
+                      onConflictSelect={handleConflictSelect}
+                      selectedConflicts={selectedConflicts}
+                      onSelectionChange={setSelectedConflicts}
+                      onAutoResolveComplete={handleAutoResolveComplete}
+                      onViewMergedResults={() => {/* navigate to results */}}
+                      onViewFinalGraph={handleViewFinalGraph}
+                    />
+                  ) : (
+                    <div className="flex items-center justify-center h-full">
+                      <div className="text-center space-y-4">
+                        <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
+                        <p className="text-muted-foreground">Loading conflicts...</p>
+                      </div>
                     </div>
                   )}
                 </div>
               </div>
             </TabsContent>
             
-            <TabsContent value="conflicts" className="space-y-content">
+            <TabsContent value="visualization" className="space-y-4">
               <div className="enhanced-card">
-                <div className="enhanced-card-header">
-                  <h3 className="text-lg font-semibold text-foreground">Conflict Resolution</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Review and resolve conflicts that need attention during the merge process
-                  </p>
-                </div>
-                <div className="enhanced-card-content h-[600px] relative">
-                  <div className="h-full overflow-hidden">
-                    {currentMergeId ? (
-                      <ConflictList
-                        mergeId={currentMergeId}
-                        onConflictSelect={handleConflictSelect}
-                        selectedConflicts={selectedConflicts}
-                        onSelectionChange={setSelectedConflicts}
-                        onAutoResolveComplete={handleAutoResolveComplete}
-                        onViewMergedResults={() => {/* navigate to results */}}
-                        onViewFinalGraph={handleViewFinalGraph}
-                      />
-                    ) : (
-                      <div className="flex items-center justify-center h-full">
-                        <div className="text-center space-y-4">
-                          <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
-                          <p className="text-muted-foreground">Loading conflicts...</p>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </TabsContent>
-            
-            <TabsContent value="visualization" className="space-y-content">
-              <div className="enhanced-card">
-                <div className="enhanced-card-header">
-                  <h3 className="text-lg font-semibold text-foreground">Merge Visualization</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Interactive visualization of the merged knowledge graph
-                  </p>
-                </div>
-                <div className="enhanced-card-content h-[600px] relative">
+                <div className="enhanced-card-content h-[600px] relative p-0 overflow-hidden rounded-lg">
 
                   
                   {isLoadingGraph && (

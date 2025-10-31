@@ -5,11 +5,11 @@ import type { BadgeProps } from './ui/badge';
 import { Button } from './ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from './ui/card';
 import { Separator } from './ui/separator';
-import { Clock, AlertCircle, CheckCircle, XCircle, Loader2, Info, Calendar, ArrowRight, CheckCircle2, AlertTriangle, ExternalLink } from 'lucide-react';
+import { Clock, AlertCircle, CheckCircle, XCircle, Loader2, Info, Calendar, ArrowRight, CheckCircle2, AlertTriangle, ExternalLink, RefreshCcw } from 'lucide-react';
 import { MergeProgress as MergeProgressType, MergeStage, MergeStageStatus, MergeStatus } from '@/types/merge';
 import { format } from 'date-fns';
 import { Tooltip } from './ui/tooltip';
-import { Alert, AlertDescription } from './ui/alert';
+import { Alert, AlertDescription, AlertTitle } from './ui/alert';
 import { toast } from './ui/use-toast';
 import { Checkbox } from './ui/checkbox';
 import { useLocalStorage } from '../hooks/use-local-storage';
@@ -29,6 +29,8 @@ interface MergeProgressProps {
   onViewConflicts?: () => void;
   onCancel?: () => void;
   onFinalize?: () => void;
+  onRetry?: () => void;
+  isRetrying?: boolean;
 }
 
 // Define the verification result type
@@ -39,7 +41,7 @@ interface VerificationResult {
   issues: any[];
 }
 
-export function MergeProgress({ mergeId, sessionId, transformId, onViewConflicts, onCancel, onFinalize }: MergeProgressProps) {
+export function MergeProgress({ mergeId, sessionId, transformId, onViewConflicts, onCancel, onFinalize, onRetry, isRetrying }: MergeProgressProps) {
   // Helper function to calculate progress percentage based on merge status
   const calculateProgressFromStatus = (status: MergeStatus): number => {
     switch (status) {
@@ -77,7 +79,6 @@ export function MergeProgress({ mergeId, sessionId, transformId, onViewConflicts
   });
   const [elapsedTime, setElapsedTime] = useState<number>(0);
   const [elapsedTimeStr, setElapsedTimeStr] = useState<string>('00:00');
-  const [showDetails, setShowDetails] = useState(false);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const startTimeRef = useRef<Date | null>(null);
@@ -549,85 +550,123 @@ export function MergeProgress({ mergeId, sessionId, transformId, onViewConflicts
   return (
     <Card variant="glass" className="w-full flex flex-col max-h-[calc(100vh-100px)] min-h-[500px] shadow-soft">
       <CardHeader className="flex-shrink-0 p-6 pb-content-sm">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
-          <div>
-            <CardTitle>Merge Progress</CardTitle>
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+          <div className="flex items-center gap-3">
             <CardDescription>
               Started {formatDateTime(progress.start_time)}
             </CardDescription>
+            {progress.overall_status !== MergeStatus.COMPLETED &&
+              progress.overall_status !== MergeStatus.FAILED &&
+              progress.overall_status !== MergeStatus.CANCELLED && (
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground bg-muted px-2 py-1 rounded whitespace-nowrap">
+                <Clock className="h-3.5 w-3.5 flex-shrink-0" />
+                <span className="font-mono">{elapsedTimeStr}</span>
+              </div>
+            )}
           </div>
-          <div className="flex flex-wrap items-center gap-content-sm">
+          <div className="flex flex-wrap items-center gap-2">
             {getStatusBadge(progress.overall_status)}
             {progress.conflict_count > 0 && progress.overall_status === MergeStatus.HUMAN_REVIEW && (
-              <Badge variant="destructive" className="ml-2 animate-pulse">
+              <Badge variant="destructive" className="animate-pulse">
                 {progress.conflict_count} Conflicts
               </Badge>
             )}
             {progress.overall_status === MergeStatus.READY_TO_MERGE && (
-              <Badge variant="success" className="ml-2">
+              <Badge variant="success">
                 No Conflicts
               </Badge>
             )}
             {progress.overall_status === MergeStatus.COMPLETED && (
-              <Badge variant="success" className="ml-2">
+              <Badge variant="success">
                 Merged
               </Badge>
             )}
           </div>
         </div>
       </CardHeader>
-      <CardContent className="flex-grow overflow-y-auto p-6">
-        <div className="space-y-content-sm">
+      <CardContent className="flex-grow p-6">
+        <div className="space-y-5">
           {/* Conflict Alert */}
           {progress.overall_status === MergeStatus.HUMAN_REVIEW && progress.conflict_count > 0 && (
-          <Alert variant="warning" className="animate-fadeIn glass-surface">
-            <AlertTriangle className="h-5 w-5 text-warning" />
-            <div className="font-medium text-warning text-body">Action Required: Conflicts Detected</div>
-            <AlertDescription className="text-warning/80 text-body-sm">
-              <p className="mb-2">
-                {progress.conflict_count} conflicts need to be resolved before the merge can proceed.
-                Please review and resolve these conflicts to continue.
-              </p>
-              <div className="flex flex-col gap-content">
-                <Button 
-                  variant="warning"
-                  onClick={onViewConflicts}
-                >
-                  <ExternalLink className="mr-2 h-4 w-4" />
-                  View and Resolve Conflicts
-                </Button>
-                <div className="flex items-center gap-2">
-                  <Checkbox
-                    id="autoNavigate"
-                    checked={autoNavigateToConflicts}
-                    onCheckedChange={(checked) => setAutoNavigateToConflicts(checked as boolean)}
-                  />
-                  <label htmlFor="autoNavigate" className="text-body-sm text-warning cursor-pointer">
-                    Always take me to conflict resolution when conflicts are detected
-                  </label>
-                </div>
-              </div>
+          <Alert variant="warning" className="animate-fadeIn border-warning/40 bg-warning/10">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertTitle>Action Required: Conflicts Detected</AlertTitle>
+            <AlertDescription className="text-warning/80 text-sm">
+              {progress.conflict_count} conflicts need to be resolved before the merge can proceed.
             </AlertDescription>
+            <div className="flex flex-col gap-2 mt-3">
+              <Button
+                variant="warning"
+                size="sm"
+                className="bg-amber-500 text-amber-950 hover:bg-amber-400 w-fit"
+                onClick={onViewConflicts}
+              >
+                <ExternalLink className="mr-2 h-4 w-4" />
+                View and Resolve Conflicts
+              </Button>
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="autoNavigate"
+                  checked={autoNavigateToConflicts}
+                  onCheckedChange={(checked) => setAutoNavigateToConflicts(checked as boolean)}
+                />
+                <label htmlFor="autoNavigate" className="text-xs text-warning/70 cursor-pointer">
+                  Always take me to conflict resolution when conflicts are detected
+                </label>
+              </div>
+            </div>
           </Alert>
         )}
 
           {/* Ready to Merge Notification */}
           {progress.overall_status === MergeStatus.READY_TO_MERGE && (
           <Alert variant="success" className="animate-fadeIn">
-            <CheckCircle2 className="h-5 w-5 text-success" />
-            <div className="font-medium text-success text-body">Merged!</div>
-            <AlertDescription className="text-success/90 text-body-sm">
+            <CheckCircle2 className="h-4 w-4" />
+            <AlertTitle>Merged!</AlertTitle>
+            <AlertDescription className="text-success/90 text-sm">
               Great news! All conflicts have been resolved. The merge process is complete.
             </AlertDescription>
+          </Alert>
+        )}
+
+          {/* Failed Merge Notification */}
+          {progress.overall_status === MergeStatus.FAILED && (
+          <Alert variant="destructive" className="animate-fadeIn border-destructive/40 bg-destructive/10">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Merge Failed</AlertTitle>
+            <AlertDescription className="text-destructive/80 text-sm">
+              The merge process encountered an error and could not be completed. You can retry the merge once the issue is addressed.
+            </AlertDescription>
+            {onRetry && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onRetry}
+                disabled={isRetrying}
+                className="border-destructive/40 text-destructive hover:bg-destructive/10 mt-3 w-fit"
+              >
+                {isRetrying ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Retrying...
+                  </>
+                ) : (
+                  <>
+                    <RefreshCcw className="h-4 w-4 mr-2" />
+                    Retry Merge
+                  </>
+                )}
+              </Button>
+            )}
           </Alert>
         )}
 
           {/* Completed Merge Notification */}
           {progress.overall_status === MergeStatus.COMPLETED && (
           <Alert variant="success" className="animate-fadeIn">
-            <CheckCircle2 className="h-5 w-5 text-success" />
-            <div className="font-medium text-success text-body">Merge Completed Successfully!</div>
-            <AlertDescription className="text-success/90 text-body-sm">
+            <CheckCircle2 className="h-4 w-4" />
+            <AlertTitle>Merge Completed Successfully!</AlertTitle>
+            <AlertDescription className="text-success/90 text-sm">
               Excellent! The merge has been completed successfully. All data has been merged into the production database.
             </AlertDescription>
           </Alert>
@@ -635,17 +674,17 @@ export function MergeProgress({ mergeId, sessionId, transformId, onViewConflicts
 
           {/* Verification Results */}
           {verificationResult && (
-          <Alert 
+          <Alert
             variant={verificationResult.status === 'success' ? 'success' : 'warning'}
           >
             {verificationResult.status === 'success' ? (
-              <CheckCircle2 className="h-5 w-5 text-success" />
+              <CheckCircle2 className="h-4 w-4" />
             ) : (
-              <AlertCircle className="h-5 w-5 text-warning" />
+              <AlertCircle className="h-4 w-4" />
             )}
-            <div className="font-medium text-body">{verificationResult.status === 'success' ? 'Merge Successful' : 'Verification Complete'}</div>
-            <AlertDescription className="text-body-sm">
-              {verificationResult.status === 'success' 
+            <AlertTitle>{verificationResult.status === 'success' ? 'Merge Successful' : 'Verification Complete'}</AlertTitle>
+            <AlertDescription className="text-sm">
+              {verificationResult.status === 'success'
                 ? 'The merge has been verified successfully with no issues found.'
                 : `Verification completed with ${verificationResult.issues?.length || 0} issues.`}
             </AlertDescription>
@@ -654,10 +693,11 @@ export function MergeProgress({ mergeId, sessionId, transformId, onViewConflicts
 
           {/* Overall Progress */}
         <div className="space-y-2">
-          <div className="flex justify-between text-body-sm">
+          <div className="flex items-center justify-between text-body-sm">
             <span>Overall Progress</span>
-            <span>{progress.overall_status}</span>
-            {/* <span>{Math.round(progress.overall_progress)}%</span> */}
+            <Badge variant="outline" className="border-border/60 text-muted-foreground bg-background/60">
+              {progress.overall_status.replace(/_/g, ' ')}
+            </Badge>
           </div>
           <Progress 
             value={progress.overall_progress} 
@@ -666,50 +706,54 @@ export function MergeProgress({ mergeId, sessionId, transformId, onViewConflicts
         </div>
 
           {/* Stage Progress */}
-        <div className="space-y-content-sm">
-          <h4 className="text-body-sm font-medium">Stages</h4>
-          <div className="space-y-content-sm">
-            {getStagesArray().map((stage, index) => (
-              <div key={stage.name} className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    {getStageIcon(stage)}
-                    <span className="text-body-sm font-medium capitalize">
-                      {stage.name.replace(/_/g, ' ')}
-                    </span>
-                  </div>
-                  <div className="text-body-sm text-muted-foreground">
-                    {stage.status === 'completed' ? '100%' : stage.status === 'running' ? `${Math.round(stage.progress)}%` : ''}
-                  </div>
-                </div>
-                {stage.status === 'running' && (
-                  <Progress value={stage.progress} className="h-1" indicatorClassName="bg-info" />
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
+        <div className="space-y-3">
+          <h4 className="text-body-sm font-medium text-muted-foreground">Stages</h4>
+          <div className="flex items-center justify-center gap-2 overflow-x-auto pb-2">
+            {getStagesArray().map((stage, idx) => {
+              const isCompleted = stage.status === 'completed'
+              const isCurrent = stage.status === 'running'
+              const isPending = stage.status === 'pending'
 
-          {/* Time Information */}
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <div className="flex items-center gap-2 text-body-sm text-muted-foreground mb-1">
-              <Clock className="h-4 w-4" />
-              <span>Elapsed Time</span>
-            </div>
-            <div className="text-heading font-semibold">
-              {elapsedTimeStr}
-            </div>
+              return (
+                <div key={stage.name} className="flex items-center gap-2">
+                  <div className="flex flex-col items-center gap-1.5">
+                    <div
+                      className={cn(
+                        'flex h-12 w-12 items-center justify-center rounded-full border-2 text-sm font-semibold transition-all',
+                        isCompleted
+                          ? 'border-emerald-500 bg-emerald-500 text-white shadow-md'
+                          : isCurrent
+                            ? 'border-primary bg-primary/20 text-primary shadow-sm'
+                            : 'border-muted-foreground/30 bg-muted/30 text-muted-foreground'
+                      )}
+                    >
+                      {isCompleted ? (
+                        <CheckCircle className="h-5 w-5" />
+                      ) : isCurrent ? (
+                        <span className="text-xs font-bold">{Math.round(stage.progress)}%</span>
+                      ) : (
+                        <span className="text-xs">{stage.name.split('_').map((word) => word[0]).join('').toUpperCase()}</span>
+                      )}
+                    </div>
+                    <div className="text-center max-w-[90px]">
+                      <div className={cn(
+                        "text-[11px] font-medium capitalize leading-tight",
+                        isCompleted ? "text-emerald-600" : isCurrent ? "text-primary" : "text-muted-foreground"
+                      )}>
+                        {stage.name.replace(/_/g, ' ')}
+                      </div>
+                    </div>
+                  </div>
+                  {idx < getStagesArray().length - 1 && (
+                    <div className={cn(
+                      "h-0.5 w-8 mb-6 transition-colors",
+                      isCompleted ? "bg-emerald-500" : "bg-muted-foreground/30"
+                    )} />
+                  )}
+                </div>
+              )
+            })}
           </div>
-          {/* <div>
-            <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
-              <Calendar className="h-4 w-4" />
-              <span>Estimated Remaining</span>
-            </div>
-            <div className="text-lg font-semibold">
-              {getEstimatedTimeRemaining()}
-            </div>
-          </div> */}
         </div>
         </div>
       </CardContent>

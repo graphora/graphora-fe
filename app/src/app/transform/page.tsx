@@ -941,37 +941,45 @@ function TransformPageContent() {
           </div>
         </div>
 
-        <div className="page-shell py-section stack-gap">
-          <div className="grid gap-8 lg:grid-cols-[minmax(0,340px)_1fr]">
+        <div className="page-shell py-6">
+          <div className="grid gap-6 lg:grid-cols-[minmax(0,360px)_1fr]">
             {/* Upload Panel */}
-            <div className="stack-gap">
+            <div className="space-y-4">
               {/* File Upload Section */}
               <div className="enhanced-card">
-                <div className="enhanced-card-header">
-                  <h3 className="text-base font-semibold text-foreground">Document Upload</h3>
-                  <p className="text-xs text-muted-foreground">Upload a document to transform into a knowledge graph</p>
+                <div className="enhanced-card-header pb-3">
+                  <h3 className="text-sm font-semibold text-foreground">Document Upload</h3>
+                  <p className="text-xs text-muted-foreground mt-0.5">Upload a document to transform into a knowledge graph</p>
                 </div>
-                <div className="enhanced-card-content space-y-3">
+                <div className="enhanced-card-content space-y-4">
                   {!file ? (
                     <div
                       {...getRootProps()}
                       className={cn(
-                        "border-2 border-dashed rounded-lg p-4 text-center cursor-pointer transition-colors duration-200",
-                        isDragActive ? "border-blue-400 bg-blue-50 dark:bg-blue-950" : "border-border hover:border-border/80",
-                        error && "border-red-300 bg-red-50 dark:bg-red-950"
+                        "border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all duration-200",
+                        isDragActive
+                          ? "border-primary/60 bg-primary/5 scale-[1.02]"
+                          : "border-border/60 hover:border-primary/40 hover:bg-muted/30",
+                        error && "border-destructive/60 bg-destructive/5"
                       )}
                     >
                       <input {...getInputProps()} />
                       <div className="flex flex-col items-center space-y-3">
-                        <div className="w-12 h-12 bg-muted rounded-full flex items-center justify-center">
-                          <Upload className="h-6 w-6 text-muted-foreground" />
+                        <div className={cn(
+                          "w-14 h-14 rounded-full flex items-center justify-center transition-colors",
+                          isDragActive ? "bg-primary/20" : "bg-muted"
+                        )}>
+                          <Upload className={cn(
+                            "h-6 w-6 transition-colors",
+                            isDragActive ? "text-primary" : "text-muted-foreground"
+                          )} />
                         </div>
-                        <div>
+                        <div className="space-y-1">
                           <p className="text-sm font-medium text-foreground">
-                            {isDragActive ? "Drop file here" : "Drop file or click"}
+                            {isDragActive ? "Drop file here" : "Drop file or click to upload"}
                           </p>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            PDF, TXT, MD up to 10MB
+                          <p className="text-xs text-muted-foreground">
+                            PDF, TXT, MD • Max 10MB
                           </p>
                         </div>
                       </div>
@@ -1035,13 +1043,13 @@ function TransformPageContent() {
             {/* Graph Visualization Panel */}
             <div className="h-full">
               <div className="enhanced-card h-full text-sm text-muted-foreground">
-                <div className="enhanced-card-header">
-                  <h3 className="text-lg font-semibold text-foreground">Knowledge Graph</h3>
-                  <p className="text-sm text-muted-foreground">
+                <div className="enhanced-card-header pb-3">
+                  <h3 className="text-sm font-semibold text-foreground">Knowledge Graph</h3>
+                  <p className="text-xs text-muted-foreground mt-0.5">
                     {graphData ? 'Interactive visualization of your knowledge graph' : 'Graph will appear here after transformation'}
                   </p>
                 </div>
-                <div className="enhanced-card-content h-[600px] relative">
+                <div className="enhanced-card-content h-[600px] relative overflow-hidden rounded-lg">
                   {isProcessing ? (
                     <div className="h-full flex items-center justify-center bg-gradient-to-br from-sky-50 via-cyan-50 to-emerald-50 dark:from-slate-800 dark:via-slate-700 dark:to-slate-900">
                       <div className="text-center space-y-content max-w-md">
@@ -1199,8 +1207,8 @@ function TransformPageContent() {
 
       {/* Chunking Configuration Modal */}
       <Dialog open={showChunkingConfig} onOpenChange={setShowChunkingConfig}>
-        <DialogContent className="glass-surface max-w-5xl h-[90vh] overflow-hidden border border-white/15 p-0 text-card-foreground shadow-large">
-          <div className="grid h-full md:grid-cols-[320px_minmax(0,1fr)]">
+        <DialogContent className="glass-surface max-w-5xl h-[90vh] max-h-[90vh] overflow-hidden border border-white/15 p-0 text-card-foreground shadow-large">
+          <div className="grid h-full md:grid-cols-[320px_1fr]">
             <aside className="flex flex-col justify-between gap-8 bg-gradient-to-br from-primary/18 via-background/30 to-background/60 p-8 text-left backdrop-blur-panel">
               <div className="space-y-6">
                 <div className="space-y-2">
@@ -1255,8 +1263,8 @@ function TransformPageContent() {
               </div>
             </aside>
 
-            <div className="flex h-full flex-col bg-background/92 backdrop-blur-panel">
-              <header className="flex items-center justify-between border-b border-white/10 p-8 pb-6">
+            <div className="flex h-full flex-col bg-background/92 backdrop-blur-panel overflow-hidden">
+              <header className="flex items-center justify-between border-b border-white/10 p-8 pb-6 flex-shrink-0">
                 <div className="flex items-center gap-3">
                   <span className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-primary/70 text-white shadow-glass">
                     <Settings2 className="h-5 w-5" />
@@ -1270,16 +1278,18 @@ function TransformPageContent() {
                 </div>
               </header>
 
-              <div className="flex-1 overflow-y-auto px-8 py-6">
-                <ChunkingConfig
-                  fileContent={fileContent ?? undefined}
-                  fileName={file?.name}
-                  onConfigChange={setChunkingConfig}
-                  className="border-white/15 bg-white/10 shadow-glass backdrop-blur-panel"
-                />
+              <div className="flex-1 min-h-0 px-8 py-6">
+                <div className="h-full overflow-y-auto overscroll-contain">
+                  <ChunkingConfig
+                    fileContent={fileContent ?? undefined}
+                    fileName={file?.name}
+                    onConfigChange={setChunkingConfig}
+                    className="border-white/15 bg-white/10 shadow-glass backdrop-blur-panel !overflow-visible"
+                  />
+                </div>
               </div>
 
-              <footer className="flex items-center justify-end gap-3 border-t border-white/10 bg-white/5 px-8 py-6">
+              <footer className="flex items-center justify-end gap-3 border-t border-white/10 bg-white/5 px-8 py-6 flex-shrink-0">
                 <Button
                   variant="outline"
                   onClick={() => setShowChunkingConfig(false)}

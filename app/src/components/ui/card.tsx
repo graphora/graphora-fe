@@ -4,15 +4,15 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 
 const cardVariants = cva(
-  "relative overflow-hidden rounded-[var(--border-radius-lg)] border border-border/60 bg-card/90 text-card-foreground transition-transform duration-200",
+  "relative rounded-[var(--border-radius-lg)] border border-border/60 bg-card/90 text-card-foreground transition-transform duration-200",
   {
     variants: {
       variant: {
-        default: "surface-base",
-        elevated: "surface-elevated",
+        default: "surface-base overflow-hidden",
+        elevated: "surface-elevated overflow-hidden",
         glass: "glass-surface border-white/15 bg-white/10 text-foreground backdrop-blur-panel",
-        muted: "border-transparent bg-muted/70 shadow-soft",
-        transparent: "border-transparent bg-transparent shadow-none",
+        muted: "border-transparent bg-muted/70 shadow-soft overflow-hidden",
+        transparent: "border-transparent bg-transparent shadow-none overflow-hidden",
       },
       hover: {
         none: "",
