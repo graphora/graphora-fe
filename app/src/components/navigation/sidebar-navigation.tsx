@@ -106,14 +106,14 @@ export function SidebarNavigation({ className, defaultCollapsed = true }: Sideba
         className={cn(
           "w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg transition-all duration-200 text-left group border border-transparent",
           isActive 
-            ? "bg-primary/12 text-foreground font-medium shadow-soft border-primary/40 dark:bg-white/10 dark:border-white/15" 
+            ? "bg-primary/80 text-primary-foreground font-semibold shadow-soft border-primary/70 dark:bg-primary/60" 
             : "text-muted-foreground hover:text-foreground hover:bg-muted/60",
           isCollapsed && "justify-center px-2"
         )}
       >
         <div className={cn(
           "flex-shrink-0 transition-colors",
-          isActive ? "text-primary" : "text-muted-foreground group-hover:text-foreground"
+          isActive ? "text-primary-foreground" : "text-muted-foreground group-hover:text-foreground"
         )}>
           {item.icon}
         </div>
@@ -176,9 +176,6 @@ export function SidebarNavigation({ className, defaultCollapsed = true }: Sideba
           </div>
         )}
         <div className="flex items-center gap-2">
-          {!isCollapsed && (
-            <ThemeToggle />
-          )}
           <Button
             variant="ghost"
             size="sm"
@@ -229,31 +226,34 @@ export function SidebarNavigation({ className, defaultCollapsed = true }: Sideba
 
       {/* User Section */}
       <div className="border-t border-border/60 px-4 py-3">
-        <div className="flex items-center justify-between">
-          {!isCollapsed && (
-            <div className="flex items-center space-x-2 flex-1">
-              <UserButton />
-              <div className="flex-1 min-w-0">
-                <div className="text-body-sm font-medium text-foreground truncate">
-                  Welcome back
+        <div className={cn(
+          'flex items-center',
+          isCollapsed ? 'justify-center' : 'justify-between gap-2'
+        )}>
+          {!isCollapsed ? (
+            <>
+              <div className="flex flex-1 items-center space-x-2">
+                <UserButton />
+                <div className="flex-1 min-w-0">
+                  <div className="text-body-sm font-medium text-foreground truncate">
+                    Welcome back
+                  </div>
                 </div>
               </div>
-            </div>
+              <ThemeToggle />
+            </>
+          ) : (
+            <UserButton />
           )}
-          {isCollapsed && (
-            <div className="flex justify-center">
-              <UserButton />
-            </div>
-          )}
-          
         </div>
 
         {isCollapsed ? (
-          <div className="mt-2 flex justify-center">
+          <div className="mt-3 flex flex-col items-center gap-2 text-body-xs text-muted-foreground">
             <ThemeToggle />
+            <span>Version 2.0.1</span>
           </div>
         ) : (
-          <div className="mt-3 flex items-center justify-end text-body-xs text-muted-foreground">
+          <div className="mt-3 text-body-xs text-muted-foreground">
             <span>Version 2.0.1</span>
           </div>
         )}

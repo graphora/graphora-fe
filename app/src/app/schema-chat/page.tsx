@@ -4,32 +4,10 @@ import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useUser } from '@clerk/nextjs'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Progress } from '@/components/ui/progress'
-import { Separator } from '@/components/ui/separator'
 import { Textarea } from '@/components/ui/textarea'
-import { Label } from '@/components/ui/label'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { 
-  Bot, 
-  User, 
-  Send, 
-  Loader2, 
-  Database, 
-  ArrowRight,
-  CheckCircle,
-  Circle,
-  FileText,
-  Search,
-  Sparkles,
-  Eye,
-  Edit3,
-  ExternalLink,
-  X
-} from 'lucide-react'
+import { Loader2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { EnhancedWorkflowLayout, WorkflowStep } from '@/components/enhanced-workflow-layout'
 import { VisualEditor } from '@/components/ontology/visual-editor'
@@ -51,11 +29,11 @@ import { QuestionInput } from '@/components/schema-chat/question-input'
 
 // Progress steps for the stepper
 const PROGRESS_STEPS = [
-  { id: 'data_collection', label: 'Data Collection', icon: FileText },
-  { id: 'schema_search', label: 'Schema Search', icon: Search },
-  { id: 'schema_generation', label: 'Schema Generation', icon: Sparkles },
-  { id: 'schema_review', label: 'Review & Refine', icon: Eye },
-  { id: 'finalization', label: 'Finalize', icon: CheckCircle }
+  { id: 'data_collection', label: 'Data Collection' },
+  { id: 'schema_search', label: 'Schema Search' },
+  { id: 'schema_generation', label: 'Schema Generation' },
+  { id: 'schema_review', label: 'Review & Refine' },
+  { id: 'finalization', label: 'Finalize' }
 ]
 
 export default function SchemaChatPage() {
@@ -553,89 +531,82 @@ Please try rephrasing your request or be more specific about the changes you'd l
     >
       <div className="flex-1 flex flex-col h-full">
         {/* Header */}
-        <div className="bg-background border-b border-border shadow-sm flex-shrink-0 sticky top-0 z-10">
-          <div className="px-4 py-3">
-            <div className="flex items-center justify-between min-h-0">
-              <div className="flex items-center space-x-3 flex-1 min-w-0">
-                <Bot className="h-5 w-5 text-blue-600 dark:text-blue-400 flex-shrink-0" />
-                <div className="min-w-0">
-                  <h2 className="text-lg font-semibold text-foreground truncate">AI Schema Generator</h2>
-                  <p className="text-sm text-muted-foreground truncate">
-                    Create custom knowledge graph schemas with guided AI assistance
-                  </p>
-                </div>
+        <div className="sticky top-0 z-20 border-b border-border/60 bg-background/95 backdrop-blur-sm">
+          <div className="page-shell py-section-sm">
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <div className="min-w-0 space-y-1">
+                <h2 className="text-heading-sm font-semibold text-foreground truncate">AI Schema Generator</h2>
+                <p className="text-body-sm text-muted-foreground">
+                  Guided assistance to design and refine your knowledge graph schema
+                </p>
               </div>
-              
-              <div className="flex items-center space-x-2 flex-shrink-0 ml-4">
-                {chatState === 'schema_review' && generatedSchema && (
-                  <>
-                    {viewMode === 'chat' ? (
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={handleShowPreview}
-                      >
-                        <Eye className="h-4 w-4 mr-1.5" />
-                        Preview
-                      </Button>
-                    ) : (
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => setViewMode('chat')}
-                      >
-                        <X className="h-4 w-4 mr-1.5" />
-                        Close Preview
-                      </Button>
-                    )}
-                    <Button 
-                      onClick={handleExportToEditor}
+              {chatState === 'schema_review' && generatedSchema && (
+                <div className="flex items-center gap-2">
+                  {viewMode === 'chat' ? (
+                    <Button
+                      variant="outline"
                       size="sm"
+                      onClick={handleShowPreview}
                     >
-                      <ExternalLink className="h-4 w-4 mr-1.5" />
-                      Export to Editor
+                      Open preview
                     </Button>
-                  </>
-                )}
-              </div>
+                  ) : (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setViewMode('chat')}
+                    >
+                      Hide preview
+                    </Button>
+                  )}
+                  <Button size="sm" onClick={handleExportToEditor}>
+                    Export to editor
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
         </div>
 
         {/* Progress Bar */}
-        <div className="bg-muted/30 border-b px-4 py-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              {PROGRESS_STEPS.map((step, index) => {
-                const isActive = index <= getCurrentProgress()
-                const isCurrent = index === getCurrentProgress()
-                const Icon = step.icon
-                
-                return (
-                  <div key={step.id} className="flex items-center space-x-2">
-                    <div className={cn(
-                      "w-8 h-8 rounded-full flex items-center justify-center border-2",
-                      isActive 
-                        ? "bg-primary border-primary text-primary-foreground" 
-                        : "border-muted-foreground/30 text-muted-foreground"
-                    )}>
-                      <Icon className="h-4 w-4" />
+        <div className="border-b border-border/60 bg-muted/15">
+          <div className="page-shell py-3">
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-4 overflow-x-auto text-xs sm:text-sm">
+                {PROGRESS_STEPS.map((step, index) => {
+                  const isActive = index <= getCurrentProgress()
+                  const isCurrent = index === getCurrentProgress()
+
+                  return (
+                    <div key={step.id} className="flex items-center gap-3">
+                      <span
+                        className={cn(
+                          'flex h-8 w-8 items-center justify-center rounded-full border text-xs font-semibold sm:text-sm',
+                          isActive
+                            ? 'border-primary bg-primary/90 text-primary-foreground'
+                            : 'border-border/60 text-muted-foreground'
+                        )}
+                      >
+                        {index + 1}
+                      </span>
+                      <span
+                        className={cn(
+                          'whitespace-nowrap',
+                          isCurrent ? 'text-foreground font-medium' : 'text-muted-foreground'
+                        )}
+                      >
+                        {step.label}
+                      </span>
+                      {index < PROGRESS_STEPS.length - 1 && (
+                        <span className="hidden h-px w-10 bg-border/60 md:block" aria-hidden />
+                      )}
                     </div>
-                    <span className={cn(
-                      "text-sm font-medium",
-                      isCurrent ? "text-foreground" : "text-muted-foreground"
-                    )}>
-                      {step.label}
-                    </span>
-                    {index < PROGRESS_STEPS.length - 1 && (
-                      <ArrowRight className="h-4 w-4 text-muted-foreground ml-4" />
-                    )}
-                  </div>
-                )
-              })}
-            </div>
-            <div className="text-sm text-muted-foreground">
-              Step {getCurrentProgress() + 1} of {PROGRESS_STEPS.length}
+                  )
+                })}
+              </div>
+              <div className="text-xs text-muted-foreground sm:text-sm">
+                Step {getCurrentProgress() + 1} of {PROGRESS_STEPS.length}
+              </div>
             </div>
           </div>
         </div>
@@ -668,11 +639,9 @@ Please try rephrasing your request or be more specific about the changes you'd l
                   ))}
                   
                   {(isTyping || isProcessing || isGenerating) && (
-                    <div className="flex items-start space-x-3">
-                      <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center">
-                        <Bot className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                      </div>
-                      <div className="bg-muted p-4 rounded-2xl">
+                    <div className="flex items-start gap-3">
+                      <span className="mt-2 inline-flex h-2.5 w-2.5 rounded-full bg-primary" aria-hidden />
+                      <div className="rounded-2xl bg-muted p-4">
                         {isGenerating ? (
                           <div className="flex items-center space-x-2">
                             <Loader2 className="h-4 w-4 animate-spin text-blue-600 dark:text-blue-400" />
@@ -704,7 +673,6 @@ Please try rephrasing your request or be more specific about the changes you'd l
                   {chatState === 'welcome' ? (
                     <div className="flex justify-center">
                       <Button onClick={handleBegin} size="lg">
-                        <Sparkles className="h-4 w-4 mr-2" />
                         Begin Schema Generation
                       </Button>
                     </div>
@@ -743,9 +711,8 @@ Please try rephrasing your request or be more specific about the changes you'd l
                                         variant="ghost"
                                         size="sm"
                                         onClick={() => setEditingResponseId(response.questionId)}
-                                        className="h-6 w-6 p-0"
                                       >
-                                        <Edit3 className="h-3 w-3" />
+                                        Edit
                                       </Button>
                                     </div>
                                   </div>
@@ -798,34 +765,30 @@ Please try rephrasing your request or be more specific about the changes you'd l
                               disabled={isProcessing}
                             />
                           ) : (
-                            <div className="flex space-x-2">
-                              <div className="flex-1 relative">
-                                <Textarea
-                                  value={currentInput}
-                                  onChange={(e) => setCurrentInput(e.target.value)}
-                                  placeholder="Type your response..."
-                                  className="min-h-[60px] pr-12 resize-none"
-                                  onKeyDown={(e) => {
-                                    if (e.key === 'Enter' && !e.shiftKey) {
-                                      e.preventDefault()
-                                      handleSendMessage()
-                                    }
-                                  }}
-                                />
-                                <Button
-                                  size="icon"
-                                  variant="ghost"
-                                  className="absolute right-2 bottom-2"
-                                  onClick={handleSendMessage}
-                                  disabled={!currentInput.trim() || isProcessing}
-                                >
-                                  {isProcessing ? (
-                                    <Loader2 className="h-4 w-4 animate-spin" />
-                                  ) : (
-                                    <Send className="h-4 w-4" />
-                                  )}
-                                </Button>
-                              </div>
+                            <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+                              <Textarea
+                                value={currentInput}
+                                onChange={(e) => setCurrentInput(e.target.value)}
+                                placeholder="Type your response..."
+                                className="min-h-[72px] flex-1 resize-none"
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter' && !e.shiftKey) {
+                                    e.preventDefault()
+                                    handleSendMessage()
+                                  }
+                                }}
+                              />
+                              <Button
+                                onClick={handleSendMessage}
+                                disabled={!currentInput.trim() || isProcessing}
+                                className="sm:self-stretch"
+                              >
+                                {isProcessing ? (
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  'Send'
+                                )}
+                              </Button>
                             </div>
                           )
                         })()
@@ -833,30 +796,30 @@ Please try rephrasing your request or be more specific about the changes you'd l
                     </div>
                   ) : (
                     // Free-form chat for schema review and refinement
-                    <div className="flex space-x-2">
-                      <div className="flex-1 relative">
-                        <Textarea
-                          value={currentInput}
-                          onChange={(e) => setCurrentInput(e.target.value)}
-                          placeholder="Ask about the schema or request changes..."
-                          className="min-h-[80px] pr-12 resize-none"
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter' && !e.shiftKey) {
-                              e.preventDefault()
-                              handleSendMessage()
-                            }
-                          }}
-                        />
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          className="absolute right-2 bottom-2"
-                          onClick={handleSendMessage}
-                          disabled={!currentInput.trim() || isProcessing}
-                        >
-                          <Send className="h-4 w-4" />
-                        </Button>
-                      </div>
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+                      <Textarea
+                        value={currentInput}
+                        onChange={(e) => setCurrentInput(e.target.value)}
+                        placeholder="Ask about the schema or request changes..."
+                        className="min-h-[96px] flex-1 resize-none"
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && !e.shiftKey) {
+                            e.preventDefault()
+                            handleSendMessage()
+                          }
+                        }}
+                      />
+                      <Button
+                        onClick={handleSendMessage}
+                        disabled={!currentInput.trim() || isProcessing}
+                        className="sm:self-stretch"
+                      >
+                        {isProcessing ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          'Send'
+                        )}
+                      </Button>
                     </div>
                   )}
                 </div>
@@ -885,11 +848,9 @@ Please try rephrasing your request or be more specific about the changes you'd l
                       ))}
                       
                       {(isTyping || isProcessing || isGenerating) && (
-                        <div className="flex items-start space-x-3">
-                          <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center">
-                            <Bot className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                          </div>
-                          <div className="bg-muted p-4 rounded-2xl">
+                        <div className="flex items-start gap-3">
+                          <span className="mt-2 inline-flex h-2.5 w-2.5 rounded-full bg-primary" aria-hidden />
+                          <div className="rounded-2xl bg-muted p-4">
                             {isGenerating ? (
                               <div className="flex items-center space-x-2">
                                 <Loader2 className="h-4 w-4 animate-spin text-blue-600 dark:text-blue-400" />
@@ -915,87 +876,74 @@ Please try rephrasing your request or be more specific about the changes you'd l
                     </div>
                 </ScrollArea>
                 
-                <div className="border-t p-3 min-h-[200px] max-h-[300px] flex flex-col">
+                <div className="border-t p-3 min-h-[200px] max-h-[300px] flex flex-col gap-3">
                   {chatState === 'welcome' ? (
                     <div className="flex justify-center">
                       <Button onClick={handleBegin} size="lg">
-                        <Sparkles className="h-4 w-4 mr-2" />
                         Begin Schema Generation
                       </Button>
                     </div>
                   ) : chatState === 'data_collection' ? (
-                    <div>
-                      {/* Show structured question input during data collection in split view */}
-                      {(() => {
-                        const currentQ = getCurrentQuestionData()
-                        return currentQ ? (
-                          <QuestionInput
-                            question={currentQ}
-                            onSubmit={handleUserResponse}
-                            disabled={isProcessing}
-                          />
-                        ) : (
-                          <div className="flex space-x-2">
-                            <div className="flex-1 relative">
-                              <Textarea
-                                value={currentInput}
-                                onChange={(e) => setCurrentInput(e.target.value)}
-                                placeholder="Type your response..."
-                                className="min-h-[60px] pr-12 resize-none"
-                                onKeyDown={(e) => {
-                                  if (e.key === 'Enter' && !e.shiftKey) {
-                                    e.preventDefault()
-                                    handleSendMessage()
-                                  }
-                                }}
-                              />
-                              <Button
-                                size="icon"
-                                variant="ghost"
-                                className="absolute right-2 bottom-2"
-                                onClick={handleSendMessage}
-                                disabled={!currentInput.trim() || isProcessing}
-                              >
-                                {isProcessing ? (
-                                  <Loader2 className="h-4 w-4 animate-spin" />
-                                ) : (
-                                  <Send className="h-4 w-4" />
-                                )}
-                              </Button>
-                            </div>
-                          </div>
-                        )
-                      })()}
-                    </div>
-                  ) : (
-                    <div className="h-full flex flex-col">
-                      {/* Free-form chat for schema review and other states in split view */}
-                      <div className="flex-1 min-h-0">
-                        <Textarea
-                          value={currentInput}
-                          onChange={(e) => setCurrentInput(e.target.value)}
-                          placeholder="Ask about the schema, request changes, or ask questions..."
-                          className="w-full h-half resize-none"
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter' && !e.shiftKey) {
-                              e.preventDefault()
-                              handleSendMessage()
-                            }
-                          }}
+                    (() => {
+                      const currentQ = getCurrentQuestionData()
+                      return currentQ ? (
+                        <QuestionInput
+                          question={currentQ}
+                          onSubmit={handleUserResponse}
+                          disabled={isProcessing}
                         />
-                      </div>
-                      <div className="pt-3 flex justify-end flex-shrink-0">
+                      ) : (
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+                          <Textarea
+                            value={currentInput}
+                            onChange={(e) => setCurrentInput(e.target.value)}
+                            placeholder="Type your response..."
+                            className="min-h-[72px] flex-1 resize-none"
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' && !e.shiftKey) {
+                                e.preventDefault()
+                                handleSendMessage()
+                              }
+                            }}
+                          />
+                          <Button
+                            onClick={handleSendMessage}
+                            disabled={!currentInput.trim() || isProcessing}
+                            className="sm:self-stretch"
+                          >
+                            {isProcessing ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              'Send'
+                            )}
+                          </Button>
+                        </div>
+                      )
+                    })()
+                  ) : (
+                    <div className="flex h-full flex-col gap-3">
+                      <Textarea
+                        value={currentInput}
+                        onChange={(e) => setCurrentInput(e.target.value)}
+                        placeholder="Ask about the schema, request changes, or ask questions..."
+                        className="min-h-[96px] flex-1 resize-none"
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && !e.shiftKey) {
+                            e.preventDefault()
+                            handleSendMessage()
+                          }
+                        }}
+                      />
+                      <div className="flex justify-end">
                         <Button
-                          size="sm"
                           onClick={handleSendMessage}
                           disabled={!currentInput.trim() || isProcessing}
                         >
                           {isProcessing ? (
-                            <Loader2 className="h-2 w-4 animate-spin" />
+                            <Loader2 className="h-4 w-4 animate-spin" />
                           ) : (
-                            <Send className="h-2 w-4" />
+                            'Send'
                           )}
-                          Send
                         </Button>
                       </div>
                     </div>
@@ -1026,10 +974,7 @@ Please try rephrasing your request or be more specific about the changes you'd l
                     </div>
                   ) : (
                     <div className="flex items-center justify-center h-full text-muted-foreground">
-                      <div className="text-center">
-                        <Database className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                        <p>Schema preview will appear here</p>
-                      </div>
+                      <p>Schema preview will appear here once generated.</p>
                     </div>
                   )}
                 </div>

@@ -330,13 +330,13 @@ function ConfigPageContent() {
             </Alert>
           )}
 
-          <Tabs defaultValue={tabParam || "databases"} className="stack-gap">
+          <Tabs defaultValue={tabParam || "databases"} className="mt-8 space-y-5">
             <TabsList className="w-full justify-start">
               <TabsTrigger value="databases">Databases</TabsTrigger>
               <TabsTrigger value="ai-config">AI Config</TabsTrigger>
             </TabsList>
 
-            <TabsContent value="databases" className="stack-gap">
+            <TabsContent value="databases" className="flex flex-col gap-5">
               {/* Configuration Status */}
               <Card className="enhanced-card">
                 <CardHeader className="enhanced-card-header">
@@ -371,37 +371,23 @@ function ConfigPageContent() {
 
               {/* Database Configuration Forms */}
               <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-                <Card className="enhanced-card">
-                  <CardHeader className="enhanced-card-header">
-                    <CardTitle className="text-heading-sm font-medium">Staging Database</CardTitle>
-                  </CardHeader>
-                  <CardContent className="enhanced-card-content">
-                    <DatabaseConfigForm
-                      title="Staging Database"
-                      description="Neo4j database used for testing and development"
-                      config={stagingDb}
-                      onChange={setStagingDb}
-                      disabled={saving}
-                      isExistingConfig={!!config?.stagingDb?.uri}
-                    />
-                  </CardContent>
-                </Card>
+                <DatabaseConfigForm
+                  title="Staging Database"
+                  description="Neo4j database used for testing and development"
+                  config={stagingDb}
+                  onChange={setStagingDb}
+                  disabled={saving}
+                  isExistingConfig={!!config?.stagingDb?.uri}
+                />
 
-                <Card className="enhanced-card">
-                  <CardHeader className="enhanced-card-header">
-                    <CardTitle className="text-heading-sm font-medium">Production Database</CardTitle>
-                  </CardHeader>
-                  <CardContent className="enhanced-card-content">
-                    <DatabaseConfigForm
-                      title="Production Database"
-                      description="Neo4j database used for live data and production merges"
-                      config={prodDb}
-                      onChange={setProdDb}
-                      disabled={saving}
-                      isExistingConfig={!!config?.prodDb?.uri}
-                    />
-                  </CardContent>
-                </Card>
+                <DatabaseConfigForm
+                  title="Production Database"
+                  description="Neo4j database used for live data and production merges"
+                  config={prodDb}
+                  onChange={setProdDb}
+                  disabled={saving}
+                  isExistingConfig={!!config?.prodDb?.uri}
+                />
               </div>
 
               {/* Database Save Button */}
@@ -446,7 +432,7 @@ function ConfigPageContent() {
               </Card>
             </TabsContent>
 
-            <TabsContent value="ai-config" className="stack-gap">
+            <TabsContent value="ai-config" className="flex flex-col gap-5">
               {isWorkflowRedirect && (
                 <Alert className="border-amber-200 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-800">
                   <AlertDescription className="text-amber-800 dark:text-amber-300">
@@ -504,35 +490,31 @@ function ConfigPageContent() {
               </Card>
 
               {/* Gemini Configuration Form */}
-              <Card className="enhanced-card">
-                <CardHeader className="enhanced-card-header">
-                  <CardTitle className="flex items-center justify-between text-heading-sm">
-                    <span className="font-medium">Google Gemini AI Studio</span>
-                    <Button 
-                      onClick={handleSaveAI} 
-                      disabled={savingAI || !geminiConfig.api_key || !geminiConfig.default_model_name}
-                      className="bg-blue-600 hover:bg-blue-700 text-white"
-                    >
-                      {savingAI ? (
-                        <>
-                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                          Saving AI Configuration...
-                        </>
-                      ) : (
-                        (aiConfig ? 'Update AI Configuration' : 'Save AI Configuration')
-                      )}
-                    </Button>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="enhanced-card-content">
-                  <GeminiConfigForm
-                    config={geminiConfig}
-                    onChange={setGeminiConfig}
-                    disabled={savingAI}
-                    isExistingConfig={!!aiConfig}
-                  />
-                </CardContent>
-              </Card>
+              <div className="flex flex-col gap-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-heading-sm font-medium text-foreground">Google Gemini AI Studio</h3>
+                  <Button 
+                    onClick={handleSaveAI} 
+                    disabled={savingAI || !geminiConfig.api_key || !geminiConfig.default_model_name}
+                    className="bg-blue-600 hover:bg-blue-700 text-white"
+                  >
+                    {savingAI ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Saving AI Configuration...
+                      </>
+                    ) : (
+                      (aiConfig ? 'Update AI Configuration' : 'Save AI Configuration')
+                    )}
+                  </Button>
+                </div>
+                <GeminiConfigForm
+                  config={geminiConfig}
+                  onChange={setGeminiConfig}
+                  disabled={savingAI}
+                  isExistingConfig={!!aiConfig}
+                />
+              </div>
             </TabsContent>
 
           </Tabs>

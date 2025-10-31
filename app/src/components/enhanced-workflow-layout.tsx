@@ -10,7 +10,6 @@ import { Tooltip } from '@/components/ui/tooltip'
 import { useRouter } from 'next/navigation'
 import { Logo } from '@/components/ui/logo'
 import { SidebarNavigation } from '@/components/navigation/sidebar-navigation'
-import { ThemeToggle } from '@/components/ui/theme-toggle'
 
 export type WorkflowStep = {
   id: string
@@ -87,7 +86,7 @@ export function EnhancedWorkflowLayout({
   }
 
   return (
-    <div className="relative flex min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
+    <div className="relative flex min-h-screen overflow-hidden bg-gradient-to-br from-background via-background to-muted/20">
       <div className="pointer-events-none absolute inset-0 opacity-55 [background-image:radial-gradient(circle_at_15%_20%,rgba(56,189,248,0.14),transparent_55%),radial-gradient(circle_at_85%_15%,rgba(45,212,191,0.12),transparent_50%),radial-gradient(circle_at_50%_90%,rgba(37,99,235,0.12),transparent_45%)]" aria-hidden />
       {showSidebar && (
         <SidebarNavigation
@@ -105,20 +104,20 @@ export function EnhancedWorkflowLayout({
             <div className="flex flex-wrap items-center justify-between gap-3">
               {/* Left: Project Info */}
               <div className="flex items-center space-x-3">
-                <Button
-                  variant="ghost"
-                  className="flex items-center gap-2 rounded-xl border border-border/60 bg-muted/40 px-3 py-2 text-foreground hover:bg-muted/60"
+                <button
+                  type="button"
                   onClick={() => router.push('/')}
+                  className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-body-sm font-medium text-muted-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-background hover:text-foreground"
                 >
-                  <div className="w-7 h-7 flex items-center justify-center overflow-hidden">
-                    <Logo 
+                  <div className="h-7 w-7 flex items-center justify-center overflow-hidden rounded-md border border-border/50 bg-muted/40">
+                    <Logo
                       width={28}
                       height={28}
-                      className="w-full h-full"
+                      className="h-full w-full"
                     />
                   </div>
-                  <span className="font-medium text-foreground">{projectTitle}</span>
-                </Button>
+                  <span className="truncate">{projectTitle}</span>
+                </button>
               </div>
 
               {/* Right: Status Indicators and Controls */}
@@ -129,15 +128,13 @@ export function EnhancedWorkflowLayout({
                     Unsaved Changes
                   </Badge>
                 )}
-                <ThemeToggle />
-                
-                <Button 
-                  variant="ghost" 
+                <Button
+                  variant="link"
                   size="sm"
                   onClick={() => setIsCollapsed(!isCollapsed)}
-                  className="text-muted-foreground hover:text-foreground"
+                  className="px-0 text-body-sm text-muted-foreground hover:text-foreground"
                 >
-                  {isCollapsed ? 'Expand Steps' : 'Collapse Steps'}
+                  {isCollapsed ? 'Show steps' : 'Hide steps'}
                 </Button>
               </div>
             </div>

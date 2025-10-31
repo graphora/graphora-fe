@@ -408,10 +408,15 @@ export function ChunkingConfig({ fileContent, fileName, onConfigChange, classNam
               </p>
             </div>
           </div>
-          <Switch
-            checked={useCustomConfig}
-            onCheckedChange={setUseCustomConfig}
-          />
+          <div className="flex items-center gap-2">
+            <Switch
+              checked={useCustomConfig}
+              onCheckedChange={setUseCustomConfig}
+            />
+            <span className="text-xs font-medium text-muted-foreground">
+              {useCustomConfig ? 'On' : 'Off'}
+            </span>
+          </div>
         </div>
 
         {/* Configuration Form */}
@@ -538,30 +543,45 @@ export function ChunkingConfig({ fileContent, fileName, onConfigChange, classNam
                       <p className="text-sm">Preserve Lists</p>
                       <p className="text-xs text-muted-foreground">Keep numbered and bulleted lists together</p>
                     </div>
-                    <Switch
-                      checked={config.preserve_lists || false}
-                      onCheckedChange={(checked) => handleConfigChange('preserve_lists', checked)}
-                    />
+                    <div className="flex items-center gap-2">
+                      <Switch
+                        checked={config.preserve_lists || false}
+                        onCheckedChange={(checked) => handleConfigChange('preserve_lists', checked)}
+                      />
+                      <span className="text-xs font-medium text-muted-foreground">
+                        {config.preserve_lists ? 'On' : 'Off'}
+                      </span>
+                    </div>
                   </div>
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm">Preserve Headings</p>
                       <p className="text-xs text-muted-foreground">Keep headings with their content</p>
                     </div>
-                    <Switch
-                      checked={config.preserve_headings || false}
-                      onCheckedChange={(checked) => handleConfigChange('preserve_headings', checked)}
-                    />
+                    <div className="flex items-center gap-2">
+                      <Switch
+                        checked={config.preserve_headings || false}
+                        onCheckedChange={(checked) => handleConfigChange('preserve_headings', checked)}
+                      />
+                      <span className="text-xs font-medium text-muted-foreground">
+                        {config.preserve_headings ? 'On' : 'Off'}
+                      </span>
+                    </div>
                   </div>
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm">Preserve Quotes</p>
                       <p className="text-xs text-muted-foreground">Keep quoted text and emphasis together</p>
                     </div>
-                    <Switch
-                      checked={config.preserve_quotes || false}
-                      onCheckedChange={(checked) => handleConfigChange('preserve_quotes', checked)}
-                    />
+                    <div className="flex items-center gap-2">
+                      <Switch
+                        checked={config.preserve_quotes || false}
+                        onCheckedChange={(checked) => handleConfigChange('preserve_quotes', checked)}
+                      />
+                      <span className="text-xs font-medium text-muted-foreground">
+                        {config.preserve_quotes ? 'On' : 'Off'}
+                      </span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -589,10 +609,15 @@ export function ChunkingConfig({ fileContent, fileName, onConfigChange, classNam
                     <p className="text-sm">Force Strategy</p>
                     <p className="text-xs text-muted-foreground">Disable automatic strategy selection</p>
                   </div>
-                  <Switch
-                    checked={config.force_strategy || false}
-                    onCheckedChange={(checked) => handleConfigChange('force_strategy', checked)}
-                  />
+                  <div className="flex items-center gap-2">
+                    <Switch
+                      checked={config.force_strategy || false}
+                      onCheckedChange={(checked) => handleConfigChange('force_strategy', checked)}
+                    />
+                    <span className="text-xs font-medium text-muted-foreground">
+                      {config.force_strategy ? 'On' : 'Off'}
+                    </span>
+                  </div>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="quality_threshold" className="text-sm">Quality Threshold</Label>

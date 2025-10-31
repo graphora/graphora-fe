@@ -942,7 +942,7 @@ function TransformPageContent() {
         </div>
 
         <div className="page-shell py-section stack-gap">
-          <div className="grid gap-6 lg:grid-cols-[minmax(0,340px)_1fr]">
+          <div className="grid gap-8 lg:grid-cols-[minmax(0,340px)_1fr]">
             {/* Upload Panel */}
             <div className="stack-gap">
               {/* File Upload Section */}
@@ -1199,7 +1199,7 @@ function TransformPageContent() {
 
       {/* Chunking Configuration Modal */}
       <Dialog open={showChunkingConfig} onOpenChange={setShowChunkingConfig}>
-        <DialogContent className="glass-surface max-w-5xl max-h-[90vh] overflow-hidden border border-white/15 p-0 text-card-foreground shadow-large">
+        <DialogContent className="glass-surface max-w-5xl h-[90vh] overflow-hidden border border-white/15 p-0 text-card-foreground shadow-large">
           <div className="grid h-full md:grid-cols-[320px_minmax(0,1fr)]">
             <aside className="flex flex-col justify-between gap-8 bg-gradient-to-br from-primary/18 via-background/30 to-background/60 p-8 text-left backdrop-blur-panel">
               <div className="space-y-6">
