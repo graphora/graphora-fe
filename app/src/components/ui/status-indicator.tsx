@@ -34,62 +34,54 @@ interface StatusIndicatorProps {
 
 const variants = {
   success: {
-    bgColor: 'bg-success/12',
-    textColor: 'text-success',
-    borderColor: 'border-success/25',
-    shadow: 'shadow-soft',
+    bg: 'bg-success/12',
+    text: 'text-success',
+    border: 'border-success/25',
     icon: CheckCircle,
   },
   warning: {
-    bgColor: 'bg-warning/12',
-    textColor: 'text-warning',
-    borderColor: 'border-warning/25',
-    shadow: 'shadow-soft',
+    bg: 'bg-warning/12',
+    text: 'text-warning',
+    border: 'border-warning/25',
     icon: AlertTriangle,
   },
   error: {
-    bgColor: 'bg-destructive/12',
-    textColor: 'text-destructive',
-    borderColor: 'border-destructive/25',
-    shadow: 'shadow-soft',
+    bg: 'bg-destructive/12',
+    text: 'text-destructive',
+    border: 'border-destructive/25',
     icon: XCircle,
   },
   info: {
-    bgColor: 'bg-info/12',
-    textColor: 'text-info',
-    borderColor: 'border-info/25',
-    shadow: 'shadow-soft',
+    bg: 'bg-info/12',
+    text: 'text-info',
+    border: 'border-info/25',
     icon: Info,
   },
   loading: {
-    bgColor: 'bg-muted',
-    textColor: 'text-muted-foreground',
-    borderColor: 'border-border',
-    shadow: 'shadow-soft',
+    bg: 'bg-muted/80',
+    text: 'text-muted-foreground',
+    border: 'border-border/70',
     icon: Loader2,
   },
   pending: {
-    bgColor: 'bg-info/12',
-    textColor: 'text-info',
-    borderColor: 'border-info/25',
-    shadow: 'shadow-soft',
+    bg: 'bg-info/10',
+    text: 'text-info',
+    border: 'border-info/20',
     icon: Clock,
   },
   inactive: {
-    bgColor: 'bg-muted',
-    textColor: 'text-muted-foreground',
-    borderColor: 'border-border',
-    shadow: 'shadow-soft',
+    bg: 'bg-muted/70',
+    text: 'text-muted-foreground',
+    border: 'border-border/60',
     icon: Circle,
   },
   paused: {
-    bgColor: 'bg-warning/10',
-    textColor: 'text-warning',
-    borderColor: 'border-warning/20',
-    shadow: 'shadow-soft',
+    bg: 'bg-warning/10',
+    text: 'text-warning',
+    border: 'border-warning/20',
     icon: Pause,
   },
-}
+} as const
 
 const sizeConfig = {
   sm: {
@@ -125,16 +117,17 @@ export function StatusIndicator({
   const Icon = config.icon
 
   return (
-    <div className={cn(
-      "inline-flex items-center space-x-2 rounded-full border backdrop-blur-glass",
-      config.bgColor,
-      config.borderColor,
-      config.shadow,
-      sizeStyles.padding,
-      className
-    )}>
+    <div
+      className={cn(
+        "inline-flex items-center gap-2 rounded-full border backdrop-blur-panel shadow-soft",
+        config.bg,
+        config.border,
+        sizeStyles.padding,
+        className
+      )}
+    >
       {showIcon && (
-        <div className={cn(config.textColor)}>
+        <div className={cn(config.text)}>
           <Icon 
             className={cn(
               sizeStyles.icon,
@@ -148,7 +141,7 @@ export function StatusIndicator({
         <div 
           className={cn(
             "rounded-full",
-            config.textColor,
+            config.text,
             sizeStyles.dot
           )}
         />
@@ -157,7 +150,7 @@ export function StatusIndicator({
       {label && (
         <span className={cn(
           "font-medium",
-          config.textColor,
+          config.text,
           sizeStyles.text
         )}>
           {label}

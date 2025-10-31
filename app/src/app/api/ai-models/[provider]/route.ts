@@ -1,14 +1,14 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { getBackendAuthContext, isUnauthorizedError } from '@/lib/auth-utils'
 
 export async function GET(
-  req: NextRequest,
-  { params }: { params: Promise<{ provider: string }> }
+  _request: Request,
+  context: any
 ) {
   try {
     const backendBaseUrl = process.env.BACKEND_API_URL || 'http://localhost:8000'
     const { token } = await getBackendAuthContext()
-    const { provider } = await params
+    const { provider } = (context?.params ?? {}) as { provider: string }
 
     // Forward the request to the backend
     const backendUrl = `${backendBaseUrl}/api/v1/ai-models/${provider}`

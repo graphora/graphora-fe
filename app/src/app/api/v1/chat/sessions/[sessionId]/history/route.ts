@@ -1,16 +1,16 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { getBackendAuthContext, isUnauthorizedError } from '@/lib/auth-utils'
 
 export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ sessionId: string }> }
+  request: Request,
+  context: any
 ) {
   try {
     // Authenticate user
     const backendBaseUrl = process.env.BACKEND_API_URL || 'http://localhost:8000'
     const { token } = await getBackendAuthContext()
 
-    const { sessionId } = await params
+    const { sessionId } = (context?.params ?? {}) as { sessionId: string }
     const { searchParams } = new URL(request.url)
     const limit = searchParams.get('limit') || '50'
 

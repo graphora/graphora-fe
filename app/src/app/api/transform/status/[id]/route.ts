@@ -3,13 +3,13 @@ import { getBackendAuthHeaders, isUnauthorizedError } from '@/lib/auth-utils'
 
 export async function GET(
   request: Request,
-  { params }: { params: Promise<{ id: string }> }
+  context: any
 ) {
   try {
     const backendBaseUrl = process.env.BACKEND_API_URL || 'http://localhost:8000'
     const { headers } = await getBackendAuthHeaders({ accept: 'application/json' })
 
-    const { id } = await params
+    const { id } = (context?.params ?? {}) as { id: string }
     
     const response = await fetch(
       `${backendBaseUrl}/api/v1/transform/status/${id}`,

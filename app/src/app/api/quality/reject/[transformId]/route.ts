@@ -1,14 +1,14 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { getBackendAuthHeaders, isUnauthorizedError } from '@/lib/auth-utils'
 
 export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<{ transformId: string }> }
+  request: Request,
+  context: any
 ) {
   try {
     const backendBaseUrl = process.env.BACKEND_API_URL || 'http://localhost:8000'
     const { headers } = await getBackendAuthHeaders({ 'Content-Type': 'application/json' })
-    const { transformId } = await params
+    const { transformId } = (context?.params ?? {}) as { transformId: string }
     const body = await request.json().catch(() => ({}))
 
     const response = await fetch(`${backendBaseUrl}/api/v1/quality/reject/${transformId}`, {

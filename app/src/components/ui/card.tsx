@@ -4,13 +4,13 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 
 const cardVariants = cva(
-  "relative overflow-hidden rounded-[var(--border-radius-lg)] border text-card-foreground transition-transform duration-200",
+  "relative overflow-hidden rounded-[var(--border-radius-lg)] border border-border/60 bg-card/90 text-card-foreground transition-transform duration-200",
   {
     variants: {
       variant: {
         default: "surface-base",
         elevated: "surface-elevated",
-        glass: "glass-surface",
+        glass: "glass-surface border-white/15 bg-white/10 text-foreground backdrop-blur-panel",
         muted: "border-transparent bg-muted/70 shadow-soft",
         transparent: "border-transparent bg-transparent shadow-none",
       },
@@ -47,7 +47,7 @@ const CardHeader = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <div
     ref={ref}
-    className={cn("flex flex-col space-y-1 p-6", className)}
+    className={cn("flex flex-col gap-2.5 p-6", className)}
     {...props}
   />
 ))

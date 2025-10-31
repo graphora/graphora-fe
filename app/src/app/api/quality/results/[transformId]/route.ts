@@ -3,12 +3,12 @@ import { getBackendAuthHeaders, isUnauthorizedError } from '@/lib/auth-utils'
 
 export async function GET(
   request: Request,
-  { params }: { params: Promise<{ transformId: string }> }
+  context: any
 ) {
   try {
     const backendBaseUrl = process.env.BACKEND_API_URL || 'http://localhost:8000'
     const { headers } = await getBackendAuthHeaders({ 'Content-Type': 'application/json' })
-    const { transformId } = await params
+    const { transformId } = (context?.params ?? {}) as { transformId: string }
 
     const response = await fetch(`${backendBaseUrl}/api/v1/quality/results/${transformId}`, {
       method: 'GET',
@@ -40,12 +40,12 @@ export async function GET(
 
 export async function DELETE(
   request: Request,
-  { params }: { params: Promise<{ transformId: string }> }
+  context: any
 ) {
   try {
     const backendBaseUrl = process.env.BACKEND_API_URL || 'http://localhost:8000'
     const { headers } = await getBackendAuthHeaders()
-    const { transformId } = await params
+    const { transformId } = (context?.params ?? {}) as { transformId: string }
 
     const response = await fetch(`${backendBaseUrl}/api/v1/quality/results/${transformId}`, {
       method: 'DELETE',

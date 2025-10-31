@@ -3,13 +3,13 @@ import { getBackendAuthContext, isUnauthorizedError } from '@/lib/auth-utils';
 
 export async function GET(
   request: Request,
-  { params }: { params: Promise<{ mergeId: string }> }
+  context: any
 ) {
   try {
     const backendBaseUrl = process.env.BACKEND_API_URL || 'http://localhost:8000';
     const { token } = await getBackendAuthContext();
 
-    const { mergeId } = await params;
+    const { mergeId } = (context?.params ?? {}) as { mergeId: string };
 
     if (!mergeId) {
       return NextResponse.json(

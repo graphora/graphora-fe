@@ -3,7 +3,7 @@ import { getBackendAuthHeaders, isUnauthorizedError } from '@/lib/auth-utils'
 
 export async function GET(
   _request: Request,
-  { params }: { params: Promise<{ ontologyId: string }> }
+  context: any
 ) {
   try {
     const backendBaseUrl = process.env.BACKEND_API_URL || 'http://localhost:8000'
@@ -12,7 +12,7 @@ export async function GET(
       accept: 'application/json'
     })
 
-    const { ontologyId } = await params
+    const { ontologyId } = (context?.params ?? {}) as { ontologyId: string }
 
     if (!ontologyId) {
       return NextResponse.json({ error: 'Ontology ID is required' }, { status: 400 })
@@ -72,7 +72,7 @@ export async function GET(
 
 export async function DELETE(
   _request: Request,
-  { params }: { params: Promise<{ ontologyId: string }> }
+  context: any
 ) {
   try {
     const backendBaseUrl = process.env.BACKEND_API_URL || 'http://localhost:8000'
@@ -81,7 +81,7 @@ export async function DELETE(
       accept: 'application/json'
     })
 
-    const { ontologyId } = await params
+    const { ontologyId } = (context?.params ?? {}) as { ontologyId: string }
 
     if (!ontologyId) {
       return NextResponse.json({ error: 'Ontology ID is required' }, { status: 400 })
@@ -139,7 +139,7 @@ export async function DELETE(
 
 export async function PUT(
   request: Request,
-  { params }: { params: Promise<{ ontologyId: string }> }
+  context: any
 ) {
   try {
     const backendBaseUrl = process.env.BACKEND_API_URL || 'http://localhost:8000'
@@ -148,7 +148,7 @@ export async function PUT(
       accept: 'application/json'
     })
 
-    const { ontologyId } = await params
+    const { ontologyId } = (context?.params ?? {}) as { ontologyId: string }
 
     if (!ontologyId) {
       return NextResponse.json({ error: 'Ontology ID is required' }, { status: 400 })
