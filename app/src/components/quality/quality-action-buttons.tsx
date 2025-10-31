@@ -15,6 +15,7 @@ import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
+import { cn } from '@/lib/utils'
 import {
   Dialog,
   DialogContent,
@@ -77,7 +78,7 @@ export function QualityActionButtons({
   };
 
   const getActionRecommendation = () => {
-    const { overall_score, violations, requires_review } = qualityResults;
+    const { overall_score, violations } = qualityResults;
     const errorCount = violations.filter(v => v.severity === 'error').length;
     const warningCount = violations.filter(v => v.severity === 'warning').length;
 
@@ -85,30 +86,56 @@ export function QualityActionButtons({
       return {
         type: 'auto-approve',
         message: 'High quality score with no errors. Safe to auto-approve.',
-        color: 'green'
+        tone: 'success' as const
       };
     } else if (overall_score >= 80 && errorCount <= 2) {
       return {
         type: 'manual-approve',
         message: 'Good quality with minor issues. Review and approve if acceptable.',
-        color: 'blue'
+        tone: 'info' as const
       };
     } else if (overall_score >= 60 && errorCount <= 5) {
       return {
         type: 'review-required',
         message: 'Moderate quality issues detected. Careful review recommended.',
-        color: 'yellow'
+        tone: 'warning' as const
       };
     } else {
       return {
         type: 'reject-recommended',
         message: 'Significant quality issues found. Consider rejecting for re-extraction.',
-        color: 'red'
+        tone: 'destructive' as const
       };
     }
   };
 
   const recommendation = getActionRecommendation();
+  const toneVariant = {
+    success: 'success',
+    info: 'info',
+    warning: 'warning',
+    destructive: 'destructive'
+  } as const;
+  const toneText = {
+    success: 'text-success',
+    info: 'text-info',
+    warning: 'text-warning',
+    destructive: 'text-destructive'
+  } as const;
+  const toneBorder = {
+    success: 'border-l-success',
+    info: 'border-l-info',
+    warning: 'border-l-warning',
+    destructive: 'border-l-destructive'
+  } as const;
+  const gradeBadgeClasses: Record<string, string> = {
+    A: 'bg-success/15 text-success border-success/30 shadow-sm',
+    B: 'bg-info/15 text-info border-info/30 shadow-sm',
+    C: 'bg-warning/15 text-warning border-warning/30 shadow-sm',
+    D: 'bg-warning/20 text-warning border-warning/40 shadow-sm',
+    F: 'bg-destructive/15 text-destructive border-destructive/30 shadow-sm',
+    default: 'bg-neutral/15 text-neutral-foreground border-neutral/30 shadow-sm'
+  };
   const errorViolations = qualityResults.violations.filter(v => v.severity === 'error').length;
   const warningViolations = qualityResults.violations.filter(v => v.severity === 'warning').length;
 
@@ -125,53 +152,40 @@ export function QualityActionButtons({
       </CardHeader>
       <CardContent className="space-y-6">
         {/* Recommendation Alert */}
-        <Alert className={`border-l-4 ${
-          recommendation.color === 'green' ? 'border-l-green-500 bg-green-50 dark:bg-green-950' :
-          recommendation.color === 'blue' ? 'border-l-blue-500 bg-blue-50 dark:bg-blue-950' :
-          recommendation.color === 'yellow' ? 'border-l-yellow-500 bg-yellow-50 dark:bg-yellow-950' :
-          'border-l-red-500 bg-red-50 dark:bg-red-950'
-        }`}>
-          <Info className="h-4 w-4" />
-          <AlertDescription className={`font-medium ${
-            recommendation.color === 'green' ? 'text-green-800 dark:text-green-200' :
-            recommendation.color === 'blue' ? 'text-blue-800 dark:text-blue-200' :
-            recommendation.color === 'yellow' ? 'text-yellow-800 dark:text-yellow-200' :
-            'text-red-800 dark:text-red-200'
-          }`}>
+        <Alert 
+          variant={toneVariant[recommendation.tone]}
+          className={cn('border-l-4', toneBorder[recommendation.tone])}
+        >
+          <Info className={cn('h-4 w-4', toneText[recommendation.tone])} />
+          <AlertDescription className={cn('font-medium', toneText[recommendation.tone])}>
             <strong>Recommendation:</strong> {recommendation.message}
           </AlertDescription>
         </Alert>
 
         {/* Summary Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-content">
           <div className="text-center p-4 rounded-lg border border-border bg-card">
-            <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+            <div className="text-display-sm font-semibold text-info">
               {Math.round(qualityResults.overall_score)}
             </div>
-            <div className="text-sm text-muted-foreground">Quality Score</div>
+            <div className="text-body-sm text-muted-foreground">Quality Score</div>
           </div>
           <div className="text-center p-4 rounded-lg border border-border bg-card">
-            <div className="text-2xl font-bold text-red-600 dark:text-red-400">
+            <div className="text-display-sm font-semibold text-destructive">
               {errorViolations}
             </div>
-            <div className="text-sm text-muted-foreground">Errors</div>
+            <div className="text-body-sm text-muted-foreground">Errors</div>
           </div>
           <div className="text-center p-4 rounded-lg border border-border bg-card">
-            <div className="text-2xl font-bold text-amber-600 dark:text-amber-400">
+            <div className="text-display-sm font-semibold text-warning">
               {warningViolations}
             </div>
-            <div className="text-sm text-muted-foreground">Warnings</div>
+            <div className="text-body-sm text-muted-foreground">Warnings</div>
           </div>
           <div className="text-center p-4 rounded-lg border border-border bg-card">
             <Badge 
               variant="outline" 
-              className={`text-lg px-3 py-1 ${
-                qualityResults.grade === 'A' ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200' :
-                qualityResults.grade === 'B' ? 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200' :
-                qualityResults.grade === 'C' ? 'bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200' :
-                qualityResults.grade === 'D' ? 'bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-200' :
-                'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200'
-              }`}
+              className={cn('text-lg px-3 py-1', gradeBadgeClasses[qualityResults.grade] ?? gradeBadgeClasses.default)}
             >
               Grade {qualityResults.grade}
             </Badge>
@@ -182,34 +196,33 @@ export function QualityActionButtons({
         <div className="flex justify-center gap-4">
           {/* Approve Dialog */}
           <Dialog open={approveDialogOpen} onOpenChange={setApproveDialogOpen}>
-            <DialogTrigger asChild>
-              <Button 
-                variant="default" 
-                size="lg"
-                disabled={isApproving}
-                className="bg-green-600 hover:bg-green-700 text-white"
-              >
-                <CheckCircle className="h-5 w-5 mr-2" />
-                Approve & Continue
-              </Button>
+          <DialogTrigger asChild>
+            <Button 
+              variant="success" 
+              size="lg"
+              disabled={isApproving}
+            >
+              <CheckCircle className="h-5 w-5 mr-2" />
+              Approve & Continue
+            </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-md bg-background border-border">
               <DialogHeader>
-                <DialogTitle className="text-foreground">Approve Quality Results</DialogTitle>
-                <DialogDescription className="text-muted-foreground">
+                <DialogTitle className="text-heading text-foreground">Approve Quality Results</DialogTitle>
+                <DialogDescription className="text-body-sm text-muted-foreground">
                   This will approve the quality validation and continue with the merge process. The data will be added to the knowledge graph.
                 </DialogDescription>
               </DialogHeader>
               
               <div className="space-y-4">
-                <Alert className="dark:bg-green-950 dark:border-green-800">
-                  <CheckCircle className="h-4 w-4" />
-                  <AlertDescription className="dark:text-green-200">
+                <Alert variant="success">
+                  <CheckCircle className="h-4 w-4 text-success" />
+                  <AlertDescription className="text-success">
                     Quality score: {qualityResults.overall_score}% - {qualityResults.grade} grade
                   </AlertDescription>
                 </Alert>
 
-                <div className="space-y-2">
+                <div className="space-y-content-sm">
                   <Label htmlFor="approval-comment">Approval Comment (Optional)</Label>
                   <Textarea
                     id="approval-comment"
@@ -229,14 +242,13 @@ export function QualityActionButtons({
                 >
                   Cancel
                 </Button>
-                <Button 
-                  variant="default"
-                  onClick={handleApprove}
-                  disabled={isApproving}
-                  className="bg-green-600 hover:bg-green-700"
-                >
-                  {isApproving ? (
-                    <>
+              <Button 
+                variant="success"
+                onClick={handleApprove}
+                disabled={isApproving}
+              >
+                {isApproving ? (
+                  <>
                       <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                       Approving...
                     </>
@@ -265,23 +277,23 @@ export function QualityActionButtons({
             </DialogTrigger>
             <DialogContent className="sm:max-w-md bg-background border-border">
               <DialogHeader>
-                <DialogTitle className="text-foreground">Reject Quality Results</DialogTitle>
-                <DialogDescription className="text-muted-foreground">
+                <DialogTitle className="text-heading text-foreground">Reject Quality Results</DialogTitle>
+                <DialogDescription className="text-body-sm text-muted-foreground">
                   This will reject the quality validation and stop the merge process. The data will not be added to the knowledge graph.
                 </DialogDescription>
               </DialogHeader>
               
-              <div className="space-y-4">
+              <div className="space-y-content">
                 {errorViolations > 0 && (
-                  <Alert variant="destructive" className="dark:bg-red-950 dark:border-red-800">
-                    <AlertTriangle className="h-4 w-4" />
-                    <AlertDescription className="dark:text-red-200">
+                  <Alert variant="destructive">
+                    <AlertTriangle className="h-4 w-4 text-destructive" />
+                    <AlertDescription className="text-destructive">
                       {errorViolations} critical error{errorViolations > 1 ? 's' : ''} detected in the data quality validation.
                     </AlertDescription>
                   </Alert>
                 )}
 
-                <div className="space-y-2">
+                <div className="space-y-content-sm">
                   <Label htmlFor="rejection-reason">Rejection Reason (Required)</Label>
                   <Textarea
                     id="rejection-reason"
@@ -292,7 +304,7 @@ export function QualityActionButtons({
                     required
                   />
                   {rejectionReason.trim() === '' && (
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-body-sm text-muted-foreground">
                       Please provide a reason for rejection to help improve future extractions.
                     </p>
                   )}
@@ -330,7 +342,7 @@ export function QualityActionButtons({
         </div>
 
         {/* Additional Info */}
-        <div className="text-xs text-muted-foreground space-y-1 border-t pt-4">
+        <div className="text-body-xs text-muted-foreground space-y-1 border-t pt-4">
           <div>Transform ID: {qualityResults.transform_id}</div>
           <div>Validation completed: {new Date(qualityResults.validation_timestamp).toLocaleString()}</div>
           <div>Rules applied: {qualityResults.rules_applied} | Duration: {qualityResults.validation_duration_ms}ms</div>

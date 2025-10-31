@@ -1,5 +1,43 @@
 import type { Config } from 'tailwindcss'
 
+const fontSizeScale = {
+  xs: ['var(--font-size-xs)', { lineHeight: 'var(--line-height-snug)' }],
+  sm: ['var(--font-size-sm)', { lineHeight: 'var(--line-height-relaxed)' }],
+  base: ['var(--font-size-base)', { lineHeight: 'var(--line-height-relaxed)' }],
+  lg: ['var(--font-size-lg)', { lineHeight: 'var(--line-height-relaxed)' }],
+  xl: ['var(--font-size-xl)', { lineHeight: 'var(--line-height-snug)', fontWeight: '600' }],
+  '2xl': ['var(--font-size-2xl)', { lineHeight: 'var(--line-height-tight)', fontWeight: '600' }],
+  '3xl': ['var(--font-size-3xl)', { lineHeight: 'var(--line-height-tight)', fontWeight: '600' }],
+  '4xl': ['2.25rem', { lineHeight: '2.5rem', fontWeight: '600' }],
+  '5xl': ['3rem', { lineHeight: '1', fontWeight: '700' }],
+  '6xl': ['3.75rem', { lineHeight: '1', fontWeight: '700' }],
+  '7xl': ['4.5rem', { lineHeight: '1', fontWeight: '700' }],
+  '8xl': ['6rem', { lineHeight: '1', fontWeight: '700' }],
+  '9xl': ['8rem', { lineHeight: '1', fontWeight: '700' }],
+} as const
+
+const fontSizeAliases = {
+  'body-xs': fontSizeScale.xs,
+  'body-sm': fontSizeScale.sm,
+  body: fontSizeScale.base,
+  'body-lg': fontSizeScale.lg,
+  'heading-sm': fontSizeScale.lg,
+  heading: fontSizeScale.xl,
+  'display-sm': fontSizeScale['2xl'],
+  'display-lg': fontSizeScale['3xl'],
+} as const
+
+const spacingTokens = {
+  'content-sm': 'var(--space-content-sm)',
+  content: 'var(--space-content-md)',
+  'content-lg': 'var(--space-content-lg)',
+  'content-gap': 'var(--space-content-gap)',
+  'section-sm': 'var(--space-section-sm)',
+  section: 'var(--space-section)',
+  'section-lg': 'var(--space-section-lg)',
+  'section-inline': 'var(--space-section-inline)',
+} as const
+
 const config = {
   darkMode: ["class"],
   content: [
@@ -16,6 +54,7 @@ const config = {
         "2xl": "1400px",
       },
     },
+    fontSize: fontSizeScale,
     extend: {
       colors: {
         border: "rgb(var(--border) / <alpha-value>)",
@@ -35,6 +74,22 @@ const config = {
           DEFAULT: "rgb(var(--destructive) / <alpha-value>)",
           foreground: "rgb(var(--destructive-foreground) / <alpha-value>)",
         },
+        success: {
+          DEFAULT: "rgb(var(--success) / <alpha-value>)",
+          foreground: "rgb(var(--success-foreground) / <alpha-value>)",
+        },
+        warning: {
+          DEFAULT: "rgb(var(--warning) / <alpha-value>)",
+          foreground: "rgb(var(--warning-foreground) / <alpha-value>)",
+        },
+        info: {
+          DEFAULT: "rgb(var(--info) / <alpha-value>)",
+          foreground: "rgb(var(--info-foreground) / <alpha-value>)",
+        },
+        neutral: {
+          DEFAULT: "rgb(var(--neutral) / <alpha-value>)",
+          foreground: "rgb(var(--neutral-foreground) / <alpha-value>)",
+        },
         muted: {
           DEFAULT: "rgb(var(--muted) / <alpha-value>)",
           foreground: "rgb(var(--muted-foreground) / <alpha-value>)",
@@ -52,6 +107,8 @@ const config = {
           foreground: "rgb(var(--card-foreground) / <alpha-value>)",
         },
       },
+      fontSize: fontSizeAliases,
+      spacing: spacingTokens,
       borderRadius: {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",

@@ -120,9 +120,9 @@ export function SidebarNavigation({ className, defaultCollapsed = true }: Sideba
         
         {!isCollapsed && (
           <>
-            <span className="flex-1 font-medium text-sm">{item.name}</span>
+            <span className="flex-1 font-medium text-body-sm">{item.name}</span>
             {item.badge && (
-              <Badge variant="secondary" className="text-xs bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300">
+              <Badge variant="info" className="text-body-xs">
                 {item.badge}
               </Badge>
             )}
@@ -137,7 +137,7 @@ export function SidebarNavigation({ className, defaultCollapsed = true }: Sideba
           content={
             <div className="space-y-1">
               <div className="font-medium">{item.name}</div>
-              <div className="text-sm text-muted-foreground">{item.description}</div>
+              <div className="text-body-sm text-muted-foreground">{item.description}</div>
             </div>
           }
           side="right"
@@ -169,7 +169,7 @@ export function SidebarNavigation({ className, defaultCollapsed = true }: Sideba
             </div>
             <div>
               <div className="font-semibold text-foreground">Graphora</div>
-              <div className="text-xs text-muted-foreground">Knowledge Graph Platform</div>
+              <div className="text-body-xs text-muted-foreground">Knowledge Graph Platform</div>
             </div>
           </div>
         )}
@@ -190,30 +190,30 @@ export function SidebarNavigation({ className, defaultCollapsed = true }: Sideba
 
       {/* Navigation Items */}
       <div className="flex-1 flex flex-col p-4">
-        <div className="space-y-1 flex-1">
-          {navigationItems.map((item) => (
-            <NavItem key={item.id} item={item} />
-          ))}
-        </div>
+          <div className="space-y-1 flex-1">
+            {navigationItems.map((item) => (
+              <NavItem key={item.id} item={item} />
+            ))}
+          </div>
 
         {/* Need Help Section - integrated into main flow */}
         {!isCollapsed && (
           <div className="mt-6 p-3 bg-muted rounded-lg">
-            <div className="text-sm font-medium text-foreground mb-1">
+            <div className="text-body-sm font-medium text-foreground mb-1">
               Need Help?
             </div>
-            <div className="text-xs text-muted-foreground mb-2">
+            <div className="text-body-xs text-muted-foreground mb-2">
               Check our documentation or contact support
             </div>
             <Button 
               variant="outline" 
               size="sm" 
-              className="w-full text-xs"
+              className="w-full text-body-xs"
               onClick={() => window.open('https://docs.graphora.io/', '_blank')}
             >
               View Docs
             </Button>
-            <div className="mt-2 text-xs text-muted-foreground">
+            <div className="mt-2 text-body-xs text-muted-foreground">
               Email: <a href="mailto:support@graphora.io" className="text-primary hover:underline">support@graphora.io</a>
             </div>
           </div>
@@ -227,7 +227,7 @@ export function SidebarNavigation({ className, defaultCollapsed = true }: Sideba
             <div className="flex items-center space-x-2 flex-1">
               <UserButton />
               <div className="flex-1 min-w-0">
-                <div className="text-sm font-medium text-foreground truncate">
+                <div className="text-body-sm font-medium text-foreground truncate">
                   Welcome back
                 </div>
               </div>
@@ -257,7 +257,7 @@ export function SidebarNavigation({ className, defaultCollapsed = true }: Sideba
       {!isCollapsed && (
         <div className="p-4">
           <div className="bg-muted rounded-lg p-3">
-            <div className="text-xs text-muted-foreground">
+            <div className="text-body-xs text-muted-foreground">
               Version 2.0.1
             </div>
           </div>

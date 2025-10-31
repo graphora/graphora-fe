@@ -41,13 +41,13 @@ export function SetupWelcomeModal({ isOpen, onClose, setupStatus, onRefresh }: S
       <DialogContent className="max-w-2xl bg-card text-card-foreground border border-border">
         <DialogHeader>
           <div className="flex items-center justify-between">
-            <DialogTitle className="flex items-center gap-2 text-card-foreground">
+            <DialogTitle className="flex items-center gap-2 text-heading text-card-foreground">
               <Settings className="h-6 w-6 text-primary" />
               Welcome to Graphora! Let's get you set up
             </DialogTitle>
             <ThemeToggle />
           </div>
-          <DialogDescription className="text-muted-foreground">
+          <DialogDescription className="text-body text-muted-foreground">
             To get the most out of Graphora, we need to configure a few things. 
             Let's check what you need to set up.
           </DialogDescription>
@@ -55,15 +55,15 @@ export function SetupWelcomeModal({ isOpen, onClose, setupStatus, onRefresh }: S
 
         <div className="space-y-4">
           {/* Database Configuration */}
-          <Card className={`transition-colors ${setupStatus.hasDbConfig ? 'border-green-500/20 bg-green-500/5' : 'border-orange-500/20 bg-orange-500/5'}`}>
+          <Card className={`transition-colors ${setupStatus.hasDbConfig ? 'border-success/20 bg-success/10' : 'border-warning/20 bg-warning/10'}`}>
             <CardHeader>
-              <CardTitle className="flex items-center justify-between text-card-foreground">
+              <CardTitle className="flex items-center justify-between text-heading-sm text-card-foreground">
                 <span className="flex items-center gap-2">
-                  <Database className={`h-5 w-5 ${setupStatus.hasDbConfig ? 'text-green-600 dark:text-green-400' : 'text-orange-600 dark:text-orange-400'}`} />
+                  <Database className={`h-5 w-5 ${setupStatus.hasDbConfig ? 'text-success' : 'text-warning'}`} />
                   <span className="text-card-foreground">Database Configuration</span>
                 </span>
                 <div className="flex items-center gap-2">
-                  <Badge variant={setupStatus.hasDbConfig ? 'default' : 'destructive'} className={setupStatus.hasDbConfig ? 'bg-green-500/10 text-green-700 border-green-500/20 hover:bg-green-500/20 dark:bg-green-500/20 dark:text-green-300 dark:border-green-500/30' : 'bg-red-500/10 text-red-700 border-red-500/20 hover:bg-red-500/20 dark:bg-red-500/20 dark:text-red-300 dark:border-red-500/30'}>
+                  <Badge variant={setupStatus.hasDbConfig ? 'success' : 'warning'}>
                     {setupStatus.hasDbConfig ? (
                       <>
                         <CheckCircle className="h-3 w-3 mr-1" />
@@ -78,7 +78,7 @@ export function SetupWelcomeModal({ isOpen, onClose, setupStatus, onRefresh }: S
                   </Badge>
                 </div>
               </CardTitle>
-              <CardDescription className="text-muted-foreground">
+              <CardDescription className="text-body-sm text-muted-foreground">
                 Neo4j database connections for staging and production environments. 
                 These are required for storing and managing your knowledge graphs.
               </CardDescription>
@@ -86,18 +86,18 @@ export function SetupWelcomeModal({ isOpen, onClose, setupStatus, onRefresh }: S
             <CardContent>
               {setupStatus.hasDbConfig ? (
                 <div className="space-y-2">
-                  <div className="flex items-center justify-between text-sm">
+                  <div className="flex items-center justify-between text-body-sm">
                     <span className="font-medium text-card-foreground">Staging Database:</span>
-                    <span className="text-green-600 dark:text-green-400">✓ Configured</span>
+                    <span className="text-success">✓ Configured</span>
                   </div>
-                  <div className="flex items-center justify-between text-sm">
+                  <div className="flex items-center justify-between text-body-sm">
                     <span className="font-medium text-card-foreground">Production Database:</span>
-                    <span className="text-green-600 dark:text-green-400">✓ Configured</span>
+                    <span className="text-success">✓ Configured</span>
                   </div>
                 </div>
               ) : (
                 <div className="space-y-2">
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-body-sm text-muted-foreground">
                     You'll need to provide connection details for both staging and production Neo4j databases.
                   </p>
                   <Button 
@@ -115,15 +115,15 @@ export function SetupWelcomeModal({ isOpen, onClose, setupStatus, onRefresh }: S
           </Card>
 
           {/* AI Configuration */}
-          <Card className={`transition-colors ${setupStatus.hasAiConfig ? 'border-blue-500/20 bg-blue-500/5' : 'border-border bg-muted/30'}`}>
+          <Card className={`transition-colors ${setupStatus.hasAiConfig ? 'border-info/20 bg-info/10' : 'border-border bg-muted/30'}`}>
             <CardHeader>
-              <CardTitle className="flex items-center justify-between text-card-foreground">
+              <CardTitle className="flex items-center justify-between text-heading-sm text-card-foreground">
                 <span className="flex items-center gap-2">
-                  <Sparkles className={`h-5 w-5 ${setupStatus.hasAiConfig ? 'text-blue-600 dark:text-blue-400' : 'text-muted-foreground'}`} />
+                  <Sparkles className={`h-5 w-5 ${setupStatus.hasAiConfig ? 'text-info' : 'text-muted-foreground'}`} />
                   <span className="text-card-foreground">AI Configuration</span>
                 </span>
                 <div className="flex items-center gap-2">
-                  <Badge variant={setupStatus.hasAiConfig ? 'default' : 'outline'} className={setupStatus.hasAiConfig ? 'bg-blue-500/10 text-blue-700 border-blue-500/20 hover:bg-blue-500/20 dark:bg-blue-500/20 dark:text-blue-300 dark:border-blue-500/30' : 'border-border text-muted-foreground'}>
+                  <Badge variant={setupStatus.hasAiConfig ? 'info' : 'neutral'}>
                     {setupStatus.hasAiConfig ? (
                       <>
                         <CheckCircle className="h-3 w-3 mr-1" />
@@ -135,7 +135,7 @@ export function SetupWelcomeModal({ isOpen, onClose, setupStatus, onRefresh }: S
                   </Badge>
                 </div>
               </CardTitle>
-              <CardDescription className="text-muted-foreground">
+              <CardDescription className="text-body-sm text-muted-foreground">
                 Gemini AI integration for intelligent document processing, entity extraction, 
                 and conflict resolution. This enhances your knowledge graph capabilities.
               </CardDescription>
@@ -143,22 +143,22 @@ export function SetupWelcomeModal({ isOpen, onClose, setupStatus, onRefresh }: S
             <CardContent>
               {setupStatus.hasAiConfig ? (
                 <div className="space-y-2">
-                  <div className="flex items-center justify-between text-sm">
+                  <div className="flex items-center justify-between text-body-sm">
                     <span className="font-medium text-card-foreground">Provider:</span>
-                    <span className="text-blue-600 dark:text-blue-400">{setupStatus.aiConfig?.provider_display_name}</span>
+                    <span className="text-info">{setupStatus.aiConfig?.provider_display_name}</span>
                   </div>
-                  <div className="flex items-center justify-between text-sm">
+                  <div className="flex items-center justify-between text-body-sm">
                     <span className="font-medium text-card-foreground">API Key:</span>
-                    <span className="text-blue-600 dark:text-blue-400 font-mono">{setupStatus.aiConfig?.api_key_masked}</span>
+                    <span className="text-info font-mono">{setupStatus.aiConfig?.api_key_masked}</span>
                   </div>
-                  <div className="flex items-center justify-between text-sm">
+                  <div className="flex items-center justify-between text-body-sm">
                     <span className="font-medium text-card-foreground">Default Model:</span>
-                    <span className="text-blue-600 dark:text-blue-400">{setupStatus.aiConfig?.default_model_display_name}</span>
+                    <span className="text-info">{setupStatus.aiConfig?.default_model_display_name}</span>
                   </div>
                 </div>
               ) : (
                 <div className="space-y-2">
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-body-sm text-muted-foreground">
                     Configure your Gemini API key to enable AI-powered features like smart conflict resolution 
                     and automated entity extraction.
                   </p>
@@ -208,7 +208,7 @@ export function SetupWelcomeModal({ isOpen, onClose, setupStatus, onRefresh }: S
           </div>
 
           {!setupStatus.hasDbConfig && (
-            <p className="text-xs text-muted-foreground text-center">
+            <p className="text-body-xs text-muted-foreground text-center">
               Database configuration is required to use Graphora's core features.
             </p>
           )}

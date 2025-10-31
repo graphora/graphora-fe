@@ -34,27 +34,27 @@ interface StatusIndicatorProps {
 
 const variants = {
   success: {
-    bgColor: 'bg-emerald-50 dark:bg-emerald-950/30',
-    textColor: 'text-emerald-700 dark:text-emerald-400',
-    borderColor: 'border-emerald-200 dark:border-emerald-800/50',
+    bgColor: 'bg-success/15',
+    textColor: 'text-success',
+    borderColor: 'border-success/30',
     icon: CheckCircle,
   },
   warning: {
-    bgColor: 'bg-amber-50 dark:bg-amber-950/30',
-    textColor: 'text-amber-700 dark:text-amber-400',
-    borderColor: 'border-amber-200 dark:border-amber-800/50',
+    bgColor: 'bg-warning/15',
+    textColor: 'text-warning',
+    borderColor: 'border-warning/30',
     icon: AlertTriangle,
   },
   error: {
-    bgColor: 'bg-red-50 dark:bg-red-950/30',
-    textColor: 'text-red-700 dark:text-red-400',
-    borderColor: 'border-red-200 dark:border-red-800/50',
+    bgColor: 'bg-destructive/15',
+    textColor: 'text-destructive',
+    borderColor: 'border-destructive/30',
     icon: XCircle,
   },
   info: {
-    bgColor: 'bg-blue-50 dark:bg-blue-950/30',
-    textColor: 'text-blue-700 dark:text-blue-400',
-    borderColor: 'border-blue-200 dark:border-blue-800/50',
+    bgColor: 'bg-info/15',
+    textColor: 'text-info',
+    borderColor: 'border-info/30',
     icon: Info,
   },
   loading: {
@@ -64,9 +64,9 @@ const variants = {
     icon: Loader2,
   },
   pending: {
-    bgColor: 'bg-blue-50 dark:bg-blue-950/30',
-    textColor: 'text-blue-700 dark:text-blue-400',
-    borderColor: 'border-blue-200 dark:border-blue-800/50',
+    bgColor: 'bg-info/15',
+    textColor: 'text-info',
+    borderColor: 'border-info/30',
     icon: Clock,
   },
   inactive: {
@@ -76,9 +76,9 @@ const variants = {
     icon: Circle,
   },
   paused: {
-    bgColor: 'bg-orange-50 dark:bg-orange-950/30',
-    textColor: 'text-orange-700 dark:text-orange-400',
-    borderColor: 'border-orange-200 dark:border-orange-800/50',
+    bgColor: 'bg-warning/10',
+    textColor: 'text-warning',
+    borderColor: 'border-warning/20',
     icon: Pause,
   },
 }

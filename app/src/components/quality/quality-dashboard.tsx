@@ -164,9 +164,9 @@ export function QualityDashboard({
       case 'error':
         return <XCircle className="h-4 w-4 text-destructive" />;
       case 'warning':
-        return <AlertTriangle className="h-4 w-4 text-amber-500" />;
+        return <AlertTriangle className="h-4 w-4 text-warning" />;
       default:
-        return <Info className="h-4 w-4 text-blue-500" />;
+        return <Info className="h-4 w-4 text-info" />;
     }
   };
 
@@ -184,14 +184,14 @@ export function QualityDashboard({
   return (
     <div className={`space-y-6 ${className}`}>
       {/* Header with refresh button */}
-      <div className="flex items-center justify-between pb-4 border-b border-border">
+      <div className="flex items-center justify-between pb-content border-b border-border">
         <div className="flex items-center space-x-3">
-          <div className="w-8 h-8 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center">
-            <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
+          <div className="w-8 h-8 bg-success/15 rounded-full flex items-center justify-center">
+            <CheckCircle className="h-4 w-4 text-success" />
           </div>
           <div>
-            <h3 className="text-lg font-semibold text-foreground">Validation Complete</h3>
-            <p className="text-sm text-muted-foreground">
+            <h3 className="text-heading font-semibold text-foreground">Validation Complete</h3>
+            <p className="text-body-sm text-muted-foreground">
               Data quality analysis for your extracted content
             </p>
           </div>
@@ -215,22 +215,22 @@ export function QualityDashboard({
       {qualityResults.violations.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center">
+            <CardTitle className="flex items-center text-heading">
               <AlertTriangle className="h-5 w-5 mr-2" />
               Violations Summary
             </CardTitle>
-            <CardDescription>
+            <CardDescription className="text-body-sm">
               {qualityResults.violations.length} quality issues found
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-content">
               {Object.entries(qualityResults.violations_by_severity).map(([severity, count]) => (
                 <div key={severity} className="flex items-center space-x-3 p-3 rounded-lg border border-border bg-card">
                   {getSeverityIcon(severity)}
                   <div>
-                    <p className="font-medium capitalize text-foreground">{severity}</p>
-                    <p className="text-2xl font-bold text-foreground">{count}</p>
+                    <p className="text-body-sm font-medium capitalize text-foreground">{severity}</p>
+                    <p className="text-display-sm font-semibold text-foreground">{count}</p>
                   </div>
                 </div>
               ))}

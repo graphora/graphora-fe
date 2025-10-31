@@ -33,10 +33,10 @@ export function PageHeader({
 }: PageHeaderProps) {
   return (
     <div className={cn("bg-background border-b border-border", className)}>
-      <div className="px-6 py-6">
+      <div className="px-6 sm:px-8 py-8">
         {/* Breadcrumbs */}
         {breadcrumbs && breadcrumbs.length > 0 && (
-          <div className="flex items-center space-x-2 text-sm text-muted-foreground mb-4">
+          <div className="flex items-center space-x-2 text-body-sm text-muted-foreground mb-content-sm">
             {breadcrumbs.map((crumb, index) => (
               <React.Fragment key={index}>
                 {crumb.href ? (
@@ -58,7 +58,7 @@ export function PageHeader({
         )}
 
         {/* Main Header */}
-        <div className="flex items-start justify-between">
+        <div className="flex flex-wrap items-center justify-between gap-6">
           <div className="flex items-start space-x-4">
             {(icon || logo) && (
               <div className="flex-shrink-0 w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center text-white shadow-sm">
@@ -74,20 +74,20 @@ export function PageHeader({
               </div>
             )}
             
-            <div className="space-y-1">
+            <div className="space-y-1.5">
               <div className="flex items-center space-x-3">
-                <h1 className="text-2xl font-bold text-foreground tracking-tight">
+                <h1 className="text-heading font-semibold text-foreground tracking-tight">
                   {title}
                 </h1>
                 {badge && (
-                  <Badge variant="secondary" className="bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300">
+                  <Badge variant="info">
                     {badge}
                   </Badge>
                 )}
               </div>
               
               {description && (
-                <p className="text-muted-foreground max-w-2xl leading-relaxed">
+                <p className="text-body text-muted-foreground max-w-2xl leading-relaxed">
                   {description}
                 </p>
               )}
@@ -104,4 +104,4 @@ export function PageHeader({
       </div>
     </div>
   )
-} 
+}
