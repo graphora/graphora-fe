@@ -3,12 +3,10 @@
 import React, { useEffect, useState } from 'react'
 import { useBeforeUnload } from '@/hooks/use-before-unload'
 import { cn } from '@/lib/utils'
-import { Check, ChevronRight, Clock, AlertCircle, ChevronDown } from 'lucide-react'
+import { Check, Clock, ChevronDown } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import { Tooltip } from '@/components/ui/tooltip'
-import { useRouter } from 'next/navigation'
-import { Logo } from '@/components/ui/logo'
+import { PageHeader } from '@/components/layouts/page-header'
 import { SidebarNavigation } from '@/components/navigation/sidebar-navigation'
 
 export type WorkflowStep = {
@@ -26,6 +24,7 @@ export interface EnhancedWorkflowLayoutProps {
   currentStepIndex?: number
   hasUnsavedChanges?: boolean
   projectTitle?: string
+  description?: string
   onStepClick?: (stepId: string) => void
   showSidebar?: boolean
   sidebarCollapsed?: boolean
@@ -39,14 +38,13 @@ export function EnhancedWorkflowLayout({
   currentStepIndex: propStepIndex,
   hasUnsavedChanges = false,
   projectTitle = "Graphora Workflow",
+  description,
   onStepClick,
   showSidebar = true,
   sidebarCollapsed = true,
   headerActions,
 }: EnhancedWorkflowLayoutProps) {
   const [isCollapsed, setIsCollapsed] = useState(true)
-  const router = useRouter()
-  
   // Calculate current step index based on either currentStepId or currentStepIndex prop
   const currentStepIndex = currentStepId 
     ? steps.findIndex(step => step.id === currentStepId) 
@@ -88,7 +86,7 @@ export function EnhancedWorkflowLayout({
   }
 
   return (
-    <div className="relative flex min-h-screen overflow-hidden bg-gradient-to-br from-background via-background to-muted/20">
+    <div className="relative flex h-screen overflow-hidden bg-gradient-to-br from-background via-background to-muted/20">
       <div className="pointer-events-none absolute inset-0 opacity-55 [background-image:radial-gradient(circle_at_15%_20%,rgba(56,189,248,0.14),transparent_55%),radial-gradient(circle_at_85%_15%,rgba(45,212,191,0.12),transparent_50%),radial-gradient(circle_at_50%_90%,rgba(37,99,235,0.12),transparent_45%)]" aria-hidden />
       {showSidebar && (
         <SidebarNavigation
@@ -99,36 +97,26 @@ export function EnhancedWorkflowLayout({
 
       {/* Main Content */}
       <div className="relative z-10 flex-1 overflow-y-auto overflow-x-hidden">
-        <div className="flex min-h-screen flex-col bg-background/92 backdrop-blur-sm">
-        {/* Enhanced Header */}
-        <div className="sticky top-0 z-30 border-b border-border/40 bg-background/95 shadow-sm backdrop-blur-md">
-          <div className="page-shell py-3">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <div className="flex items-center gap-2.5">
-                <h1 className="text-lg font-semibold text-foreground truncate">
-                  {projectTitle}
-                </h1>
-                {hasUnsavedChanges && (
-                  <Badge variant="warning" className="px-2 py-0.5 text-xs">
-                    <AlertCircle className="mr-1 h-3 w-3" />
-                    Unsaved
-                  </Badge>
-                )}
-              </div>
-
-              <div className="flex items-center gap-2">
+        <div className="flex min-h-full flex-col bg-background/92 backdrop-blur-sm">
+          <PageHeader
+            title={projectTitle}
+            description={description}
+            badge={hasUnsavedChanges ? "Unsaved Changes" : undefined}
+            actions={
+              <div className="flex items-center gap-3">
                 {headerActions}
-                <button
-                  type="button"
+                <Button
+                  variant="ghost"
+                  size="sm"
                   onClick={() => setIsCollapsed(!isCollapsed)}
-                  className="inline-flex items-center gap-1.5 rounded-md border border-border/50 bg-background/80 px-2.5 py-1 text-xs font-medium text-muted-foreground transition hover:text-foreground hover:bg-background hover:border-border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                  className="text-xs"
                 >
                   <span>{isCollapsed ? 'Show steps' : 'Hide steps'}</span>
-                  <ChevronDown className={cn('h-3.5 w-3.5 transition-transform', !isCollapsed && 'rotate-180')} />
-                </button>
+                  <ChevronDown className={cn('h-3.5 w-3.5 ml-1.5 transition-transform', !isCollapsed && 'rotate-180')} />
+                </Button>
               </div>
-            </div>
-          </div>
+            }
+          />
 
           {/* Workflow Steps */}
           {!isCollapsed && (
@@ -138,23 +126,11 @@ export function EnhancedWorkflowLayout({
                   {steps.map((step, index) => {
                     const isCompleted = index < currentStepIndex || step.status === 'completed'
                     const isCurrent = index === currentStepIndex || step.status === 'current'
-                    const isUpcoming = index > currentStepIndex || step.status === 'upcoming'
                     const isBlocked = step.status === 'blocked'
                     const isClickable = isCompleted || isCurrent
                     
                     return (
-                      <div key={step.id} className="flex items-center">
-                        {index > 0 && (
-                          <div className="flex items-center mx-1.5">
-                            <ChevronRight
-                              className={cn(
-                                "h-4 w-4 transition-colors",
-                                isCompleted ? "text-emerald-500" : "text-muted-foreground/40"
-                              )}
-                            />
-                          </div>
-                        )}
-
+                      <div key={step.id} className="flex items-center gap-4">
                         <Tooltip
                           content={
                             <div className="space-y-1">
@@ -163,55 +139,49 @@ export function EnhancedWorkflowLayout({
                                 <div className="text-sm text-muted-foreground">{step.description}</div>
                               )}
                               {step.estimatedTime && (
-                                <div className="text-xs text-muted-foreground flex items-center">
-                                  <Clock className="h-3 w-3 mr-1" />
+                                <div className="text-xs text-muted-foreground flex items-center gap-1">
+                                  <Clock className="h-3 w-3" />
                                   {step.estimatedTime}
                                 </div>
                               )}
                             </div>
                           }
                         >
-                          <div
-                            className={cn(
-                              "flex min-w-[100px] flex-col items-center gap-1.5 rounded-lg border px-3 py-2 text-center transition-all",
-                              isClickable ? "cursor-pointer" : "cursor-not-allowed opacity-60",
-                              isCurrent && "border-primary bg-primary/5 shadow-sm",
-                              isCompleted && !isCurrent && "border-border/40 bg-background hover:bg-muted/50",
-                              !isCompleted && !isCurrent && "border-border/30 bg-muted/30"
-                            )}
+                          <button
+                            type="button"
+                            disabled={!isClickable}
                             onClick={() => handleStepClick(step, index)}
+                            className={cn(
+                              'flex min-w-[120px] flex-col items-center gap-1.5 rounded-lg border px-3 py-2 text-center transition-all',
+                              'disabled:cursor-not-allowed disabled:opacity-60',
+                              isCompleted && 'border-emerald-400/60 bg-emerald-500/10 text-emerald-600',
+                              isCurrent && 'border-primary/60 bg-primary/10 text-primary shadow-sm',
+                              !isCompleted && !isCurrent && !isBlocked && 'border-border/40 bg-muted/30 text-muted-foreground',
+                              isBlocked && 'border-destructive/50 bg-destructive/15 text-destructive'
+                            )}
                           >
-                            <div className={cn(
-                              "flex h-8 w-8 items-center justify-center rounded-full border-2 transition-colors",
-                              isCompleted
-                                ? "bg-emerald-500 border-emerald-500 text-white"
-                                : isCurrent
-                                  ? "bg-primary/10 border-primary text-primary"
-                                  : isBlocked
-                                    ? "bg-red-100 border-red-500 text-red-600"
-                                    : "bg-muted border-muted-foreground/30 text-muted-foreground"
-                            )}>
-                              {isCompleted ? (
-                                <Check className="h-4 w-4" />
-                              ) : isBlocked ? (
-                                <AlertCircle className="h-4 w-4" />
-                              ) : (
-                                <span className="text-xs font-semibold">{index + 1}</span>
+                            <span
+                              className={cn(
+                                'flex h-8 w-8 items-center justify-center rounded-full border-2 text-xs font-semibold transition-colors',
+                                isCompleted
+                                  ? 'border-emerald-500 bg-emerald-500 text-white'
+                                  : isCurrent
+                                    ? 'border-primary bg-primary/20 text-primary'
+                                    : isBlocked
+                                      ? 'border-destructive text-destructive'
+                                      : 'border-border/50 text-muted-foreground'
                               )}
-                            </div>
-
-                            <div className="text-center">
-                              <div className={cn(
-                                "text-xs font-medium",
-                                isCurrent ? "text-primary" :
-                                isCompleted ? "text-emerald-600" :
-                                "text-muted-foreground"
-                              )}>
-                                {step.title}
-                              </div>
-                            </div>
-                          </div>
+                            >
+                              {isCompleted ? <Check className="h-4 w-4" /> : index + 1}
+                            </span>
+                            <span className="text-[11px] font-medium leading-tight text-current">
+                              {step.title}
+                            </span>
+                          </button>
                         </Tooltip>
+                        {index < steps.length - 1 && (
+                          <span className="h-px w-12 flex-shrink-0 bg-border/60" aria-hidden />
+                        )}
                       </div>
                     )
                   })}
@@ -219,14 +189,13 @@ export function EnhancedWorkflowLayout({
               </div>
             </div>
           )}
-        </div>
 
-        {/* Main Content */}
-        <div className="flex-1 overflow-hidden">
-          {children}
+          {/* Main Content */}
+          <div className="flex-1 overflow-auto min-h-0">
+            {children}
+          </div>
         </div>
       </div>
     </div>
-  </div>
   )
 }

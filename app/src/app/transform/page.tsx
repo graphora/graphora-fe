@@ -840,106 +840,41 @@ function TransformPageContent() {
         </Alert>
       )}
 
-      {/* Main Content with Action Bar */}
-      <div className="flex-1 overflow-auto">
-        {/* Action Bar */}
-        <div className="bg-background border-b border-border shadow-sm">
-          <div className="px-6 py-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <Zap className="h-6 w-6 text-sky-600" />
-                <div>
-                  <h2 className="text-lg font-semibold text-foreground">Document Transform</h2>
-                  <p className="text-sm text-muted-foreground">Upload and transform documents into knowledge graphs</p>
-                </div>
-              </div>
-              
-              <div className="flex items-center space-x-3">
-                {/* Progress indicator in header when processing */}
-                {isProcessing && (
-                  <div className="flex items-center space-x-2 bg-blue-50 dark:bg-blue-950 px-3 py-1.5 rounded-lg border border-blue-200 dark:border-blue-800">
-                    <Loader2 className="h-4 w-4 animate-spin text-blue-600 dark:text-blue-400" />
-                    <span className="text-sm text-blue-700 dark:text-blue-300 font-medium">{progress}%</span>
-                    <span className="text-xs text-blue-600 dark:text-blue-400">{currentStep || 'Processing...'}</span>
-                  </div>
-                )}
+      {/* Action Bar */}
+      <div className="border-b border-border/40 bg-muted/20 px-6 py-3">
+        <div className="flex items-center justify-end gap-2">
+          <Button
+            onClick={() => setShowChunkingConfig(true)}
+            disabled={!file || isProcessing}
+            size="sm"
+            variant="outline"
+          >
+            <Settings2 className="h-4 w-4 mr-1.5" />
+            Chunking Config
+          </Button>
 
-                {/* Quality review indicator */}
-                {showQualityReview && (
-                  <div className="flex items-center space-x-2 bg-amber-50 dark:bg-amber-950 px-3 py-1.5 rounded-lg border border-amber-200 dark:border-amber-800">
-                    <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-                    <span className="text-sm text-amber-700 dark:text-amber-300 font-medium">Quality Review Required</span>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => setShowQualityReview(true)}
-                      className="h-6 px-2 text-xs bg-amber-100 border-amber-300 text-amber-800 hover:bg-amber-200"
-                    >
-                      Review Now
-                    </Button>
-                  </div>
-                )}
-                
-                <div className="flex items-center space-x-2">
-                  <Button 
-                    onClick={() => setShowChunkingConfig(true)}
-                    disabled={!file || isProcessing}
-                    size="sm"
-                    variant="secondary"
-                    className="bg-muted hover:bg-muted/80 text-foreground border-border"
-                  >
-                    <Settings2 className="h-4 w-4 mr-1.5" />
-                    Chunking Config
-                  </Button>
-                  
-                  <Button 
-                    onClick={handleExtract} 
-                    disabled={!file || isProcessing || !!transformId}
-                    size="sm"
-                    className="bg-sky-600 hover:bg-sky-700 text-white"
-                  >
-                    <Rocket className="h-4 w-4 mr-1.5" />
-                    {isProcessing ? 'Processing...' : 'Transform'}
-                  </Button>
-                  
-                  {/* Quality Review Button - shown when results available but not currently reviewing */}
-                  {graphData && !isProcessing && !showQualityReview && (
-                    <Button 
-                      onClick={() => setShowQualityReview(true)}
-                      size="sm"
-                      variant="outline"
-                      className="bg-amber-50 border-amber-300 text-amber-800 hover:bg-amber-100"
-                    >
-                      <AlertTriangle className="h-4 w-4 mr-1.5" />
-                      Review Quality
-                    </Button>
-                  )}
-                  
-                  <Button 
-                    onClick={handleViewTransformStatus}
-                    size="sm"
-                    variant="outline"
-                    className="text-muted-foreground hover:text-foreground"
-                  >
-                    <Monitor className="h-4 w-4 mr-1.5" />
-                    Status
-                  </Button>
-                </div>
-                
-                <Button 
-                  onClick={() => setShowMergeConfirm(true)} 
-                  disabled={!graphData || isProcessing || !qualityReviewCompleted}
-                  size="sm"
-                  className="bg-emerald-600 hover:bg-emerald-700 text-white disabled:opacity-50"
-                  title={!qualityReviewCompleted ? "Complete quality review first" : ""}
-                >
-                  <GitMerge className="h-4 w-4 mr-1.5" />
-                  Merge
-                </Button>
-              </div>
-            </div>
-          </div>
+          <Button
+            onClick={handleExtract}
+            disabled={!file || isProcessing || !!transformId}
+            size="sm"
+          >
+            <Rocket className="h-4 w-4 mr-1.5" />
+            {isProcessing ? 'Processing...' : 'Transform'}
+          </Button>
+
+          <Button
+            onClick={() => setShowMergeConfirm(true)}
+            disabled={!graphData || isProcessing || !qualityReviewCompleted}
+            size="sm"
+            className="bg-emerald-600 hover:bg-emerald-700 text-white"
+          >
+            <GitMerge className="h-4 w-4 mr-1.5" />
+            Merge
+          </Button>
         </div>
+      </div>
+
+      <div className="flex-1 overflow-auto">
 
         <div className="page-shell py-6">
           <div className="grid gap-6 lg:grid-cols-[minmax(0,360px)_1fr]">
@@ -1208,6 +1143,7 @@ function TransformPageContent() {
       {/* Chunking Configuration Modal */}
       <Dialog open={showChunkingConfig} onOpenChange={setShowChunkingConfig}>
         <DialogContent className="glass-surface max-w-5xl h-[90vh] max-h-[90vh] overflow-hidden border border-white/15 p-0 text-card-foreground shadow-large">
+          <DialogTitle className="sr-only">Chunking Configuration</DialogTitle>
           <div className="grid h-full md:grid-cols-[320px_1fr]">
             <aside className="flex flex-col justify-between gap-8 bg-gradient-to-br from-primary/18 via-background/30 to-background/60 p-8 text-left backdrop-blur-panel">
               <div className="space-y-6">
@@ -1319,17 +1255,18 @@ export default function TransformPage() {
       'transform': '/transform',
       'merge': '/merge'
     }
-    
+
     if (routes[stepId] && typeof window !== 'undefined') {
       window.location.href = routes[stepId]
     }
   }
 
   return (
-    <EnhancedWorkflowLayout 
+    <EnhancedWorkflowLayout
       steps={workflowSteps}
       currentStepId="transform"
       projectTitle="Document Transform"
+      description="Upload and transform documents into knowledge graphs"
       onStepClick={handleStepNavigation}
     >
       <Suspense fallback={<div>Loading...</div>}>
