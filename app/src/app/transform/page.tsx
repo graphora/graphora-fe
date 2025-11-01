@@ -1142,11 +1142,11 @@ function TransformPageContent() {
 
       {/* Chunking Configuration Modal */}
       <Dialog open={showChunkingConfig} onOpenChange={setShowChunkingConfig}>
-        <DialogContent className="glass-surface max-w-5xl h-[90vh] max-h-[90vh] overflow-hidden border border-white/15 p-0 text-card-foreground shadow-large">
+        <DialogContent className="glass-surface max-w-5xl h-[90vh] max-h-[90vh] overflow-x-hidden overflow-y-auto border border-white/15 p-0 text-card-foreground shadow-large">
           <DialogTitle className="sr-only">Chunking Configuration</DialogTitle>
-          <div className="grid h-full md:grid-cols-[320px_1fr]">
-            <aside className="flex flex-col justify-between gap-8 bg-gradient-to-br from-primary/18 via-background/30 to-background/60 p-8 text-left backdrop-blur-panel">
-              <div className="space-y-6">
+          <div className="grid h-full min-h-0 md:grid-cols-[320px_1fr]">
+            <aside className="flex h-full min-h-0 flex-col bg-gradient-to-br from-primary/18 via-background/30 to-background/60 p-8 text-left backdrop-blur-panel">
+              <div className="flex-1 min-h-0 space-y-6 overflow-y-auto pr-3">
                 <div className="space-y-2">
                   <p className="text-xs uppercase tracking-[0.24em] text-foreground/55">Document</p>
                   <h2 className="text-heading text-foreground">
@@ -1156,7 +1156,7 @@ function TransformPageContent() {
                     {file ? `${formattedFileSize ?? '—'} • ${file.type || 'unknown type'}` : 'Upload a document to tailor chunking.'}
                   </p>
                 </div>
-                <div className="space-y-3 rounded-xl border border-white/15 bg-white/10 p-5 shadow-inner">
+                <div className="space-y-3 rounded-xl border border-white/15 bg-white/10 p-5 shadow-inner min-h-[220px]">
                   <p className="text-xs uppercase tracking-[0.2em] text-foreground/55">Current configuration</p>
                   {hasCustomChunking ? (
                     <div className="space-y-3 text-sm text-foreground/80">
@@ -1189,7 +1189,7 @@ function TransformPageContent() {
                 </div>
               </div>
 
-              <div className="space-y-3 rounded-xl border border-white/12 bg-white/8 p-5 text-xs text-foreground/75 shadow-inner">
+              <div className="mt-6 flex-shrink-0 space-y-3 rounded-xl border border-white/12 bg-white/8 p-5 text-xs text-foreground/75 shadow-inner">
                 <p className="font-medium uppercase tracking-[0.16em] text-foreground/70">Recommendations</p>
                 <ul className="space-y-2 text-foreground/80">
                   <li>• Smaller chunks improve retrieval accuracy for dense documents.</li>
@@ -1199,7 +1199,7 @@ function TransformPageContent() {
               </div>
             </aside>
 
-            <div className="flex h-full flex-col bg-background/92 backdrop-blur-panel overflow-hidden">
+            <div className="flex h-full min-h-0 flex-col bg-background/92 backdrop-blur-panel overflow-hidden">
               <header className="flex items-center justify-between border-b border-white/10 p-8 pb-6 flex-shrink-0">
                 <div className="flex items-center gap-3">
                   <span className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-primary/70 text-white shadow-glass">
@@ -1214,15 +1214,13 @@ function TransformPageContent() {
                 </div>
               </header>
 
-              <div className="flex-1 min-h-0 px-8 py-6">
-                <div className="h-full overflow-y-auto overscroll-contain">
-                  <ChunkingConfig
-                    fileContent={fileContent ?? undefined}
-                    fileName={file?.name}
-                    onConfigChange={setChunkingConfig}
-                    className="border-white/15 bg-white/10 shadow-glass backdrop-blur-panel !overflow-visible"
-                  />
-                </div>
+              <div className="flex-1 min-h-0 overflow-y-auto px-8 py-6">
+                <ChunkingConfig
+                  fileContent={fileContent ?? undefined}
+                  fileName={file?.name}
+                  onConfigChange={setChunkingConfig}
+                  className="border-white/15 bg-white/10 shadow-glass backdrop-blur-panel"
+                />
               </div>
 
               <footer className="flex items-center justify-end gap-3 border-t border-white/10 bg-white/5 px-8 py-6 flex-shrink-0">
