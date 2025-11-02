@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
@@ -35,10 +35,20 @@ interface SidebarNavigationProps {
   defaultCollapsed?: boolean
 }
 
+const STORAGE_KEY = 'graphora-sidebar-collapsed'
+
 export function SidebarNavigation({ className, defaultCollapsed = true }: SidebarNavigationProps) {
   const router = useRouter()
   const pathname = usePathname()
-  const [isCollapsed, setIsCollapsed] = useState(defaultCollapsed)
+  const [isCollapsed, setIsCollapsed] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const stored = window.localStorage.getItem(STORAGE_KEY)
+      if (stored !== null) {
+        return stored === '1'
+      }
+    }
+    return defaultCollapsed
+  })
 
   const allNavigationItems: NavigationItem[] = [
     {
@@ -97,6 +107,16 @@ export function SidebarNavigation({ className, defaultCollapsed = true }: Sideba
     }
   }
 
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const stored = window.localStorage.getItem(STORAGE_KEY)
+    if (stored !== null) {
+      setIsCollapsed(stored === '1')
+    } else {
+      window.localStorage.setItem(STORAGE_KEY, defaultCollapsed ? '1' : '0')
+    }
+  }, [defaultCollapsed])
+
   const NavItem = ({ item }: { item: NavigationItem }) => {
     const isActive = isActivePath(item.path)
     
@@ -104,23 +124,38 @@ export function SidebarNavigation({ className, defaultCollapsed = true }: Sideba
       <button
         onClick={() => handleNavigation(item.path)}
         className={cn(
-          "w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg transition-all duration-200 text-left group border border-transparent",
-          isActive 
-            ? "bg-primary/80 text-primary-foreground font-semibold shadow-soft border-primary/70 dark:bg-primary/60" 
-            : "text-muted-foreground hover:text-foreground hover:bg-muted/60",
-          isCollapsed && "justify-center px-2"
+          "flex items-center transition-all duration-200 group border border-transparent",
+          isCollapsed
+            ? "justify-center px-0 py-2.5 w-12 h-12 mx-auto rounded-2xl"
+            : "w-full space-x-3 px-3 py-2.5 rounded-xl text-left",
+          isActive
+            ? isCollapsed
+              ? "bg-gradient-to-br from-white/65 via-white/35 to-transparent text-slate-900 shadow-[0_14px_32px_rgba(14,116,144,0.22)] ring-1 ring-inset ring-white/55 font-semibold dark:from-cyan-300/45 dark:via-cyan-300/20 dark:to-transparent dark:text-slate-50 dark:ring-cyan-100/50 dark:shadow-[0_20px_36px_rgba(12,148,186,0.34)]"
+              : "bg-[linear-gradient(135deg,rgba(255,255,255,0.95),rgba(255,255,255,0.7))] text-slate-900 shadow-[0_20px_44px_rgba(14,116,144,0.26)] ring-1 ring-inset ring-white/60 font-semibold dark:bg-[linear-gradient(135deg,rgba(82,215,255,0.38),rgba(34,211,238,0.22))] dark:text-slate-950 dark:ring-cyan-100/45 dark:shadow-[0_26px_52px_rgba(12,148,186,0.38)]"
+            : isCollapsed
+              ? "text-muted-foreground hover:text-foreground hover:bg-white/12 dark:hover:bg-white/14"
+              : "text-muted-foreground hover:text-foreground hover:bg-white/18 dark:hover:bg-white/10"
         )}
       >
         <div className={cn(
           "flex-shrink-0 transition-colors",
-          isActive ? "text-primary-foreground" : "text-muted-foreground group-hover:text-foreground"
+          isActive
+            ? "text-slate-900 drop-shadow-[0_0_6px_rgba(94,234,212,0.35)] dark:text-slate-50"
+            : "text-muted-foreground group-hover:text-foreground"
         )}>
           {item.icon}
         </div>
 
         {!isCollapsed && (
           <>
-            <span className="flex-1 font-medium text-body-sm">{item.name}</span>
+            <span
+              className={cn(
+                "flex-1 font-medium text-body-sm transition-colors",
+                isActive ? "text-slate-900 dark:text-white" : "text-muted-foreground"
+              )}
+            >
+              {item.name}
+            </span>
             {item.badge && (
               <Badge variant="info" className="text-body-xs">
                 {item.badge}
@@ -148,6 +183,14 @@ export function SidebarNavigation({ className, defaultCollapsed = true }: Sideba
     }
 
     return content
+  }
+
+  const handleToggleCollapse = () => {
+    const next = !isCollapsed
+    setIsCollapsed(next)
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem(STORAGE_KEY, next ? '1' : '0')
+    }
   }
 
   return (
@@ -179,7 +222,7 @@ export function SidebarNavigation({ className, defaultCollapsed = true }: Sideba
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => setIsCollapsed(!isCollapsed)}
+            onClick={handleToggleCollapse}
             className="text-muted-foreground hover:text-foreground p-1.5"
             aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
           >
