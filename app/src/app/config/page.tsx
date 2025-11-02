@@ -392,10 +392,10 @@ function ConfigPageContent() {
 
               {/* Database Save Button */}
               <div className="flex justify-end">
-                <Button 
-                  onClick={handleSave} 
+                <Button
+                  onClick={handleSave}
                   disabled={saving || !stagingDb.uri || !prodDb.uri}
-                  className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                  variant="cta"
                 >
                   {saving ? (
                     <>
@@ -493,10 +493,10 @@ function ConfigPageContent() {
               <div className="flex flex-col gap-4">
                 <div className="flex items-center justify-between">
                   <h3 className="text-heading-sm font-medium text-foreground">Google Gemini AI Studio</h3>
-                  <Button 
-                    onClick={handleSaveAI} 
+                  <Button
+                    onClick={handleSaveAI}
                     disabled={savingAI || !geminiConfig.api_key || !geminiConfig.default_model_name}
-                    className="bg-blue-600 hover:bg-blue-700 text-white"
+                    variant="cta"
                   >
                     {savingAI ? (
                       <>

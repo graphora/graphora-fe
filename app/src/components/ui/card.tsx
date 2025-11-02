@@ -4,13 +4,13 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 
 const cardVariants = cva(
-  "relative rounded-[var(--border-radius-lg)] border border-border/60 bg-card/90 text-card-foreground transition-transform duration-200",
+  "relative rounded-[var(--border-radius-lg)] border border-border/35 bg-card/90 text-card-foreground transition-transform duration-200 shadow-[0_18px_42px_rgba(15,23,42,0.08)]",
   {
     variants: {
       variant: {
-        default: "surface-base overflow-hidden",
-        elevated: "surface-elevated overflow-hidden",
-        glass: "glass-surface border-white/15 bg-white/10 text-foreground backdrop-blur-panel",
+        default: "surface-base overflow-hidden ring-1 ring-white/6",
+        elevated: "surface-elevated overflow-hidden ring-1 ring-white/8",
+        glass: "glass-surface border-white/10 bg-white/12 text-foreground backdrop-blur-panel",
         muted: "border-transparent bg-muted/70 shadow-soft overflow-hidden",
         transparent: "border-transparent bg-transparent shadow-none overflow-hidden",
       },

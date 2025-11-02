@@ -153,13 +153,13 @@ export function SidebarNavigation({ className, defaultCollapsed = true }: Sideba
   return (
     <aside
       className={cn(
-        "group/sidebar sticky top-0 flex h-screen flex-col overflow-y-auto border-r border-border/60 bg-background/90 backdrop-blur-panel shadow-soft transition-all duration-300",
+        "relative group/sidebar sticky top-0 flex h-screen flex-col overflow-y-auto bg-background/90 backdrop-blur-panel shadow-[0_38px_68px_rgba(8,47,73,0.28)] transition-all duration-300 before:absolute before:top-0 before:right-0 before:h-full before:w-px before:bg-gradient-to-b before:from-white/15 before:via-white/8 before:to-transparent before:opacity-70",
         isCollapsed ? "w-[4.25rem]" : "w-64",
         className
       )}
     >
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-border/60 px-4 py-3">
+      <div className="relative flex items-center justify-between px-4 py-4 after:pointer-events-none after:absolute after:bottom-0 after:left-4 after:right-4 after:h-px after:bg-gradient-to-r after:from-transparent after:via-white/15 after:to-transparent">
         {!isCollapsed && (
           <div className="flex items-center space-x-3">
             <div className="w-12 h-12 rounded-lg flex items-center justify-center overflow-hidden">
@@ -202,7 +202,7 @@ export function SidebarNavigation({ className, defaultCollapsed = true }: Sideba
 
         {/* Need Help Section - integrated into main flow */}
         {!isCollapsed && (
-          <div className="mt-6 rounded-xl border border-border/50 bg-muted/50 p-3 shadow-soft">
+          <div className="mt-6 rounded-xl bg-gradient-to-br from-white/12 via-white/6 to-transparent p-3 shadow-[0_18px_42px_rgba(8,47,73,0.18)] ring-1 ring-white/8">
             <div className="text-body-sm font-medium text-foreground mb-1">
               Need Help?
             </div>
@@ -225,7 +225,7 @@ export function SidebarNavigation({ className, defaultCollapsed = true }: Sideba
       </div>
 
       {/* User Section */}
-      <div className="border-t border-border/60 px-4 py-3">
+      <div className="relative px-4 py-4 before:pointer-events-none before:absolute before:top-0 before:left-4 before:right-4 before:h-px before:bg-gradient-to-r before:from-transparent before:via-white/12 before:to-transparent">
         <div className={cn(
           'flex items-center',
           isCollapsed ? 'justify-center' : 'justify-between gap-2'

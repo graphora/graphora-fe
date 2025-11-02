@@ -677,29 +677,44 @@ function OntologyPageContent() {
               </div>
               
               <div className="flex items-center space-x-3">
-                <div className="hidden sm:flex border rounded-md overflow-hidden shadow-sm">
+                <div className="hidden sm:flex items-center gap-2 rounded-full bg-white/4 px-2 py-1 backdrop-blur-sm dark:bg-white/6">
                   <Button 
-                    variant={viewMode === 'code' ? "default" : "ghost"} 
+                    variant="ghost" 
                     size="sm" 
-                    className="rounded-none border-0"
+                    className={cn(
+                      "h-8 rounded-full border border-transparent px-3 text-sm font-medium transition-all duration-150",
+                      viewMode === 'code'
+                        ? "bg-white text-slate-900 shadow-[0_12px_28px_rgba(14,116,144,0.18)] ring-1 ring-inset ring-white/70 dark:bg-cyan-300/25 dark:text-slate-50 dark:shadow-[0_16px_34px_rgba(12,148,186,0.42)] dark:ring-cyan-100/65"
+                        : "text-muted-foreground hover:text-foreground hover:bg-white/35 dark:hover:bg-white/12"
+                    )}
                     onClick={() => setViewMode('code')}
                   >
                     <Code2 className="h-4 w-4 mr-1.5" />
                     Code
                   </Button>
                   <Button 
-                    variant={viewMode === 'visual' ? "default" : "ghost"} 
+                    variant="ghost" 
                     size="sm" 
-                    className="rounded-none border-0"
+                    className={cn(
+                      "h-8 rounded-full border border-transparent px-3 text-sm font-medium transition-all duration-150",
+                      viewMode === 'visual'
+                        ? "bg-white text-slate-900 shadow-[0_12px_28px_rgba(14,116,144,0.18)] ring-1 ring-inset ring-white/70 dark:bg-cyan-300/25 dark:text-slate-50 dark:shadow-[0_16px_34px_rgba(12,148,186,0.42)] dark:ring-cyan-100/65"
+                        : "text-muted-foreground hover:text-foreground hover:bg-white/35 dark:hover:bg-white/12"
+                    )}
                     onClick={() => setViewMode('visual')}
                   >
                     <Grid2x2 className="h-4 w-4 mr-1.5" />
                     Visual
                   </Button>
                   <Button 
-                    variant={viewMode === 'split' ? "default" : "ghost"} 
+                    variant="ghost" 
                     size="sm" 
-                    className="rounded-none border-0"
+                    className={cn(
+                      "h-8 rounded-full border border-transparent px-3 text-sm font-medium transition-all duration-150",
+                      viewMode === 'split'
+                        ? "bg-white text-slate-900 shadow-[0_12px_28px_rgba(14,116,144,0.18)] ring-1 ring-inset ring-white/70 dark:bg-cyan-300/25 dark:text-slate-50 dark:shadow-[0_16px_34px_rgba(12,148,186,0.42)] dark:ring-cyan-100/65"
+                        : "text-muted-foreground hover:text-foreground hover:bg-white/35 dark:hover:bg-white/12"
+                    )}
                     onClick={() => setViewMode('split')}
                   >
                     <SplitSquareVertical className="h-4 w-4 mr-1.5" />

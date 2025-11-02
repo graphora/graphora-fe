@@ -13,7 +13,7 @@ const TabsList = React.forwardRef<
   <TabsPrimitive.List
     ref={ref}
     className={cn(
-      "inline-flex items-center justify-center gap-2 rounded-full border border-white/15 bg-background/80 px-2.5 py-1.5 text-muted-foreground shadow-soft backdrop-blur",
+      "inline-flex items-center justify-center gap-2 rounded-full bg-white/6 px-2 py-1 text-muted-foreground shadow-[0_18px_42px_rgba(15,23,42,0.12)] backdrop-blur-sm ring-1 ring-white/10 dark:bg-white/10 dark:ring-white/12",
       className
     )}
     {...props}
@@ -28,7 +28,7 @@ const TabsTrigger = React.forwardRef<
   <TabsPrimitive.Trigger
     ref={ref}
     className={cn(
-      "inline-flex items-center justify-center whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium text-muted-foreground transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-50 hover:text-foreground hover:bg-muted/50 data-[state=active]:bg-gradient-to-br data-[state=active]:from-emerald-600 data-[state=active]:to-teal-600 dark:data-[state=active]:from-emerald-500 dark:data-[state=active]:to-teal-500 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:scale-[1.02] data-[state=active]:font-semibold",
+      "inline-flex items-center justify-center whitespace-nowrap rounded-full px-3.5 py-1.5 text-sm font-medium text-muted-foreground transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-45 hover:text-foreground hover:bg-white/25 hover:shadow-[0_8px_22px_rgba(15,118,110,0.18)] dark:hover:bg-white/16 data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-[0_12px_28px_rgba(14,116,144,0.2)] data-[state=active]:ring-1 data-[state=active]:ring-inset data-[state=active]:ring-white/70 data-[state=active]:font-semibold dark:data-[state=active]:bg-cyan-300/25 dark:data-[state=active]:text-slate-50 dark:data-[state=active]:ring-cyan-100/60 dark:data-[state=active]:shadow-[0_18px_34px_rgba(12,148,186,0.35)]",
       className
     )}
     {...props}

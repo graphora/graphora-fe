@@ -377,12 +377,26 @@
 
   /* Enhanced Card Styles - Professional Look */
   .enhanced-card {
-    border: 1px solid rgb(var(--surface-outline));
     border-radius: var(--border-radius-lg);
-    background: linear-gradient(140deg, rgb(var(--glass-tint)), rgb(var(--glass-highlight)) 85%);
+    background: linear-gradient(140deg, color-mix(in srgb, rgb(var(--glass-tint)) 92%, transparent), color-mix(in srgb, rgb(var(--glass-highlight)) 78%, transparent));
     box-shadow: var(--shadow-medium);
     backdrop-filter: blur(18px);
     transition: transform 0.2s ease, box-shadow 0.2s ease;
+    position: relative;
+  }
+
+  .enhanced-card::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    mix-blend-mode: screen;
+  }
+
+  .dark .enhanced-card::before {
+    border-color: rgba(148, 163, 184, 0.16);
   }
 
   .enhanced-card:hover {

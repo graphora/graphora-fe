@@ -46,15 +46,17 @@ export function VisualEditor() {
 
   return (
     <div className="h-full flex flex-col">
-      <div className="sticky top-0 z-10 bg-background flex items-center justify-between p-2 border-b shadow-sm">
-        <div className="flex space-x-2">
-          <button
+      <div className="sticky top-0 z-10 flex items-center justify-between border-b border-white/10 bg-background/85 px-3 py-2 backdrop-blur-sm">
+        <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={() => setViewMode('tree')}
             className={cn(
-              "px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-200 flex items-center space-x-1.5",
+              "flex items-center gap-1.5 rounded-full border border-transparent px-3 text-sm font-medium transition-all duration-150",
               viewMode === 'tree'
-                ? "bg-primary text-primary-foreground shadow-sm" 
-                : "hover:bg-muted/80 text-muted-foreground hover:text-foreground"
+                ? "bg-white text-slate-900 shadow-[0_10px_26px_rgba(14,116,144,0.25)] ring-1 ring-inset ring-white/70 dark:bg-cyan-300/25 dark:text-slate-50 dark:shadow-[0_16px_34px_rgba(12,148,186,0.42)] dark:ring-cyan-100/65"
+                : "text-muted-foreground hover:text-foreground hover:bg-white/35 dark:hover:bg-white/12"
             )}
           >
             <svg
@@ -75,14 +77,16 @@ export function VisualEditor() {
               <path d="M3 10v6c0 1.1.9 2 2 2h3" />
             </svg>
             <span>Tree View</span>
-          </button>
-          <button
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={() => setViewMode('graph')}
             className={cn(
-              "px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-200 flex items-center space-x-1.5",
+              "flex items-center gap-1.5 rounded-full border border-transparent px-3 text-sm font-medium transition-all duration-150",
               viewMode === 'graph'
-                ? "bg-primary text-primary-foreground shadow-sm" 
-                : "hover:bg-muted/80 text-muted-foreground hover:text-foreground"
+                ? "bg-white text-slate-900 shadow-[0_10px_26px_rgba(14,116,144,0.25)] ring-1 ring-inset ring-white/70 dark:bg-cyan-300/25 dark:text-slate-50 dark:shadow-[0_16px_34px_rgba(12,148,186,0.42)] dark:ring-cyan-100/65"
+                : "text-muted-foreground hover:text-foreground hover:bg-white/35 dark:hover:bg-white/12"
             )}
           >
             <svg
@@ -103,16 +107,16 @@ export function VisualEditor() {
               <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
             </svg>
             <span>Graph View</span>
-          </button>
+          </Button>
         </div>
-        <div>
-          <button
-            onClick={handleCollapseAll}
-            className="px-3 py-1.5 rounded-md text-sm hover:bg-muted/80 text-muted-foreground hover:text-foreground transition-colors"
-          >
-            Collapse All
-          </button>
-        </div>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={handleCollapseAll}
+          className="rounded-full px-3 text-sm text-muted-foreground hover:text-foreground hover:bg-white/20 dark:hover:bg-white/12"
+        >
+          Collapse All
+        </Button>
       </div>
       
       <div className="flex-1 overflow-auto">

@@ -161,7 +161,7 @@ export default function OntologiesPage() {
 
   return (
     <DashboardLayout>
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex flex-col h-full">
         <PageHeader
           title="Ontology Library"
           description="Manage and organize your knowledge graph ontologies"
@@ -178,7 +178,7 @@ export default function OntologiesPage() {
           }
         />
 
-        <div className="flex-1 overflow-auto p-6 space-y-6">
+        <div className="flex-1 overflow-y-auto min-h-0 p-6 space-y-6">
           {/* Error Alert */}
           {error && (
             <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4">
