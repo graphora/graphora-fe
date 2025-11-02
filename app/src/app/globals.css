@@ -378,25 +378,17 @@
   /* Enhanced Card Styles - Professional Look */
   .enhanced-card {
     border-radius: var(--border-radius-lg);
-    background: linear-gradient(140deg, color-mix(in srgb, rgb(var(--glass-tint)) 92%, transparent), color-mix(in srgb, rgb(var(--glass-highlight)) 78%, transparent));
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(243, 246, 255, 0.78));
+    border: 1px solid rgba(226, 232, 240, 0.32);
     box-shadow: var(--shadow-medium);
     backdrop-filter: blur(18px);
     transition: transform 0.2s ease, box-shadow 0.2s ease;
     position: relative;
   }
 
-  .enhanced-card::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    border-radius: inherit;
-    pointer-events: none;
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    mix-blend-mode: screen;
-  }
-
-  .dark .enhanced-card::before {
-    border-color: rgba(148, 163, 184, 0.16);
+  .dark .enhanced-card {
+    background: linear-gradient(135deg, rgba(20, 28, 48, 0.72), rgba(30, 41, 59, 0.74));
+    border-color: color-mix(in srgb, rgb(var(--surface-outline)) 85%, transparent);
   }
 
   .enhanced-card:hover {

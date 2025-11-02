@@ -213,13 +213,13 @@ export default function OntologiesPage() {
 
           {/* Ontologies Grid */}
           {filteredOntologies.length === 0 ? (
-            <Card className="text-center py-12">
-              <CardContent>
+            <Card className="enhanced-card text-center">
+              <CardContent className="enhanced-card-content py-12 space-y-4">
                 <Database className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
                 <h3 className="text-lg font-medium mb-2">
                   {ontologies.length === 0 ? 'No ontologies found' : 'No matching ontologies'}
                 </h3>
-                <p className="text-muted-foreground mb-4">
+                <p className="text-muted-foreground">
                   {ontologies.length === 0 
                     ? 'Create your first ontology to define the structure of your knowledge graph.'
                     : 'Try adjusting your search terms or create a new ontology.'
@@ -236,14 +236,18 @@ export default function OntologiesPage() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredOntologies.map((ontology) => (
-                <Card key={ontology.id} className="hover:shadow-md transition-shadow cursor-pointer group">
-                  <CardHeader className="pb-3">
+                <Card
+                  key={ontology.id}
+                  variant="transparent"
+                  className="enhanced-card cursor-pointer transition-transform duration-200 group hover:-translate-y-1 hover:shadow-[0_28px_64px_rgba(15,23,42,0.18)]"
+                >
+                  <CardHeader className="enhanced-card-header pb-4">
                     <div className="flex items-start justify-between">
                       <div className="flex-1 min-w-0">
-                        <CardTitle className="text-lg font-medium truncate group-hover:text-primary transition-colors">
+                        <CardTitle className="text-lg font-semibold truncate text-foreground group-hover:text-primary transition-colors">
                           {ontology.name || ontology.file_name.replace('.yaml', '')}
                         </CardTitle>
-                        <CardDescription className="text-sm mt-1">
+                        <CardDescription className="text-body-sm text-muted-foreground/80 mt-1">
                           ID: {ontology.id}
                         </CardDescription>
                       </div>
@@ -251,7 +255,7 @@ export default function OntologiesPage() {
                     </div>
                   </CardHeader>
                   
-                  <CardContent className="space-y-4">
+                  <CardContent className="enhanced-card-content space-y-5 pt-0">
                     {/* Metadata */}
                     <div className="space-y-2 text-sm">
                       <div className="flex items-center text-muted-foreground">
@@ -267,7 +271,7 @@ export default function OntologiesPage() {
                     </div>
 
                     {/* Actions */}
-                    <div className="flex items-center space-x-2 pt-2">
+                    <div className="flex items-center space-x-2 pt-1">
                       <Button
                         size="sm"
                         variant="destructive"
