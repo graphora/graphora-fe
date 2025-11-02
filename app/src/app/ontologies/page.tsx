@@ -169,7 +169,7 @@ export default function OntologiesPage() {
           actions={
             <div className="flex items-center space-x-3">
               <Link href="/ontology">
-                <Button className="bg-primary hover:bg-primary/90">
+                <Button variant="cta" size="sm">
                   <Plus className="h-4 w-4 mr-2" />
                   Create New
                 </Button>
@@ -226,7 +226,7 @@ export default function OntologiesPage() {
                   }
                 </p>
                 <Link href="/ontology">
-                  <Button>
+                  <Button variant="cta">
                     <Plus className="h-4 w-4 mr-2" />
                     Create First Ontology
                   </Button>
@@ -279,8 +279,9 @@ export default function OntologiesPage() {
                       </Button>
                       <Button
                         size="sm"
+                        variant="cta"
+                        className="flex-1"
                         onClick={() => handleUseOntology(ontology.id)}
-                        className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white dark:text-white"
                       >
                         <Play className="h-3 w-3 mr-1" />
                         Use

@@ -663,7 +663,7 @@ Please try rephrasing your request or be more specific about the changes you'd l
                 <div className="max-w-4xl mx-auto">
                   {chatState === 'welcome' ? (
                     <div className="flex justify-center">
-                      <Button onClick={handleBegin} size="lg">
+                      <Button onClick={handleBegin} size="lg" variant="cta">
                         Begin Schema Generation
                       </Button>
                     </div>
@@ -870,7 +870,7 @@ Please try rephrasing your request or be more specific about the changes you'd l
                 <div className="border-t p-3 min-h-[200px] max-h-[300px] flex flex-col gap-3">
                   {chatState === 'welcome' ? (
                     <div className="flex justify-center">
-                      <Button onClick={handleBegin} size="lg">
+                      <Button onClick={handleBegin} size="lg" variant="cta">
                         Begin Schema Generation
                       </Button>
                     </div>

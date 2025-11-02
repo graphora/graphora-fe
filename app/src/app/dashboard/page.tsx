@@ -124,8 +124,8 @@ export default function DashboardPage() {
           actions={
             <div className="flex items-center gap-3">
               <Button
-                variant="glass"
-                className="px-5 py-2.5 text-body font-semibold shadow-medium"
+                variant="cta"
+                size="lg"
                 onClick={handleRunWorkflow}
               >
                 Run Workflow
@@ -231,7 +231,7 @@ export default function DashboardPage() {
                       </div>
                       <div className="flex items-center gap-2 ml-auto">
                         <Link href={`/merge?merge_id=${conflict.merge_id}`}>
-                          <Button size="sm" variant="glass" className="px-3 py-2">
+                          <Button size="sm" variant="cta">
                             Resolve
                           </Button>
                         </Link>

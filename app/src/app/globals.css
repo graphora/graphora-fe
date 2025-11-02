@@ -317,24 +317,6 @@
     backdrop-filter: blur(18px);
   }
 
-  .glass-button {
-    background: linear-gradient(160deg, rgb(var(--glass-highlight)), transparent);
-    border: 1px solid rgb(var(--surface-outline));
-    box-shadow: 0 10px 20px rgb(var(--glass-shadow));
-    backdrop-filter: blur(12px);
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-  }
-
-  .glass-button:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 16px 32px rgb(var(--glass-shadow));
-  }
-
-  .glass-button:active {
-    transform: translateY(0);
-    box-shadow: 0 8px 18px rgb(var(--glass-shadow));
-  }
-
   /* Fixed opacity for modals and tooltips in light theme */
   .light [data-radix-dialog-overlay] {
     background-color: rgba(0, 0, 0, 0.8) !important;

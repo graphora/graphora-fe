@@ -51,71 +51,63 @@ export function QualityMetricsPanel({
   };
 
   return (
-    <div className={cn('space-y-section', className)}>
+    <div className={cn('space-y-8', className)}>
       {/* Overview Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-content">
-        <Card variant="glass">
-          <CardContent className="p-6">
-            <div className="flex items-center space-x-2">
-              <Database className="h-8 w-8 text-info" />
-              <div>
-                <p className="text-display-sm font-semibold">{metrics.total_entities}</p>
-                <p className="text-body-xs text-muted-foreground">Total Entities</p>
-              </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="bg-muted/30 rounded-xl p-6 border border-border/40">
+          <div className="flex items-center gap-3">
+            <Database className="h-8 w-8 text-info flex-shrink-0" />
+            <div>
+              <p className="text-3xl font-semibold text-foreground">{metrics.total_entities}</p>
+              <p className="text-xs text-muted-foreground">Total Entities</p>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
-        <Card variant="glass">
-          <CardContent className="p-6">
-            <div className="flex items-center space-x-2">
-              <Network className="h-8 w-8 text-primary" />
-              <div>
-                <p className="text-display-sm font-semibold">{metrics.total_relationships}</p>
-                <p className="text-body-xs text-muted-foreground">Relationships</p>
-              </div>
+        <div className="bg-muted/30 rounded-xl p-6 border border-border/40">
+          <div className="flex items-center gap-3">
+            <Network className="h-8 w-8 text-primary flex-shrink-0" />
+            <div>
+              <p className="text-3xl font-semibold text-foreground">{metrics.total_relationships}</p>
+              <p className="text-xs text-muted-foreground">Relationships</p>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
-        <Card variant="glass">
-          <CardContent className="p-6">
-            <div className="flex items-center space-x-2">
-              <Target className="h-8 w-8 text-success" />
-              <div>
-                <p className="text-display-sm font-semibold">{metrics.total_properties}</p>
-                <p className="text-body-xs text-muted-foreground">Properties</p>
-              </div>
+        <div className="bg-muted/30 rounded-xl p-6 border border-border/40">
+          <div className="flex items-center gap-3">
+            <Target className="h-8 w-8 text-success flex-shrink-0" />
+            <div>
+              <p className="text-3xl font-semibold text-foreground">{metrics.total_properties}</p>
+              <p className="text-xs text-muted-foreground">Properties</p>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
-        <Card variant="glass">
-          <CardContent className="p-6">
-            <div className="flex items-center space-x-2">
-              <AlertTriangle className="h-8 w-8 text-warning" />
-              <div>
-                <p className="text-display-sm font-semibold">{metrics.total_violations}</p>
-                <p className="text-body-xs text-muted-foreground">Total Violations</p>
-              </div>
+        <div className="bg-muted/30 rounded-xl p-6 border border-border/40">
+          <div className="flex items-center gap-3">
+            <AlertTriangle className="h-8 w-8 text-warning flex-shrink-0" />
+            <div>
+              <p className="text-3xl font-semibold text-foreground">{metrics.total_violations}</p>
+              <p className="text-xs text-muted-foreground">Total Violations</p>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
 
       {/* Violation Rates */}
-      <Card variant="glass">
-        <CardHeader className="p-6 pb-3">
-          <CardTitle className="flex items-center gap-2 text-heading">
+      <div className="bg-muted/30 rounded-2xl p-8 border border-border/40">
+        <div className="mb-6">
+          <h4 className="text-lg font-semibold text-foreground flex items-center gap-2">
             <TrendingUp className="h-5 w-5 text-info" />
             Violation Rates
-          </CardTitle>
-          <CardDescription>
+          </h4>
+          <p className="text-sm text-muted-foreground mt-1">
             Percentage of entities and relationships with quality issues
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="p-6 space-y-content">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-content">
+          </p>
+        </div>
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <span className="text-body-sm font-medium">Entity Violations</span>
@@ -164,21 +156,21 @@ export function QualityMetricsPanel({
               </p>
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* Confidence Scores */}
-      <Card variant="glass">
-        <CardHeader className="p-6 pb-3">
-          <CardTitle className="flex items-center gap-2 text-heading">
+      <div className="bg-muted/30 rounded-2xl p-8 border border-border/40">
+        <div className="mb-6">
+          <h4 className="text-lg font-semibold text-foreground flex items-center gap-2">
             <CheckCircle className="h-5 w-5 text-success" />
             Confidence Scores
-          </CardTitle>
-          <CardDescription>
+          </h4>
+          <p className="text-sm text-muted-foreground mt-1">
             Average confidence levels for extracted data
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="p-6 space-y-content">
+          </p>
+        </div>
+        <div className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-content">
             <div className="space-y-2">
               <div className="flex items-center justify-between">
@@ -226,22 +218,22 @@ export function QualityMetricsPanel({
               </div>
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* Property Completeness & Coverage */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 xl:gap-6">
-        <Card variant="glass">
-          <CardHeader className="p-6 pb-content-sm">
-            <CardTitle className="flex items-center gap-2 text-heading">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="bg-muted/30 rounded-2xl p-8 border border-border/40">
+          <div className="mb-6">
+            <h4 className="text-lg font-semibold text-foreground flex items-center gap-2">
               <Target className="h-5 w-5 text-success" />
               Property Completeness
-            </CardTitle>
-            <CardDescription>
+            </h4>
+            <p className="text-sm text-muted-foreground mt-1">
               Percentage of required properties that are populated
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="p-6 pt-0 space-y-content-sm">
+            </p>
+          </div>
+          <div className="space-y-4">
             <div className="text-center">
               <div className={`text-display-lg font-semibold ${getCoverageColor(metrics.property_completeness_rate)}`}>
                 {Math.round(metrics.property_completeness_rate)}%
@@ -254,23 +246,23 @@ export function QualityMetricsPanel({
               value={metrics.property_completeness_rate} 
               className="h-3"
             />
-            <p className="text-body-xs text-muted-foreground text-center">
+            <p className="text-xs text-muted-foreground text-center">
               Higher rates indicate better data quality and extraction completeness
             </p>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
-        <Card variant="glass">
-          <CardHeader className="p-6 pb-content-sm">
-            <CardTitle className="flex items-center gap-2 text-heading">
+        <div className="bg-muted/30 rounded-2xl p-8 border border-border/40">
+          <div className="mb-6">
+            <h4 className="text-lg font-semibold text-foreground flex items-center gap-2">
               <Users className="h-5 w-5 text-info" />
               Entity Type Coverage
-            </CardTitle>
-            <CardDescription className="text-body-sm">
+            </h4>
+            <p className="text-sm text-muted-foreground mt-1">
               Distribution of entities across different types
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="p-6 pt-0 space-y-content-sm">
+            </p>
+          </div>
+          <div className="space-y-4">
             {Object.entries(metrics.entity_type_coverage).map(([entityType, count]) => {
               const percentage = (count / metrics.total_entities) * 100;
               return (
@@ -288,24 +280,23 @@ export function QualityMetricsPanel({
                 </div>
               );
             })}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
 
       {/* Entity Quality Summary */}
       {Object.keys(entityQualitySummary).length > 0 && (
-        <Card variant="glass">
-          <CardHeader className="p-6 pb-content-sm">
-            <CardTitle className="flex items-center gap-2 text-heading">
+        <div className="bg-muted/30 rounded-2xl p-8 border border-border/40">
+          <div className="mb-6">
+            <h4 className="text-lg font-semibold text-foreground flex items-center gap-2">
               <BarChart3 className="h-5 w-5 text-primary" />
               Entity Quality Summary
-            </CardTitle>
-            <CardDescription className="text-body-sm">
+            </h4>
+            <p className="text-sm text-muted-foreground mt-1">
               Quality breakdown by entity type and metric
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="p-6 pt-0">
-            <div className="space-y-content-sm">
+            </p>
+          </div>
+          <div className="space-y-4">
                 {Object.entries(entityQualitySummary).map(([entityType, summary]) => (
                 <div key={entityType} className="border border-border/60 rounded-[var(--border-radius)] p-4 bg-white/5 backdrop-blur-sm">
                   <h4 className="text-heading-sm font-semibold mb-3">{entityType}</h4>
@@ -330,8 +321,7 @@ export function QualityMetricsPanel({
                 </div>
               ))}
             </div>
-          </CardContent>
-        </Card>
+        </div>
       )}
     </div>
   );

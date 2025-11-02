@@ -3,7 +3,7 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 
 const buttonVariants = cva(
-  "relative inline-flex items-center justify-center rounded-[var(--radius)] text-body-sm font-medium tracking-tight transition-all duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-55 aria-disabled:pointer-events-none aria-disabled:opacity-55 active:translate-y-[1px]",
+  "relative inline-flex items-center justify-center overflow-hidden rounded-[var(--radius)] text-body-sm font-medium tracking-tight transition-all duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-55 aria-disabled:pointer-events-none aria-disabled:opacity-55 active:translate-y-[1px]",
   {
     variants: {
       variant: {
@@ -21,6 +21,8 @@ const buttonVariants = cva(
           "underline-offset-4 text-primary hover:underline",
         glass:
           "backdrop-blur-panel border-2 border-border/40 bg-background/60 text-foreground shadow-soft hover:bg-background/80 hover:border-border/60 dark:border-white/15 dark:bg-white/8 dark:hover:bg-white/12 dark:hover:border-white/25",
+        cta:
+          "border border-white/35 bg-[linear-gradient(135deg,rgba(56,189,248,0.92),rgba(45,212,191,0.95))] text-slate-950 shadow-[0_18px_38px_rgba(14,116,144,0.34)] dark:border-white/12 dark:bg-[linear-gradient(135deg,rgba(56,189,248,0.62),rgba(45,212,191,0.58))] dark:text-slate-50 dark:shadow-[0_24px_46px_rgba(30,136,229,0.22)] before:absolute before:inset-0 before:-z-10 before:rounded-[inherit] before:bg-white/30 before:opacity-0 before:transition-opacity before:duration-200 dark:before:bg-white/12 hover:shadow-[0_20px_44px_rgba(14,116,144,0.45)] hover:before:opacity-30 focus-visible:ring-primary/50",
         subtle:
           "bg-muted/60 text-foreground/80 shadow-soft hover:bg-muted",
         success:

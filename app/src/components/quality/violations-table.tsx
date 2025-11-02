@@ -206,7 +206,7 @@ export function ViolationsTable({ violations, transformId, className = '' }: Vio
 
           <div className="space-y-2">
             <label className="text-sm font-medium">Actions</label>
-            <Button onClick={clearFilters} variant="glass" className="w-full">
+            <Button onClick={clearFilters} variant="cta" className="w-full">
               <Filter className="h-4 w-4 mr-2" />
               Clear Filters
             </Button>

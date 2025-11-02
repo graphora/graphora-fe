@@ -47,8 +47,8 @@ export function EntityList({ onLoadSample }: EntityListProps) {
         <p className="text-xs uppercase tracking-[0.2em] text-foreground/55">Quick actions</p>
         <div className="mt-3 flex flex-col gap-2">
           <Button
-            variant="outline"
-            className="glass-button w-full justify-center gap-2 border-white/20 text-sm text-foreground"
+            variant="cta"
+            className="w-full justify-center gap-2 text-sm"
             onClick={onLoadSample}
           >
             <FileDown className="h-4 w-4" />

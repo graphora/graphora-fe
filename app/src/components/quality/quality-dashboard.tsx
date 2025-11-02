@@ -185,26 +185,25 @@ export function QualityDashboard({
   };
 
   return (
-    <div className={cn(wrapperClasses, className)}>
+    <div className={cn('flex flex-col gap-8', className)}>
       {/* Header with refresh button */}
-      <div className="flex flex-wrap items-center justify-between gap-content-sm pb-content-sm border-b border-border/60">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 bg-success/15 rounded-xl flex items-center justify-center">
-            <CheckCircle className="h-4 w-4 text-success" />
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 bg-success/10 rounded-2xl flex items-center justify-center">
+            <CheckCircle className="h-6 w-6 text-success" />
           </div>
           <div>
-            <h3 className="text-heading font-semibold text-foreground tracking-tight">Validation Complete</h3>
-            <p className="text-body-sm text-muted-foreground/80">
+            <h3 className="text-2xl font-semibold text-foreground tracking-tight">Validation Complete</h3>
+            <p className="text-sm text-muted-foreground mt-1">
               Data quality analysis for your extracted content
             </p>
           </div>
         </div>
-        <Button 
-          onClick={() => fetchQualityResults(true)} 
-          variant="glass"
+        <Button
+          onClick={() => fetchQualityResults(true)}
+          variant="outline"
           size="sm"
           disabled={refreshing}
-          className="px-4"
         >
           <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
           Refresh
@@ -212,69 +211,30 @@ export function QualityDashboard({
       </div>
 
       {/* Quality Score Card */}
-      <QualityScoreCard qualityResults={qualityResults} className="shadow-soft" />
-
-      {/* Violations Summary */}
-      {qualityResults.violations.length > 0 && (
-        <Card variant="glass">
-          <CardHeader className="p-6 pb-content-sm">
-            <CardTitle className="flex items-center text-heading gap-2">
-              <AlertTriangle className="h-5 w-5 mr-2" />
-              Violations Summary
-            </CardTitle>
-            <CardDescription className="text-body-sm">
-              {qualityResults.violations.length} quality issues found
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="p-6 pt-0">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {Object.entries(qualityResults.violations_by_severity).map(([severity, count]) => (
-                <div
-                  key={severity}
-                  className="flex items-center gap-3 rounded-[var(--border-radius)] border border-border/60 bg-white/5 px-4 py-3 backdrop-blur-sm"
-                >
-                  {getSeverityIcon(severity)}
-                  <div>
-                    <p className="text-body-sm font-medium capitalize text-foreground/90">{severity}</p>
-                    <p className="text-display-sm font-semibold text-foreground">{count}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      <QualityScoreCard qualityResults={qualityResults} />
 
       {/* Detailed Tabs */}
-      <Tabs defaultValue="violations" className="space-y-content-sm">
-        <div className="border-b border-border/60">
-          <TabsList className="w-full justify-start bg-transparent border-b-0">
-            <TabsTrigger 
-              value="violations" 
-              className="flex items-center"
-            >
-              <FileText className="h-4 w-4 mr-2" />
-              Issues ({qualityResults.violations.length})
-            </TabsTrigger>
-            <TabsTrigger 
-              value="metrics" 
-              className="flex items-center"
-            >
-              <BarChart3 className="h-4 w-4 mr-2" />
-              Analytics
-            </TabsTrigger>
-          </TabsList>
-        </div>
+      <Tabs defaultValue="violations" className="space-y-6">
+        <TabsList className="bg-muted/40">
+          <TabsTrigger value="violations" className="gap-2">
+            <FileText className="h-4 w-4" />
+            Issues ({qualityResults.violations.length})
+          </TabsTrigger>
+          <TabsTrigger value="metrics" className="gap-2">
+            <BarChart3 className="h-4 w-4" />
+            Analytics
+          </TabsTrigger>
+        </TabsList>
 
-        <TabsContent value="violations" className="space-y-content-sm">
-          <ViolationsTable 
+        <TabsContent value="violations" className="mt-6">
+          <ViolationsTable
             violations={qualityResults.violations}
             transformId={transformId}
           />
         </TabsContent>
 
-        <TabsContent value="metrics" className="space-y-content-sm">
-          <QualityMetricsPanel 
+        <TabsContent value="metrics" className="mt-6">
+          <QualityMetricsPanel
             metrics={qualityResults.metrics}
             entityQualitySummary={qualityResults.entity_quality_summary}
           />

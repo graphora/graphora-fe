@@ -890,11 +890,10 @@ function MergePageContent() {
                 {/* Retry Button for Failed Merges */}
                 {status === MergeStatus.FAILED && (
                   <Button 
-                    variant="outline" 
+                    variant="destructive" 
                     size="sm" 
                     onClick={handleRetry}
                     disabled={isRetrying}
-                    className="bg-red-50 hover:bg-red-100 text-red-600 border-red-300"
                     title="Retry the merge process"
                   >
                     {isRetrying ? (

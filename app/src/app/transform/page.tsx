@@ -827,10 +827,10 @@ function TransformPageContent() {
             <span>{error}</span>
             {(error.includes('failed') || error.includes('Failed')) && (
               <Button
-                variant="outline"
+                variant="destructive"
                 size="sm"
                 onClick={handleRetryTransform}
-                className="ml-4 bg-white hover:bg-gray-50 text-red-600 border-red-300"
+                className="ml-4"
               >
                 <RefreshCcw className="h-4 w-4 mr-2" />
                 Retry Transform
@@ -857,6 +857,7 @@ function TransformPageContent() {
             onClick={handleExtract}
             disabled={!file || isProcessing || !!transformId}
             size="sm"
+            variant="cta"
           >
             <Rocket className="h-4 w-4 mr-1.5" />
             {isProcessing ? 'Processing...' : 'Transform'}
@@ -866,7 +867,7 @@ function TransformPageContent() {
             onClick={() => setShowMergeConfirm(true)}
             disabled={!graphData || isProcessing || !qualityReviewCompleted}
             size="sm"
-            className="bg-emerald-600 hover:bg-emerald-700 text-white"
+            variant="cta"
           >
             <GitMerge className="h-4 w-4 mr-1.5" />
             Merge
@@ -1100,39 +1101,15 @@ function TransformPageContent() {
               Review the quality of the extracted data before proceeding with merge.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          
+
           <div className="flex flex-col h-[95vh]">
-            {/* Modal Header */}
-            <div className="flex items-center justify-between p-6 border-b border-border bg-gradient-to-r from-sky-50/80 via-teal-50/70 to-emerald-50/70 dark:from-slate-800/90 dark:via-slate-750/85 dark:to-slate-700/90 backdrop-blur-sm flex-shrink-0">
-              <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center">
-                  <AlertTriangle className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                </div>
-                <div>
-                  <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100">Data Quality Review</h2>
-                  <p className="text-sm text-slate-600 dark:text-slate-400">
-                    Transform ID: {transformId?.substring(0, 12)}...
-                  </p>
-                </div>
-              </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowQualityReview(false)}
-                className="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100"
-              >
-                ✕
-              </Button>
-            </div>
-            
             {/* Modal Content - scrollable */}
-            <div className="flex-1 overflow-y-auto p-6 bg-muted/30 dark:bg-background min-h-0">
+            <div className="flex-1 overflow-y-auto p-8 bg-background min-h-0">
               {transformId && (
                 <QualityDashboard
                   transformId={transformId}
                   onApprove={handleQualityApprove}
                   onReject={handleQualityReject}
-                  className="bg-background dark:bg-card border border-border rounded-lg shadow-sm"
                 />
               )}
             </div>
@@ -1233,7 +1210,9 @@ function TransformPageContent() {
                 </Button>
                 <Button
                   onClick={() => setShowChunkingConfig(false)}
-                  className="glass-button border-white/15 text-sm text-primary-foreground"
+                  variant="cta"
+                  size="sm"
+                  className="text-sm"
                 >
                   Apply settings
                 </Button>

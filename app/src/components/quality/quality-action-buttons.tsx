@@ -140,71 +140,40 @@ export function QualityActionButtons({
   const warningViolations = qualityResults.violations.filter(v => v.severity === 'warning').length;
 
   return (
-    <Card variant="glass" className={className}>
-      <CardHeader className="p-6 pb-3">
-        <CardTitle className="flex items-center">
-          <MessageSquare className="h-5 w-5 mr-2" />
-          Quality Review Actions
-        </CardTitle>
-        <CardDescription>
+    <div className={cn("bg-gradient-to-br from-muted/40 via-muted/30 to-background rounded-2xl p-10 border-2 border-border/60 shadow-lg", className)}>
+      <div className="mb-8 text-center">
+        <h3 className="text-2xl font-bold text-foreground mb-2">
+          What would you like to do?
+        </h3>
+        <p className="text-muted-foreground">
           Review the quality results and decide whether to proceed with merge
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="p-6 space-y-content">
-        {/* Recommendation Alert */}
-        <Alert 
-          variant={toneVariant[recommendation.tone]}
-          className={cn('border-l-4', toneBorder[recommendation.tone])}
-        >
-          <Info className={cn('h-4 w-4', toneText[recommendation.tone])} />
-          <AlertDescription className={cn('font-medium', toneText[recommendation.tone])}>
-            <strong>Recommendation:</strong> {recommendation.message}
-          </AlertDescription>
-        </Alert>
+        </p>
+      </div>
 
-        {/* Summary Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div className="text-center p-4 rounded-[var(--border-radius)] border border-border/60 bg-white/5 backdrop-blur-sm">
-            <div className="text-display-sm font-semibold text-info">
-              {Math.round(qualityResults.overall_score)}
-            </div>
-            <div className="text-body-sm text-muted-foreground">Quality Score</div>
-          </div>
-          <div className="text-center p-4 rounded-[var(--border-radius)] border border-border/60 bg-white/5 backdrop-blur-sm">
-            <div className="text-display-sm font-semibold text-destructive">
-              {errorViolations}
-            </div>
-            <div className="text-body-sm text-muted-foreground">Errors</div>
-          </div>
-          <div className="text-center p-4 rounded-[var(--border-radius)] border border-border/60 bg-white/5 backdrop-blur-sm">
-            <div className="text-display-sm font-semibold text-warning">
-              {warningViolations}
-            </div>
-            <div className="text-body-sm text-muted-foreground">Warnings</div>
-          </div>
-          <div className="text-center p-4 rounded-[var(--border-radius)] border border-border/60 bg-white/5 backdrop-blur-sm">
-            <Badge 
-              variant="outline" 
-              className={cn('text-lg px-3 py-1', gradeBadgeClasses[qualityResults.grade] ?? gradeBadgeClasses.default)}
-            >
-              Grade {qualityResults.grade}
-            </Badge>
-          </div>
-        </div>
+      {/* Recommendation Alert */}
+      <Alert
+        variant={toneVariant[recommendation.tone]}
+        className={cn('border-l-4 mb-8', toneBorder[recommendation.tone])}
+      >
+        <Info className={cn('h-4 w-4', toneText[recommendation.tone])} />
+        <AlertDescription className={cn('font-semibold text-base', toneText[recommendation.tone])}>
+          <strong>Recommendation:</strong> {recommendation.message}
+        </AlertDescription>
+      </Alert>
 
-        {/* Action Buttons */}
-        <div className="flex flex-wrap justify-center gap-content">
+      {/* Action Buttons - Now Prominent */}
+      <div className="flex flex-wrap justify-center gap-6 mb-8">
           {/* Approve Dialog */}
           <Dialog open={approveDialogOpen} onOpenChange={setApproveDialogOpen}>
           <DialogTrigger asChild>
-            <Button 
-              variant="glass" 
+            <Button
+              variant="cta"
               size="lg"
               disabled={isApproving}
-              className="px-6"
+              className="px-8 py-6 text-lg"
             >
-              <CheckCircle className="h-5 w-5 mr-2" />
-              Approve & Continue
+              <CheckCircle className="h-6 w-6 mr-2" />
+              Approve & Continue to Merge
             </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-md bg-background border-border">
@@ -267,13 +236,13 @@ export function QualityActionButtons({
           {/* Reject Dialog */}
           <Dialog open={rejectDialogOpen} onOpenChange={setRejectDialogOpen}>
             <DialogTrigger asChild>
-              <Button 
-                variant="destructive" 
+              <Button
+                variant="outline"
                 size="lg"
                 disabled={isRejecting}
-                className="px-6"
+                className="px-8 py-6 text-lg border-2 hover:bg-destructive/10 hover:border-destructive hover:text-destructive transition-all"
               >
-                <XCircle className="h-5 w-5 mr-2" />
+                <XCircle className="h-6 w-6 mr-2" />
                 Reject & Stop Process
               </Button>
             </DialogTrigger>
@@ -343,13 +312,13 @@ export function QualityActionButtons({
           </Dialog>
         </div>
 
-        {/* Additional Info */}
-        <div className="text-body-xs text-muted-foreground space-y-1 border-t pt-4">
-          <div>Transform ID: {qualityResults.transform_id}</div>
-          <div>Validation completed: {new Date(qualityResults.validation_timestamp).toLocaleString()}</div>
-          <div>Rules applied: {qualityResults.rules_applied} | Duration: {qualityResults.validation_duration_ms}ms</div>
-        </div>
-      </CardContent>
-    </Card>
+      {/* Summary Stats - Moved to bottom, less prominent */}
+      <div className="text-center text-sm text-muted-foreground pt-6 border-t border-border/40">
+        <p>Quality Score: <span className="font-semibold text-foreground">{Math.round(qualityResults.overall_score)}</span> •
+        Errors: <span className="font-semibold text-destructive">{errorViolations}</span> •
+        Warnings: <span className="font-semibold text-warning">{warningViolations}</span> •
+        Grade: <span className="font-semibold text-foreground">{qualityResults.grade}</span></p>
+      </div>
+    </div>
   );
 }

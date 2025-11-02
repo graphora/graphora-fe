@@ -199,7 +199,8 @@ export function SetupWelcomeModal({ isOpen, onClose, setupStatus, onRefresh }: S
                       </p>
                       <Button
                         onClick={() => handleNavigateToConfig('databases')}
-                        className="glass-button w-full justify-center text-sm"
+                        variant="cta"
+                        className="w-full justify-center text-sm"
                         disabled={isNavigating}
                       >
                         <Database className="mr-2 h-4 w-4" />
@@ -259,8 +260,8 @@ export function SetupWelcomeModal({ isOpen, onClose, setupStatus, onRefresh }: S
                       </p>
                       <Button
                         onClick={() => handleNavigateToConfig('ai-config')}
-                        variant="outline"
-                        className="w-full justify-center border-info/30 text-info hover:bg-info/15"
+                        variant="cta"
+                        className="w-full justify-center text-sm"
                         disabled={isNavigating}
                       >
                         <Sparkles className="mr-2 h-4 w-4" />
@@ -275,14 +276,15 @@ export function SetupWelcomeModal({ isOpen, onClose, setupStatus, onRefresh }: S
 
             <div className="grid gap-3 pt-2 sm:grid-cols-2">
               {setupStatus.isFullyConfigured ? (
-                <Button onClick={onClose} className="glass-button w-full justify-center text-sm">
+                <Button onClick={onClose} variant="cta" className="w-full justify-center text-sm">
                   <CheckCircle className="mr-2 h-4 w-4" />
                   Enter workspace
                 </Button>
               ) : (
                 <Button
                   onClick={() => handleNavigateToConfig()}
-                  className="glass-button w-full justify-center text-sm"
+                  variant="cta"
+                  className="w-full justify-center text-sm"
                   disabled={isNavigating}
                 >
                   <Settings className="mr-2 h-4 w-4" />
