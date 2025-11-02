@@ -125,18 +125,18 @@ export function ViolationsTable({ violations, transformId, className = '' }: Vio
 
   return (
     <Card variant="glass" className={className}>
-      <CardHeader className="p-6 pb-3">
+      <CardHeader className="p-8 pb-4">
         <CardTitle className="flex items-center justify-between text-heading">
           <span>Quality Violations</span>
           <Badge variant="neutral">{filteredViolations.length} of {violations.length}</Badge>
         </CardTitle>
-        <CardDescription>
+        <CardDescription className="mt-2">
           Detailed view of all quality issues found during validation
         </CardDescription>
       </CardHeader>
-      <CardContent className="p-6 space-y-content">
+      <CardContent className="p-8 space-y-6">
         {/* Filters */}
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-content">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
           <div className="space-y-2">
             <label className="text-sm font-medium">Search</label>
             <div className="relative">
@@ -217,24 +217,24 @@ export function ViolationsTable({ violations, transformId, className = '' }: Vio
         <div className="rounded-[var(--border-radius)] border border-border/60 overflow-hidden backdrop-blur-sm bg-white/5">
           <Table>
             <TableHeader>
-              <TableRow>
-                <TableHead className="w-[50px]"></TableHead>
-                <TableHead>Severity</TableHead>
-                <TableHead>Entity/Property</TableHead>
-                <TableHead>Issue</TableHead>
-                <TableHead>Rule</TableHead>
-                <TableHead>Confidence</TableHead>
+              <TableRow className="h-14">
+                <TableHead className="w-[50px] py-4"></TableHead>
+                <TableHead className="py-4">Severity</TableHead>
+                <TableHead className="py-4">Entity/Property</TableHead>
+                <TableHead className="py-4">Issue</TableHead>
+                <TableHead className="py-4">Rule</TableHead>
+                <TableHead className="py-4">Confidence</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredViolations.map((violation, index) => {
                 const violationId = `${violation.rule_id}-${index}`;
                 const isExpanded = expandedRows.has(violationId);
-                
+
                 return (
                   <React.Fragment key={violationId}>
-                    <TableRow>
-                      <TableCell>
+                    <TableRow className="h-20">
+                      <TableCell className="py-4">
                         <Button
                           variant="ghost"
                           size="sm"
@@ -248,8 +248,8 @@ export function ViolationsTable({ violations, transformId, className = '' }: Vio
                           )}
                         </Button>
                       </TableCell>
-                      
-                      <TableCell>
+
+                      <TableCell className="py-4">
                         <Badge variant={getSeverityBadgeVariant(violation.severity)}>
                           <div className="flex items-center">
                             {getSeverityIcon(violation.severity)}
@@ -257,8 +257,8 @@ export function ViolationsTable({ violations, transformId, className = '' }: Vio
                           </div>
                         </Badge>
                       </TableCell>
-                      
-                      <TableCell>
+
+                      <TableCell className="py-4">
                         <div className="space-y-1">
                           {violation.entity_type && (
                             <div className="text-sm font-medium">{violation.entity_type}</div>
@@ -275,20 +275,20 @@ export function ViolationsTable({ violations, transformId, className = '' }: Vio
                           )}
                         </div>
                       </TableCell>
-                      
-                      <TableCell>
+
+                      <TableCell className="py-4">
                         <div className="max-w-md">
                           <p className="text-sm">{violation.message}</p>
                         </div>
                       </TableCell>
-                      
-                      <TableCell>
+
+                      <TableCell className="py-4">
                         <Badge variant="outline" className="text-xs">
                           {violation.rule_type.replace('_', ' ')}
                         </Badge>
                       </TableCell>
-                      
-                      <TableCell>
+
+                      <TableCell className="py-4">
                         <div className="text-sm">
                           {Math.round(violation.confidence * 100)}%
                         </div>
@@ -297,9 +297,9 @@ export function ViolationsTable({ violations, transformId, className = '' }: Vio
                     
                     {isExpanded && (
                       <TableRow>
-                        <TableCell colSpan={6} className="bg-muted/50">
-                          <div className="space-y-4 p-4">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <TableCell colSpan={6} className="bg-muted/50 py-6">
+                          <div className="space-y-6 px-6">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                               <div>
                                 <h4 className="text-sm font-medium mb-2">Expected vs Actual</h4>
                                 <div className="space-y-2 text-sm">

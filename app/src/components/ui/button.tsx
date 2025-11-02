@@ -22,7 +22,7 @@ const buttonVariants = cva(
         glass:
           "backdrop-blur-panel border-2 border-border/40 bg-background/60 text-foreground shadow-soft hover:bg-background/80 hover:border-border/60 dark:border-white/15 dark:bg-white/8 dark:hover:bg-white/12 dark:hover:border-white/25",
         cta:
-          "border border-white/35 bg-[linear-gradient(135deg,rgba(56,189,248,0.92),rgba(45,212,191,0.95))] text-slate-950 shadow-[0_18px_38px_rgba(14,116,144,0.34)] dark:border-white/12 dark:bg-[linear-gradient(135deg,rgba(56,189,248,0.62),rgba(45,212,191,0.58))] dark:text-slate-50 dark:shadow-[0_24px_46px_rgba(30,136,229,0.22)] before:absolute before:inset-0 before:-z-10 before:rounded-[inherit] before:bg-white/30 before:opacity-0 before:transition-opacity before:duration-200 dark:before:bg-white/12 hover:shadow-[0_20px_44px_rgba(14,116,144,0.45)] hover:before:opacity-30 focus-visible:ring-primary/50",
+          "border border-white/30 bg-[linear-gradient(135deg,rgba(56,189,248,0.94),rgba(45,212,191,0.97))] text-slate-950 shadow-[0_18px_38px_rgba(14,116,144,0.34)] before:absolute before:inset-0 before:-z-10 before:rounded-[inherit] before:bg-white/35 before:opacity-0 before:transition-opacity before:duration-200 hover:shadow-[0_20px_44px_rgba(14,116,144,0.45)] hover:before:opacity-35 focus-visible:ring-primary/50 dark:border-cyan-200/45 dark:bg-[linear-gradient(135deg,rgba(56,189,248,0.98),rgba(45,212,191,0.94))] dark:text-slate-950 dark:shadow-[0_26px_48px_rgba(13,148,136,0.45)] dark:hover:shadow-[0_28px_54px_rgba(13,148,136,0.52)] dark:before:bg-cyan-100/18 dark:hover:before:opacity-45",
         subtle:
           "bg-muted/60 text-foreground/80 shadow-soft hover:bg-muted",
         success:

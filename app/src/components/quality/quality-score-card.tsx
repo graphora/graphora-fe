@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
 import { type QualityResults } from '@/types/quality'
+import { useTheme } from 'next-themes'
 
 interface QualityScoreCardProps {
   qualityResults: QualityResults;
@@ -13,6 +14,9 @@ interface QualityScoreCardProps {
 }
 
 export function QualityScoreCard({ qualityResults, className = '' }: QualityScoreCardProps) {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
+
   const getScoreColor = (score: number) => {
     if (score >= 90) return 'text-success';
     if (score >= 80) return 'text-info';
@@ -58,7 +62,13 @@ export function QualityScoreCard({ qualityResults, className = '' }: QualityScor
         </p>
       </div>
 
-      <div className="bg-gradient-to-br from-slate-50 to-slate-100/80 dark:from-slate-900 dark:to-slate-800 rounded-3xl p-12 border border-slate-200 dark:border-slate-700/50 shadow-2xl">
+      <div
+        className={`rounded-3xl p-12 border shadow-2xl ${
+          isDark
+            ? 'bg-gradient-to-br from-slate-800 to-slate-900 border-slate-700/50'
+            : 'bg-gradient-to-br from-slate-50 to-slate-100/80 border-slate-200'
+        }`}
+      >
         <div className="flex flex-col md:flex-row items-center md:items-start gap-12">
           {/* Score Display */}
           <div className="flex flex-col items-center justify-center flex-shrink-0">
@@ -72,7 +82,7 @@ export function QualityScoreCard({ qualityResults, className = '' }: QualityScor
                   stroke="currentColor"
                   strokeWidth="6"
                   fill="none"
-                  className="text-slate-300 dark:text-slate-700/40"
+                  className={isDark ? 'text-slate-700/40' : 'text-slate-300'}
                 />
                 {/* Progress circle */}
                 <circle
@@ -92,7 +102,7 @@ export function QualityScoreCard({ qualityResults, className = '' }: QualityScor
                   <div className={`text-6xl leading-none font-bold ${getScoreColor(qualityResults.overall_score)}`}>
                     {Math.round(qualityResults.overall_score)}
                   </div>
-                  <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">out of 100</div>
+                  <div className={`text-xs mt-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>out of 100</div>
                 </div>
               </div>
             </div>
@@ -109,24 +119,24 @@ export function QualityScoreCard({ qualityResults, className = '' }: QualityScor
           <div className="flex-1 grid md:grid-cols-2 gap-8">
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <span className="text-sm text-slate-600 dark:text-slate-400">Entities Processed</span>
-                <span className="font-bold text-slate-900 dark:text-white text-2xl">{qualityResults.metrics.total_entities}</span>
+                <span className={`text-sm ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>Entities Processed</span>
+                <span className={`font-bold text-2xl ${isDark ? 'text-white' : 'text-slate-900'}`}>{qualityResults.metrics.total_entities}</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-sm text-slate-600 dark:text-slate-400">Relationships</span>
-                <span className="font-bold text-slate-900 dark:text-white text-2xl">{qualityResults.metrics.total_relationships}</span>
+                <span className={`text-sm ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>Relationships</span>
+                <span className={`font-bold text-2xl ${isDark ? 'text-white' : 'text-slate-900'}`}>{qualityResults.metrics.total_relationships}</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-sm text-slate-600 dark:text-slate-400">Total Violations</span>
-                <span className="font-bold text-slate-900 dark:text-white text-2xl">{qualityResults.violations.length}</span>
+                <span className={`text-sm ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>Total Violations</span>
+                <span className={`font-bold text-2xl ${isDark ? 'text-white' : 'text-slate-900'}`}>{qualityResults.violations.length}</span>
               </div>
             </div>
 
             <div className="space-y-4">
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm text-slate-600 dark:text-slate-400">Property Completeness</span>
-                  <span className="font-semibold text-slate-900 dark:text-white">{Math.round(qualityResults.metrics.property_completeness_rate)}%</span>
+                  <span className={`text-sm ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>Property Completeness</span>
+                  <span className={`font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>{Math.round(qualityResults.metrics.property_completeness_rate)}%</span>
                 </div>
                 <Progress
                   value={qualityResults.metrics.property_completeness_rate}
@@ -136,8 +146,8 @@ export function QualityScoreCard({ qualityResults, className = '' }: QualityScor
 
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm text-slate-600 dark:text-slate-400">Extraction Confidence</span>
-                  <span className="font-semibold text-slate-900 dark:text-white">{Math.round(qualityResults.metrics.avg_entity_confidence * 100)}%</span>
+                  <span className={`text-sm ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>Extraction Confidence</span>
+                  <span className={`font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>{Math.round(qualityResults.metrics.avg_entity_confidence * 100)}%</span>
                 </div>
                 <Progress
                   value={qualityResults.metrics.avg_entity_confidence * 100}
@@ -145,7 +155,7 @@ export function QualityScoreCard({ qualityResults, className = '' }: QualityScor
                 />
               </div>
 
-              <div className="pt-4 border-t border-slate-200 dark:border-slate-700/50">
+              <div className={`pt-4 border-t ${isDark ? 'border-slate-700/50' : 'border-slate-200'}`}>
                 {qualityResults.requires_review ? (
                   <div className="flex items-center gap-2">
                     <div className="w-2.5 h-2.5 rounded-full bg-warning"></div>
