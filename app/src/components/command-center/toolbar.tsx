@@ -31,7 +31,6 @@ export function Toolbar({ tools }: ToolbarProps) {
             disabled={tool.disabled}
             className={cn(
               "tool-button",
-              tool.primary && "bg-blue-600 hover:bg-blue-700 text-white",
               tool.className
             )}
           >

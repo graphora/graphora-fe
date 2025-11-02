@@ -138,6 +138,10 @@
     --border: 65 78 110;
     --input: 48 64 96;
     --ring: 99 102 241;
+
+    --shadow-soft: 0 18px 36px rgba(12, 74, 110, 0.32);
+    --shadow-medium: 0 26px 56px rgba(8, 47, 73, 0.45);
+    --shadow-large: 0 38px 78px rgba(7, 34, 70, 0.55);
   }
 }
 

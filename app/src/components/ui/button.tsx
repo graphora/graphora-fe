@@ -8,7 +8,7 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default:
-          "bg-gradient-to-r from-primary/95 via-primary to-primary/90 text-primary-foreground shadow-soft hover:shadow-medium",
+          "bg-gradient-to-r from-primary/95 via-primary to-primary/90 text-primary-foreground shadow-soft hover:shadow-medium dark:!text-slate-900",
         secondary:
           "bg-secondary/85 text-secondary-foreground shadow-soft hover:bg-secondary",
         destructive:
@@ -22,15 +22,15 @@ const buttonVariants = cva(
         glass:
           "backdrop-blur-panel border-2 border-border/40 bg-background/60 text-foreground shadow-soft hover:bg-background/80 hover:border-border/60 dark:border-white/15 dark:bg-white/8 dark:hover:bg-white/12 dark:hover:border-white/25",
         cta:
-          "border border-white/30 bg-[linear-gradient(135deg,rgba(56,189,248,0.94),rgba(45,212,191,0.97))] text-slate-950 shadow-[0_18px_38px_rgba(14,116,144,0.34)] before:absolute before:inset-0 before:-z-10 before:rounded-[inherit] before:bg-white/35 before:opacity-0 before:transition-opacity before:duration-200 hover:shadow-[0_20px_44px_rgba(14,116,144,0.45)] hover:before:opacity-35 focus-visible:ring-primary/50 dark:border-cyan-200/45 dark:bg-[linear-gradient(135deg,rgba(56,189,248,0.98),rgba(45,212,191,0.94))] dark:text-slate-950 dark:shadow-[0_26px_48px_rgba(13,148,136,0.45)] dark:hover:shadow-[0_28px_54px_rgba(13,148,136,0.52)] dark:before:bg-cyan-100/18 dark:hover:before:opacity-45",
+          "bg-[linear-gradient(135deg,rgba(59,194,255,0.96),rgba(45,212,191,0.98))] !text-slate-900 shadow-[0_16px_32px_rgba(15,118,110,0.28)] before:absolute before:inset-0 before:-z-10 before:rounded-[inherit] before:bg-white/30 before:opacity-0 before:transition-opacity before:duration-200 hover:shadow-[0_22px_42px_rgba(14,116,144,0.36)] hover:before:opacity-35 focus-visible:ring-primary/45 focus-visible:ring-offset-0 dark:border-0 dark:bg-gradient-to-r dark:from-teal-400 dark:to-cyan-400 dark:!text-slate-900 dark:shadow-md dark:hover:shadow-lg dark:before:bg-white/20 dark:hover:before:opacity-100 font-semibold",
         subtle:
           "bg-muted/60 text-foreground/80 shadow-soft hover:bg-muted",
         success:
-          "bg-success/90 text-success-foreground shadow-soft hover:bg-success",
+          "bg-success/90 text-success-foreground shadow-soft hover:bg-success dark:!text-slate-900",
         warning:
           "bg-warning/90 text-warning-foreground shadow-soft hover:bg-warning",
         info:
-          "bg-info/90 text-info-foreground shadow-soft hover:bg-info",
+          "bg-info/90 text-info-foreground shadow-soft hover:bg-info dark:!text-slate-900",
         neutral:
           "bg-neutral/25 text-neutral-foreground shadow-soft hover:bg-neutral/35",
       },

@@ -63,10 +63,10 @@ export function QualityScoreCard({ qualityResults, className = '' }: QualityScor
       </div>
 
       <div
-        className={`rounded-3xl p-12 border shadow-2xl ${
+        className={`rounded-3xl p-12 ${
           isDark
-            ? 'bg-gradient-to-br from-slate-800 to-slate-900 border-slate-700/50'
-            : 'bg-gradient-to-br from-slate-50 to-slate-100/80 border-slate-200'
+            ? 'bg-gradient-to-br from-slate-800/80 to-slate-900/80 border-0 shadow-none'
+            : 'bg-gradient-to-br from-slate-50 to-slate-100/80 border border-slate-200/60 shadow-md'
         }`}
       >
         <div className="flex flex-col md:flex-row items-center md:items-start gap-12">
@@ -82,7 +82,7 @@ export function QualityScoreCard({ qualityResults, className = '' }: QualityScor
                   stroke="currentColor"
                   strokeWidth="6"
                   fill="none"
-                  className={isDark ? 'text-slate-700/40' : 'text-slate-300'}
+                  className={isDark ? 'text-slate-700/30' : 'text-slate-300/60'}
                 />
                 {/* Progress circle */}
                 <circle
@@ -119,24 +119,24 @@ export function QualityScoreCard({ qualityResults, className = '' }: QualityScor
           <div className="flex-1 grid md:grid-cols-2 gap-8">
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <span className={`text-sm ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>Entities Processed</span>
-                <span className={`font-bold text-2xl ${isDark ? 'text-white' : 'text-slate-900'}`}>{qualityResults.metrics.total_entities}</span>
+                <span className={`text-sm font-medium ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>Entities Processed</span>
+                <span className={`font-bold text-2xl ${isDark ? 'text-white' : 'text-slate-800'}`}>{qualityResults.metrics.total_entities}</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className={`text-sm ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>Relationships</span>
-                <span className={`font-bold text-2xl ${isDark ? 'text-white' : 'text-slate-900'}`}>{qualityResults.metrics.total_relationships}</span>
+                <span className={`text-sm font-medium ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>Relationships</span>
+                <span className={`font-bold text-2xl ${isDark ? 'text-white' : 'text-slate-800'}`}>{qualityResults.metrics.total_relationships}</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className={`text-sm ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>Total Violations</span>
-                <span className={`font-bold text-2xl ${isDark ? 'text-white' : 'text-slate-900'}`}>{qualityResults.violations.length}</span>
+                <span className={`text-sm font-medium ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>Total Violations</span>
+                <span className={`font-bold text-2xl ${isDark ? 'text-white' : 'text-slate-800'}`}>{qualityResults.violations.length}</span>
               </div>
             </div>
 
             <div className="space-y-4">
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <span className={`text-sm ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>Property Completeness</span>
-                  <span className={`font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>{Math.round(qualityResults.metrics.property_completeness_rate)}%</span>
+                  <span className={`text-sm font-medium ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>Property Completeness</span>
+                  <span className={`font-semibold ${isDark ? 'text-white' : 'text-slate-800'}`}>{Math.round(qualityResults.metrics.property_completeness_rate)}%</span>
                 </div>
                 <Progress
                   value={qualityResults.metrics.property_completeness_rate}
@@ -146,8 +146,8 @@ export function QualityScoreCard({ qualityResults, className = '' }: QualityScor
 
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <span className={`text-sm ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>Extraction Confidence</span>
-                  <span className={`font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>{Math.round(qualityResults.metrics.avg_entity_confidence * 100)}%</span>
+                  <span className={`text-sm font-medium ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>Extraction Confidence</span>
+                  <span className={`font-semibold ${isDark ? 'text-white' : 'text-slate-800'}`}>{Math.round(qualityResults.metrics.avg_entity_confidence * 100)}%</span>
                 </div>
                 <Progress
                   value={qualityResults.metrics.avg_entity_confidence * 100}
@@ -155,7 +155,7 @@ export function QualityScoreCard({ qualityResults, className = '' }: QualityScor
                 />
               </div>
 
-              <div className={`pt-4 border-t ${isDark ? 'border-slate-700/50' : 'border-slate-200'}`}>
+              <div className={`pt-4 border-t ${isDark ? 'border-slate-600/40' : 'border-slate-200/60'}`}>
                 {qualityResults.requires_review ? (
                   <div className="flex items-center gap-2">
                     <div className="w-2.5 h-2.5 rounded-full bg-warning"></div>

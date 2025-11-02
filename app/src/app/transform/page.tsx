@@ -2,8 +2,8 @@
 
 import { useState, useCallback, useEffect, useMemo, Suspense } from 'react'
 import { useDropzone } from 'react-dropzone'
-import { 
-  Loader2, X, Upload, FileText, 
+import {
+  Loader2, X, Upload, FileText,
   GitMerge,
   Database, Settings2,
   Monitor,
@@ -14,6 +14,7 @@ import {
   AlertTriangle
 } from 'lucide-react'
 import { useRouter, useSearchParams, usePathname } from 'next/navigation'
+import { useTheme } from 'next-themes'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -128,6 +129,8 @@ function TransformPageContent() {
   const sessionId = searchParams.get('session_id')
   const urlTransformId = searchParams.get('transform_id')
   const { checkConfigBeforeWorkflow } = useUserConfig()
+  const { theme } = useTheme()
+  const isDark = theme === 'dark'
 
   const [file, setFile] = useState<FileWithPreview | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -1240,29 +1243,41 @@ function TransformPageContent() {
                 </div>
                 <div className="enhanced-card-content h-[600px] relative overflow-hidden rounded-lg">
                   {isProcessing ? (
-                    <div className="h-full flex items-center justify-center bg-gradient-to-br from-sky-50 via-cyan-50 to-emerald-50 dark:from-slate-800 dark:via-slate-700 dark:to-slate-900">
+                    <div className={`h-full flex items-center justify-center ${
+                      isDark
+                        ? 'bg-gradient-to-br from-slate-800 via-slate-700 to-slate-900'
+                        : 'bg-gradient-to-br from-sky-50 via-cyan-50 to-emerald-50'
+                    }`}>
                       <div className="text-center space-y-content max-w-md">
-                        <div className="w-20 h-20 bg-white dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto shadow-xl border-2 border-blue-200 dark:border-slate-600">
-                          <Loader2 className="h-10 w-10 animate-spin text-blue-600 dark:text-blue-400" />
+                        <div className={`w-20 h-20 rounded-full flex items-center justify-center mx-auto shadow-xl border-2 ${
+                          isDark
+                            ? 'bg-slate-800 border-slate-600'
+                            : 'bg-white border-blue-200'
+                        }`}>
+                          <Loader2 className={`h-10 w-10 animate-spin ${isDark ? 'text-blue-400' : 'text-blue-600'}`} />
                         </div>
                         <div className="space-y-3">
-                          <h3 className="text-xl font-semibold text-slate-800 dark:text-white">Transforming Document</h3>
-                          <p className="text-sm text-slate-600 dark:text-slate-300">{currentStep || 'Processing your document...'}</p>
+                          <h3 className={`text-xl font-semibold ${isDark ? 'text-white' : 'text-slate-800'}`}>Transforming Document</h3>
+                          <p className={`text-sm ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>{currentStep || 'Processing your document...'}</p>
                           <div className="w-full max-w-xs mx-auto">
                             <Progress value={progress} className="w-full h-3" />
-                            <p className="text-lg font-bold text-blue-600 dark:text-blue-400 mt-2">{progress}% Complete</p>
+                            <p className={`text-lg font-bold mt-2 ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>{progress}% Complete</p>
                           </div>
                         </div>
-                        <div className="bg-white/90 dark:bg-slate-800/95 border border-blue-200 dark:border-slate-600 rounded-lg p-4 space-y-2 backdrop-blur-sm shadow-lg">
-                          <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
+                        <div className={`rounded-lg p-4 space-y-2 backdrop-blur-sm shadow-lg border ${
+                          isDark
+                            ? 'bg-slate-800/95 border-slate-600'
+                            : 'bg-white/90 border-blue-200'
+                        }`}>
+                          <div className={`flex items-center gap-2 text-sm ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
                             <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
                             <span>Parsing document structure</span>
                           </div>
-                          <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
+                          <div className={`flex items-center gap-2 text-sm ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
                             <div className="w-2 h-2 bg-cyan-500 rounded-full animate-pulse"></div>
                             <span>Extracting entities and relationships</span>
                           </div>
-                          <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
+                          <div className={`flex items-center gap-2 text-sm ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
                             <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
                             <span>Building knowledge graph</span>
                           </div>

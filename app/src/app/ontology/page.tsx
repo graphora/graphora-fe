@@ -681,10 +681,7 @@ function OntologyPageContent() {
                   <Button 
                     variant={viewMode === 'code' ? "default" : "ghost"} 
                     size="sm" 
-                    className={cn(
-                      "rounded-none border-0",
-                      viewMode === 'code' ? "bg-primary text-primary-foreground" : ""
-                    )}
+                    className="rounded-none border-0"
                     onClick={() => setViewMode('code')}
                   >
                     <Code2 className="h-4 w-4 mr-1.5" />
@@ -693,10 +690,7 @@ function OntologyPageContent() {
                   <Button 
                     variant={viewMode === 'visual' ? "default" : "ghost"} 
                     size="sm" 
-                    className={cn(
-                      "rounded-none border-0",
-                      viewMode === 'visual' ? "bg-primary text-primary-foreground" : ""
-                    )}
+                    className="rounded-none border-0"
                     onClick={() => setViewMode('visual')}
                   >
                     <Grid2x2 className="h-4 w-4 mr-1.5" />
@@ -705,10 +699,7 @@ function OntologyPageContent() {
                   <Button 
                     variant={viewMode === 'split' ? "default" : "ghost"} 
                     size="sm" 
-                    className={cn(
-                      "rounded-none border-0",
-                      viewMode === 'split' ? "bg-primary text-primary-foreground" : ""
-                    )}
+                    className="rounded-none border-0"
                     onClick={() => setViewMode('split')}
                   >
                     <SplitSquareVertical className="h-4 w-4 mr-1.5" />
