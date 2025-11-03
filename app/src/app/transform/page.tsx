@@ -1119,6 +1119,18 @@ function TransformPageContent() {
             {isProcessing ? 'Processing...' : 'Transform'}
           </Button>
 
+          {(transformId || urlTransformId) && graphData && (
+            <Button
+              onClick={() => setShowQualityReview(true)}
+              disabled={isProcessing}
+              size="sm"
+              variant="outline"
+            >
+              <Monitor className="h-4 w-4 mr-1.5" />
+              View Quality
+            </Button>
+          )}
+
           <Button
             onClick={() => setShowMergeConfirm(true)}
             disabled={!graphData || isProcessing || !qualityReviewCompleted}
