@@ -279,6 +279,8 @@ function TransformPageContent() {
       setGraphData(processedData)
       setLastSuccessfulGraph(processedData)
       setQualityContextTransformId(transformId)
+      setQualityFailure(null)
+      setError(null)
     } catch (err) {
       console.error('Error loading graph data:', err)
       if (!isProcessing) {
@@ -311,12 +313,18 @@ function TransformPageContent() {
   }, [graphData, normalizeGraphData])
 
   const handleTerminalFailure = useCallback((fallbackMessage: string, failureDetails?: QualityFailure | null, sourceTransformId?: string | null) => {
+    const normalizedMessage = (message?: string | null) => {
+      if (!message) return 'An unexpected error occurred during transform.'
+      const trimmed = message.trim()
+      return trimmed.length > 0 ? trimmed : 'An unexpected error occurred during transform.'
+    }
+
     if (failureDetails) {
       setQualityFailure(failureDetails)
-      setError(failureDetails.message)
+      setError(normalizedMessage(failureDetails.message))
     } else {
       setQualityFailure(null)
-      setError(fallbackMessage)
+      setError(normalizedMessage(fallbackMessage))
     }
     if (sourceTransformId) {
       const snapshotId = failureDetails?.lastSuccessfulGraphId || sourceTransformId
@@ -412,7 +420,13 @@ function TransformPageContent() {
             if (failureDetails?.lastSuccessfulGraphId && (!lastSuccessfulGraph || lastSuccessfulGraph.id !== failureDetails.lastSuccessfulGraphId)) {
               fetchGraphSnapshot(failureDetails.lastSuccessfulGraphId)
             }
-            handleTerminalFailure(data.message || 'Processing failed for this transform ID', failureDetails, urlTransformId)
+            const statusMessage =
+              failureDetails?.message ||
+              data.error_summary?.error_message ||
+              data.failure_details?.message ||
+              data.message ||
+              'Processing failed for this transform ID'
+            handleTerminalFailure(statusMessage, failureDetails, urlTransformId)
           } else {
             setIsProcessing(true)
             setIsUploadPanelExpanded(false)
@@ -660,7 +674,7 @@ function TransformPageContent() {
           setIsProcessing(false)
           setIsUploadPanelExpanded(false)
           debug('Transform completed, loading graph data')
-          
+
           await loadGraphData(transformId)
           // Show quality review after transform completion
           setShowQualityReview(true)
@@ -674,7 +688,13 @@ function TransformPageContent() {
           if (failureDetails?.lastSuccessfulGraphId && (!lastSuccessfulGraph || lastSuccessfulGraph.id !== failureDetails.lastSuccessfulGraphId)) {
             fetchGraphSnapshot(failureDetails.lastSuccessfulGraphId)
           }
-          handleTerminalFailure(data.message || 'Processing failed', failureDetails, transformId)
+          const statusMessage =
+            failureDetails?.message ||
+            data.error_summary?.error_message ||
+            data.failure_details?.message ||
+            data.message ||
+            'Processing failed'
+          handleTerminalFailure(statusMessage, failureDetails, transformId)
           if (statusInterval) {
             clearInterval(statusInterval)
           }
