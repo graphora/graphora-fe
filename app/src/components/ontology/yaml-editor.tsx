@@ -44,10 +44,10 @@ export function YAMLEditor({ value, onChange }: YAMLEditorProps) {
   }
 
   const editorComponent = (
-    <div className={`h-full ${isFullScreen ? '' : 'border rounded-md'} flex flex-col`}>
+    <div className={`h-full ${isFullScreen ? '' : 'rounded-2xl shadow-[0_18px_42px_rgba(15,23,42,0.14)] backdrop-blur-xl overflow-hidden'} flex flex-col`}>
       {/* Header with fullscreen button */}
-      <div className="sticky top-0 z-10 bg-background border-b px-2 py-1 flex justify-between items-center">
-        <span className="text-xs text-muted-foreground">YAML Editor</span>
+      <div className="sticky top-0 z-10 flex items-center justify-between rounded-t-2xl border-b border-white/25 bg-white/75 px-3 py-2.5 backdrop-blur-lg dark:border-slate-700/55 dark:bg-slate-900/70">
+        <span className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground dark:text-slate-200">YAML Editor</span>
         <Button
           variant="ghost"
           size="sm"
@@ -59,8 +59,8 @@ export function YAMLEditor({ value, onChange }: YAMLEditorProps) {
       </div>
       
       {/* Main editor container with proper overflow handling */}
-      <div className="flex-1 relative min-h-0">
-        <div className="absolute inset-0 overflow-auto">
+      <div className="flex-1 relative min-h-0 bg-white/60 dark:bg-slate-900/55">
+        <div className="absolute inset-0 overflow-auto rounded-b-2xl">
           <CodeMirror
             value={editorValue}
             height="100%"
@@ -69,13 +69,13 @@ export function YAMLEditor({ value, onChange }: YAMLEditorProps) {
               EditorView.lineWrapping
             ]}
             onChange={handleChange}
-            style={{ 
-              height: '100%', 
+            style={{
+              height: '100%',
               minHeight: '100%',
-              overflow: 'visible' 
+              overflow: 'visible'
             }}
             theme="dark"
-            className="text-sm h-full"
+            className="text-sm h-full w-full rounded-b-2xl"
           />
         </div>
       </div>

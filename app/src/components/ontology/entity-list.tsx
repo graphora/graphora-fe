@@ -3,15 +3,16 @@
 import { useOntologyEditorStore } from '@/lib/store/ontology-editor-store'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { FolderTree, FileDown, ChevronRight, ChevronDown } from 'lucide-react'
+import { FolderTree, Wand2, ChevronRight, ChevronDown } from 'lucide-react'
 import yaml from 'js-yaml'
 import { useState } from 'react'
 
 interface EntityListProps {
   onLoadSample: () => void
+  showQuickActions?: boolean
 }
 
-export function EntityList({ onLoadSample }: EntityListProps) {
+export function EntityList({ onLoadSample, showQuickActions = true }: EntityListProps) {
   const { yaml: yamlContent } = useOntologyEditorStore()
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set())
 
@@ -43,19 +44,21 @@ export function EntityList({ onLoadSample }: EntityListProps) {
 
   return (
     <div className="space-y-5">
-      <div className="rounded-xl border border-white/15 bg-white/8 p-4 shadow-glass backdrop-blur-panel">
-        <p className="text-xs uppercase tracking-[0.2em] text-foreground/55">Quick actions</p>
-        <div className="mt-3 flex flex-col gap-2">
-          <Button
-            variant="cta"
-            className="w-full justify-center gap-2 text-sm"
-            onClick={onLoadSample}
-          >
-            <FileDown className="h-4 w-4" />
-            Load sample ontology
-          </Button>
+      {showQuickActions && (
+        <div className="rounded-2xl border border-white/20 bg-white/55 p-4 shadow-[0_18px_42px_rgba(15,23,42,0.14)] backdrop-blur-xl dark:border-slate-700/40 dark:bg-slate-900/45">
+          <p className="text-xs font-semibold uppercase tracking-[0.28em] text-foreground/60">Quick Actions</p>
+          <div className="mt-3 flex flex-col gap-2">
+            <Button
+              variant="cta"
+              className="w-full justify-center gap-2 text-sm shadow-[0_16px_32px_rgba(14,116,144,0.28)]"
+              onClick={onLoadSample}
+            >
+              <Wand2 className="h-4 w-4" />
+              Load sample ontology
+            </Button>
+          </div>
         </div>
-      </div>
+      )}
 
       <div className="rounded-2xl border border-white/15 bg-white/8 p-4 shadow-glass backdrop-blur-panel">
         <p className="mb-3 text-xs uppercase tracking-[0.2em] text-foreground/55">Sections</p>

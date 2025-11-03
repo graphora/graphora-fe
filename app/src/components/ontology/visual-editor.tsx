@@ -46,7 +46,7 @@ export function VisualEditor() {
 
   return (
     <div className="h-full flex flex-col">
-      <div className="sticky top-0 z-10 flex items-center justify-between border-b border-white/10 bg-background/85 px-3 py-2 backdrop-blur-sm">
+      <div className="sticky top-0 z-10 flex items-center justify-between border-b border-white/25 bg-white/75 px-3 py-2.5 backdrop-blur-lg dark:border-slate-700/55 dark:bg-slate-900/70">
         <div className="flex items-center gap-2">
           <Button
             variant="ghost"
@@ -55,9 +55,9 @@ export function VisualEditor() {
             className={cn(
               "flex items-center gap-1.5 rounded-full border border-transparent px-3 text-sm font-medium transition-all duration-150",
               viewMode === 'tree'
-                ? "bg-white text-slate-900 shadow-[0_10px_26px_rgba(14,116,144,0.25)] ring-1 ring-inset ring-white/70 dark:bg-cyan-300/25 dark:text-slate-50 dark:shadow-[0_16px_34px_rgba(12,148,186,0.42)] dark:ring-cyan-100/65"
-                : "text-muted-foreground hover:text-foreground hover:bg-white/35 dark:hover:bg-white/12"
-            )}
+                ? "bg-white text-slate-900 shadow-[0_12px_26px_rgba(14,116,144,0.2)] ring-1 ring-inset ring-white/70 dark:bg-cyan-300/25 dark:text-slate-50 dark:shadow-[0_16px_34px_rgba(12,148,186,0.42)] dark:ring-cyan-100/65"
+                : "text-muted-foreground hover:text-foreground hover:bg-white/40 dark:text-slate-300 dark:hover:bg-slate-700/50"
+          )}
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -85,9 +85,9 @@ export function VisualEditor() {
             className={cn(
               "flex items-center gap-1.5 rounded-full border border-transparent px-3 text-sm font-medium transition-all duration-150",
               viewMode === 'graph'
-                ? "bg-white text-slate-900 shadow-[0_10px_26px_rgba(14,116,144,0.25)] ring-1 ring-inset ring-white/70 dark:bg-cyan-300/25 dark:text-slate-50 dark:shadow-[0_16px_34px_rgba(12,148,186,0.42)] dark:ring-cyan-100/65"
-                : "text-muted-foreground hover:text-foreground hover:bg-white/35 dark:hover:bg-white/12"
-            )}
+                ? "bg-white text-slate-900 shadow-[0_12px_26px_rgba(14,116,144,0.2)] ring-1 ring-inset ring-white/70 dark:bg-cyan-300/25 dark:text-slate-50 dark:shadow-[0_16px_34px_rgba(12,148,186,0.42)] dark:ring-cyan-100/65"
+                : "text-muted-foreground hover:text-foreground hover:bg-white/40 dark:text-slate-300 dark:hover:bg-slate-700/50"
+          )}
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"

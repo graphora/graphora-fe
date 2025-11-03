@@ -273,13 +273,13 @@ export function GraphView({ ontology, onChange }: GraphViewProps) {
 
   const graphEditor = (
     <div className="h-full flex flex-col">
-      <div className="sticky top-0 z-10 bg-background border-b p-2 flex justify-between items-center shadow-sm">
-        <div className="flex gap-1 pr-2 flex-nowrap">
+      <div className="sticky top-0 z-10 flex justify-between items-center rounded-t-2xl border-b border-white/20 bg-white/70 p-2 shadow-[0_14px_32px_rgba(15,23,42,0.18)] backdrop-blur-xl dark:border-slate-700/60 dark:bg-slate-900/70">
+        <div className="flex gap-1 pr-2 flex-nowrap text-foreground/80">
           {/* Hamburger menu only in standard view (not full screen) */}
           <div className={!isFullScreen ? 'block' : 'hidden'}>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="icon" className="flex-shrink-0">
+                <Button variant="ghost" size="icon" className="flex-shrink-0 h-8 w-8 bg-white/60 hover:bg-white/70 dark:bg-slate-800/70 dark:hover:bg-slate-700/70">
                   <Menu className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
@@ -344,10 +344,10 @@ export function GraphView({ ontology, onChange }: GraphViewProps) {
           {/* Essential view controls - always visible */}
           <Tooltip content="Zoom In">
             <Button
-              variant="outline"
+              variant="ghost"
               size="icon"
               onClick={handleZoomIn}
-              className="flex-shrink-0 ml-2"
+              className="flex-shrink-0 ml-2 h-8 w-8 bg-white/60 hover:bg-white/70 dark:bg-slate-800/70 dark:hover:bg-slate-700/70"
             >
               <ZoomIn className="h-4 w-4" />
             </Button>
@@ -355,10 +355,10 @@ export function GraphView({ ontology, onChange }: GraphViewProps) {
 
           <Tooltip content="Zoom Out">
             <Button
-              variant="outline"
+              variant="ghost"
               size="icon"
               onClick={handleZoomOut}
-              className="flex-shrink-0"
+              className="flex-shrink-0 h-8 w-8 bg-white/60 hover:bg-white/70 dark:bg-slate-800/70 dark:hover:bg-slate-700/70"
             >
               <ZoomOut className="h-4 w-4" />
             </Button>
@@ -366,26 +366,26 @@ export function GraphView({ ontology, onChange }: GraphViewProps) {
 
           <Tooltip content="Reset View">
             <Button
-              variant="outline"
+              variant="ghost"
               size="icon"
               onClick={handleResetView}
-              className="flex-shrink-0"
+              className="flex-shrink-0 h-8 w-8 bg-white/60 hover:bg-white/70 dark:bg-slate-800/70 dark:hover:bg-slate-700/70"
             >
               <Group className="h-4 w-4" />
             </Button>
           </Tooltip>
 
-          <Separator orientation="vertical" className="mx-1 h-8 flex-shrink-0" />
+          <Separator orientation="vertical" className="mx-1 h-8 flex-shrink-0 bg-white/20 dark:bg-slate-600/50" />
 
           {/* Visible only in full screen mode */}
           {isFullScreen && (
             <>
               <Tooltip content="Add Node">
                 <Button
-                  variant="outline"
+                  variant="ghost"
                   size="icon"
                   onClick={handleAddNode}
-                  className="flex-shrink-0"
+                  className="flex-shrink-0 h-8 w-8 bg-white/60 hover:bg-white/70 dark:bg-slate-800/70 dark:hover:bg-slate-700/70"
                 >
                   <Plus className="h-4 w-4" />
                 </Button>
@@ -393,11 +393,11 @@ export function GraphView({ ontology, onChange }: GraphViewProps) {
 
               <Tooltip content="Create Relationship (select 2 nodes)">
                 <Button
-                  variant="outline"
+                  variant="ghost"
                   size="icon"
                   onClick={handleCreateRelationship}
                   disabled={selection.nodes.length !== 2}
-                  className="flex-shrink-0"
+                  className="flex-shrink-0 h-8 w-8 bg-white/60 hover:bg-white/70 disabled:opacity-50 dark:bg-slate-800/70 dark:hover:bg-slate-700/70"
                 >
                   <ArrowLeftRight className="h-4 w-4" />
                 </Button>
@@ -405,11 +405,11 @@ export function GraphView({ ontology, onChange }: GraphViewProps) {
 
               <Tooltip content="Edit Selected">
                 <Button
-                  variant="outline"
+                  variant="ghost"
                   size="icon"
                   onClick={handleEdit}
                   disabled={selection.nodes.length !== 1 && selection.relationships.length !== 1}
-                  className="flex-shrink-0"
+                  className="flex-shrink-0 h-8 w-8 bg-white/60 hover:bg-white/70 disabled:opacity-50 dark:bg-slate-800/70 dark:hover:bg-slate-700/70"
                 >
                   <Edit className="h-4 w-4" />
                 </Button>
@@ -417,11 +417,11 @@ export function GraphView({ ontology, onChange }: GraphViewProps) {
 
               <Tooltip content="Duplicate Selection">
                 <Button
-                  variant="outline"
+                  variant="ghost"
                   size="icon"
                   onClick={duplicateSelection}
                   disabled={selection.nodes.length === 0 && selection.relationships.length === 0}
-                  className="flex-shrink-0"
+                  className="flex-shrink-0 h-8 w-8 bg-white/60 hover:bg-white/70 disabled:opacity-50 dark:bg-slate-800/70 dark:hover:bg-slate-700/70"
                 >
                   <Copy className="h-4 w-4" />
                 </Button>
@@ -429,11 +429,11 @@ export function GraphView({ ontology, onChange }: GraphViewProps) {
 
               <Tooltip content="Delete Selection">
                 <Button
-                  variant="outline"
+                  variant="ghost"
                   size="icon"
                   onClick={deleteSelection}
                   disabled={selection.nodes.length === 0 && selection.relationships.length === 0}
-                  className="flex-shrink-0"
+                  className="flex-shrink-0 h-8 w-8 bg-white/60 hover:bg-white/70 disabled:opacity-50 dark:bg-slate-800/70 dark:hover:bg-slate-700/70"
                 >
                   <Trash className="h-4 w-4" />
                 </Button>
@@ -441,10 +441,10 @@ export function GraphView({ ontology, onChange }: GraphViewProps) {
 
               <Tooltip content="Export Graph">
                 <Button
-                  variant="outline"
+                  variant="ghost"
                   size="icon"
                   onClick={handleExportGraph}
-                  className="flex-shrink-0"
+                  className="flex-shrink-0 h-8 w-8 bg-white/60 hover:bg-white/70 dark:bg-slate-800/70 dark:hover:bg-slate-700/70"
                 >
                   <Download className="h-4 w-4" />
                 </Button>
@@ -452,10 +452,10 @@ export function GraphView({ ontology, onChange }: GraphViewProps) {
 
               <Tooltip content="Import Graph">
                 <Button
-                  variant="outline"
+                  variant="ghost"
                   size="icon"
                   onClick={handleImportGraph}
-                  className="flex-shrink-0"
+                  className="flex-shrink-0 h-8 w-8 bg-white/60 hover:bg-white/70 dark:bg-slate-800/70 dark:hover:bg-slate-700/70"
                 >
                   <Upload className="h-4 w-4" />
                 </Button>
@@ -468,10 +468,10 @@ export function GraphView({ ontology, onChange }: GraphViewProps) {
           {/* Full screen button - always visible */}
           <Tooltip content={isFullScreen ? "Exit Full Screen" : "Full Screen"}>
             <Button
-              variant="outline"
+              variant="ghost"
               size="icon"
               onClick={toggleFullScreen}
-              className="flex-shrink-0"
+              className="flex-shrink-0 h-8 w-8 bg-white/60 hover:bg-white/70 dark:bg-slate-800/70 dark:hover:bg-slate-700/70"
             >
               {isFullScreen ? <Minimize className="h-4 w-4" /> : <Maximize className="h-4 w-4" />}
             </Button>
@@ -480,10 +480,10 @@ export function GraphView({ ontology, onChange }: GraphViewProps) {
           {/* Save to YAML button - always visible */}
           <Tooltip content="Save graph to YAML format">
             <Button
-              variant="default"
+              variant="cta"
               size="sm"
               onClick={handleSave}
-              className="flex-shrink-0 ml-2"
+              className="flex-shrink-0 ml-2 shadow-[0_16px_32px_rgba(14,116,144,0.28)]"
             >
               <Save className="h-4 w-4 mr-1" />
               Save to YAML
@@ -496,7 +496,7 @@ export function GraphView({ ontology, onChange }: GraphViewProps) {
         <GraphDisplay className="w-full h-full" />
       </div>
 
-      <div className="sticky bottom-0 z-10 bg-background border-t p-2 text-xs text-muted-foreground shadow-sm">
+      <div className="sticky bottom-0 z-10 rounded-b-2xl border-t border-white/15 bg-white/70 p-2 text-xs text-muted-foreground shadow-[0_-12px_28px_rgba(15,23,42,0.18)] backdrop-blur-xl dark:border-slate-700/60 dark:bg-slate-900/70">
         <div className="flex justify-between">
           <div>
             <strong>Nodes:</strong> {Object.keys(graph.nodes).length} |
@@ -537,7 +537,7 @@ export function GraphView({ ontology, onChange }: GraphViewProps) {
       </DialogContent>
     </Dialog>
   ) : (
-     <div className="h-full w-full bg-background">
+     <div className="h-full bg-background">
         {graphEditor}
      </div>
   )
