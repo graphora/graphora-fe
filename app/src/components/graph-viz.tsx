@@ -114,6 +114,7 @@ interface GraphVisualizationProps {
   onGraphReset?: () => void;
   onGraphOperation?: (operation: GraphOperation) => void | Promise<void>;
   sidebarWidth?: number;
+  isInModal?: boolean;
 }
 
 interface SelectedElement {
@@ -150,11 +151,12 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({
   onGraphReset,
   onGraphOperation,
   sidebarWidth = 320,
+  isInModal = false,
 }) => {
   const { theme, resolvedTheme } = useTheme();
   const isDark = resolvedTheme === 'dark';
   const containerRef = useRef<HTMLDivElement>(null);
-  const nvlRef = useRef<{ fit: () => void }>(null);
+  const nvlRef = useRef<any>(null);
   const [hoveredNode, setHoveredNode] = useState<ProcessedNode | null>(null);
   const [hoveredLink, setHoveredLink] = useState<ProcessedRel | null>(null);
   const [selectedElement, setSelectedElement] = useState<SelectedElement | null>(null);
@@ -165,6 +167,7 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({
   const [internalNodes, setInternalNodes] = useState<ProcessedNode[]>([]);
   const [internalRels, setInternalRels] = useState<ProcessedRel[]>([]);
   const [isSaving, setIsSaving] = useState(false);
+  const [isFullScreen, setIsFullScreen] = useState(false);
 
   useEffect(() => {
     debug('Raw graphData:', graphData)
@@ -443,7 +446,7 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({
     );
   }
 
-  return (
+  const graphContent = (
     <div
       ref={containerRef}
       className="relative w-full h-full bg-background rounded-lg overflow-hidden border border-border"
@@ -454,44 +457,46 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({
     >
       {dimensions.width > 0 && dimensions.height > 0 ? (
         <ErrorBoundary>
-          <InteractiveNvlWrapper
-            ref={nvlRef}
-            nodes={internalNodes}
-            rels={internalRels}
-            width={dimensions.width}
-            height={dimensions.height}
-            interactionOptions={{
-              zoom: { enabled: true, minZoom: 0.1, maxZoom: 10 },
-              drag: { enabled: true },
-              pan: { enabled: true },
-              hover: { enabled: !isDragging },
-              click: { selectOnClick: true }
-            }}
-            mouseEventCallbacks={mouseEventCallbacks}
-            nvlOptions={{
-              initialZoom: 0.8,
-              layout: 'forceDirected',
-              layoutSettings: {
-                nodeDistance: 100,
-                nodeRepulsion: 5000,
-              },
-              availableLayouts: ['forceDirected'],
-              renderer: 'canvas',
-              nodeLabelsVisible: true,
-              nodeLabelKey: 'label',
-              nodeSize: 50,
-              relationshipLabelKey: 'label',
-              relationshipLabelsVisible: true,
-              relationshipArrowSize: 3,
-              labelFontSize: 20,
-              labelColor: isDark ? '#e2e8f0' : '#1e293b',
-              labelBackgroundColor: isDark ? 'rgba(15, 23, 42, 0.9)' : 'rgba(255, 255, 255, 0.9)',
-              nodeBorderWidth: 2,
-              useWebGL: true,
-              backgroundColor: isDark ? '#0f172a' : '#f8fafc',
-            }}
-            style={{ width: '100%', height: '100%' }}
-          />
+          <div className="absolute inset-0 pointer-events-auto" style={{ zIndex: 1 }}>
+            <InteractiveNvlWrapper
+              ref={nvlRef}
+              nodes={internalNodes}
+              rels={internalRels}
+              width={dimensions.width}
+              height={dimensions.height}
+              interactionOptions={{
+                zoom: { enabled: true, minZoom: 0.1, maxZoom: 10 },
+                drag: { enabled: true },
+                pan: { enabled: true },
+                hover: { enabled: !isDragging },
+                click: { selectOnClick: true }
+              }}
+              mouseEventCallbacks={mouseEventCallbacks}
+              nvlOptions={{
+                initialZoom: 0.8,
+                layout: 'forceDirected',
+                layoutSettings: {
+                  nodeDistance: 100,
+                  nodeRepulsion: 5000,
+                },
+                availableLayouts: ['forceDirected'],
+                renderer: 'canvas',
+                nodeLabelsVisible: true,
+                nodeLabelKey: 'label',
+                nodeSize: 50,
+                relationshipLabelKey: 'label',
+                relationshipLabelsVisible: true,
+                relationshipArrowSize: 3,
+                labelFontSize: 20,
+                labelColor: isDark ? '#e2e8f0' : '#1e293b',
+                labelBackgroundColor: isDark ? 'rgba(15, 23, 42, 0.9)' : 'rgba(255, 255, 255, 0.9)',
+                nodeBorderWidth: 2,
+                useWebGL: true,
+                backgroundColor: isDark ? '#0f172a' : '#f8fafc',
+              }}
+              style={{ width: '100%', height: '100%' }}
+            />
+          </div>
         </ErrorBoundary>
       ) : (
         <div className="flex items-center justify-center h-full w-full">
@@ -608,31 +613,73 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({
         </Dialog>
       )}
 
-      <div className="absolute bottom-4 right-4 flex gap-2 z-5">
-        <button
-          onClick={() => nvlRef.current?.fit()}
-          className="bg-background p-2 rounded-full shadow-md hover:bg-muted text-foreground transition-colors border border-border"
-          title="Center and fit graph"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"></path>
-          </svg>
-        </button>
-        {onGraphReset && (
+      {!isFullScreen && !isInModal && (
+        <div className="absolute bottom-4 right-4 flex gap-2 z-[100] pointer-events-auto">
+          {/* Fit to screen button */}
           <button
-            onClick={handleReset}
-            className="bg-background p-2 rounded-full shadow-md hover:bg-muted text-foreground transition-colors border border-border"
-            title="Reset graph"
+            onClick={() => {
+              if (nvlRef.current) {
+                try {
+                  // Call restart to recalculate layout, then fit
+                  if (typeof nvlRef.current.restart === 'function') {
+                    nvlRef.current.restart();
+                  }
+                  // Wait for layout to settle, then fit
+                  setTimeout(() => {
+                    if (nvlRef.current && typeof nvlRef.current.fit === 'function') {
+                      nvlRef.current.fit();
+                    }
+                  }, 300);
+                } catch (error) {
+                  console.error('Error fitting graph:', error);
+                }
+              }
+            }}
+            className="bg-background p-2 rounded-full shadow-lg hover:bg-muted text-foreground transition-colors border border-border cursor-pointer pointer-events-auto"
+            title="Fit graph to screen"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8M3 3v5h5"></path>
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="pointer-events-none">
+              <circle cx="12" cy="12" r="10"></circle>
+              <circle cx="12" cy="12" r="2"></circle>
+              <line x1="12" y1="2" x2="12" y2="6"></line>
+              <line x1="12" y1="18" x2="12" y2="22"></line>
+              <line x1="2" y1="12" x2="6" y2="12"></line>
+              <line x1="18" y1="12" x2="22" y2="12"></line>
             </svg>
           </button>
-        )}
-      </div>
+
+          {/* Expand to fullscreen button */}
+          <button
+            onClick={() => setIsFullScreen(true)}
+            className="bg-background p-2 rounded-full shadow-lg hover:bg-muted text-foreground transition-colors border border-border cursor-pointer pointer-events-auto"
+            title="Expand to fullscreen"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="pointer-events-none">
+              <path d="M8 3H5a2 2 0 0 0-2 2v3"></path>
+              <path d="M21 8V5a2 2 0 0 0-2-2h-3"></path>
+              <path d="M3 16v3a2 2 0 0 0 2 2h3"></path>
+              <path d="M16 21h3a2 2 0 0 0 2-2v-3"></path>
+            </svg>
+          </button>
+
+          {/* Reload graph button */}
+          {onGraphReset && (
+            <button
+              onClick={handleReset}
+              className="bg-background p-2 rounded-full shadow-lg hover:bg-muted text-foreground transition-colors border border-border cursor-pointer pointer-events-auto"
+              title="Reload graph data"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="pointer-events-none">
+                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+                <path d="M3 3v5h5"></path>
+              </svg>
+            </button>
+          )}
+        </div>
+      )}
 
       <div
-        className="absolute top-4 right-4 flex flex-col gap-2 z-5"
+        className="absolute top-4 right-4 flex flex-col gap-2 z-[100]"
       >
         <div className="bg-background/90 p-2 rounded-md shadow-sm text-xs backdrop-blur-sm border border-border">
           <div className="font-medium text-foreground mb-1">Graph Information</div>
@@ -657,5 +704,28 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({
         )}
       </div>
     </div>
+  );
+
+  return (
+    <>
+      {graphContent}
+
+      <Dialog open={isFullScreen} onOpenChange={setIsFullScreen}>
+        <DialogContent className="max-w-[95vw] max-h-[95vh] w-[95vw] h-[95vh] p-0 flex flex-col">
+          <DialogHeader className="p-4 border-b border-border flex-shrink-0">
+            <DialogTitle>Knowledge Graph - Fullscreen View</DialogTitle>
+          </DialogHeader>
+          <div className="flex-1 overflow-hidden min-h-0 p-4">
+            <GraphVisualization
+              graphData={graphData}
+              onGraphReset={onGraphReset}
+              onGraphOperation={onGraphOperation}
+              sidebarWidth={sidebarWidth}
+              isInModal={true}
+            />
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 };
