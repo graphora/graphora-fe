@@ -1131,14 +1131,14 @@ function TransformPageContent() {
         </div>
       </div>
 
-      <div className="flex-1 overflow-auto">
+      <div className="flex-1 flex flex-col h-full overflow-hidden">
 
-        <div className="page-shell py-6">
-          <div className="grid gap-6 lg:grid-cols-[minmax(0,360px)_1fr]">
+        <div className="page-shell py-6 flex-1 flex flex-col overflow-hidden">
+          <div className="grid gap-6 lg:grid-cols-[minmax(0,360px)_1fr] flex-1 min-h-[80vh]">
             {/* Upload Panel */}
-            <div className="space-y-4">
+            <div className="flex flex-col h-full overflow-auto">
               {/* File Upload Section */}
-              <div className="enhanced-card">
+              <div className="enhanced-card h-full flex-shrink-0">
                 <div className="enhanced-card-header pb-3">
                   <h3 className="text-sm font-semibold text-foreground">Document Upload</h3>
                   <p className="text-xs text-muted-foreground mt-0.5">Upload a document to transform into a knowledge graph</p>
@@ -1233,15 +1233,15 @@ function TransformPageContent() {
             </div>
 
             {/* Graph Visualization Panel */}
-            <div className="h-full">
-              <div className="enhanced-card h-full text-sm text-muted-foreground">
-                <div className="enhanced-card-header pb-3">
+            <div className="flex flex-col h-full">
+              <div className="enhanced-card flex flex-col h-full text-sm text-muted-foreground">
+                <div className="enhanced-card-header pb-3 flex-shrink-0">
                   <h3 className="text-sm font-semibold text-foreground">Knowledge Graph</h3>
                   <p className="text-xs text-muted-foreground mt-0.5">
                     {graphData ? 'Interactive visualization of your knowledge graph' : 'Graph will appear here after transformation'}
                   </p>
                 </div>
-                <div className="enhanced-card-content h-[600px] relative overflow-hidden rounded-lg">
+                <div className="enhanced-card-content flex-1 relative overflow-hidden rounded-lg min-h-0">
                   {isProcessing ? (
                     <div className={`h-full flex items-center justify-center ${
                       isDark

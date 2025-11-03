@@ -446,7 +446,7 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({
   return (
     <div
       ref={containerRef}
-      className="relative w-full h-full min-h-[500px] bg-background rounded-lg overflow-hidden border border-border"
+      className="relative w-full h-full bg-background rounded-lg overflow-hidden border border-border"
       onMouseMove={handleMouseMove}
       onMouseDown={() => setIsDragging(true)}
       onMouseUp={() => setIsDragging(false)}
