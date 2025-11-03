@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useEffect, useMemo, Suspense } from 'react'
+import { useState, useCallback, useEffect, useMemo, useRef, Suspense } from 'react'
 import { useDropzone } from 'react-dropzone'
 import {
   Loader2, X, Upload, FileText,
@@ -52,6 +52,8 @@ const ACCEPTED_FILE_TYPES = {
   'text/plain': ['.txt'],
   'text/markdown': ['.md', '.markdown']
 }
+const GRAPH_RETRY_DELAY_MS = 2000
+const MAX_GRAPH_RETRY_ATTEMPTS = 5
 
 type QualityFailure = {
   code: string
@@ -159,6 +161,7 @@ function TransformPageContent() {
     : null
   const [fileContent, setFileContent] = useState<string | null>(null)
   const [showChunkingConfig, setShowChunkingConfig] = useState(false)
+  const graphRetryTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   const chunkingSignature = useMemo(() => {
     if (!chunkingConfig) return '::default::'
@@ -249,7 +252,7 @@ function TransformPageContent() {
     total_edges: data.edges?.length ?? 0
   }), [])
 
-  const loadGraphData = useCallback(async (transformId: string) => {
+  const loadGraphData = useCallback(async (transformId: string, retryAttempt = 0) => {
     if (!transformId) {
       console.error('No transform ID provided to loadGraphData')
       return
@@ -260,8 +263,14 @@ function TransformPageContent() {
       const response = await fetch(`/api/graph/${transformId}`)
 
       if (!response.ok) {
-        if (response.status === 404) {
-          debug('Graph data not found, will retry')
+        if (response.status === 404 && retryAttempt < MAX_GRAPH_RETRY_ATTEMPTS) {
+          debug('Graph data not found, scheduling retry')
+          if (graphRetryTimeoutRef.current) {
+            clearTimeout(graphRetryTimeoutRef.current)
+          }
+          graphRetryTimeoutRef.current = setTimeout(() => {
+            loadGraphData(transformId, retryAttempt + 1)
+          }, GRAPH_RETRY_DELAY_MS)
           return
         }
         throw new Error('Failed to load graph data')
@@ -269,8 +278,18 @@ function TransformPageContent() {
 
       const data = await response.json()
 
-      if (!data.nodes || !data.edges) {
-        debug('Invalid graph data received, will retry')
+      if (!data.nodes || data.nodes.length === 0 || !data.edges) {
+        if (retryAttempt < MAX_GRAPH_RETRY_ATTEMPTS) {
+          debug('Graph data incomplete, scheduling retry')
+          if (graphRetryTimeoutRef.current) {
+            clearTimeout(graphRetryTimeoutRef.current)
+          }
+          graphRetryTimeoutRef.current = setTimeout(() => {
+            loadGraphData(transformId, retryAttempt + 1)
+          }, GRAPH_RETRY_DELAY_MS)
+        } else {
+          debugWarn('Graph data unavailable after retries')
+        }
         return
       }
 
@@ -281,6 +300,10 @@ function TransformPageContent() {
       setQualityContextTransformId(transformId)
       setQualityFailure(null)
       setError(null)
+      if (graphRetryTimeoutRef.current) {
+        clearTimeout(graphRetryTimeoutRef.current)
+        graphRetryTimeoutRef.current = null
+      }
     } catch (err) {
       console.error('Error loading graph data:', err)
       if (!isProcessing) {
@@ -364,6 +387,15 @@ function TransformPageContent() {
   }, [fileToken, qualityFailure])
 
   useEffect(() => {
+    return () => {
+      if (graphRetryTimeoutRef.current) {
+        clearTimeout(graphRetryTimeoutRef.current)
+        graphRetryTimeoutRef.current = null
+      }
+    }
+  }, [])
+
+  useEffect(() => {
     if (!isChunkingAvailable && showChunkingConfig) {
       setShowChunkingConfig(false)
     }
@@ -398,6 +430,14 @@ function TransformPageContent() {
             
             if (response.status === 404) {
               handleTerminalFailure('Transform process not found for the provided ID.', undefined, urlTransformId)
+              return
+            }
+
+            // Handle timeout gracefully - transform might still be processing
+            if (response.status === 504 && errorData.type === 'timeout') {
+              debug('Initial status check timed out, assuming transform is in progress')
+              setIsProcessing(true)
+              setProgress(10)
               return
             }
 
@@ -644,7 +684,7 @@ function TransformPageContent() {
         
         if (!response.ok) {
           const errorData = await response.json()
-          
+
           if (response.status === 403 && errorData.type === 'access_denied') {
             debug('Access denied for transform, stopping status checks')
             setError('You do not have permission to access this transform')
@@ -654,12 +694,18 @@ function TransformPageContent() {
             }
             return
           }
-          
+
           if (response.status === 404) {
             debug('Transform not found, continuing processing')
             return
           }
-          
+
+          // Handle timeout gracefully - don't treat as terminal failure
+          if (response.status === 504 && errorData.type === 'timeout') {
+            debug('Status check timed out, will retry on next interval')
+            return
+          }
+
           handleTerminalFailure(errorData.message || 'Failed to fetch transform status', undefined, transformId)
           if (statusInterval) {
             clearInterval(statusInterval)
@@ -711,10 +757,9 @@ function TransformPageContent() {
         }
       } catch (err) {
         console.error('Error checking status:', err)
-        handleTerminalFailure('Unable to reach transform status', undefined, transformId)
-        if (statusInterval) {
-          clearInterval(statusInterval)
-        }
+        // Don't treat network errors as terminal failures - just log and retry
+        // The backend might be temporarily unavailable or slow
+        debug('Status check failed, will retry on next interval:', err)
       }
     }
 

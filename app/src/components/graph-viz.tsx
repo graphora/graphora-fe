@@ -256,18 +256,40 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({
   useEffect(() => {
     if (!containerRef.current) return;
 
+    const updateDimensions = () => {
+      if (!containerRef.current) return;
+      const { width, height } = containerRef.current.getBoundingClientRect();
+      const finalWidth = width > 0 ? width : 800; // Fallback width
+      const finalHeight = height > 0 ? Math.max(height, 400) : 600; // Fallback height
+      debug('Setting dimensions:', { width: finalWidth, height: finalHeight });
+      setDimensions({ width: finalWidth, height: finalHeight });
+    };
+
     const observer = new ResizeObserver(entries => {
       for (let entry of entries) {
         const { width, height } = entry.contentRect;
-        setDimensions({ width, height: Math.max(height, 400) });
+        if (width > 0 && height > 0) {
+          setDimensions({ width, height: Math.max(height, 400) });
+        }
       }
     });
     observer.observe(containerRef.current);
 
-    const { width, height } = containerRef.current.getBoundingClientRect();
-    setDimensions({ width, height: Math.max(height, 400) });
+    // Initial dimension calculation
+    updateDimensions();
 
-    return () => observer.disconnect();
+    // Retry dimension calculation after a short delay if still 0
+    const retryTimer = setTimeout(() => {
+      if (dimensions.width === 0 || dimensions.height === 0) {
+        debug('Retrying dimension calculation after delay');
+        updateDimensions();
+      }
+    }, 100);
+
+    return () => {
+      observer.disconnect();
+      clearTimeout(retryTimer);
+    };
   }, []);
 
   const handleMouseMove = useCallback((event: React.MouseEvent) => {
