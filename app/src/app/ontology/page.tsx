@@ -722,7 +722,7 @@ function OntologyPageContent() {
               className="flex"
             >
               <div className="enhanced-card h-full w-full flex flex-col overflow-hidden border border-white/20 dark:border-slate-700/45 shadow-[0_32px_72px_rgba(15,23,42,0.16)]">
-                <div className="relative flex items-center justify-between px-4 py-3 bg-white/72 dark:bg-slate-900/75 backdrop-blur-xl sticky top-0 z-20 after:absolute after:bottom-0 after:left-4 after:right-4 after:h-px after:bg-gradient-to-r after:from-transparent after:via-white/45 after:to-transparent dark:after:via-white/15">
+                <div className="relative flex items-center justify-between px-4 py-3 bg-white/60 dark:bg-slate-900/40 backdrop-blur-xl sticky top-0 z-20 after:absolute after:bottom-0 after:left-4 after:right-4 after:h-px after:bg-gradient-to-r after:from-transparent after:via-white/45 after:to-transparent dark:after:via-white/15">
                   <div className="flex items-center gap-1.5 text-foreground">
                     <div className="bg-primary/5 w-5 h-5 rounded flex items-center justify-center">
                       <svg width="14" height="14" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -764,7 +764,7 @@ function OntologyPageContent() {
             <ResizableHandle className="w-1 bg-transparent after:bg-gradient-to-b after:from-transparent after:via-white/40 after:to-transparent dark:after:via-white/15" />
             <ResizablePanel defaultSize={75} className="flex">
               <div className="enhanced-card h-full w-full flex flex-col overflow-hidden border border-white/20 dark:border-slate-700/45 shadow-[0_32px_72px_rgba(15,23,42,0.16)]">
-                <div className="relative flex flex-wrap items-center gap-4 px-4 py-3 bg-white/72 dark:bg-slate-900/75 backdrop-blur-xl sticky top-0 z-20 after:absolute after:bottom-0 after:left-4 after:right-4 after:h-px after:bg-gradient-to-r after:from-transparent after:via-white/45 after:to-transparent dark:after:via-white/15">
+                <div className="relative flex flex-wrap items-center gap-4 px-4 py-3 bg-white/60 dark:bg-slate-900/40 backdrop-blur-xl sticky top-0 z-20 after:absolute after:bottom-0 after:left-4 after:right-4 after:h-px after:bg-gradient-to-r after:from-transparent after:via-white/45 after:to-transparent dark:after:via-white/15">
                   <div className="flex items-center gap-2 text-foreground">
                     <div className="bg-primary/5 w-5 h-5 rounded flex items-center justify-center">
                       <svg width="14" height="14" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -821,7 +821,7 @@ function OntologyPageContent() {
                 </div>
                 <div className="flex-1 overflow-auto">
                   {viewMode === 'split' ? (
-                    <div className="h-full w-full rounded-[24px] border border-white/18 dark:border-slate-700/45 bg-white/60 dark:bg-slate-900/40 backdrop-blur-xl overflow-hidden shadow-[0_26px_60px_rgba(15,23,42,0.12)]">
+                    <div className="h-full w-full rounded-[24px] bg-white/60 dark:bg-slate-900/40 backdrop-blur-xl overflow-hidden shadow-[0_26px_60px_rgba(15,23,42,0.12)]">
                       <div className="grid h-full grid-cols-2">
                         <div className="relative h-full overflow-auto p-4 after:absolute after:top-4 after:bottom-4 after:right-0 after:w-px after:bg-gradient-to-b after:from-transparent after:via-white/45 after:to-transparent dark:after:via-white/20">
                           <YAMLEditor

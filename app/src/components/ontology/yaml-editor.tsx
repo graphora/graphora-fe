@@ -8,6 +8,7 @@ import { parse } from 'yaml'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Maximize, Minimize } from 'lucide-react'
+import { useTheme } from 'next-themes'
 
 interface YAMLEditorProps {
   value: string
@@ -18,6 +19,7 @@ export function YAMLEditor({ value, onChange }: YAMLEditorProps) {
   const [editorValue, setEditorValue] = useState(value)
   const [error, setError] = useState<string | null>(null)
   const [isFullScreen, setIsFullScreen] = useState(false)
+  const { theme } = useTheme()
 
   useEffect(() => {
     // Only update if the value has changed and is not the same as the editor value
@@ -74,7 +76,7 @@ export function YAMLEditor({ value, onChange }: YAMLEditorProps) {
               minHeight: '100%',
               overflow: 'visible'
             }}
-            theme="dark"
+            theme={theme === 'dark' ? 'dark' : 'light'}
             className="text-sm h-full w-full rounded-b-2xl"
           />
         </div>
@@ -91,17 +93,14 @@ export function YAMLEditor({ value, onChange }: YAMLEditorProps) {
 
   return isFullScreen ? (
     <Dialog open={isFullScreen} onOpenChange={setIsFullScreen}>
-      <DialogContent className="max-w-[95vw] max-h-[95vh] w-[95vw] h-[95vh] flex flex-col p-0 bg-background border-border">
-        <DialogHeader className="p-4 border-b border-border bg-background">
-          <DialogTitle className="text-foreground">YAML Editor (Full Screen)</DialogTitle>
-        </DialogHeader>
-        <div className="flex-1 overflow-auto bg-background">
+      <DialogContent className="max-w-[95vw] max-h-[95vh] w-[95vw] h-[95vh] flex flex-col p-0 border-border">
+        <div className="flex-1 overflow-auto ">
           {editorComponent}
         </div>
       </DialogContent>
     </Dialog>
   ) : (
-    <div className="h-full w-full bg-background">
+    <div className="h-full w-full ">
       {editorComponent}
     </div>
   )
