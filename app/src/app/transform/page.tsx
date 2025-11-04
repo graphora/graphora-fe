@@ -45,6 +45,8 @@ import { CommandPalette } from '@/components/command-center/command-palette'
 import { ChunkingConfig } from '@/components/chunking/chunking-config'
 import { toast } from 'sonner'
 import { useUserConfig } from '@/hooks/useUserConfig'
+import { extractQualityGateInsight, isQualityGateWarning, type QualityGateInsight } from './quality-gate'
+import { formatTransformFailureMessage } from './failure-utils'
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB
 const ACCEPTED_FILE_TYPES = {
@@ -152,6 +154,7 @@ function TransformPageContent() {
   const [qualityReviewCompleted, setQualityReviewCompleted] = useState(false)
   const [chunkingConfig, setChunkingConfig] = useState<any>(null)
   const [qualityFailure, setQualityFailure] = useState<QualityFailure | null>(null)
+  const [qualityWarning, setQualityWarning] = useState<QualityGateInsight | null>(null)
   const [qualityContextTransformId, setQualityContextTransformId] = useState<string | null>(null)
   const hasCustomChunking = Boolean(chunkingConfig)
   const formattedFileSize = file
@@ -342,6 +345,14 @@ function TransformPageContent() {
       return trimmed.length > 0 ? trimmed : 'An unexpected error occurred during transform.'
     }
 
+    // Log detailed error information for debugging
+    console.error('[Transform Failure]', {
+      fallbackMessage,
+      failureDetails,
+      sourceTransformId,
+      timestamp: new Date().toISOString()
+    })
+
     if (failureDetails) {
       setQualityFailure(failureDetails)
       setError(normalizedMessage(failureDetails.message))
@@ -354,13 +365,16 @@ function TransformPageContent() {
       fetchGraphSnapshot(snapshotId)
       setQualityContextTransformId(snapshotId)
     }
+    setQualityWarning(null)
     setIsProcessing(false)
     setProgress(0)
-    setTransformId(null)
+    // DON'T clear transform_id - keep it so user can return after re-login
+    // setTransformId(null)
     setShowQualityReview(false)
     setQualityReviewCompleted(false)
     restoreFallbackGraph()
-    clearTransformReference()
+    // DON'T clear URL reference - keep transform_id in URL for recovery
+    // clearTransformReference()
   }, [restoreFallbackGraph, clearTransformReference, fetchGraphSnapshot])
 
   const openChunkingConfig = useCallback(() => {
@@ -408,6 +422,18 @@ function TransformPageContent() {
   }, [sessionId, router])
 
   useEffect(() => {
+    if (!transformId) {
+      return
+    }
+    const params = new URLSearchParams(searchParamsString)
+    if (params.get('transform_id') === transformId) {
+      return
+    }
+    params.set('transform_id', transformId)
+    router.replace(`${pathname}?${params.toString()}`)
+  }, [transformId, searchParamsString, router, pathname])
+
+  useEffect(() => {
     const loadStateFromUrl = async () => {
       if (urlTransformId && !graphData && !isProcessing && !error) {
         debug('Loading state from URL transform_id:', urlTransformId)
@@ -418,7 +444,8 @@ function TransformPageContent() {
           
           if (!response.ok) {
             const errorData = await response.json()
-            
+
+            // Auth error - stop and redirect
             if (response.status === 403 && errorData.type === 'access_denied') {
               setError('You do not have permission to access this transform. Please check if you are signed in with the correct account.')
               setTransformId(null)
@@ -427,21 +454,18 @@ function TransformPageContent() {
               router.replace(`${pathname}?${newSearchParams.toString()}`)
               return
             }
-            
+
+            // 404 is terminal - transform truly doesn't exist
             if (response.status === 404) {
               handleTerminalFailure('Transform process not found for the provided ID.', undefined, urlTransformId)
               return
             }
 
-            // Handle timeout gracefully - transform might still be processing
-            if (response.status === 504 && errorData.type === 'timeout') {
-              debug('Initial status check timed out, assuming transform is in progress')
-              setIsProcessing(true)
-              setProgress(10)
-              return
-            }
-
-            handleTerminalFailure(errorData.message || 'Failed to fetch transform status', undefined, urlTransformId)
+            // For all other errors (500, 502, 503, 504, etc.), assume transform is in progress
+            // The backend might be slow, the transform might not be registered yet, or services restarting
+            debug(`Initial status check returned ${response.status}, assuming transform is in progress:`, errorData)
+            setIsProcessing(true)
+            setProgress(10)
             return
           }
 
@@ -453,19 +477,49 @@ function TransformPageContent() {
             setIsUploadPanelExpanded(false)
             debug('Transform already completed, loading graph data')
             await loadGraphData(urlTransformId)
+            const gateInsight = extractQualityGateInsight(data)
+            if (isQualityGateWarning(gateInsight)) {
+              setQualityWarning(gateInsight)
+              setQualityReviewCompleted(false)
+            } else {
+              setQualityWarning(null)
+            }
             // Check if quality validation is available
             setShowQualityReview(true)
           } else if (data.status === 'failed' || data.overall_status === 'failed' || data.current_stage === 'failed') {
+            // Log the full failure data for debugging
+            console.error('[URL Load Transform Failure]', {
+              urlTransformId,
+              status: data.status,
+              overall_status: data.overall_status,
+              current_stage: data.current_stage,
+              fullData: data,
+              timestamp: new Date().toISOString()
+            })
+
             const failureDetails = deriveQualityFailure(data)
             if (failureDetails?.lastSuccessfulGraphId && (!lastSuccessfulGraph || lastSuccessfulGraph.id !== failureDetails.lastSuccessfulGraphId)) {
               fetchGraphSnapshot(failureDetails.lastSuccessfulGraphId)
             }
-            const statusMessage =
-              failureDetails?.message ||
-              data.error_summary?.error_message ||
-              data.failure_details?.message ||
-              data.message ||
-              'Processing failed for this transform ID'
+            const gateInsight = extractQualityGateInsight(data)
+            if (isQualityGateWarning(gateInsight)) {
+              debug('Transform status reported quality gate warning; treating as completed with warnings')
+              setProgress(100)
+              setIsProcessing(false)
+              setIsUploadPanelExpanded(false)
+              if (!graphData || graphData.id !== urlTransformId) {
+                await loadGraphData(urlTransformId)
+              }
+              setQualityWarning(gateInsight)
+              setQualityFailure(null)
+              setQualityReviewCompleted(false)
+              setQualityContextTransformId(urlTransformId)
+              setTransformId(urlTransformId)
+              setShowQualityReview(true)
+              return
+            }
+            const statusMessage = failureDetails?.message || formatTransformFailureMessage(data)
+            console.error('[URL Load Formatted Failure Message]', statusMessage)
             handleTerminalFailure(statusMessage, failureDetails, urlTransformId)
           } else {
             setIsProcessing(true)
@@ -485,10 +539,12 @@ function TransformPageContent() {
     if (sessionId) {
       loadStateFromUrl()
     }
-  }, [urlTransformId, sessionId, graphData, lastSuccessfulGraph, isProcessing, error, loadGraphData, router, pathname, searchParamsString, deriveQualityFailure, fetchGraphSnapshot, handleTerminalFailure])
+  }, [urlTransformId, sessionId, graphData, lastSuccessfulGraph, isProcessing, error, loadGraphData, router, pathname, searchParamsString, deriveQualityFailure, fetchGraphSnapshot, handleTerminalFailure, extractQualityGateInsight, isQualityGateWarning])
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     setError(null)
+    setQualityWarning(null)
+    setQualityReviewCompleted(false)
     
     if (isProcessing) {
       setError('A transform process is currently running. Please wait for completion.')
@@ -550,9 +606,10 @@ function TransformPageContent() {
     setFileContent(null)
     setLastSuccessfulGraph(null)
     setQualityFailure(null)
+    setQualityWarning(null)
     const newSearchParams = new URLSearchParams(searchParamsString)
     newSearchParams.delete('transform_id')
-    router.push(`${pathname}?${newSearchParams.toString()}`)
+    router.replace(`${pathname}?${newSearchParams.toString()}`)
   }
 
   const handleConfirmNewUpload = () => {
@@ -610,7 +667,9 @@ function TransformPageContent() {
       setLastSuccessfulGraph(graphData)
     }
     setQualityFailure(null)
+    setQualityWarning(null)
     setQualityContextTransformId(null)
+    setQualityReviewCompleted(false)
     setIsProcessing(true)
     setError(null)
     setProgress(0)
@@ -652,7 +711,7 @@ function TransformPageContent() {
 
       const newSearchParams = new URLSearchParams(searchParamsString)
       newSearchParams.set('transform_id', newTransformId)
-      router.push(`${pathname}?${newSearchParams.toString()}`)
+      router.replace(`${pathname}?${newSearchParams.toString()}`)
 
     } catch (err) {
       console.error('Error processing file:', err)
@@ -685,6 +744,8 @@ function TransformPageContent() {
         if (!response.ok) {
           const errorData = await response.json()
 
+          // Only stop polling for auth errors (403)
+          // All other errors should be treated as temporary and retried
           if (response.status === 403 && errorData.type === 'access_denied') {
             debug('Access denied for transform, stopping status checks')
             setError('You do not have permission to access this transform')
@@ -695,21 +756,9 @@ function TransformPageContent() {
             return
           }
 
-          if (response.status === 404) {
-            debug('Transform not found, continuing processing')
-            return
-          }
-
-          // Handle timeout gracefully - don't treat as terminal failure
-          if (response.status === 504 && errorData.type === 'timeout') {
-            debug('Status check timed out, will retry on next interval')
-            return
-          }
-
-          handleTerminalFailure(errorData.message || 'Failed to fetch transform status', undefined, transformId)
-          if (statusInterval) {
-            clearInterval(statusInterval)
-          }
+          // For all other errors (404, 500, 502, 503, 504, etc.), log and retry
+          // The backend might be slow, restarting, or the transform might not be ready yet
+          debug(`Status check returned ${response.status}, will retry on next interval:`, errorData)
           return
         }
         
@@ -722,6 +771,13 @@ function TransformPageContent() {
           debug('Transform completed, loading graph data')
 
           await loadGraphData(transformId)
+          const gateInsight = extractQualityGateInsight(data)
+          if (isQualityGateWarning(gateInsight)) {
+            setQualityWarning(gateInsight)
+            setQualityReviewCompleted(false)
+          } else {
+            setQualityWarning(null)
+          }
           // Show quality review after transform completion
           setShowQualityReview(true)
           setQualityFailure(null)
@@ -730,16 +786,40 @@ function TransformPageContent() {
             clearInterval(statusInterval)
           }
         } else if (data.status === 'failed' || data.overall_status === 'failed' || data.current_stage === 'failed') {
+          // Log the full failure data for debugging
+          console.error('[Transform Status Failure]', {
+            transformId,
+            status: data.status,
+            overall_status: data.overall_status,
+            current_stage: data.current_stage,
+            fullData: data,
+            timestamp: new Date().toISOString()
+          })
+
           const failureDetails = deriveQualityFailure(data)
           if (failureDetails?.lastSuccessfulGraphId && (!lastSuccessfulGraph || lastSuccessfulGraph.id !== failureDetails.lastSuccessfulGraphId)) {
             fetchGraphSnapshot(failureDetails.lastSuccessfulGraphId)
           }
-          const statusMessage =
-            failureDetails?.message ||
-            data.error_summary?.error_message ||
-            data.failure_details?.message ||
-            data.message ||
-            'Processing failed'
+          const gateInsight = extractQualityGateInsight(data)
+          if (isQualityGateWarning(gateInsight)) {
+            debug('Transform status reported quality gate warning; treating as completed with warnings')
+            setProgress(100)
+            setIsProcessing(false)
+            setIsUploadPanelExpanded(false)
+            if (!graphData || graphData.id !== transformId) {
+              await loadGraphData(transformId)
+            }
+            setQualityWarning(gateInsight)
+            setQualityFailure(null)
+            setQualityReviewCompleted(false)
+            setShowQualityReview(true)
+            if (statusInterval) {
+              clearInterval(statusInterval)
+            }
+            return
+          }
+          const statusMessage = failureDetails?.message || formatTransformFailureMessage(data)
+          console.error('[Formatted Failure Message]', statusMessage)
           handleTerminalFailure(statusMessage, failureDetails, transformId)
           if (statusInterval) {
             clearInterval(statusInterval)
@@ -775,7 +855,7 @@ function TransformPageContent() {
         clearInterval(statusInterval)
       }
     }
-  }, [transformId, isProcessing, loadGraphData, deriveQualityFailure, graphData, lastSuccessfulGraph, fetchGraphSnapshot, handleTerminalFailure, router, pathname, searchParamsString])
+  }, [transformId, isProcessing, loadGraphData, deriveQualityFailure, graphData, lastSuccessfulGraph, fetchGraphSnapshot, handleTerminalFailure, router, pathname, searchParamsString, extractQualityGateInsight, isQualityGateWarning])
 
   const handleMergeConfirm = () => {
     setShowMergeConfirm(false)
@@ -795,6 +875,7 @@ function TransformPageContent() {
     debug('Quality approved for transform:', transformId)
     setShowQualityReview(false)
     setQualityReviewCompleted(true)
+    setQualityWarning(null)
     toast.success('Quality validation approved. Ready for merge.')
   }
 
@@ -808,6 +889,7 @@ function TransformPageContent() {
     setIsUploadPanelExpanded(true)
     setLastSuccessfulGraph(null)
     setQualityFailure(null)
+    setQualityWarning(null)
 
     const newSearchParams = new URLSearchParams(searchParamsString)
     newSearchParams.delete('transform_id')
@@ -835,6 +917,8 @@ function TransformPageContent() {
   const handleSampleFileSelect = async (sampleFile: typeof SAMPLE_FILES[0]) => {
     try {
       setError(null)
+      setQualityWarning(null)
+      setQualityReviewCompleted(false)
       
       const response = await fetch(sampleFile.path)
       if (!response.ok) {
@@ -918,6 +1002,7 @@ function TransformPageContent() {
     setProgress(0)
     setCurrentStep('')
     setQualityFailure(null)
+    setQualityWarning(null)
     setIsUploadPanelExpanded(true)
     setShowQualityReview(false)
     setQualityReviewCompleted(false)
@@ -1137,6 +1222,45 @@ function TransformPageContent() {
                   Update settings or upload a new document to re-enable transform.
                 </span>
               )}
+            </div>
+          </AlertDescription>
+        </Alert>
+      ) : qualityWarning ? (
+        <Alert variant="warning" className="m-4 border-warning/40 bg-warning/10">
+          <AlertDescription className="flex flex-col gap-3">
+            <div className="flex items-start gap-2">
+              <AlertTriangle className="h-5 w-5 mt-0.5" />
+              <div>
+                <p className="font-semibold text-foreground">Quality review recommended</p>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  {qualityWarning.message}
+                </p>
+              </div>
+            </div>
+
+            {qualityWarning.reasons && qualityWarning.reasons.length > 0 && (
+              <ul className="list-disc space-y-1 pl-6 text-xs text-muted-foreground/90">
+                {qualityWarning.reasons.map((reason, index) => (
+                  <li key={`${reason}-${index}`}>{reason}</li>
+                ))}
+              </ul>
+            )}
+
+            <div className="flex flex-wrap items-center gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  if (activeQualityTransformId) setShowQualityReview(true)
+                }}
+                disabled={!activeQualityTransformId}
+              >
+                <Database className="h-4 w-4 mr-1.5" />
+                Review quality insights
+              </Button>
+              <span className="text-xs text-muted-foreground/80">
+                Resolve or approve warnings before merging to production.
+              </span>
             </div>
           </AlertDescription>
         </Alert>
