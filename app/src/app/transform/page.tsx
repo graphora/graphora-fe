@@ -630,7 +630,12 @@ function TransformPageContent() {
               setProgress(100)
               setIsProcessing(false)
               setIsUploadPanelExpanded(false)
-              if (!graphData || graphData.id !== urlTransformId) {
+              // Load graph if not present or if ID doesn't match
+              // Type assertion needed because TypeScript's control flow analysis gets confused in this branch
+              const currentData = graphData as GraphData | null
+              const currentGraphId = currentData?.id
+              const needsGraphLoad = !currentData || currentGraphId !== urlTransformId
+              if (needsGraphLoad) {
                 await loadGraphData(urlTransformId)
               }
               setQualityWarning(gateInsight)
@@ -939,7 +944,12 @@ function TransformPageContent() {
             setProgress(100)
             setIsProcessing(false)
             setIsUploadPanelExpanded(false)
-            if (!graphData || graphData.id !== transformId) {
+            // Load graph if not present or if ID doesn't match
+            // Type assertion needed because TypeScript's control flow analysis gets confused in this branch
+            const currentData = graphData as GraphData | null
+            const currentGraphId = currentData?.id
+            const needsGraphLoad = !currentData || currentGraphId !== transformId
+            if (needsGraphLoad) {
               await loadGraphData(transformId)
             }
             setQualityWarning(gateInsight)
