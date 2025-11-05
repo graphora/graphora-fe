@@ -18,13 +18,23 @@ const debugWarn = (...args: unknown[]) => {
 
 // Types
 // Re-introducing PropertyDefinition
+export interface CanonicalizationOptions {
+  strip_punctuation?: boolean
+  remove_non_alnum?: boolean
+  strip_suffixes?: string[]
+  strip_company_suffixes?: boolean
+  preserve_case?: boolean
+  [key: string]: any
+}
+
 export interface PropertyDefinition {
-  type: string;
-  description?: string;
-  unique?: boolean;
-  required?: boolean;
-  index?: boolean;
-  [key: string]: any; // Allow other fields like in original YAML
+  type: string
+  description?: string
+  unique?: boolean
+  required?: boolean
+  index?: boolean
+  canonicalization?: CanonicalizationOptions
+  [key: string]: any // Allow other fields like in original YAML
 }
 
 export interface Node {

@@ -1,7 +1,11 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useGraphEditorStore, PropertyDefinition } from '@/lib/store/graph-editor-store'
+import {
+  useGraphEditorStore,
+  PropertyDefinition,
+  CanonicalizationOptions,
+} from '@/lib/store/graph-editor-store'
 import { 
   Dialog, 
   DialogContent, 
@@ -110,6 +114,67 @@ export function RelationshipEditor({ relationshipId, onClose }: RelationshipEdit
     }))
   }
 
+  const updateCanonicalizationForProperty = (
+    key: string,
+    updater: (current: CanonicalizationOptions) => CanonicalizationOptions | undefined,
+  ) => {
+    setProperties(prevProps => {
+      const existing = prevProps[key]
+      if (!existing) return prevProps
+
+      const current = existing.canonicalization ? { ...existing.canonicalization } : {}
+      const nextCanonical = updater(current)
+
+      const updated: PropertyDefinition = {
+        ...existing,
+      }
+
+      if (nextCanonical && Object.keys(nextCanonical).length > 0) {
+        updated.canonicalization = nextCanonical
+      } else {
+        delete updated.canonicalization
+      }
+
+      return {
+        ...prevProps,
+        [key]: updated,
+      }
+    })
+  }
+
+  const handleCanonicalizationToggle = (
+    key: string,
+    field: keyof CanonicalizationOptions,
+    checked: boolean,
+  ) => {
+    updateCanonicalizationForProperty(key, current => {
+      const next = { ...current }
+      if (checked) {
+        next[field] = true
+      } else {
+        delete next[field]
+      }
+      return next
+    })
+  }
+
+  const handleCanonicalizationSuffixes = (key: string, value: string) => {
+    const suffixes = value
+      .split(',')
+      .map(item => item.trim())
+      .filter(item => item.length > 0)
+
+    updateCanonicalizationForProperty(key, current => {
+      const next = { ...current }
+      if (suffixes.length > 0) {
+        next.strip_suffixes = suffixes
+      } else {
+        delete next.strip_suffixes
+      }
+      return next
+    })
+  }
+
   const handlePropertyKeyChange = (oldKey: string, newKey: string) => {
      if (newKey && newKey !== oldKey && !properties[newKey]) {
         setProperties(prevProps => {
@@ -145,6 +210,46 @@ export function RelationshipEditor({ relationshipId, onClose }: RelationshipEdit
         const { [key]: _, ...rest } = prevProps;
         return rest;
     });
+  }
+
+  const handleNewCanonicalizationToggle = (
+    field: keyof CanonicalizationOptions,
+    checked: boolean,
+  ) => {
+    setNewPropertyDef(prev => {
+      const current = prev.canonicalization ? { ...prev.canonicalization } : {}
+      if (checked) {
+        current[field] = true
+      } else {
+        delete current[field]
+      }
+      const nextCanonical = Object.keys(current).length > 0 ? current : undefined
+      return {
+        ...prev,
+        canonicalization: nextCanonical,
+      }
+    })
+  }
+
+  const handleNewCanonicalizationSuffixes = (value: string) => {
+    const suffixes = value
+      .split(',')
+      .map(item => item.trim())
+      .filter(item => item.length > 0)
+
+    setNewPropertyDef(prev => {
+      const current = prev.canonicalization ? { ...prev.canonicalization } : {}
+      if (suffixes.length > 0) {
+        current.strip_suffixes = suffixes
+      } else {
+        delete current.strip_suffixes
+      }
+      const nextCanonical = Object.keys(current).length > 0 ? current : undefined
+      return {
+        ...prev,
+        canonicalization: nextCanonical,
+      }
+    })
   }
   
   const getNodeInfo = () => {
@@ -251,28 +356,104 @@ export function RelationshipEditor({ relationshipId, onClose }: RelationshipEdit
                             className="col-span-3 min-h-[60px]"
                          />
                       </div>
-                       <div className="grid grid-cols-4 items-center gap-4">
-                          <span className="text-right text-sm font-medium text-gray-700 dark:text-gray-300">Attributes</span>
-                          <div className="col-span-3 flex flex-wrap gap-x-4 gap-y-2 items-center">
-                             <div className="flex items-center space-x-2">
-                                <Checkbox 
-                                   id={`unique-${key}-${relationshipId}`}
-                                   checked={propDef.unique || false} 
-                                   onCheckedChange={(checked) => handlePropertyChange(key, 'unique', !!checked)}
-                                />
-                                <Label htmlFor={`unique-${key}-${relationshipId}`} className="text-sm font-normal cursor-pointer">Unique</Label>
-                             </div>
-                             <div className="flex items-center space-x-2">
-                                <Checkbox 
-                                   id={`required-${key}-${relationshipId}`} 
-                                   checked={propDef.required || false} 
-                                   onCheckedChange={(checked) => handlePropertyChange(key, 'required', !!checked)}
-                                />
-                                <Label htmlFor={`required-${key}-${relationshipId}`} className="text-sm font-normal cursor-pointer">Required</Label>
-                             </div>
+                      <div className="grid grid-cols-4 items-center gap-4">
+                         <span className="text-right text-sm font-medium text-gray-700 dark:text-gray-300">Attributes</span>
+                         <div className="col-span-3 flex flex-wrap gap-x-4 gap-y-2 items-center">
+                            <div className="flex items-center space-x-2">
+                               <Checkbox 
+                                  id={`unique-${key}-${relationshipId}`}
+                                  checked={propDef.unique || false} 
+                                  onCheckedChange={(checked) => handlePropertyChange(key, 'unique', !!checked)}
+                               />
+                               <Label htmlFor={`unique-${key}-${relationshipId}`} className="text-sm font-normal cursor-pointer">Unique</Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                               <Checkbox 
+                                  id={`required-${key}-${relationshipId}`} 
+                                  checked={propDef.required || false} 
+                                  onCheckedChange={(checked) => handlePropertyChange(key, 'required', !!checked)}
+                               />
+                               <Label htmlFor={`required-${key}-${relationshipId}`} className="text-sm font-normal cursor-pointer">Required</Label>
+                            </div>
+                         </div>
+                      </div>
+                      <div className="grid grid-cols-4 items-start gap-4">
+                        <span className="text-right text-sm font-medium text-gray-700 dark:text-gray-300 pt-1">Canonicalisation</span>
+                        <div className="col-span-3 space-y-3 text-sm">
+                          <div className="flex flex-wrap gap-x-4 gap-y-2 items-center">
+                            <div className="flex items-center space-x-2">
+                              <Checkbox
+                                id={`canon-strip-punct-${key}-${relationshipId}`}
+                                checked={!!properties[key].canonicalization?.strip_punctuation}
+                                onCheckedChange={(checked) =>
+                                  handleCanonicalizationToggle(key, 'strip_punctuation', !!checked)
+                                }
+                              />
+                              <Label
+                                htmlFor={`canon-strip-punct-${key}-${relationshipId}`}
+                                className="text-sm font-normal cursor-pointer"
+                              >
+                                Strip punctuation
+                              </Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <Checkbox
+                                id={`canon-remove-alnum-${key}-${relationshipId}`}
+                                checked={!!properties[key].canonicalization?.remove_non_alnum}
+                                onCheckedChange={(checked) =>
+                                  handleCanonicalizationToggle(key, 'remove_non_alnum', !!checked)
+                                }
+                              />
+                              <Label
+                                htmlFor={`canon-remove-alnum-${key}-${relationshipId}`}
+                                className="text-sm font-normal cursor-pointer"
+                              >
+                                Remove non-alphanumeric
+                              </Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <Checkbox
+                                id={`canon-strip-company-${key}-${relationshipId}`}
+                                checked={!!properties[key].canonicalization?.strip_company_suffixes}
+                                onCheckedChange={(checked) =>
+                                  handleCanonicalizationToggle(key, 'strip_company_suffixes', !!checked)
+                                }
+                              />
+                              <Label
+                                htmlFor={`canon-strip-company-${key}-${relationshipId}`}
+                                className="text-sm font-normal cursor-pointer"
+                              >
+                                Strip common company suffixes
+                              </Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <Checkbox
+                                id={`canon-preserve-case-${key}-${relationshipId}`}
+                                checked={!!properties[key].canonicalization?.preserve_case}
+                                onCheckedChange={(checked) =>
+                                  handleCanonicalizationToggle(key, 'preserve_case', !!checked)
+                                }
+                              />
+                              <Label
+                                htmlFor={`canon-preserve-case-${key}-${relationshipId}`}
+                                className="text-sm font-normal cursor-pointer"
+                              >
+                                Preserve original case
+                              </Label>
+                            </div>
                           </div>
-                       </div>
-                   </div>
+                          <div className="grid grid-cols-5 items-center gap-2">
+                            <span className="text-muted-foreground col-span-2">Custom suffixes</span>
+                            <Input
+                              value={(properties[key].canonicalization?.strip_suffixes || []).join(', ')}
+                              onChange={(e) => handleCanonicalizationSuffixes(key, e.target.value)}
+                              placeholder="e.g. Inc, GmbH"
+                              className="col-span-3"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                  </div>
                 ))}
              </div>
           </div>
@@ -319,26 +500,102 @@ export function RelationshipEditor({ relationshipId, onClose }: RelationshipEdit
                       className="col-span-3 min-h-[60px]"
                    />
                 </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                   <span className="text-right text-sm font-medium text-gray-700 dark:text-gray-300">Attributes</span>
-                   <div className="col-span-3 flex flex-wrap gap-x-4 gap-y-2 items-center">
-                       <div className="flex items-center space-x-2">
-                          <Checkbox 
-                             id="new-rel-unique"
-                             checked={newPropertyDef.unique || false} 
-                             onCheckedChange={(checked) => setNewPropertyDef(prev => ({ ...prev, unique: !!checked }))}
-                          />
-                          <Label htmlFor="new-rel-unique" className="text-sm font-normal cursor-pointer">Unique</Label>
-                       </div>
-                       <div className="flex items-center space-x-2">
-                          <Checkbox 
-                             id="new-rel-required" 
-                             checked={newPropertyDef.required || false} 
-                             onCheckedChange={(checked) => setNewPropertyDef(prev => ({ ...prev, required: !!checked }))}
-                          />
-                          <Label htmlFor="new-rel-required" className="text-sm font-normal cursor-pointer">Required</Label>
-                       </div>
-                   </div>
+               <div className="grid grid-cols-4 items-center gap-4">
+                  <span className="text-right text-sm font-medium text-gray-700 dark:text-gray-300">Attributes</span>
+                  <div className="col-span-3 flex flex-wrap gap-x-4 gap-y-2 items-center">
+                      <div className="flex items-center space-x-2">
+                         <Checkbox 
+                            id="new-rel-unique"
+                            checked={newPropertyDef.unique || false} 
+                            onCheckedChange={(checked) => setNewPropertyDef(prev => ({ ...prev, unique: !!checked }))}
+                         />
+                         <Label htmlFor="new-rel-unique" className="text-sm font-normal cursor-pointer">Unique</Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                         <Checkbox 
+                            id="new-rel-required" 
+                            checked={newPropertyDef.required || false} 
+                            onCheckedChange={(checked) => setNewPropertyDef(prev => ({ ...prev, required: !!checked }))}
+                         />
+                         <Label htmlFor="new-rel-required" className="text-sm font-normal cursor-pointer">Required</Label>
+                      </div>
+                  </div>
+               </div>
+                <div className="grid grid-cols-4 items-start gap-4">
+                  <span className="text-right text-sm font-medium text-gray-700 dark:text-gray-300 pt-1">Canonicalisation</span>
+                  <div className="col-span-3 space-y-3 text-sm">
+                    <div className="flex flex-wrap gap-x-4 gap-y-2 items-center">
+                      <div className="flex items-center space-x-2">
+                        <Checkbox
+                          id="new-rel-canon-strip-punct"
+                          checked={!!newPropertyDef.canonicalization?.strip_punctuation}
+                          onCheckedChange={(checked) =>
+                            handleNewCanonicalizationToggle('strip_punctuation', !!checked)
+                          }
+                        />
+                        <Label
+                          htmlFor="new-rel-canon-strip-punct"
+                          className="text-sm font-normal cursor-pointer"
+                        >
+                          Strip punctuation
+                        </Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Checkbox
+                          id="new-rel-canon-remove-alnum"
+                          checked={!!newPropertyDef.canonicalization?.remove_non_alnum}
+                          onCheckedChange={(checked) =>
+                            handleNewCanonicalizationToggle('remove_non_alnum', !!checked)
+                          }
+                        />
+                        <Label
+                          htmlFor="new-rel-canon-remove-alnum"
+                          className="text-sm font-normal cursor-pointer"
+                        >
+                          Remove non-alphanumeric
+                        </Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Checkbox
+                          id="new-rel-canon-strip-company"
+                          checked={!!newPropertyDef.canonicalization?.strip_company_suffixes}
+                          onCheckedChange={(checked) =>
+                            handleNewCanonicalizationToggle('strip_company_suffixes', !!checked)
+                          }
+                        />
+                        <Label
+                          htmlFor="new-rel-canon-strip-company"
+                          className="text-sm font-normal cursor-pointer"
+                        >
+                          Strip common company suffixes
+                        </Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Checkbox
+                          id="new-rel-canon-preserve-case"
+                          checked={!!newPropertyDef.canonicalization?.preserve_case}
+                          onCheckedChange={(checked) =>
+                            handleNewCanonicalizationToggle('preserve_case', !!checked)
+                          }
+                        />
+                        <Label
+                          htmlFor="new-rel-canon-preserve-case"
+                          className="text-sm font-normal cursor-pointer"
+                        >
+                          Preserve original case
+                        </Label>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-5 items-center gap-2">
+                      <span className="text-muted-foreground col-span-2">Custom suffixes</span>
+                      <Input
+                        value={(newPropertyDef.canonicalization?.strip_suffixes || []).join(', ')}
+                        onChange={(e) => handleNewCanonicalizationSuffixes(e.target.value)}
+                        placeholder="e.g. Inc, GmbH"
+                        className="col-span-3"
+                      />
+                    </div>
+                  </div>
                 </div>
                  <div className="flex justify-end mt-2">
                     <Button

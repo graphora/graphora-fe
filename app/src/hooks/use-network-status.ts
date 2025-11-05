@@ -43,5 +43,9 @@ export function useNetworkStatus() {
     }
   }, [wasOffline])
 
-  return { isOnline, wasOffline }
+  const dismissRestored = () => {
+    setWasOffline(false)
+  }
+
+  return { isOnline, wasOffline, dismissRestored }
 }

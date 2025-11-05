@@ -15,7 +15,7 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
-import { type QualityMetrics } from '@/types/quality'
+import { type QualityMetrics, type QualitySeverity } from '@/types/quality'
 import { cn } from '@/lib/utils'
 
 interface QualityMetricsPanelProps {
@@ -49,6 +49,30 @@ export function QualityMetricsPanel({
     if (coverage >= 60) return 'text-warning';
     return 'text-destructive';
   };
+
+  const propertyFillRates = Object.entries(metrics.property_fill_rates_by_entity ?? {}).sort(
+    (a, b) => (b[1] ?? 0) - (a[1] ?? 0)
+  );
+
+  const severityMeta: Record<QualitySeverity, { label: string; badge: string; dot: string }> = {
+    error: {
+      label: 'Errors',
+      badge: 'border-destructive/40 bg-destructive/10 text-destructive',
+      dot: 'bg-destructive',
+    },
+    warning: {
+      label: 'Warnings',
+      badge: 'border-warning/40 bg-warning/10 text-warning',
+      dot: 'bg-warning',
+    },
+    info: {
+      label: 'Notes',
+      badge: 'border-info/30 bg-info/10 text-info',
+      dot: 'bg-info',
+    },
+  }
+
+  const severityOrder: QualitySeverity[] = ['error', 'warning', 'info']
 
   return (
     <div className={cn('space-y-8', className)}>
@@ -249,6 +273,29 @@ export function QualityMetricsPanel({
             <p className="text-xs text-muted-foreground text-center">
               Higher rates indicate better data quality and extraction completeness
             </p>
+            {propertyFillRates.length > 0 && (
+              <div className="pt-5 border-t border-border/40 space-y-3">
+                <p className="text-body-xs font-medium text-muted-foreground uppercase tracking-wide">
+                  Per-entity property fill rate
+                </p>
+                <div className="space-y-3">
+                  {propertyFillRates.slice(0, 5).map(([entityType, ratio]) => {
+                    const percent = Math.round((ratio ?? 0) * 100);
+                    return (
+                      <div key={entityType} className="space-y-1">
+                        <div className="flex items-center justify-between">
+                          <span className="text-body-sm font-medium">{entityType}</span>
+                          <span className={`text-body-sm font-semibold ${getCoverageColor(percent)}`}>
+                            {percent}%
+                          </span>
+                        </div>
+                        <Progress value={percent} className="h-2" />
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -296,31 +343,61 @@ export function QualityMetricsPanel({
               Quality breakdown by entity type and metric
             </p>
           </div>
-          <div className="space-y-4">
-                {Object.entries(entityQualitySummary).map(([entityType, summary]) => (
-                <div key={entityType} className="border border-border/60 rounded-[var(--border-radius)] p-4 bg-white/5 backdrop-blur-sm">
-                  <h4 className="text-heading-sm font-semibold mb-3">{entityType}</h4>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-content text-body-sm">
-                    {Object.entries(summary).map(([metric, value]) => (
-                      <div key={metric} className="text-center">
-                        <div className="font-semibold text-heading">
-                          {typeof value === 'number' ? 
-                            (metric.includes('rate') || metric.includes('confidence') ? 
-                              `${Math.round(value * 100)}%` : 
-                              Math.round(value)
-                            ) : 
-                            value
-                          }
-                        </div>
-                        <div className="text-muted-foreground text-body-xs capitalize">
-                          {metric.replace('_', ' ')}
-                        </div>
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {Object.entries(entityQualitySummary).map(([entityType, summary]) => {
+              const severityCounts: Record<QualitySeverity, number> = {
+                error: Number(summary.error ?? 0),
+                warning: Number(summary.warning ?? 0),
+                info: Number(summary.info ?? 0),
+              }
+              const total = Object.values(severityCounts).reduce((acc, value) => acc + value, 0)
+              const hasFindings = total > 0
+
+              return (
+                <div
+                  key={entityType}
+                  className="rounded-2xl border border-border/60 bg-background/40 p-5 shadow-sm"
+                >
+                  <div className="flex items-center justify-between gap-3 mb-4">
+                    <div>
+                      <h4 className="text-heading-sm font-semibold text-foreground">{entityType}</h4>
+                      <p className="text-body-xs text-muted-foreground">
+                        {hasFindings ? 'Violations by severity' : 'No violations detected'}
+                      </p>
+                    </div>
+                    {hasFindings && (
+                      <div className="text-heading font-semibold text-foreground">
+                        {total}
                       </div>
-                    ))}
+                    )}
                   </div>
+                  {hasFindings ? (
+                    <div className="flex flex-wrap gap-2">
+                      {severityOrder.map((severity) => {
+                        const count = severityCounts[severity]
+                        if (!count) return null
+                        const meta = severityMeta[severity]
+                        return (
+                          <Badge
+                            key={`${entityType}-${severity}`}
+                            variant="outline"
+                            className={cn('gap-2 px-3 py-1 text-body-xs font-medium', meta.badge)}
+                          >
+                            <span className={cn('h-2 w-2 rounded-full', meta.dot)} />
+                            {count} {meta.label}
+                          </Badge>
+                        )
+                      })}
+                    </div>
+                  ) : (
+                    <div className="rounded-xl border border-border/50 bg-muted/30 px-3 py-2 text-body-sm text-muted-foreground">
+                      All checks passed for this entity type.
+                    </div>
+                  )}
                 </div>
-              ))}
-            </div>
+              )
+            })}
+          </div>
         </div>
       )}
     </div>

@@ -37,6 +37,7 @@ export interface QualityMetrics {
   confidence_scores_by_type: Record<string, number>;
   property_completeness_rate: number;
   entity_type_coverage: Record<string, number>;
+  property_fill_rates_by_entity?: Record<string, number>;
 }
 
 export interface QualityResults {
@@ -50,6 +51,9 @@ export interface QualityResults {
   violations_by_severity: Record<QualitySeverity, number>;
   violations_by_entity_type: Record<string, number>;
   entity_quality_summary: Record<string, Record<string, number>>;
+  quality_gate_status?: string;
+  quality_gate_reasons?: string[];
+  quality_gate_message?: string;
   validation_timestamp: string;
   validation_duration_ms: number;
   rules_applied: number;
