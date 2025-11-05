@@ -50,6 +50,10 @@ export function QualityMetricsPanel({
     return 'text-destructive';
   };
 
+  const propertyFillRates = Object.entries(metrics.property_fill_rates_by_entity ?? {}).sort(
+    (a, b) => (b[1] ?? 0) - (a[1] ?? 0)
+  );
+
   return (
     <div className={cn('space-y-8', className)}>
       {/* Overview Cards */}
@@ -249,6 +253,29 @@ export function QualityMetricsPanel({
             <p className="text-xs text-muted-foreground text-center">
               Higher rates indicate better data quality and extraction completeness
             </p>
+            {propertyFillRates.length > 0 && (
+              <div className="pt-5 border-t border-border/40 space-y-3">
+                <p className="text-body-xs font-medium text-muted-foreground uppercase tracking-wide">
+                  Per-entity property fill rate
+                </p>
+                <div className="space-y-3">
+                  {propertyFillRates.slice(0, 5).map(([entityType, ratio]) => {
+                    const percent = Math.round((ratio ?? 0) * 100);
+                    return (
+                      <div key={entityType} className="space-y-1">
+                        <div className="flex items-center justify-between">
+                          <span className="text-body-sm font-medium">{entityType}</span>
+                          <span className={`text-body-sm font-semibold ${getCoverageColor(percent)}`}>
+                            {percent}%
+                          </span>
+                        </div>
+                        <Progress value={percent} className="h-2" />
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
         </div>
 

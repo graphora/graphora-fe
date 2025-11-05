@@ -162,6 +162,77 @@ export function QualityDashboard({
     );
   }
 
+  const gateStatusConfig = {
+    pass: {
+      label: 'Pass',
+      title: 'Quality gate passed',
+      description: 'All configured quality thresholds were satisfied.',
+      tone: 'success',
+      icon: CheckCircle,
+    },
+    warn: {
+      label: 'Warning',
+      title: 'Quality gate warnings detected',
+      description: 'Review the highlighted warnings before proceeding to merge.',
+      tone: 'warning',
+      icon: AlertTriangle,
+    },
+    fail: {
+      label: 'Failed',
+      title: 'Quality gate failed',
+      description: 'Blocking quality issues were detected. Resolve them before retrying.',
+      tone: 'destructive',
+      icon: XCircle,
+    },
+  } as const;
+
+  type GateStatusKey = keyof typeof gateStatusConfig;
+
+  const normalizeGateStatus = (status: string): GateStatusKey => {
+    const normalized = status.trim().toLowerCase();
+    if (normalized === 'warning') return 'warn';
+    if (normalized === 'warn' || normalized === 'fail' || normalized === 'pass') {
+      return normalized as GateStatusKey;
+    }
+    return 'pass';
+  };
+
+  const gateStatusRaw = (qualityResults.quality_gate_status ?? 'pass').toString();
+  const gateStatusKey = normalizeGateStatus(gateStatusRaw);
+  const gateMeta = gateStatusConfig[gateStatusKey];
+  const GateIcon = gateMeta.icon;
+
+  const toneStyles = {
+    success: {
+      iconBg: 'bg-success/10',
+      iconColor: 'text-success',
+      badge: 'border-success/30 text-success bg-success/15',
+      alert: 'border-success/30 bg-success/10',
+    },
+    warning: {
+      iconBg: 'bg-warning/15',
+      iconColor: 'text-warning',
+      badge: 'border-warning/30 text-warning bg-warning/15',
+      alert: 'border-warning/40 bg-warning/10',
+    },
+    destructive: {
+      iconBg: 'bg-destructive/15',
+      iconColor: 'text-destructive',
+      badge: 'border-destructive/30 text-destructive bg-destructive/15',
+      alert: 'border-destructive/40 bg-destructive/10',
+    },
+  } as const;
+
+  const toneStyle = toneStyles[gateMeta.tone as keyof typeof toneStyles];
+  const gateReasons = (qualityResults.quality_gate_reasons ?? [])
+    .map((reason) => (typeof reason === 'string' ? reason.trim() : ''))
+    .filter((reason) => reason.length > 0);
+  const gateMessage = qualityResults.quality_gate_message?.trim() || gateMeta.description;
+  const headerDescription = gateStatusKey === 'pass'
+    ? 'Data quality analysis for your extracted content'
+    : gateMessage;
+  const showGateAlert = gateStatusKey !== 'pass' || gateReasons.length > 0;
+
   const getSeverityIcon = (severity: string) => {
     switch (severity) {
       case 'error':
@@ -189,13 +260,21 @@ export function QualityDashboard({
       {/* Header with refresh button */}
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-4">
-          <div className="w-12 h-12 bg-success/10 rounded-2xl flex items-center justify-center">
-            <CheckCircle className="h-6 w-6 text-success" />
+          <div className={cn('w-12 h-12 rounded-2xl flex items-center justify-center', toneStyle.iconBg)}>
+            <GateIcon className={cn('h-6 w-6', toneStyle.iconColor)} />
           </div>
-          <div>
-            <h3 className="text-2xl font-semibold text-foreground tracking-tight">Validation Complete</h3>
-            <p className="text-sm text-muted-foreground mt-1">
-              Data quality analysis for your extracted content
+          <div className="space-y-2">
+            <div className="flex flex-wrap items-center gap-3">
+              <h3 className="text-2xl font-semibold text-foreground tracking-tight">{gateMeta.title}</h3>
+              <Badge
+                variant="outline"
+                className={cn('uppercase tracking-wide text-[11px] px-3 py-1 border', toneStyle.badge)}
+              >
+                Quality Gate · {gateMeta.label}
+              </Badge>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              {headerDescription}
             </p>
           </div>
         </div>
@@ -209,6 +288,25 @@ export function QualityDashboard({
           Refresh
         </Button>
       </div>
+
+      {showGateAlert && (
+        <Alert
+          variant={gateStatusKey === 'fail' ? 'destructive' : 'default'}
+          className={cn('border rounded-2xl px-5 py-4 flex items-start gap-3', toneStyle.alert)}
+        >
+          <GateIcon className={cn('h-5 w-5 mt-0.5 flex-shrink-0', toneStyle.iconColor)} />
+          <AlertDescription className="space-y-2">
+            <p className="text-sm text-foreground font-medium leading-relaxed">{gateMessage}</p>
+            {gateReasons.length > 0 && (
+              <ul className="list-disc list-inside text-sm text-muted-foreground space-y-1">
+                {gateReasons.map((reason, index) => (
+                  <li key={`${reason}-${index}`}>{reason}</li>
+                ))}
+              </ul>
+            )}
+          </AlertDescription>
+        </Alert>
+      )}
 
       {/* Quality Score Card */}
       <QualityScoreCard qualityResults={qualityResults} />
