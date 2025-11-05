@@ -24,6 +24,7 @@ import { QualityActionButtons } from './quality-action-buttons'
 import { type QualityResults, type QualityViolation } from '@/types/quality'
 import { qualityApi } from '@/lib/quality-api'
 import { cn } from '@/lib/utils'
+import { toast } from 'sonner'
 
 interface QualityDashboardProps {
   transformId: string;
@@ -44,6 +45,7 @@ export function QualityDashboard({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [exportingCsv, setExportingCsv] = useState(false);
 
   const fetchQualityResults = useCallback(async (showRefreshIndicator = false) => {
     if (!userId) {
@@ -101,6 +103,25 @@ export function QualityDashboard({
       setError(err instanceof Error ? err.message : 'Failed to reject quality results');
     }
   };
+
+  const handleExportCsv = useCallback(async () => {
+    if (!qualityResults) {
+      return;
+    }
+
+    try {
+      setExportingCsv(true);
+      await qualityApi.exportViolationsCsv(qualityResults.transform_id);
+      toast.success('Violations CSV export started');
+    } catch (err) {
+      const rawMessage = err instanceof Error ? err.message : 'Failed to export quality violations';
+      console.error('Failed to export quality violations:', err);
+      const sanitised = rawMessage.replace(/<[^>]*>/g, '').trim();
+      toast.error(sanitised || 'Failed to export quality violations');
+    } finally {
+      setExportingCsv(false);
+    }
+  }, [qualityResults]);
 
   useEffect(() => {
     if (transformId) {
@@ -278,15 +299,26 @@ export function QualityDashboard({
             </p>
           </div>
         </div>
-        <Button
-          onClick={() => fetchQualityResults(true)}
-          variant="outline"
-          size="sm"
-          disabled={refreshing}
-        >
-          <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
-          Refresh
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            onClick={handleExportCsv}
+            variant="outline"
+            size="sm"
+            disabled={exportingCsv}
+          >
+            <FileText className={`h-4 w-4 mr-2 ${exportingCsv ? 'animate-pulse' : ''}`} />
+            Export CSV
+          </Button>
+          <Button
+            onClick={() => fetchQualityResults(true)}
+            variant="outline"
+            size="sm"
+            disabled={refreshing}
+          >
+            <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+            Refresh
+          </Button>
+        </div>
       </div>
 
       {showGateAlert && (

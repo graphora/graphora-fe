@@ -119,6 +119,47 @@ export class QualityApiClient {
   }
 
   /**
+   * Download quality violations as CSV for the given transform.
+   */
+  async exportViolationsCsv(transformId: string): Promise<void> {
+    const endpoint = `${this.baseUrl}/export/${transformId}`
+
+    const response = await fetch(endpoint, {
+      method: 'GET',
+      headers: {
+        Accept: 'text/csv',
+      },
+      credentials: 'include',
+    })
+
+    if (!response.ok) {
+      let message = ''
+      try {
+        const payload = await response.clone().json()
+        message = payload?.detail || payload?.error || ''
+      } catch (jsonErr) {
+        message = await response.text().catch(() => '')
+      }
+      throw new Error(message || `Failed to export quality violations (HTTP ${response.status})`)
+    }
+
+    const blob = await response.blob()
+    const url = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    const disposition = response.headers.get('content-disposition') || ''
+    const filenameMatch = disposition.match(/filename="?([^";]+)"?/i)
+    const filename = filenameMatch?.[1] ?? `quality-violations-${transformId}.csv`
+
+    link.href = url
+    link.download = filename
+    link.style.display = 'none'
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    window.URL.revokeObjectURL(url)
+  }
+
+  /**
    * Check if quality API is available
    */
   async healthCheck(): Promise<QualityHealthCheck> {
