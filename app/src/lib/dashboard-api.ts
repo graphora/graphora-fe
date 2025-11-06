@@ -1,4 +1,9 @@
-import { RecentRunsResponse } from '@/types/dashboard'
+import {
+  DashboardPerformance,
+  DashboardQuality,
+  DashboardSummary,
+  RecentRunsResponse,
+} from '@/types/dashboard'
 
 class DashboardApiClient {
   private static instance: DashboardApiClient
@@ -42,6 +47,33 @@ class DashboardApiClient {
     if (params?.days) search.set('days', String(params.days))
     const query = search.toString()
     return this.request<RecentRunsResponse>(`/runs${query ? `?${query}` : ''}`)
+  }
+
+  getSummary(params?: { days?: number; max_runs?: number }): Promise<DashboardSummary> {
+    const search = new URLSearchParams()
+    if (params?.days) search.set('days', String(params.days))
+    if (params?.max_runs) search.set('max_runs', String(params.max_runs))
+    const query = search.toString()
+    return this.request<DashboardSummary>(`/summary${query ? `?${query}` : ''}`)
+  }
+
+  getPerformance(params?: {
+    days?: number
+    max_runs?: number
+  }): Promise<DashboardPerformance> {
+    const search = new URLSearchParams()
+    if (params?.days) search.set('days', String(params.days))
+    if (params?.max_runs) search.set('max_runs', String(params.max_runs))
+    const query = search.toString()
+    return this.request<DashboardPerformance>(`/performance${query ? `?${query}` : ''}`)
+  }
+
+  getQuality(params?: { days?: number; max_runs?: number }): Promise<DashboardQuality> {
+    const search = new URLSearchParams()
+    if (params?.days) search.set('days', String(params.days))
+    if (params?.max_runs) search.set('max_runs', String(params.max_runs))
+    const query = search.toString()
+    return this.request<DashboardQuality>(`/quality${query ? `?${query}` : ''}`)
   }
 }
 

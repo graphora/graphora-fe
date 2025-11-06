@@ -14,7 +14,12 @@ import { StatTile } from '@/components/ui/stat-tile'
 import { cn } from '@/lib/utils'
 import { useUserConfig } from '@/hooks/useUserConfig'
 import { dashboardApi } from '@/lib/dashboard-api'
-import type { TransformRunSummary } from '@/types/dashboard'
+import type {
+  DashboardPerformance,
+  DashboardQuality,
+  DashboardSummary,
+  TransformRunSummary,
+} from '@/types/dashboard'
 import {
   dashboardDateFormatter,
   formatBytes,
@@ -157,6 +162,18 @@ export default function DashboardPage() {
   const [runsLoading, setRunsLoading] = useState(true)
   const [runsError, setRunsError] = useState<string | null>(null)
 
+  const [summary, setSummary] = useState<DashboardSummary | null>(null)
+  const [summaryLoading, setSummaryLoading] = useState(true)
+  const [summaryError, setSummaryError] = useState<string | null>(null)
+
+  const [performance, setPerformance] = useState<DashboardPerformance | null>(null)
+  const [performanceLoading, setPerformanceLoading] = useState(true)
+  const [performanceError, setPerformanceError] = useState<string | null>(null)
+
+  const [quality, setQuality] = useState<DashboardQuality | null>(null)
+  const [qualityLoading, setQualityLoading] = useState(true)
+  const [qualityError, setQualityError] = useState<string | null>(null)
+
   const [conflictsSummary, setConflictsSummary] = useState<ConflictsSummaryResponse | null>(
     null,
   )
@@ -186,6 +203,87 @@ export default function DashboardPage() {
     }
 
     loadRuns()
+    return () => {
+      active = false
+    }
+  }, [])
+
+  useEffect(() => {
+    let active = true
+
+    const loadSummary = async () => {
+      try {
+        setSummaryLoading(true)
+        const data = await dashboardApi.getSummary({ days: 14, max_runs: 200 })
+        if (!active) return
+        setSummary(data)
+        setSummaryError(null)
+      } catch (error) {
+        if (active) {
+          const message = error instanceof Error ? error.message : null
+          setSummaryError(normaliseErrorMessage(message))
+          setSummary(null)
+        }
+      } finally {
+        if (active) setSummaryLoading(false)
+      }
+    }
+
+    loadSummary()
+    return () => {
+      active = false
+    }
+  }, [])
+
+  useEffect(() => {
+    let active = true
+
+    const loadPerformance = async () => {
+      try {
+        setPerformanceLoading(true)
+        const data = await dashboardApi.getPerformance({ days: 14, max_runs: 200 })
+        if (!active) return
+        setPerformance(data)
+        setPerformanceError(null)
+      } catch (error) {
+        if (active) {
+          const message = error instanceof Error ? error.message : null
+          setPerformanceError(normaliseErrorMessage(message))
+          setPerformance(null)
+        }
+      } finally {
+        if (active) setPerformanceLoading(false)
+      }
+    }
+
+    loadPerformance()
+    return () => {
+      active = false
+    }
+  }, [])
+
+  useEffect(() => {
+    let active = true
+
+    const loadQuality = async () => {
+      try {
+        setQualityLoading(true)
+        const data = await dashboardApi.getQuality({ days: 14, max_runs: 200 })
+        if (!active) return
+        setQuality(data)
+        setQualityError(null)
+      } catch (error) {
+        if (active) {
+          const message = error instanceof Error ? error.message : null
+          setQualityError(normaliseErrorMessage(message))
+          setQuality(null)
+        }
+      } finally {
+        if (active) setQualityLoading(false)
+      }
+    }
+
+    loadQuality()
     return () => {
       active = false
     }
@@ -353,6 +451,57 @@ export default function DashboardPage() {
     }
   }, [runs, runsWindow])
 
+  const metrics = useMemo(() => {
+    const totalRuns = summary?.total_runs ?? derived.totalRuns
+    const avgScore = quality?.average_score ?? derived.avgScore
+    const passCount = quality?.pass_count ?? summary?.pass_count ?? derived.passCount
+    const warnCount = quality?.warn_count ?? summary?.warn_count ?? derived.warnCount
+    const failCount = quality?.fail_count ?? summary?.fail_count ?? derived.failCount
+    const needsAttention = summary?.requires_review_count ?? derived.reviewQueue.length
+
+    const averageDurationSeconds = summary?.average_duration_ms
+      ? summary.average_duration_ms / 1000
+      : derived.averageDuration
+
+    const p50DurationSeconds = summary?.p50_duration_ms
+      ? summary.p50_duration_ms / 1000
+      : derived.p50Duration
+
+    const p95DurationSeconds = summary?.p95_duration_ms
+      ? summary.p95_duration_ms / 1000
+      : derived.p95Duration
+
+    const runsPerDay = summary?.runs_per_day ?? derived.runsPerDay
+    const totalTokens = summary?.total_tokens ?? derived.llmTotals.totalTokens
+    const totalCalls = summary?.total_llm_calls ?? derived.llmTotals.totalCalls
+    const totalCost =
+      summary?.total_estimated_cost_usd ?? derived.llmTotals.totalCost ?? null
+    const avgTokensPerRun = summary?.average_tokens_per_run ?? derived.avgTokensPerRun
+
+    const recentReasons =
+      quality?.recent_reasons?.map((item) =>
+        item.count > 1 ? `${item.reason} (${item.count})` : item.reason,
+      ) ?? summary?.recent_gate_reasons ?? derived.recentQualityReasons
+
+    return {
+      totalRuns,
+      avgScore,
+      passCount,
+      warnCount,
+      failCount,
+      needsAttention,
+      averageDurationSeconds,
+      p50DurationSeconds,
+      p95DurationSeconds,
+      runsPerDay,
+      totalTokens,
+      totalCalls,
+      totalCost,
+      avgTokensPerRun,
+      recentReasons,
+    }
+  }, [summary, quality, derived])
+
   const handleRunWorkflow = () => {
     if (checkConfigBeforeWorkflow()) {
       window.location.href = '/ontology'
@@ -421,38 +570,47 @@ export default function DashboardPage() {
                 <h2 id="kpi-heading" className="text-heading-sm font-semibold">
                   Pipeline KPIs {windowStart && windowEnd ? `(${windowStart} → ${windowEnd})` : ''}
                 </h2>
-                {runsError && <Badge variant="destructive">{runsError}</Badge>}
+                {(runsError || summaryError) && (
+                  <Badge variant="destructive">{runsError ?? summaryError}</Badge>
+                )}
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
                 <StatTile
-                  value={formatNumber(derived.totalRuns)}
+                  value={formatNumber(metrics.totalRuns)}
                   label="Transforms"
                   description="Runs processed in window"
                   trend={<TrendIcon icon={Activity} tone="default" />}
                 />
                 <StatTile
-                  value={derived.avgScore !== null ? derived.avgScore.toFixed(1) : '—'}
+                  value={metrics.avgScore !== null ? metrics.avgScore.toFixed(1) : '—'}
                   label="Avg Quality Score"
-                  description={`Pass ${derived.passCount} · Warn ${derived.warnCount} · Fail ${derived.failCount}`}
+                  description={`Pass ${metrics.passCount} · Warn ${metrics.warnCount} · Fail ${metrics.failCount}`}
                   trend={<TrendIcon icon={Gauge} tone="success" />}
                 />
                 <StatTile
                   value={
-                    derived.p50Duration !== null
-                      ? `${formatSeconds(derived.p50Duration)} p50`
+                    metrics.p50DurationSeconds !== null
+                      ? `${formatSeconds(metrics.p50DurationSeconds)} p50`
                       : '—'
                   }
                   label="Pipeline Duration"
                   description={
-                    derived.p95Duration !== null ? `${formatSeconds(derived.p95Duration)} p95` : 'No duration data'
+                    metrics.p95DurationSeconds !== null
+                      ? `${formatSeconds(metrics.p95DurationSeconds)} p95`
+                      : 'No duration data'
                   }
                   trend={<TrendIcon icon={Clock} tone="default" />}
                 />
                 <StatTile
-                  value={formatNumber(derived.reviewQueue.length)}
+                  value={formatNumber(metrics.needsAttention)}
                   label="Needs Attention"
                   description="Quality review or failed runs"
-                  trend={<TrendIcon icon={AlertCircle} tone={derived.reviewQueue.length ? 'warning' : 'success'} />}
+                  trend={
+                    <TrendIcon
+                      icon={AlertCircle}
+                      tone={metrics.needsAttention ? 'warning' : 'success'}
+                    />
+                  }
                 />
               </div>
             </section>
@@ -576,7 +734,13 @@ export default function DashboardPage() {
                       Latency, throughput, and token consumption for the selected window
                     </p>
                   </div>
-                  <Badge variant="outline">{derived.runsPerDay ? `${derived.runsPerDay} runs/day` : '—'}</Badge>
+                  {performanceError ? (
+                    <Badge variant="destructive">{performanceError}</Badge>
+                  ) : (
+                    <Badge variant="outline">
+                      {metrics.runsPerDay ? `${metrics.runsPerDay} runs/day` : '—'}
+                    </Badge>
+                  )}
                 </CardHeader>
                 <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="rounded-lg border border-border/40 bg-background/70 p-4 space-y-3">
@@ -587,25 +751,29 @@ export default function DashboardPage() {
                       <div>
                         <dt>Average</dt>
                         <dd className="text-body-sm font-medium text-foreground">
-                          {derived.averageDuration !== null ? formatSeconds(derived.averageDuration) : '—'}
+                          {metrics.averageDurationSeconds !== null
+                            ? formatSeconds(metrics.averageDurationSeconds)
+                            : '—'}
                         </dd>
                       </div>
                       <div>
                         <dt>P95</dt>
                         <dd className="text-body-sm font-medium text-foreground">
-                          {derived.p95Duration !== null ? formatSeconds(derived.p95Duration) : '—'}
+                          {metrics.p95DurationSeconds !== null
+                            ? formatSeconds(metrics.p95DurationSeconds)
+                            : '—'}
                         </dd>
                       </div>
                       <div>
                         <dt>Total runs</dt>
                         <dd className="text-body-sm font-medium text-foreground">
-                          {formatNumber(derived.totalRuns)}
+                          {formatNumber(metrics.totalRuns)}
                         </dd>
                       </div>
                       <div>
                         <dt>Runs/day</dt>
                         <dd className="text-body-sm font-medium text-foreground">
-                          {derived.runsPerDay ?? '—'}
+                          {metrics.runsPerDay ?? '—'}
                         </dd>
                       </div>
                     </dl>
@@ -619,25 +787,25 @@ export default function DashboardPage() {
                       <div>
                         <dt>Total tokens</dt>
                         <dd className="text-body-sm font-medium text-foreground">
-                          {derived.llmTotals.totalTokens ? formatNumber(derived.llmTotals.totalTokens) : '—'}
+                          {metrics.totalTokens ? formatNumber(metrics.totalTokens) : '—'}
                         </dd>
                       </div>
                       <div>
                         <dt>Total calls</dt>
                         <dd className="text-body-sm font-medium text-foreground">
-                          {derived.llmTotals.totalCalls ? formatNumber(derived.llmTotals.totalCalls) : '—'}
+                          {metrics.totalCalls ? formatNumber(metrics.totalCalls) : '—'}
                         </dd>
                       </div>
                       <div>
                         <dt>Avg tokens/run</dt>
                         <dd className="text-body-sm font-medium text-foreground">
-                          {derived.avgTokensPerRun ? formatNumber(derived.avgTokensPerRun) : '—'}
+                          {metrics.avgTokensPerRun ? formatNumber(metrics.avgTokensPerRun) : '—'}
                         </dd>
                       </div>
                       <div>
                         <dt>Estimated cost</dt>
                         <dd className="text-body-sm font-medium text-foreground">
-                          {derived.llmTotals.totalCost ? `$${derived.llmTotals.totalCost.toFixed(4)}` : '—'}
+                          {metrics.totalCost ? `$${metrics.totalCost.toFixed(4)}` : '—'}
                         </dd>
                       </div>
                     </dl>
@@ -660,18 +828,21 @@ export default function DashboardPage() {
                   <p className="text-body-xs text-muted-foreground">
                     Gate outcomes, confidence trends, and recent rule triggers
                   </p>
+                  {qualityError && (
+                    <p className="text-body-xs text-destructive">{qualityError}</p>
+                  )}
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="flex items-center gap-2 text-body-sm">
-                    <Badge variant="success">Pass {derived.passCount}</Badge>
-                    <Badge variant="warning">Warn {derived.warnCount}</Badge>
-                    <Badge variant="destructive">Fail {derived.failCount}</Badge>
+                    <Badge variant="success">Pass {metrics.passCount}</Badge>
+                    <Badge variant="warning">Warn {metrics.warnCount}</Badge>
+                    <Badge variant="destructive">Fail {metrics.failCount}</Badge>
                   </div>
                   <div className="rounded-lg border border-border/40 bg-background/70 p-3 space-y-3">
                     <p className="text-body-xs text-muted-foreground">Top recent reasons</p>
-                    {derived.recentQualityReasons.length ? (
+                    {metrics.recentReasons.length ? (
                       <ul className="space-y-2 text-body-xs text-foreground">
-                        {derived.recentQualityReasons.map((reason) => (
+                        {metrics.recentReasons.map((reason) => (
                           <li key={reason} className="flex items-start gap-2">
                             <span className="mt-[2px] h-1.5 w-1.5 rounded-full bg-primary" />
                             <span>{reason}</span>
