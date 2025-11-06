@@ -6,7 +6,7 @@ import { useUser } from '@clerk/nextjs'
 
 import { DashboardLayout } from '@/components/layouts/dashboard-layout'
 import { PageHeader } from '@/components/layouts/page-header'
-import { Button } from '@/components/ui/button'
+import { Button, buttonVariants } from '@/components/ui/button'
 import type { ButtonProps } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -117,6 +117,7 @@ const ActionLinkButton = ({
   disabled = false,
   external = false,
 }: ActionLinkProps) => {
+  const baseClass = buttonVariants({ variant, size: 'sm', className: 'gap-1' })
   const content = (
     <>
       <Icon className="h-3.5 w-3.5" />
@@ -134,20 +135,16 @@ const ActionLinkButton = ({
 
   if (external) {
     return (
-      <Button asChild size="sm" variant={variant} className="gap-1">
-        <a href={href} target="_blank" rel="noreferrer">
-          {content}
-        </a>
-      </Button>
+      <a href={href} target="_blank" rel="noreferrer noopener" className={baseClass}>
+        {content}
+      </a>
     )
   }
 
   return (
-    <Button asChild size="sm" variant={variant} className="gap-1">
-      <Link href={href} prefetch={false}>
-        {content}
-      </Link>
-    </Button>
+    <Link href={href} prefetch={false} className={baseClass}>
+      {content}
+    </Link>
   )
 }
 
