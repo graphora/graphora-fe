@@ -8,8 +8,8 @@ const cardVariants = cva(
   {
     variants: {
       variant: {
-        default: "surface-base overflow-hidden ring-1 ring-white/6",
-        elevated: "surface-elevated overflow-hidden ring-1 ring-white/8",
+        default: "surface-base overflow-hidden",
+        elevated: "surface-elevated overflow-hidden",
         glass: "glass-surface border-white/10 bg-white/12 text-foreground backdrop-blur-panel",
         muted: "border-transparent bg-muted/70 shadow-soft overflow-hidden",
         transparent: "border-transparent bg-transparent shadow-none overflow-hidden",
