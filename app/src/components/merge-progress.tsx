@@ -548,7 +548,7 @@ export function MergeProgress({ mergeId, sessionId, transformId, onViewConflicts
   const isReadyToFinalize = progress.overall_status === MergeStatus.READY_TO_MERGE;
 
   return (
-    <Card variant="glass" className="w-full flex flex-col max-h-[calc(100vh-100px)] min-h-[500px] shadow-soft">
+    <Card variant="glass" className="w-full flex flex-col min-h-[80vh] shadow-soft">
       <CardHeader className="flex-shrink-0 p-6 pb-content-sm">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
           <div className="flex items-center gap-3">

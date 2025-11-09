@@ -14,7 +14,7 @@ import { cn } from '@/lib/utils'
 import { Loader2, ArrowLeft } from 'lucide-react'
 import { DatabaseConfigForm } from '@/components/config/database-config-form'
 import { GeminiConfigForm } from '@/components/config/gemini-config-form'
-import { DatabaseConfig, UserConfig, ConfigRequest } from '@/types/config'
+import { DatabaseConfig, DatabaseConfigInput, UserConfig, ConfigUpsertRequest } from '@/types/config'
 import { GeminiConfigRequest, UserAIConfigDisplay } from '@/types/ai-config'
 import { toast } from 'sonner'
 
@@ -63,6 +63,22 @@ function ConfigPageContent() {
   const reason = searchParams.get('reason')
   const tabParam = searchParams.get('tab')
   const isWorkflowRedirect = reason === 'workflow'
+
+  const buildDbPayload = (db: DatabaseConfig): DatabaseConfigInput | null => {
+    const trimmedUri = db.uri?.trim()
+    const trimmedPassword = db.password?.trim()
+    if (!trimmedUri || !trimmedPassword) {
+      return null
+    }
+    return {
+      id: db.id,
+      ...db,
+      name: db.name?.trim() || 'neo4j',
+      uri: trimmedUri,
+      username: db.username?.trim() || 'neo4j',
+      password: trimmedPassword,
+    }
+  }
 
   useEffect(() => {
     if (isLoaded && user) {
@@ -154,13 +170,30 @@ function ConfigPageContent() {
       setSaving(true)
       setError(null)
 
-      const configRequest: ConfigRequest = {
-        stagingDb,
-        prodDb,
-      }
-
       // Determine if this is an update or create operation
       const isUpdate = config !== null
+      const stagingPayload = buildDbPayload(stagingDb)
+      const prodPayload = buildDbPayload(prodDb)
+
+      if (!isUpdate && (!stagingPayload || !prodPayload)) {
+        toast.error('Please provide database URL and password for both staging and production')
+        setSaving(false)
+        return
+      }
+
+      if (isUpdate && !stagingPayload && !prodPayload) {
+        toast.info('Enter a database URL and password to update at least one environment')
+        setSaving(false)
+        return
+      }
+
+      const configRequest: ConfigUpsertRequest = {}
+      if (stagingPayload) {
+        configRequest.stagingDb = stagingPayload
+      }
+      if (prodPayload) {
+        configRequest.prodDb = prodPayload
+      }
       const method = isUpdate ? 'PUT' : 'POST'
 
       debug(`${isUpdate ? 'Updating' : 'Creating'} configuration:`, configRequest)
@@ -180,8 +213,15 @@ function ConfigPageContent() {
 
       const savedConfig = await response.json()
       debug('Configuration saved successfully:', savedConfig)
-      
-      setConfig(savedConfig)
+
+      const sanitizedSavedConfig: UserConfig = {
+        ...savedConfig,
+        stagingDb: { ...savedConfig.stagingDb, password: '' },
+        prodDb: { ...savedConfig.prodDb, password: '' },
+      }
+      setConfig(sanitizedSavedConfig)
+      setStagingDb({ ...savedConfig.stagingDb, password: '' })
+      setProdDb({ ...savedConfig.prodDb, password: '' })
       toast.success(`Configuration ${isUpdate ? 'updated' : 'created'} successfully`)
 
       // If there's a return URL, redirect after a short delay

@@ -6,6 +6,10 @@ export interface DatabaseConfig {
   password: string
 }
 
+export type DatabaseConfigInput = Omit<DatabaseConfig, 'password'> & {
+  password?: string
+}
+
 export interface UserConfig {
   id?: string
   userId: string
@@ -24,6 +28,11 @@ export interface ConfigResponse {
 export interface ConfigRequest {
   stagingDb: DatabaseConfig
   prodDb: DatabaseConfig
+}
+
+export interface ConfigUpsertRequest {
+  stagingDb?: DatabaseConfigInput
+  prodDb?: DatabaseConfigInput
 }
 
 export interface ConnectionTestResponse {

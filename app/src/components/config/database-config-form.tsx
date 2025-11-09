@@ -156,6 +156,7 @@ export function DatabaseConfigForm({ title, description, config, onChange, disab
             <Input
               id={`${title.toLowerCase()}-password`}
               type={showPassword ? 'text' : 'password'}
+              value={config.password || ''}
               onChange={(e) => handleChange('password', e.target.value)}
               disabled={disabled}
               className="bg-white/5 pr-12 text-foreground"
@@ -172,6 +173,11 @@ export function DatabaseConfigForm({ title, description, config, onChange, disab
               {showPassword ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
             </Button>
           </div>
+          {isExistingConfig && (
+            <p className="text-xs text-foreground/60">
+              Leave blank to keep the existing password. Enter a new value to rotate credentials.
+            </p>
+          )}
         </div>
 
         {testResult && (

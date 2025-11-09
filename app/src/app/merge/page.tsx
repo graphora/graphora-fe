@@ -920,7 +920,7 @@ function MergePageContent() {
                   />
                 ) : (
                   <div className="enhanced-card">
-                    <div className="enhanced-card-content flex flex-col items-center justify-center gap-3 py-12">
+                    <div className="enhanced-card-content flex flex-col items-center justify-center gap-3 py-12 min-h-[80vh]">
                       <Loader2 className="h-8 w-8 animate-spin text-primary" />
                       <p className="text-muted-foreground">Initializing merge process...</p>
                     </div>
@@ -930,7 +930,7 @@ function MergePageContent() {
             
             <TabsContent value="conflicts" className="space-y-4">
               <div className="enhanced-card">
-                <div className="enhanced-card-content h-[600px] relative p-0 overflow-hidden rounded-lg">
+                <div className="enhanced-card-content h-[80vh] relative p-0 overflow-hidden rounded-lg">
                   {currentMergeId ? (
                     <ConflictList
                       mergeId={currentMergeId}
@@ -955,7 +955,7 @@ function MergePageContent() {
             
             <TabsContent value="visualization" className="space-y-4">
               <div className="enhanced-card">
-                <div className="enhanced-card-content h-[600px] relative p-0 overflow-hidden rounded-lg">
+                <div className="enhanced-card-content h-[80vh] relative p-0 overflow-hidden rounded-lg">
 
                   
                   {isLoadingGraph && (
