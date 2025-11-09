@@ -233,8 +233,8 @@ export function ConflictDetailsView({
       ) : (
         <>
           {/* Header */}
-          <div className="flex-none bg-background border-b border-border shadow-sm">
-            <div className="p-4">
+          <div className="flex-none bg-transparent">
+            <div className="p-4 pb-0">
               <Breadcrumb>
                 <BreadcrumbItem>
                   <BreadcrumbLink onClick={onBack}>Conflicts</BreadcrumbLink>
@@ -295,14 +295,11 @@ export function ConflictDetailsView({
               ) : changeLog ? (
                 <>
                   {/* Description */}
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Property Conflicts</CardTitle>
-                      <CardDescription>
-                        Select the version you want to keep for each conflicting property
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
+                  <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-6 shadow-[0_10px_40px_rgba(0,0,0,0.25)]">
+                    <div className="mb-6">
+                      <h3 className="text-lg font-semibold text-foreground">Property Conflicts</h3>
+                      <p className="text-sm text-muted-foreground">Select the version you want to keep for each conflicting property</p>
+                    </div>
                       <RadioGroup 
                         value={selectedResolution} 
                         onValueChange={handleResolutionSelect}
@@ -328,53 +325,50 @@ export function ConflictDetailsView({
                         </div>
                       </RadioGroup>
 
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Property</TableHead>
-                            <TableHead>Production Value</TableHead>
-                            <TableHead>Staging Value</TableHead>
-                            {selectedResolution === 'custom' && <TableHead>Custom Value</TableHead>}
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {Object.entries(changeLog.prop_changes).map(([prop, [prodValue, stagingValue]]) => (
-                            <TableRow key={prop}>
-                              <TableCell className="font-medium">{prop}</TableCell>
-                              <TableCell>{formatValue(prodValue)}</TableCell>
-                              <TableCell>{formatValue(stagingValue)}</TableCell>
-                              {selectedResolution === 'custom' && (
-                                <TableCell>
-                                  <Input
-                                    value={customValues[prop] || ''}
-                                    onChange={(e) => handleCustomValueChange(prop, e.target.value)}
-                                    placeholder="Enter custom value"
-                                  />
-                                </TableCell>
-                              )}
+                      <div className="mt-6 rounded-2xl border border-white/5 bg-background/40">
+                        <Table className="[&_th]:text-xs [&_td]:text-sm">
+                          <TableHeader>
+                            <TableRow className="border-white/5">
+                              <TableHead className="text-muted-foreground">Property</TableHead>
+                              <TableHead className="text-muted-foreground">Production Value</TableHead>
+                              <TableHead className="text-muted-foreground">Staging Value</TableHead>
+                              {selectedResolution === 'custom' && <TableHead className="text-muted-foreground">Custom Value</TableHead>}
                             </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </CardContent>
-                  </Card>
+                          </TableHeader>
+                          <TableBody>
+                            {Object.entries(changeLog.prop_changes).map(([prop, [prodValue, stagingValue]]) => (
+                              <TableRow key={prop} className="border-white/5">
+                                <TableCell className="font-medium text-foreground/90">{prop}</TableCell>
+                                <TableCell>{formatValue(prodValue)}</TableCell>
+                                <TableCell>{formatValue(stagingValue)}</TableCell>
+                                {selectedResolution === 'custom' && (
+                                  <TableCell>
+                                    <Input
+                                      value={customValues[prop] || ''}
+                                      onChange={(e) => handleCustomValueChange(prop, e.target.value)}
+                                      placeholder="Enter custom value"
+                                    />
+                                  </TableCell>
+                                )}
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    </div>
 
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Learning Comment</CardTitle>
-                      <CardDescription>
-                        Add a comment / rule to help the system learn from this resolution
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <Textarea
-                        placeholder="Why did you choose this resolution? This helps improve automated conflict resolution."
-                        value={learningComment}
-                        onChange={(e) => setLearningComment(e.target.value)}
-                        className="min-h-[100px]"
-                      />
-                    </CardContent>
-                  </Card>
+                  <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-6 shadow-[0_10px_40px_rgba(0,0,0,0.25)]">
+                    <div className="mb-4">
+                      <h3 className="text-lg font-semibold text-foreground">Learning Comment</h3>
+                      <p className="text-sm text-muted-foreground">Add a comment / rule to help the system learn from this resolution</p>
+                    </div>
+                    <Textarea
+                      placeholder="Why did you choose this resolution? This helps improve automated conflict resolution."
+                      value={learningComment}
+                      onChange={(e) => setLearningComment(e.target.value)}
+                      className="min-h-[100px]"
+                    />
+                  </div>
                 </>
               ) : (
                 <Alert>
@@ -387,7 +381,7 @@ export function ConflictDetailsView({
 
           {/* Footer Actions */}
           {!conflict.resolved && (
-            <div className="flex-none bg-muted/30 border-t border-border shadow-[0_-1px_2px_rgba(0,0,0,0.05)] p-1 fixed bottom-0 left-0 w-full">
+            <div className="flex-none bg-background/80 backdrop-blur border-t border-white/5 shadow-[0_-12px_40px_rgba(0,0,0,0.25)] p-3 fixed bottom-0 left-0 w-full">
               <div className="flex items-center justify-between">
                 <div>
                   {/* Left side actions if needed */}

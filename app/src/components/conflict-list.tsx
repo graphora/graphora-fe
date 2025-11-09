@@ -259,12 +259,12 @@ export function ConflictList({
     <div className={cn("h-full flex flex-col", className)}>
       <div className="flex-1 flex overflow-hidden" ref={containerRef}>
         <div
-          className="relative bg-card border-r border-border"
+          className="relative bg-gradient-to-b from-background/80 via-background/70 to-background border-r border-white/5"
           style={{ width: `${leftWidth}%` }}
         >
           <div className="h-full flex flex-col">
             {/* Filters - Fixed at top */}
-            <div className="p-4 border-b border-border bg-card shrink-0">
+            <div className="p-4 shrink-0">
               <div className="flex items-center gap-2 flex-wrap">
                 <Input
                   placeholder="Search conflicts..."
@@ -314,7 +314,7 @@ export function ConflictList({
 
             {/* Scrollable Content */}
             <div className="flex-1 overflow-hidden pb-8">
-              <ScrollArea className="h-full pb-32">
+              <ScrollArea className="h-full pb-8">
                 <div className="p-4">
                   {loading ? (
                     <div className="flex items-center justify-center py-8">
@@ -336,7 +336,7 @@ export function ConflictList({
                       </div>
                     </div>
                   ) : (
-                    <div className="space-y-2">
+                    <div className="space-y-3">
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-2">
                           <Checkbox
@@ -355,12 +355,12 @@ export function ConflictList({
                         <Card
                           key={conflict.id}
                           className={cn(
-                            "cursor-pointer hover:bg-muted/50 transition-colors",
-                            selectedConflictForDetails?.id === conflict.id && "bg-muted border-primary"
+                            "cursor-pointer border-white/10 bg-white/5/20 hover:bg-white/10 transition-colors backdrop-blur",
+                            selectedConflictForDetails?.id === conflict.id && "border-primary/70 shadow-lg shadow-primary/20"
                           )}
                           onClick={() => handleConflictClick(conflict)}
                         >
-                          <CardContent className="p-3">
+                          <CardContent className="p-4">
                             <div className="flex items-start gap-2">
                               <Checkbox
                                 checked={selectedConflicts.includes(conflict.id)}
@@ -405,7 +405,7 @@ export function ConflictList({
 
             {/* Pagination - Fixed at bottom */}
             {convertedConflicts.length >= filters.limit! && (
-              <div className="p-2 border-t bg-card shrink-0">
+              <div className="p-2 bg-transparent shrink-0">
                 <div className="flex items-center justify-between text-xs">
                   <span>
                     {filters.offset! + 1} - {Math.min(filters.offset! + filters.limit!, convertedConflicts.length)} of {convertedConflicts.length}
@@ -440,7 +440,7 @@ export function ConflictList({
         </div>
 
         <div 
-          className="bg-card flex-1 overflow-auto"
+          className="bg-gradient-to-b from-background via-background/70 to-background flex-1 overflow-auto"
           style={{ width: `${100 - leftWidth}%` }}
         >
           {selectedConflictForDetails ? (
