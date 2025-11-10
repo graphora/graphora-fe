@@ -182,6 +182,9 @@ export function ConflictList({
   const handleConflictClick = (conflict: ConflictListItem) => {
     setSelectedConflictForDetails(conflict)
     onConflictSelect(conflict)
+    
+    // Only select the clicked conflict (uncheck others)
+    onSelectionChange([conflict.id])
   }
 
   const handleBackToList = () => {
@@ -195,7 +198,11 @@ export function ConflictList({
     if (currentIndex === -1 || currentIndex === convertedConflicts.length - 1) {
       handleBackToList()
     } else {
-      setSelectedConflictForDetails(convertedConflicts[currentIndex + 1])
+      const nextConflict = convertedConflicts[currentIndex + 1]
+      setSelectedConflictForDetails(nextConflict)
+      
+      // Only select the next conflict (uncheck the current one)
+      onSelectionChange([nextConflict.id])
     }
     fetchConflicts()
   }

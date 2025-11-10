@@ -708,7 +708,7 @@ export default function DashboardPage() {
                         {derived.failedRuns.slice(0, 3).map((run) => (
                           <div
                             key={run.transform_id}
-                            className="flex items-center justify-between gap-3 rounded-lg bg-background/80 px-3 py-2 transition hover:bg-background"
+                            className="flex items-center justify-between gap-3 rounded-lg bg-background/80 px-3 py-2"
                           >
                             <div className="min-w-0">
                               <p className="text-body-sm font-medium truncate">{run.document_name}</p>
@@ -716,9 +716,7 @@ export default function DashboardPage() {
                                 {dashboardDateFormatter(run.processing_started_at)}
                               </p>
                             </div>
-                            <ActionLinkButton href={buildTransformHref(run, '#logs')}>
-                              View logs
-                            </ActionLinkButton>
+                            <Badge variant="destructive">Failed</Badge>
                           </div>
                         ))}
                       </div>
