@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, Suspense } from 'react'
+import { useState, useEffect, useCallback, useRef, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useUser } from '@clerk/nextjs'
 import { DashboardLayout } from '@/components/layouts/dashboard-layout'
@@ -41,6 +41,7 @@ function ConfigPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { user, isLoaded } = useUser()
+  const userId = user?.id
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [config, setConfig] = useState<UserConfig | null>(null)
@@ -52,12 +53,15 @@ function ConfigPageContent() {
     ...defaultDbConfig,
     name: 'neo4j'
   })
+  const stagingDbDirtyRef = useRef(false)
+  const prodDbDirtyRef = useRef(false)
   const [error, setError] = useState<string | null>(null)
   
   // AI Configuration state
   const [aiConfig, setAiConfig] = useState<UserAIConfigDisplay | null>(null)
   const [geminiConfig, setGeminiConfig] = useState<GeminiConfigRequest>(defaultGeminiConfig)
   const [savingAI, setSavingAI] = useState(false)
+  const aiConfigDirtyRef = useRef(false)
 
   const returnTo = searchParams.get('returnTo')
   const reason = searchParams.get('reason')
@@ -80,14 +84,7 @@ function ConfigPageContent() {
     }
   }
 
-  useEffect(() => {
-    if (isLoaded && user) {
-      fetchConfig()
-      fetchAIConfig()
-    }
-  }, [isLoaded, user])
-
-  const fetchConfig = async () => {
+  const fetchConfig = useCallback(async () => {
     try {
       setLoading(true)
       setError(null) // Clear any previous errors
@@ -110,16 +107,26 @@ function ConfigPageContent() {
       
       setConfig(data)
       if (data.stagingDb) {
-        setStagingDb({
-          ...data.stagingDb,
-          password: '' // Don't populate password for security
-        })
+        if (!stagingDbDirtyRef.current) {
+          setStagingDb({
+            ...data.stagingDb,
+            password: '' // Don't populate password for security
+          })
+          stagingDbDirtyRef.current = false
+        } else {
+          debug('Skipped staging DB reset to preserve unsaved edits')
+        }
       }
       if (data.prodDb) {
-        setProdDb({
-          ...data.prodDb,
-          password: '' // Don't populate password for security
-        })
+        if (!prodDbDirtyRef.current) {
+          setProdDb({
+            ...data.prodDb,
+            password: '' // Don't populate password for security
+          })
+          prodDbDirtyRef.current = false
+        } else {
+          debug('Skipped production DB reset to preserve unsaved edits')
+        }
       }
     } catch (err) {
       console.error('Error fetching config:', err)
@@ -127,9 +134,9 @@ function ConfigPageContent() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
-  const fetchAIConfig = async () => {
+  const fetchAIConfig = useCallback(async () => {
     try {
       const response = await fetch('/api/ai-config')
       
@@ -149,15 +156,42 @@ function ConfigPageContent() {
       
       setAiConfig(data)
       if (data) {
-        setGeminiConfig({
-          api_key: '', // Don't populate API key for security
-          default_model_name: data.default_model_name
-        })
+        if (!aiConfigDirtyRef.current) {
+          setGeminiConfig({
+            api_key: '', // Don't populate API key for security
+            default_model_name: data.default_model_name
+          })
+          aiConfigDirtyRef.current = false
+        } else {
+          debug('Skipped AI form reset to preserve unsaved edits')
+        }
       }
     } catch (err) {
       console.error('Error fetching AI config:', err)
       // Don't set error for AI config as it's optional
     }
+  }, [])
+
+  useEffect(() => {
+    if (isLoaded && userId) {
+      fetchConfig()
+      fetchAIConfig()
+    }
+  }, [isLoaded, userId, fetchConfig, fetchAIConfig])
+
+  const handleStagingDbChange = (updatedConfig: DatabaseConfig) => {
+    stagingDbDirtyRef.current = true
+    setStagingDb(updatedConfig)
+  }
+
+  const handleProdDbChange = (updatedConfig: DatabaseConfig) => {
+    prodDbDirtyRef.current = true
+    setProdDb(updatedConfig)
+  }
+
+  const handleGeminiConfigChange = (updatedConfig: GeminiConfigRequest) => {
+    aiConfigDirtyRef.current = true
+    setGeminiConfig(updatedConfig)
   }
 
   const handleSave = async () => {
@@ -222,6 +256,8 @@ function ConfigPageContent() {
       setConfig(sanitizedSavedConfig)
       setStagingDb({ ...savedConfig.stagingDb, password: '' })
       setProdDb({ ...savedConfig.prodDb, password: '' })
+      stagingDbDirtyRef.current = false
+      prodDbDirtyRef.current = false
       toast.success(`Configuration ${isUpdate ? 'updated' : 'created'} successfully`)
 
       // If there's a return URL, redirect after a short delay
@@ -285,6 +321,7 @@ function ConfigPageContent() {
         ...geminiConfig,
         api_key: ''
       })
+      aiConfigDirtyRef.current = false
       toast.success(`AI configuration ${isUpdate ? 'updated' : 'created'} successfully`)
 
       // If there's a return URL and this is a workflow redirect, redirect after a short delay
@@ -415,7 +452,7 @@ function ConfigPageContent() {
                   title="Staging Database"
                   description="Neo4j database used for testing and development"
                   config={stagingDb}
-                  onChange={setStagingDb}
+                  onChange={handleStagingDbChange}
                   disabled={saving}
                   isExistingConfig={!!config?.stagingDb?.uri}
                 />
@@ -424,7 +461,7 @@ function ConfigPageContent() {
                   title="Production Database"
                   description="Neo4j database used for live data and production merges"
                   config={prodDb}
-                  onChange={setProdDb}
+                  onChange={handleProdDbChange}
                   disabled={saving}
                   isExistingConfig={!!config?.prodDb?.uri}
                 />
@@ -550,7 +587,7 @@ function ConfigPageContent() {
                 </div>
                 <GeminiConfigForm
                   config={geminiConfig}
-                  onChange={setGeminiConfig}
+                  onChange={handleGeminiConfigChange}
                   disabled={savingAI}
                   isExistingConfig={!!aiConfig}
                 />
