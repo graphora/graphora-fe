@@ -35,6 +35,7 @@ import {
   FileSpreadsheet,
   Flame,
   Gauge,
+  Loader2,
   LucideIcon,
   Zap,
 } from 'lucide-react'
@@ -181,6 +182,8 @@ export default function DashboardPage() {
   const [conflictsError, setConflictsError] = useState<string | null>(null)
 
   useEffect(() => {
+    if (!userLoaded) return
+
     let active = true
 
     const loadRuns = async () => {
@@ -206,9 +209,11 @@ export default function DashboardPage() {
     return () => {
       active = false
     }
-  }, [])
+  }, [userLoaded])
 
   useEffect(() => {
+    if (!userLoaded) return
+
     let active = true
 
     const loadSummary = async () => {
@@ -233,9 +238,11 @@ export default function DashboardPage() {
     return () => {
       active = false
     }
-  }, [])
+  }, [userLoaded])
 
   useEffect(() => {
+    if (!userLoaded) return
+
     let active = true
 
     const loadPerformance = async () => {
@@ -260,9 +267,11 @@ export default function DashboardPage() {
     return () => {
       active = false
     }
-  }, [])
+  }, [userLoaded])
 
   useEffect(() => {
+    if (!userLoaded) return
+
     let active = true
 
     const loadQuality = async () => {
@@ -287,9 +296,11 @@ export default function DashboardPage() {
     return () => {
       active = false
     }
-  }, [])
+  }, [userLoaded])
 
   useEffect(() => {
+    if (!userLoaded) return
+
     let active = true
 
     const fetchConflicts = async () => {
@@ -316,7 +327,23 @@ export default function DashboardPage() {
     return () => {
       active = false
     }
-  }, [])
+  }, [userLoaded])
+
+  const isDashboardLoading =
+    runsLoading ||
+    summaryLoading ||
+    performanceLoading ||
+    qualityLoading ||
+    conflictsLoading
+
+  const kpiErrorMessage = !runs.length && runsError
+    ? runsError
+    : !summary && summaryError
+      ? summaryError
+      : null
+
+  const performanceErrorMessage = !performance && performanceError ? performanceError : null
+  const qualityErrorMessage = !quality && qualityError ? qualityError : null
 
   const derived = useMemo(() => {
     const defaults = {
@@ -565,14 +592,18 @@ export default function DashboardPage() {
 
         <div className="flex-1 overflow-y-auto min-h-0">
           <div className="page-shell py-section stack-gap p-6 space-y-6">
+            {isDashboardLoading && (
+              <div className="flex items-center gap-2 rounded-xl border border-border/40 bg-card/60 px-3 py-2 text-body-xs text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                Loading dashboard data…
+              </div>
+            )}
             <section aria-labelledby="kpi-heading" className="space-y-4">
               <div className="flex items-center justify-between">
                 <h2 id="kpi-heading" className="text-heading-sm font-semibold">
                   Pipeline KPIs {windowStart && windowEnd ? `(${windowStart} → ${windowEnd})` : ''}
                 </h2>
-                {(runsError || summaryError) && (
-                  <Badge variant="destructive">{runsError ?? summaryError}</Badge>
-                )}
+                {kpiErrorMessage && <Badge variant="destructive">{kpiErrorMessage}</Badge>}
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
                 <StatTile
@@ -734,8 +765,8 @@ export default function DashboardPage() {
                       Latency, throughput, and token consumption for the selected window
                     </p>
                   </div>
-                  {performanceError ? (
-                    <Badge variant="destructive">{performanceError}</Badge>
+                  {performanceErrorMessage ? (
+                    <Badge variant="destructive">{performanceErrorMessage}</Badge>
                   ) : (
                     <Badge variant="outline">
                       {metrics.runsPerDay ? `${metrics.runsPerDay} runs/day` : '—'}
@@ -828,8 +859,8 @@ export default function DashboardPage() {
                   <p className="text-body-xs text-muted-foreground">
                     Gate outcomes, confidence trends, and recent rule triggers
                   </p>
-                  {qualityError && (
-                    <p className="text-body-xs text-destructive">{qualityError}</p>
+                  {qualityErrorMessage && (
+                    <p className="text-body-xs text-destructive">{qualityErrorMessage}</p>
                   )}
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -893,9 +924,6 @@ export default function DashboardPage() {
                         </thead>
                         <tbody>
                           {runs.map((run) => {
-                            const transformHref = buildTransformHref(run)
-                            const qualityHref = buildTransformHref(run, '#quality')
-                            const graphHref = buildTransformHref(run, '#graph')
                             const inspectHref = buildTransformHref(run, '#chunks')
                             const csvHref = `/api/quality/export/${run.transform_id}`
 
@@ -944,12 +972,10 @@ export default function DashboardPage() {
                                 </td>
                                 <td className="px-3 py-3 align-top">
                                   <div className="flex flex-wrap justify-end gap-2">
-                                    <ActionLinkButton href={qualityHref}>Review</ActionLinkButton>
-                                    <ActionLinkButton href={graphHref}>Graph</ActionLinkButton>
+                                    <ActionLinkButton href={inspectHref}>Inspect</ActionLinkButton>
                                     <ActionLinkButton href={csvHref} icon={FileSpreadsheet} external>
                                       CSV
                                     </ActionLinkButton>
-                                    <ActionLinkButton href={inspectHref}>Inspect</ActionLinkButton>
                                   </div>
                                 </td>
                               </tr>
