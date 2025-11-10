@@ -549,71 +549,58 @@ export function MergeProgress({ mergeId, sessionId, transformId, onViewConflicts
 
   return (
     <Card variant="glass" className="w-full flex flex-col min-h-[80vh] shadow-soft">
-      <CardHeader className="flex-shrink-0 p-6 pb-content-sm">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-          <div className="flex items-center gap-3">
-            <CardDescription>
-              Started {formatDateTime(progress.start_time)}
-            </CardDescription>
-            {progress.overall_status !== MergeStatus.COMPLETED &&
-              progress.overall_status !== MergeStatus.FAILED &&
-              progress.overall_status !== MergeStatus.CANCELLED && (
-              <div className="flex items-center gap-1.5 text-xs text-muted-foreground bg-muted px-2 py-1 rounded whitespace-nowrap">
-                <Clock className="h-3.5 w-3.5 flex-shrink-0" />
-                <span className="font-mono">{elapsedTimeStr}</span>
-              </div>
-            )}
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
+      <CardHeader className="flex-shrink-0 p-6 pb-4">
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-heading-sm">Merge Progress</CardTitle>
+          <div className="flex items-center gap-2">
             {getStatusBadge(progress.overall_status)}
-            {progress.conflict_count > 0 && progress.overall_status === MergeStatus.HUMAN_REVIEW && (
-              <Badge variant="destructive" className="animate-pulse">
-                {progress.conflict_count} Conflicts
-              </Badge>
-            )}
-            {progress.overall_status === MergeStatus.READY_TO_MERGE && (
-              <Badge variant="success">
-                No Conflicts
-              </Badge>
-            )}
-            {progress.overall_status === MergeStatus.COMPLETED && (
-              <Badge variant="success">
-                Merged
-              </Badge>
-            )}
           </div>
         </div>
+        <CardDescription className="mt-1">
+          Started {formatDateTime(progress.start_time)}
+        </CardDescription>
       </CardHeader>
       <CardContent className="flex-grow p-6">
-        <div className="space-y-5">
+        <div className="space-y-6">
+          {/* Show loading spinner when merge is in progress */}
+          {(progress.overall_status === MergeStatus.STARTED || 
+            progress.overall_status === MergeStatus.AUTO_RESOLVE ||
+            progress.overall_status === MergeStatus.MERGE_IN_PROGRESS) && (
+            <div className="flex items-center justify-center py-8">
+              <div className="flex flex-col items-center gap-3">
+                <Loader2 className="h-12 w-12 animate-spin text-primary" />
+                <div className="text-center">
+                  <p className="text-body-sm font-medium text-foreground">
+                    {progress.overall_status === MergeStatus.MERGE_IN_PROGRESS 
+                      ? 'Finalizing merge...' 
+                      : 'Processing merge...'}
+                  </p>
+                  <p className="text-body-xs text-muted-foreground mt-1">
+                    This may take a few moments
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Conflict Alert */}
           {progress.overall_status === MergeStatus.HUMAN_REVIEW && progress.conflict_count > 0 && (
           <Alert variant="warning" className="animate-fadeIn border-warning/40 bg-warning/10">
             <AlertTriangle className="h-4 w-4" />
-            <AlertTitle>Action Required: Conflicts Detected</AlertTitle>
+            <AlertTitle>Conflicts Detected</AlertTitle>
             <AlertDescription className="text-warning/80 text-sm">
               {progress.conflict_count} conflicts need to be resolved before the merge can proceed.
             </AlertDescription>
-            <div className="flex flex-col gap-2 mt-3">
+            <div className="mt-3">
               <Button
                 variant="warning"
                 size="sm"
-                className="bg-amber-500 text-amber-950 hover:bg-amber-400 w-fit"
+                className="bg-amber-500 text-amber-950 hover:bg-amber-400"
                 onClick={onViewConflicts}
               >
                 <ExternalLink className="mr-2 h-4 w-4" />
-                View and Resolve Conflicts
+                Resolve Conflicts
               </Button>
-              <div className="flex items-center gap-2">
-                <Checkbox
-                  id="autoNavigate"
-                  checked={autoNavigateToConflicts}
-                  onCheckedChange={(checked) => setAutoNavigateToConflicts(checked as boolean)}
-                />
-                <label htmlFor="autoNavigate" className="text-xs text-warning/70 cursor-pointer">
-                  Always take me to conflict resolution when conflicts are detected
-                </label>
-              </div>
             </div>
           </Alert>
         )}
@@ -622,9 +609,9 @@ export function MergeProgress({ mergeId, sessionId, transformId, onViewConflicts
           {progress.overall_status === MergeStatus.READY_TO_MERGE && (
           <Alert variant="success" className="animate-fadeIn">
             <CheckCircle2 className="h-4 w-4" />
-            <AlertTitle>Merged!</AlertTitle>
+            <AlertTitle>Ready to Merge</AlertTitle>
             <AlertDescription className="text-success/90 text-sm">
-              Great news! All conflicts have been resolved. The merge process is complete.
+              All conflicts have been resolved. The merge is complete.
             </AlertDescription>
           </Alert>
         )}
@@ -635,7 +622,7 @@ export function MergeProgress({ mergeId, sessionId, transformId, onViewConflicts
             <AlertCircle className="h-4 w-4" />
             <AlertTitle>Merge Failed</AlertTitle>
             <AlertDescription className="text-destructive/80 text-sm">
-              The merge process encountered an error and could not be completed. You can retry the merge once the issue is addressed.
+              The merge process encountered an error. You can retry once the issue is addressed.
             </AlertDescription>
             {onRetry && (
               <Button
@@ -643,7 +630,7 @@ export function MergeProgress({ mergeId, sessionId, transformId, onViewConflicts
                 size="sm"
                 onClick={onRetry}
                 disabled={isRetrying}
-                className="border-destructive/40 text-destructive hover:bg-destructive/10 mt-3 w-fit"
+                className="border-destructive/40 text-destructive hover:bg-destructive/10 mt-3"
               >
                 {isRetrying ? (
                   <>
@@ -665,9 +652,9 @@ export function MergeProgress({ mergeId, sessionId, transformId, onViewConflicts
           {progress.overall_status === MergeStatus.COMPLETED && (
           <Alert variant="success" className="animate-fadeIn">
             <CheckCircle2 className="h-4 w-4" />
-            <AlertTitle>Merge Completed Successfully!</AlertTitle>
+            <AlertTitle>Merge Completed</AlertTitle>
             <AlertDescription className="text-success/90 text-sm">
-              Excellent! The merge has been completed successfully. All data has been merged into the production database.
+              The merge has been completed successfully. All data has been merged into production.
             </AlertDescription>
           </Alert>
         )}
@@ -690,20 +677,6 @@ export function MergeProgress({ mergeId, sessionId, transformId, onViewConflicts
             </AlertDescription>
           </Alert>
         )}
-
-          {/* Overall Progress */}
-        <div className="space-y-2">
-          <div className="flex items-center justify-between text-body-sm">
-            <span>Overall Progress</span>
-            <Badge variant="outline" className="border-border/60 text-muted-foreground bg-background/60">
-              {progress.overall_status.replace(/_/g, ' ')}
-            </Badge>
-          </div>
-          <Progress 
-            value={progress.overall_progress} 
-            indicatorClassName={progress.overall_status === MergeStatus.COMPLETED ? 'bg-success' : 'bg-info'}
-          />
-        </div>
 
           {/* Stage Progress */}
         <div className="space-y-3">
@@ -746,8 +719,10 @@ export function MergeProgress({ mergeId, sessionId, transformId, onViewConflicts
                   </div>
                   {idx < getStagesArray().length - 1 && (
                     <div className={cn(
-                      "h-0.5 w-8 mb-6 transition-colors",
-                      isCompleted ? "bg-emerald-500" : "bg-muted-foreground/30"
+                      "h-1 w-12 mb-6 transition-colors rounded-full",
+                      isCompleted 
+                        ? "bg-emerald-500 dark:bg-emerald-400" 
+                        : "bg-gray-300 dark:bg-gray-600"
                     )} />
                   )}
                 </div>
@@ -759,25 +734,24 @@ export function MergeProgress({ mergeId, sessionId, transformId, onViewConflicts
       </CardContent>
       
       {/* Action Buttons - Fixed at the bottom */}
-      <CardFooter className="sticky bottom-0 z-10 mt-auto flex flex-col gap-content-sm border-t border-border/60 bg-background/80 px-6 py-content backdrop-blur-sm sm:flex-row sm:justify-between">
+      <CardFooter className="sticky bottom-0 z-10 mt-auto flex items-center justify-between gap-3 border-t border-border/60 bg-background/80 px-6 py-4 backdrop-blur-sm">
         <div>
           {onCancel && (progress.overall_status === MergeStatus.STARTED || 
                          progress.overall_status === MergeStatus.AUTO_RESOLVE ||
                          progress.overall_status === MergeStatus.HUMAN_REVIEW) && (
-            <Button variant="outline" onClick={onCancel} className="w-full sm:w-auto">
+            <Button variant="ghost" onClick={onCancel} size="sm">
               Cancel Merge
             </Button>
           )}
         </div>
-        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+        <div>
           {progress.overall_status === MergeStatus.HUMAN_REVIEW && onViewConflicts && (
             <Button 
               onClick={onViewConflicts} 
               variant="warning"
-              className="w-full sm:w-auto"
-              size="lg"
+              size="default"
             >
-              <AlertTriangle className="mr-2 h-5 w-5" />
+              <AlertTriangle className="mr-2 h-4 w-4" />
               Resolve {progress.conflict_count} Conflicts
             </Button>
           )}
