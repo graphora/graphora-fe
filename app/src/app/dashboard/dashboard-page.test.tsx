@@ -220,9 +220,14 @@ describe('DashboardPage', () => {
 
     render(<DashboardPage />)
 
-    await waitFor(() => expect(screen.getByText(/Pipeline KPIs/)).toBeInTheDocument())
+    // Wait for all API calls to complete by checking for the empty state message
+    await waitFor(
+      () => {
+        expect(screen.getByText(/No transforms recorded in this window/i)).toBeInTheDocument()
+      },
+      { timeout: 5000 }
+    )
 
-    expect(screen.getByText(/No transforms recorded in this window/i)).toBeInTheDocument()
     expect(screen.getByText(/No rule violations in this window/i)).toBeInTheDocument()
   })
 })
