@@ -62,6 +62,19 @@ npm run test         # Run Vitest unit tests (Graph editor smoke coverage)
 npm run format       # Format source files with Prettier
 ```
 
+### Release & Versioning
+
+- The sidebar now renders the current build number from `process.env.NEXT_PUBLIC_APP_VERSION`.
+- `next.config.ts` automatically sets that env var by trying, in order:
+  1. Any value you export manually (helpful for preview builds)
+  2. The latest reachable Git tag (`git describe --tags --abbrev=0`)
+  3. The fallback from `app/package.json` (`version` field)
+- To cut a release and update the on-screen version:
+  1. Run `cd app && npm version <major|minor|patch>` to bump `package.json` and create a tag
+  2. Push both the commit and tag: `git push && git push --tags`
+  3. Create the GitHub release from that tag (optional but recommended)
+- Local overrides are simple: `NEXT_PUBLIC_APP_VERSION=dev npm run dev` will display "Version dev".
+
 ### Project Structure
 
 ```

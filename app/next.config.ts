@@ -1,6 +1,50 @@
+const { execSync } = require('node:child_process')
+const fs = require('node:fs')
+const path = require('node:path')
+
+const resolveAppVersion = () => {
+  // Allow manual overrides for preview deployments
+  if (process.env.NEXT_PUBLIC_APP_VERSION) {
+    return process.env.NEXT_PUBLIC_APP_VERSION
+  }
+
+  const repoRoot = path.resolve(__dirname, '..')
+
+  try {
+    const tag = execSync('git describe --tags --abbrev=0', {
+      cwd: repoRoot,
+      stdio: ['ignore', 'pipe', 'ignore'],
+    }).toString().trim()
+
+    if (tag) {
+      return tag
+    }
+  } catch {
+    // Swallow errors when tags are unavailable (e.g., fresh clones/CI artifacts)
+  }
+
+  try {
+    const pkgPath = path.join(__dirname, 'package.json')
+    const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'))
+
+    if (pkg.version) {
+      return pkg.version
+    }
+  } catch {
+    // Fall through to the default version below
+  }
+
+  return '0.0.0-dev'
+}
+
+const APP_VERSION = resolveAppVersion()
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  env: {
+    NEXT_PUBLIC_APP_VERSION: APP_VERSION,
+  },
   webpack: (config: any) => {
     config.externals.push({
       'utf-8-validate': 'commonjs utf-8-validate',

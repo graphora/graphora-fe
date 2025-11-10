@@ -36,6 +36,7 @@ interface SidebarNavigationProps {
 }
 
 const STORAGE_KEY = 'graphora-sidebar-collapsed'
+const APP_VERSION = process.env.NEXT_PUBLIC_APP_VERSION ?? '0.0.0-dev'
 
 export function SidebarNavigation({ className, defaultCollapsed = true }: SidebarNavigationProps) {
   const router = useRouter()
@@ -293,11 +294,11 @@ export function SidebarNavigation({ className, defaultCollapsed = true }: Sideba
         {isCollapsed ? (
           <div className="mt-3 flex flex-col items-center gap-2 text-body-xs text-muted-foreground">
             <ThemeToggle />
-            <span>Version 2.0.1</span>
+            <span>Version {APP_VERSION}</span>
           </div>
         ) : (
           <div className="mt-3 text-body-xs text-muted-foreground">
-            <span>Version 2.0.1</span>
+            <span>Version {APP_VERSION}</span>
           </div>
         )}
       </div>
