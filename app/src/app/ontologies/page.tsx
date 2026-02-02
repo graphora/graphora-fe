@@ -21,7 +21,7 @@ import {
 import { Input } from '@/components/ui/input'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { useUser } from '@clerk/nextjs'
+import { useUser } from '@/hooks/useAuth'
 
 const isDebugEnabled = process.env.NODE_ENV !== 'production'
 const debug = (...args: unknown[]) => {

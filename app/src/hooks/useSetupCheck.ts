@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useUser } from '@clerk/nextjs'
+import { useUser } from '@/hooks/useAuth'
 import { UserConfig } from '@/types/config'
 import { UserAIConfigDisplay } from '@/types/ai-config'
 

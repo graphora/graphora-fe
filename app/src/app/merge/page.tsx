@@ -9,7 +9,7 @@ import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/componen
 import { cn } from '@/lib/utils'
 import type { ChatMessage, ConflictListItem, ConflictMessage } from '@/types/merge'
 import { MergeStatus } from '@/types/merge'
-import { useUser } from '@clerk/nextjs'
+import { useUser } from '@/hooks/useAuth'
 import { useMergeVisualization } from '@/hooks/useMergeVisualization'
 import { MergeProgress } from '@/components/merge-progress'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'

@@ -12,7 +12,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { User, Settings, LogOut, HelpCircle, BarChart3 } from 'lucide-react'
-import { useUser, useClerk } from '@clerk/nextjs'
+import { useUser, useAuth, isAuthBypassEnabled } from '@/hooks/useAuth'
 import { useRouter } from 'next/navigation'
 import { UsageTrackingModal } from '@/components/usage/usage-tracking-modal'
 
@@ -32,16 +32,16 @@ interface UserButtonProps {
 }
 
 export function UserButton({ user: propUser }: UserButtonProps) {
-  // Use Clerk user data if available, fallback to prop user data
-  const { user: clerkUser } = useUser()
-  const { signOut, openUserProfile } = useClerk()
+  // Use our unified auth hook that works in both Clerk and bypass modes
+  const { user: authUser } = useUser()
+  const { signOut } = useAuth()
   const router = useRouter()
   const [showUsageModal, setShowUsageModal] = useState(false)
-  
-  const user = clerkUser || propUser
-  const userName = (clerkUser?.fullName || clerkUser?.firstName || propUser?.name) || 'User'
-  const userEmail = (clerkUser?.primaryEmailAddress?.emailAddress || propUser?.email) || 'support@graphora.io'
-  const userImage = clerkUser?.imageUrl || propUser?.image
+
+  const user = authUser || propUser
+  const userName = (authUser?.fullName || authUser?.firstName || propUser?.name) || 'User'
+  const userEmail = (authUser?.primaryEmailAddress?.emailAddress || propUser?.email) || 'support@graphora.io'
+  const userImage = (authUser as { imageUrl?: string })?.imageUrl || propUser?.image
   
   const userInitials = userName
     .split(' ')
@@ -50,22 +50,23 @@ export function UserButton({ user: propUser }: UserButtonProps) {
     .toUpperCase()
     .slice(0, 2)
 
-  const handleSignOut = () => {
-    if (clerkUser) {
-      signOut()
-    } else {
-      // Fallback for non-Clerk implementations
-      debug('Sign out clicked')
+  const handleSignOut = async () => {
+    if (isAuthBypassEnabled) {
+      debug('Sign out clicked in bypass mode (no-op)')
+      return
+    }
+    if (signOut) {
+      await signOut()
     }
   }
 
   const handleProfile = () => {
-    if (clerkUser) {
-      openUserProfile()
-    } else {
-      // Fallback for non-Clerk implementations
-      debug('Profile clicked')
+    if (isAuthBypassEnabled) {
+      debug('Profile clicked in bypass mode')
+      return
     }
+    // In Clerk mode, redirect to profile page or use Clerk's profile modal
+    router.push('/profile')
   }
 
   const handleSettings = () => {
