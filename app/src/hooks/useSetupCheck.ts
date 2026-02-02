@@ -12,7 +12,9 @@ const debug = (...args: unknown[]) => {
 
 export interface SetupStatus {
   isLoading: boolean
-  hasDbConfig: boolean
+  hasDbConfig: boolean           // Effective state (true in memory mode)
+  actualHasDbConfig: boolean     // Whether DB is actually configured
+  dbConfigOptional: boolean      // Whether DB config is optional (memory mode)
   hasAiConfig: boolean
   isFullyConfigured: boolean
   dbConfig: UserConfig | null
@@ -26,6 +28,8 @@ export function useSetupCheck() {
   const [setupStatus, setSetupStatus] = useState<SetupStatus>({
     isLoading: true,
     hasDbConfig: false,
+    actualHasDbConfig: false,
+    dbConfigOptional: false,
     hasAiConfig: false,
     isFullyConfigured: false,
     dbConfig: null,
@@ -62,19 +66,21 @@ export function useSetupCheck() {
       // Check database configuration
       const dbResponse = await fetch('/api/config')
       let dbConfig: UserConfig | null = null
-      let hasDbConfig = false
+      let actualHasDbConfig = false
 
       if (dbResponse.ok) {
         dbConfig = await dbResponse.json()
-        hasDbConfig = !!(dbConfig?.stagingDb?.uri && dbConfig?.prodDb?.uri)
+        actualHasDbConfig = !!(dbConfig?.stagingDb?.uri && dbConfig?.prodDb?.uri)
       } else if (dbResponse.status !== 404) {
         throw new Error('Failed to check database configuration')
       }
 
-      // In memory storage mode, DB config is not required
+      // In memory storage mode, DB config is optional
+      const dbConfigOptional = isMemoryStorage
+      const hasDbConfig = isMemoryStorage ? true : actualHasDbConfig
+
       if (isMemoryStorage) {
-        hasDbConfig = true
-        debug('Memory storage enabled - DB config not required')
+        debug('Memory storage enabled - DB config is optional')
       }
 
       // Check AI configuration
@@ -90,11 +96,16 @@ export function useSetupCheck() {
         debug('AI configuration not found (optional)')
       }
 
-      const isFullyConfigured = hasDbConfig && hasAiConfig
+      // In memory mode, only AI config is required for "fully configured"
+      const isFullyConfigured = isMemoryStorage
+        ? hasAiConfig
+        : (actualHasDbConfig && hasAiConfig)
 
       setSetupStatus({
         isLoading: false,
         hasDbConfig,
+        actualHasDbConfig,
+        dbConfigOptional,
         hasAiConfig,
         isFullyConfigured,
         dbConfig,

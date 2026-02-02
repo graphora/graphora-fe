@@ -153,7 +153,9 @@ export function EnhancedConfigCheck({
   }
 
   // Check if required configurations are missing and we're not on the config page
-  const missingDbConfig = requireDbConfig && !setupStatus.hasDbConfig
+  // In memory mode, DB config is not required even if requireDbConfig is true
+  const effectiveRequireDbConfig = requireDbConfig && !setupStatus.isMemoryStorage
+  const missingDbConfig = effectiveRequireDbConfig && !setupStatus.hasDbConfig
   const missingAiConfig = requireAiConfig && !setupStatus.hasAiConfig
   const shouldRedirectToConfig = (missingDbConfig || missingAiConfig) && pathname !== '/config'
 

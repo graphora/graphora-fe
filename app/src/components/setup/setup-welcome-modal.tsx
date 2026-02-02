@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
 import { IconBadge } from '@/components/ui/icon-badge'
-import { CheckCircle, Database, Sparkles, ArrowRight, Settings, AlertCircle, Shield, HelpCircle } from 'lucide-react'
+import { CheckCircle, Database, Sparkles, ArrowRight, Settings, AlertCircle, Shield, HelpCircle, HardDrive } from 'lucide-react'
 import { SetupStatus } from '@/hooks/useSetupCheck'
 import { ThemeToggle } from '@/components/ui/theme-toggle'
 import { cn } from '@/lib/utils'
@@ -24,26 +24,34 @@ export function SetupWelcomeModal({ isOpen, onClose, setupStatus, onRefresh }: S
   const router = useRouter()
   const [isNavigating, setIsNavigating] = useState(false)
 
-  const totalSteps = 2
-  const completedSteps = useMemo(
-    () => [setupStatus.hasDbConfig, setupStatus.hasAiConfig].filter(Boolean).length,
-    [setupStatus.hasAiConfig, setupStatus.hasDbConfig]
-  )
+  // In memory mode, only AI config is required
+  const totalSteps = setupStatus.isMemoryStorage ? 1 : 2
+  const completedSteps = useMemo(() => {
+    if (setupStatus.isMemoryStorage) {
+      return setupStatus.hasAiConfig ? 1 : 0
+    }
+    return [setupStatus.actualHasDbConfig, setupStatus.hasAiConfig].filter(Boolean).length
+  }, [setupStatus.hasAiConfig, setupStatus.actualHasDbConfig, setupStatus.isMemoryStorage])
   const setupProgress = (completedSteps / totalSteps) * 100
 
-  const setupChecklist = useMemo(
-    () => [
-      {
-        label: 'Database connections',
-        completed: setupStatus.hasDbConfig,
-      },
-      {
-        label: 'AI integration',
-        completed: setupStatus.hasAiConfig,
-      },
-    ],
-    [setupStatus.hasAiConfig, setupStatus.hasDbConfig]
-  )
+  const setupChecklist = useMemo(() => {
+    const items = []
+
+    // Database item - show as optional in memory mode
+    items.push({
+      label: setupStatus.isMemoryStorage ? 'Database connections (Optional)' : 'Database connections',
+      completed: setupStatus.actualHasDbConfig,
+      optional: setupStatus.isMemoryStorage,
+    })
+
+    items.push({
+      label: 'AI integration',
+      completed: setupStatus.hasAiConfig,
+      optional: false,
+    })
+
+    return items
+  }, [setupStatus.hasAiConfig, setupStatus.actualHasDbConfig, setupStatus.isMemoryStorage])
 
   const handleNavigateToConfig = async (section?: string) => {
     setIsNavigating(true)
@@ -57,7 +65,8 @@ export function SetupWelcomeModal({ isOpen, onClose, setupStatus, onRefresh }: S
     onClose()
   }
 
-  const canSkip = setupStatus.hasDbConfig
+  // Can skip if in memory mode (DB not required) or if DB is actually configured
+  const canSkip = setupStatus.isMemoryStorage || setupStatus.actualHasDbConfig
 
   return (
     <Dialog
@@ -109,20 +118,25 @@ export function SetupWelcomeModal({ isOpen, onClose, setupStatus, onRefresh }: S
                     <div key={item.label} className="flex items-center justify-between gap-3 text-sm">
                       <span className="flex items-center gap-3 text-foreground/90">
                         <IconBadge
-                          variant={item.completed ? 'success' : 'warning'}
+                          variant={item.completed ? 'success' : (item.optional ? 'info' : 'warning')}
                           size="sm"
                           className="h-8 w-8"
                         >
                           {item.completed ? (
                             <CheckCircle className="h-4 w-4" />
+                          ) : item.optional ? (
+                            <HardDrive className="h-4 w-4" />
                           ) : (
                             <AlertCircle className="h-4 w-4" />
                           )}
                         </IconBadge>
                         {item.label}
                       </span>
-                      <Badge variant={item.completed ? 'success' : 'warning'} className="tracking-[0.08em]">
-                        {item.completed ? 'Ready' : 'Pending'}
+                      <Badge
+                        variant={item.completed ? 'success' : (item.optional ? 'info' : 'warning')}
+                        className="tracking-[0.08em]"
+                      >
+                        {item.completed ? 'Ready' : (item.optional ? 'Optional' : 'Pending')}
                       </Badge>
                     </div>
                   ))}
@@ -157,29 +171,40 @@ export function SetupWelcomeModal({ isOpen, onClose, setupStatus, onRefresh }: S
                 variant="glass"
                 className={cn(
                   'border-white/15 shadow-glass backdrop-blur-panel transition-all duration-200',
-                  setupStatus.hasDbConfig
+                  setupStatus.actualHasDbConfig
                     ? 'bg-gradient-to-br from-success/15 via-background/40 to-background/10'
-                    : 'bg-gradient-to-br from-warning/20 via-background/35 to-background/10'
+                    : setupStatus.isMemoryStorage
+                      ? 'bg-gradient-to-br from-info/15 via-background/40 to-background/10'
+                      : 'bg-gradient-to-br from-warning/20 via-background/35 to-background/10'
                 )}
               >
                 <CardHeader className="pb-4">
                   <CardTitle className="flex items-center justify-between text-heading">
                     <span className="flex items-center gap-3">
-                      <IconBadge variant={setupStatus.hasDbConfig ? 'success' : 'warning'} size="sm">
-                        <Database className={cn('h-4 w-4', setupStatus.hasDbConfig ? 'text-success' : 'text-warning')} />
+                      <IconBadge
+                        variant={setupStatus.actualHasDbConfig ? 'success' : (setupStatus.isMemoryStorage ? 'info' : 'warning')}
+                        size="sm"
+                      >
+                        {setupStatus.isMemoryStorage && !setupStatus.actualHasDbConfig ? (
+                          <HardDrive className="h-4 w-4 text-info" />
+                        ) : (
+                          <Database className={cn('h-4 w-4', setupStatus.actualHasDbConfig ? 'text-success' : 'text-warning')} />
+                        )}
                       </IconBadge>
                       Database configuration
                     </span>
-                    <Badge variant={setupStatus.hasDbConfig ? 'success' : 'warning'}>
-                      {setupStatus.hasDbConfig ? 'Configured' : 'Required'}
+                    <Badge variant={setupStatus.actualHasDbConfig ? 'success' : (setupStatus.isMemoryStorage ? 'info' : 'warning')}>
+                      {setupStatus.actualHasDbConfig ? 'Configured' : (setupStatus.isMemoryStorage ? 'Optional' : 'Required')}
                     </Badge>
                   </CardTitle>
                   <CardDescription>
-                    Connect staging and production Neo4j databases so workflow results can be persisted automatically.
+                    {setupStatus.isMemoryStorage
+                      ? 'Using in-memory storage. Configure databases for persistent storage across sessions.'
+                      : 'Connect staging and production Neo4j databases so workflow results can be persisted automatically.'}
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {setupStatus.hasDbConfig ? (
+                  {setupStatus.actualHasDbConfig ? (
                     <div className="grid gap-3 text-sm md:grid-cols-2">
                       <div className="rounded-lg border border-success/25 bg-success/10 px-4 py-3 text-success">
                         <p className="font-medium uppercase tracking-[0.14em] text-success/70">Staging</p>
@@ -191,6 +216,23 @@ export function SetupWelcomeModal({ isOpen, onClose, setupStatus, onRefresh }: S
                         <p className="text-display-xs">✓</p>
                         <p className="text-xs text-success/80">Connected</p>
                       </div>
+                    </div>
+                  ) : setupStatus.isMemoryStorage ? (
+                    <div className="space-y-4">
+                      <div className="rounded-lg border border-info/25 bg-info/10 px-4 py-3 text-info">
+                        <p className="font-medium uppercase tracking-[0.14em] text-info/70">In-Memory Mode</p>
+                        <p className="text-xs text-info/80">Data stored temporarily. Configure databases for persistence.</p>
+                      </div>
+                      <Button
+                        onClick={() => handleNavigateToConfig('databases')}
+                        variant="outline"
+                        className="w-full justify-center text-sm"
+                        disabled={isNavigating}
+                      >
+                        <Database className="mr-2 h-4 w-4" />
+                        Configure databases (optional)
+                        <ArrowRight className="ml-2 h-4 w-4" />
+                      </Button>
                     </div>
                   ) : (
                     <div className="space-y-4">
