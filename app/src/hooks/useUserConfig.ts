@@ -11,6 +11,7 @@ export function useUserConfig() {
   const [error, setError] = useState<string | null>(null)
   const [hasConfig, setHasConfig] = useState(false)
   const [hasAiConfig, setHasAiConfig] = useState(false)
+  const [isMemoryStorage, setIsMemoryStorage] = useState(false)
 
   useEffect(() => {
     if (isLoaded && user) {
@@ -24,29 +25,42 @@ export function useUserConfig() {
     try {
       setLoading(true)
       setError(null)
-      
+
+      // First check system info to see if memory storage is enabled
+      let memoryMode = false
+      try {
+        const systemInfoResponse = await fetch('/api/system-info')
+        if (systemInfoResponse.ok) {
+          const systemInfo = await systemInfoResponse.json()
+          memoryMode = systemInfo.storage_type === 'memory'
+          setIsMemoryStorage(memoryMode)
+        }
+      } catch {
+        // Default to neo4j mode if we can't fetch system info
+      }
+
       // Fetch both database and AI configurations
       const [dbResponse, aiResponse] = await Promise.all([
         fetch('/api/config'),
         fetch('/api/ai-config')
       ])
-      
+
       let dbConfig = null
       let aiConfig = null
-      
+
       // Handle database config
       if (dbResponse.status === 404) {
-        // Configuration not found - user needs to set up databases
+        // Configuration not found - user needs to set up databases (unless in memory mode)
         setConfig(null)
-        setHasConfig(false)
+        setHasConfig(memoryMode) // In memory mode, config is not required
       } else if (dbResponse.ok) {
         dbConfig = await dbResponse.json()
         setConfig(dbConfig)
-        setHasConfig(!!(dbConfig.stagingDb?.uri && dbConfig.prodDb?.uri))
+        setHasConfig(!!(dbConfig.stagingDb?.uri && dbConfig.prodDb?.uri) || memoryMode)
       } else {
         throw new Error(`Failed to fetch database configuration: ${dbResponse.status}`)
       }
-      
+
       // Handle AI config
       if (aiResponse.ok) {
         aiConfig = await aiResponse.json()
@@ -58,7 +72,7 @@ export function useUserConfig() {
       } else {
         setHasAiConfig(false)
       }
-      
+
     } catch (err) {
       console.error('Error fetching config:', err)
       setError(err instanceof Error ? err.message : 'Failed to load configuration')
@@ -129,6 +143,7 @@ export function useUserConfig() {
     error,
     hasConfig,
     hasAiConfig,
+    isMemoryStorage,
     requireConfig,
     checkConfigBeforeWorkflow,
     refetch: fetchConfig

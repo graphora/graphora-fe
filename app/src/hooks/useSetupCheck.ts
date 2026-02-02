@@ -18,6 +18,7 @@ export interface SetupStatus {
   dbConfig: UserConfig | null
   aiConfig: UserAIConfigDisplay | null
   error: string | null
+  isMemoryStorage: boolean
 }
 
 export function useSetupCheck() {
@@ -29,7 +30,8 @@ export function useSetupCheck() {
     isFullyConfigured: false,
     dbConfig: null,
     aiConfig: null,
-    error: null
+    error: null,
+    isMemoryStorage: false
   })
 
   useEffect(() => {
@@ -43,12 +45,25 @@ export function useSetupCheck() {
   const checkSetupStatus = async () => {
     try {
       setSetupStatus(prev => ({ ...prev, isLoading: true, error: null }))
-      
+
+      // First check system info to see if memory storage is enabled
+      let isMemoryStorage = false
+      try {
+        const systemInfoResponse = await fetch('/api/system-info')
+        if (systemInfoResponse.ok) {
+          const systemInfo = await systemInfoResponse.json()
+          isMemoryStorage = systemInfo.storage_type === 'memory'
+          debug('System info:', systemInfo)
+        }
+      } catch (err) {
+        debug('Failed to fetch system info, assuming neo4j mode:', err)
+      }
+
       // Check database configuration
       const dbResponse = await fetch('/api/config')
       let dbConfig: UserConfig | null = null
       let hasDbConfig = false
-      
+
       if (dbResponse.ok) {
         dbConfig = await dbResponse.json()
         hasDbConfig = !!(dbConfig?.stagingDb?.uri && dbConfig?.prodDb?.uri)
@@ -56,11 +71,17 @@ export function useSetupCheck() {
         throw new Error('Failed to check database configuration')
       }
 
+      // In memory storage mode, DB config is not required
+      if (isMemoryStorage) {
+        hasDbConfig = true
+        debug('Memory storage enabled - DB config not required')
+      }
+
       // Check AI configuration
       const aiResponse = await fetch('/api/ai-config')
       let aiConfig: UserAIConfigDisplay | null = null
       let hasAiConfig = false
-      
+
       if (aiResponse.ok) {
         aiConfig = await aiResponse.json()
         hasAiConfig = !!(aiConfig?.api_key_masked && aiConfig?.default_model_name)
@@ -78,9 +99,10 @@ export function useSetupCheck() {
         isFullyConfigured,
         dbConfig,
         aiConfig,
-        error: null
+        error: null,
+        isMemoryStorage
       })
-      
+
     } catch (err) {
       console.error('Error checking setup status:', err)
       setSetupStatus(prev => ({
