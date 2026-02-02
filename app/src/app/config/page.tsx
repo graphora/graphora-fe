@@ -214,14 +214,11 @@ function ConfigPageContent() {
       const stagingPayload = buildDbPayload(stagingDb)
       const prodPayload = buildDbPayload(prodDb)
 
-      if (!isUpdate && (!stagingPayload || !prodPayload)) {
-        toast.error('Please provide database URL and password for both staging and production')
-        setSaving(false)
-        return
-      }
-
-      if (isUpdate && !stagingPayload && !prodPayload) {
-        toast.info('Enter a database URL and password to update at least one environment')
+      // Staging DB is optional (falls back to in-memory)
+      // Production DB is required for merge operations but not for initial save
+      // User can save with just production DB, just staging DB, or both
+      if (!stagingPayload && !prodPayload) {
+        toast.info('Enter a database URL and password for at least one database')
         setSaving(false)
         return
       }
@@ -511,7 +508,7 @@ function ConfigPageContent() {
               <div className="flex justify-end">
                 <Button
                   onClick={handleSave}
-                  disabled={saving || (!isUsingMemoryStorage && (!stagingDb.uri || !prodDb.uri))}
+                  disabled={saving || (!stagingDb.uri && !prodDb.uri)}
                   variant="cta"
                 >
                   {saving ? (
