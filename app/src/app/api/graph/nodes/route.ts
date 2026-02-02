@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { auth } from '@clerk/nextjs/server'
+import { getServerAuth } from '@/lib/server-auth'
 
 // In-memory store for development
 let nodes = new Map()
 
 export async function POST(req: NextRequest) {
   try {
-    const { userId } = await auth()
+    const { userId } = await getServerAuth()
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
 
 export async function PUT(req: NextRequest) {
   try {
-    const { userId } = await auth()
+    const { userId } = await getServerAuth()
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
@@ -72,7 +72,7 @@ export async function PUT(req: NextRequest) {
 
 export async function DELETE(req: NextRequest) {
   try {
-    const { userId } = await auth()
+    const { userId } = await getServerAuth()
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }

@@ -1,12 +1,11 @@
-import { auth, clerkClient } from '@clerk/nextjs/server'
 import { cookies } from 'next/headers'
 
 const DEFAULT_TOKEN_TEMPLATE = process.env.CLERK_BACKEND_TOKEN_TEMPLATE || 'session_token'
 
 // Check if auth bypass is enabled for local development
 const isAuthBypassEnabled = process.env.NEXT_PUBLIC_AUTH_BYPASS === 'true'
-const BYPASS_USER_ID = process.env.AUTH_BYPASS_USER_ID || 'local-dev-user'
-const BYPASS_EMAIL = process.env.AUTH_BYPASS_EMAIL || 'dev@localhost'
+const BYPASS_USER_ID = process.env.NEXT_PUBLIC_AUTH_BYPASS_USER_ID || 'local-dev-user'
+const BYPASS_EMAIL = process.env.NEXT_PUBLIC_AUTH_BYPASS_EMAIL || 'dev@localhost'
 
 function isTemplateMissingError(error: unknown): boolean {
   if (typeof error !== 'object' || error === null) {
@@ -24,6 +23,7 @@ export async function getUserEmail(): Promise<string | null> {
   }
 
   try {
+    const { auth, clerkClient } = await import('@clerk/nextjs/server')
     const { userId } = await auth()
     if (!userId) {
       return null
@@ -66,6 +66,7 @@ export async function getBackendAuthContext(): Promise<{ userId: string; token: 
     }
   }
 
+  const { auth } = await import('@clerk/nextjs/server')
   const { userId, getToken } = await auth()
 
   if (!userId) {

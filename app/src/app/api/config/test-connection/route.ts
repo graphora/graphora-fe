@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { auth } from '@clerk/nextjs/server'
+import { getServerAuth } from '@/lib/server-auth'
 import type { ConnectionTestResponse } from '@/types/config'
 
 export const runtime = 'nodejs'
@@ -43,7 +43,7 @@ const toNumber = (maybeInt: unknown): number => {
 
 export async function POST(request: NextRequest) {
   try {
-    const { userId } = await auth()
+    const { userId } = await getServerAuth()
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
