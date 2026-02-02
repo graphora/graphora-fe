@@ -24,6 +24,12 @@ vi.mock('@clerk/nextjs', () => ({
     signOut: vi.fn(),
     openUserProfile: vi.fn(),
   }),
+  useAuth: () => ({
+    isLoaded: true,
+    isSignedIn: true,
+    userId: 'test-user-id',
+    getToken: vi.fn().mockResolvedValue('mock-token'),
+  }),
 }))
 
 vi.mock('@/hooks/useUserConfig', () => ({

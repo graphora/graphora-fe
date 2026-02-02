@@ -35,7 +35,7 @@ function sanitizePasswordsFromObject(obj: any): any {
 
 export async function GET(
   request: Request,
-  { params }: any
+  { params }: { params: Promise<{ mergeId: string; transformId: string }> }
 ) {
   try {
     const backendBaseUrl = process.env.BACKEND_API_URL || 'http://localhost:8000';

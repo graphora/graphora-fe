@@ -3,7 +3,7 @@ import { getBackendAuthContext, isUnauthorizedError } from '@/lib/auth-utils';
 
 export async function GET(
   request: Request,
-  { params }: any
+  { params }: { params: Promise<{ mergeId: string }> }
 ) {
   try {
     const backendBaseUrl = process.env.BACKEND_API_URL || 'http://localhost:8000';
