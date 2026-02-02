@@ -12,30 +12,38 @@ const debug = (...args: unknown[]) => {
 
 export interface SetupStatus {
   isLoading: boolean
-  hasDbConfig: boolean           // Effective state (true in memory mode)
-  actualHasDbConfig: boolean     // Whether DB is actually configured
-  dbConfigOptional: boolean      // Whether DB config is optional (memory mode)
+  hasStagingDb: boolean          // Whether staging DB is configured (optional)
+  hasProdDb: boolean             // Whether prod DB is configured (required for merge)
   hasAiConfig: boolean
-  isFullyConfigured: boolean
+  isFullyConfigured: boolean     // Has AI config (minimum for workflows)
+  canMerge: boolean              // Has prod DB + AI config (required for merge)
   dbConfig: UserConfig | null
   aiConfig: UserAIConfigDisplay | null
   error: string | null
-  isMemoryStorage: boolean
+  isMemoryStorage: boolean       // Using in-memory for staging (no staging DB)
+  // Legacy compatibility
+  hasDbConfig: boolean
+  actualHasDbConfig: boolean
+  dbConfigOptional: boolean
 }
 
 export function useSetupCheck() {
   const { user, isLoaded } = useUser()
   const [setupStatus, setSetupStatus] = useState<SetupStatus>({
     isLoading: true,
-    hasDbConfig: false,
-    actualHasDbConfig: false,
-    dbConfigOptional: false,
+    hasStagingDb: false,
+    hasProdDb: false,
     hasAiConfig: false,
     isFullyConfigured: false,
+    canMerge: false,
     dbConfig: null,
     aiConfig: null,
     error: null,
-    isMemoryStorage: false
+    isMemoryStorage: true,
+    // Legacy compatibility
+    hasDbConfig: true,
+    actualHasDbConfig: false,
+    dbConfigOptional: true
   })
 
   useEffect(() => {
@@ -50,38 +58,26 @@ export function useSetupCheck() {
     try {
       setSetupStatus(prev => ({ ...prev, isLoading: true, error: null }))
 
-      // First check system info to see if memory storage is enabled
-      let isMemoryStorage = false
-      try {
-        const systemInfoResponse = await fetch('/api/system-info')
-        if (systemInfoResponse.ok) {
-          const systemInfo = await systemInfoResponse.json()
-          isMemoryStorage = systemInfo.storage_type === 'memory'
-          debug('System info:', systemInfo)
-        }
-      } catch (err) {
-        debug('Failed to fetch system info, assuming neo4j mode:', err)
-      }
-
       // Check database configuration
       const dbResponse = await fetch('/api/config')
       let dbConfig: UserConfig | null = null
-      let actualHasDbConfig = false
+      let hasStagingDb = false
+      let hasProdDb = false
 
       if (dbResponse.ok) {
         dbConfig = await dbResponse.json()
-        actualHasDbConfig = !!(dbConfig?.stagingDb?.uri && dbConfig?.prodDb?.uri)
+        hasStagingDb = !!(dbConfig?.stagingDb?.uri)
+        hasProdDb = !!(dbConfig?.prodDb?.uri)
       } else if (dbResponse.status !== 404) {
         throw new Error('Failed to check database configuration')
       }
 
-      // In memory storage mode, DB config is optional
-      const dbConfigOptional = isMemoryStorage
-      const hasDbConfig = isMemoryStorage ? true : actualHasDbConfig
+      // Staging DB is optional - uses in-memory if not configured
+      // Prod DB is required for merge operations
+      const isMemoryStorage = !hasStagingDb
 
-      if (isMemoryStorage) {
-        debug('Memory storage enabled - DB config is optional')
-      }
+      debug('Storage mode:', isMemoryStorage ? 'in-memory (no staging DB)' : 'persistent (staging DB configured)')
+      debug('Prod DB configured:', hasProdDb)
 
       // Check AI configuration
       const aiResponse = await fetch('/api/ai-config')
@@ -92,26 +88,29 @@ export function useSetupCheck() {
         aiConfig = await aiResponse.json()
         hasAiConfig = !!(aiConfig?.api_key_masked && aiConfig?.default_model_name)
       } else if (aiResponse.status !== 404) {
-        // AI config is optional, so we don't throw an error for 404
         debug('AI configuration not found (optional)')
       }
 
-      // In memory mode, only AI config is required for "fully configured"
-      const isFullyConfigured = isMemoryStorage
-        ? hasAiConfig
-        : (actualHasDbConfig && hasAiConfig)
+      // Fully configured for workflows = has AI config (staging DB is optional)
+      // Can merge = has prod DB + AI config
+      const isFullyConfigured = hasAiConfig
+      const canMerge = hasProdDb && hasAiConfig
 
       setSetupStatus({
         isLoading: false,
-        hasDbConfig,
-        actualHasDbConfig,
-        dbConfigOptional,
+        hasStagingDb,
+        hasProdDb,
         hasAiConfig,
         isFullyConfigured,
+        canMerge,
         dbConfig,
         aiConfig,
         error: null,
-        isMemoryStorage
+        isMemoryStorage,
+        // Legacy compatibility
+        hasDbConfig: true,
+        actualHasDbConfig: hasStagingDb,
+        dbConfigOptional: true
       })
 
     } catch (err) {

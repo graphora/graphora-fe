@@ -16,7 +16,6 @@ import { DatabaseConfigForm } from '@/components/config/database-config-form'
 import { GeminiConfigForm } from '@/components/config/gemini-config-form'
 import { DatabaseConfig, DatabaseConfigInput, UserConfig, ConfigUpsertRequest } from '@/types/config'
 import { GeminiConfigRequest, UserAIConfigDisplay } from '@/types/ai-config'
-import { useSystemInfo } from '@/hooks/useSystemInfo'
 import { toast } from 'sonner'
 
 const isDebugEnabled = process.env.NODE_ENV !== 'production'
@@ -42,11 +41,15 @@ function ConfigPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { user, isLoaded } = useUser()
-  const { isMemoryStorage, isLoading: systemInfoLoading } = useSystemInfo()
   const userId = user?.id
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [config, setConfig] = useState<UserConfig | null>(null)
+
+  // User is in memory storage mode if they haven't configured a staging DB
+  // This is a user preference - they can configure DB for persistence or skip for in-memory
+  const hasStagingDb = !!(config?.stagingDb?.uri)
+  const isUsingMemoryStorage = !hasStagingDb
   const [stagingDb, setStagingDb] = useState<DatabaseConfig>({
     ...defaultDbConfig,
     name: 'neo4j'
@@ -397,17 +400,8 @@ function ConfigPageContent() {
           {isWorkflowRedirect && (
             <Alert className="border-amber-200 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-800">
               <AlertDescription className="text-amber-800 dark:text-amber-300">
-                {isMemoryStorage ? (
-                  <>
-                    <strong>AI Configuration Required:</strong> You need to configure an AI provider before you can run workflows.
-                    Database configuration is optional in memory storage mode.
-                  </>
-                ) : (
-                  <>
-                    <strong>Both Database & AI Configuration Required:</strong> You need to configure both staging & production Neo4j databases and an AI provider before you can run workflows.
-                    Once configured, you'll be redirected back to continue your workflow.
-                  </>
-                )}
+                <strong>AI Configuration Required:</strong> Configure an AI provider to run workflows.
+                Database configuration is optional - without it, data will be stored in memory temporarily.
               </AlertDescription>
             </Alert>
           )}
@@ -425,35 +419,59 @@ function ConfigPageContent() {
             </TabsList>
 
             <TabsContent value="databases" className="flex flex-col gap-5">
-              {/* Memory Storage Mode Alert */}
-              {isMemoryStorage && (
-                <Alert className="border-blue-200 bg-blue-50 dark:bg-blue-950/30 dark:border-blue-800">
+              {/* Storage Mode Info */}
+              <Alert className={cn(
+                "border-blue-200 bg-blue-50 dark:bg-blue-950/30 dark:border-blue-800",
+                hasStagingDb && "border-emerald-200 bg-emerald-50 dark:bg-emerald-950/30 dark:border-emerald-800"
+              )}>
+                {hasStagingDb ? (
+                  <Database className="h-4 w-4" />
+                ) : (
                   <HardDrive className="h-4 w-4" />
-                  <AlertDescription className="text-blue-800 dark:text-blue-300">
-                    <strong>In-Memory Storage Mode:</strong> The system is configured to use in-memory storage.
-                    Database configuration is optional in this mode. Data will be stored temporarily in memory
-                    and will not persist across server restarts.
-                  </AlertDescription>
-                </Alert>
-              )}
+                )}
+                <AlertDescription className={cn(
+                  "text-blue-800 dark:text-blue-300",
+                  hasStagingDb && "text-emerald-800 dark:text-emerald-300"
+                )}>
+                  {hasStagingDb ? (
+                    <>
+                      <strong>Persistent Storage:</strong> Your data will be stored in Neo4j and persist across sessions.
+                    </>
+                  ) : (
+                    <>
+                      <strong>In-Memory Storage:</strong> Database configuration is optional. Without it, data is stored
+                      temporarily in memory and won't persist across server restarts. Configure a staging database below for persistent storage.
+                    </>
+                  )}
+                </AlertDescription>
+              </Alert>
 
               {/* Configuration Status */}
               <Card className="enhanced-card">
                 <CardHeader className="enhanced-card-header">
                   <CardTitle className="flex items-center justify-between text-heading-sm">
-                    <span className="font-medium">Configuration Status</span>
+                    <span className="font-medium">Database Configuration</span>
                     <div className="flex items-center gap-2">
-                      {isMemoryStorage && (
-                        <Badge className="border border-transparent bg-blue-100/60 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300">
-                          <HardDrive className="h-3 w-3 mr-1" />
-                          Memory Mode
-                        </Badge>
-                      )}
                       <Badge className={cn(
-                        'border border-transparent bg-muted/60 text-foreground/80 dark:text-foreground',
-                        (config || isMemoryStorage) ? 'bg-emerald-100/60 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300' : 'bg-amber-100/60 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300'
+                        'border border-transparent',
+                        hasStagingDb
+                          ? 'bg-emerald-100/60 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300'
+                          : 'bg-blue-100/60 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300'
                       )}>
-                        {(config || isMemoryStorage) ? 'Configured' : 'Setup Required'}
+                        {hasStagingDb ? (
+                          <>
+                            <Database className="h-3 w-3 mr-1" />
+                            Persistent
+                          </>
+                        ) : (
+                          <>
+                            <HardDrive className="h-3 w-3 mr-1" />
+                            In-Memory
+                          </>
+                        )}
+                      </Badge>
+                      <Badge variant="outline" className="text-muted-foreground">
+                        Optional
                       </Badge>
                     </div>
                   </CardTitle>
@@ -461,28 +479,9 @@ function ConfigPageContent() {
                 <CardContent className="enhanced-card-content">
                   <div className="space-y-4">
                     <div className="text-sm text-muted-foreground">
-                      {isMemoryStorage ? (
-                        <>
-                          You're using in-memory storage mode. Database configuration is optional, but you can
-                          still configure Neo4j databases for persistent storage if needed.
-                        </>
-                      ) : (
-                        <>
-                          Configure your Neo4j database connections for staging and production environments.
-                          These databases will be used for document processing, knowledge graph storage, and merge operations.
-                        </>
-                      )}
+                      Database configuration is optional. Configure a staging database for persistent storage,
+                      or skip to use in-memory storage (data won't persist across sessions).
                     </div>
-
-                    {!config && !isMemoryStorage && (
-                      <Alert>
-                        <Database className="h-4 w-4" />
-                        <AlertDescription>
-                          You'll need to provide connection details for both your staging and production Neo4j databases.
-                          These databases must have different URIs to ensure proper separation of environments.
-                        </AlertDescription>
-                      </Alert>
-                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -512,7 +511,7 @@ function ConfigPageContent() {
               <div className="flex justify-end">
                 <Button
                   onClick={handleSave}
-                  disabled={saving || (!isMemoryStorage && (!stagingDb.uri || !prodDb.uri))}
+                  disabled={saving || (!isUsingMemoryStorage && (!stagingDb.uri || !prodDb.uri))}
                   variant="cta"
                 >
                   {saving ? (

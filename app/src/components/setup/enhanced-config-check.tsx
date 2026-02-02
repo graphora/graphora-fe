@@ -6,7 +6,7 @@ import { useUser } from '@/hooks/useAuth'
 import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Loader2, Settings, AlertCircle, Database, RefreshCw, Sparkles } from 'lucide-react'
+import { Loader2, Settings, AlertCircle, RefreshCw, Sparkles } from 'lucide-react'
 import { useSetupCheck } from '@/hooks/useSetupCheck'
 import { SetupWelcomeModal } from './setup-welcome-modal'
 
@@ -74,11 +74,6 @@ export function EnhancedConfigCheck({
 
   const handleRetry = () => {
     refreshSetupStatus()
-  }
-
-  const handleSkipConfig = () => {
-    // Allow user to proceed without full configuration in development mode
-    debug('User chose to skip configuration')
   }
 
   if (!isLoaded || setupStatus.isLoading) {
@@ -153,11 +148,10 @@ export function EnhancedConfigCheck({
   }
 
   // Check if required configurations are missing and we're not on the config page
-  // In memory mode, DB config is not required even if requireDbConfig is true
-  const effectiveRequireDbConfig = requireDbConfig && !setupStatus.isMemoryStorage
-  const missingDbConfig = effectiveRequireDbConfig && !setupStatus.hasDbConfig
+  // DB config is always optional (falls back to in-memory storage)
+  // Only AI config can be required
   const missingAiConfig = requireAiConfig && !setupStatus.hasAiConfig
-  const shouldRedirectToConfig = (missingDbConfig || missingAiConfig) && pathname !== '/config'
+  const shouldRedirectToConfig = missingAiConfig && pathname !== '/config'
 
   if (shouldRedirectToConfig && !lightweight) {
     return (
@@ -165,50 +159,25 @@ export function EnhancedConfigCheck({
         <Card className="w-full max-w-lg">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              {missingDbConfig ? (
-                <Database className="h-6 w-6 text-blue-600" />
-              ) : (
-                <Sparkles className="h-6 w-6 text-blue-600" />
-              )}
-              Configuration Required
+              <Sparkles className="h-6 w-6 text-blue-600" />
+              AI Configuration Required
             </CardTitle>
             <CardDescription>
-              {missingDbConfig 
-                ? "You need to configure your Neo4j databases before you can use this feature."
-                : "This feature requires AI configuration to work properly."
-              }
+              This feature requires AI configuration to work properly.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {missingDbConfig && (
-              <Alert>
-                <Database className="h-4 w-4" />
-                <AlertDescription>
-                  Configure your staging and production Neo4j databases to store and manage your knowledge graphs.
-                </AlertDescription>
-              </Alert>
-            )}
-            
-            {missingAiConfig && (
-              <Alert>
-                <Sparkles className="h-4 w-4" />
-                <AlertDescription>
-                  Configure your Gemini API key to enable AI-powered document processing and conflict resolution.
-                </AlertDescription>
-              </Alert>
-            )}
+            <Alert>
+              <Sparkles className="h-4 w-4" />
+              <AlertDescription>
+                Configure your Gemini API key to enable AI-powered document processing and conflict resolution.
+              </AlertDescription>
+            </Alert>
 
-            <div className="flex gap-2">
-              <Button onClick={() => router.push('/config')} className="flex-1">
-                <Settings className="h-4 w-4 mr-2" />
-                Go to Configuration
-              </Button>
-              {!missingDbConfig && (
-                <Button onClick={handleSkipConfig} variant="outline" className="flex-1">
-                  Continue Without AI
-                </Button>
-              )}
-            </div>
+            <Button onClick={() => router.push('/config?tab=ai')} className="w-full">
+              <Settings className="h-4 w-4 mr-2" />
+              Configure AI
+            </Button>
           </CardContent>
         </Card>
       </div>

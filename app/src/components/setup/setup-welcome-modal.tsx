@@ -24,34 +24,35 @@ export function SetupWelcomeModal({ isOpen, onClose, setupStatus, onRefresh }: S
   const router = useRouter()
   const [isNavigating, setIsNavigating] = useState(false)
 
-  // In memory mode, only AI config is required
-  const totalSteps = setupStatus.isMemoryStorage ? 1 : 2
+  // Required: AI config. Optional: Staging DB. Required for merge: Prod DB
+  const totalSteps = 2 // AI (required) + Prod DB (required for merge)
   const completedSteps = useMemo(() => {
-    if (setupStatus.isMemoryStorage) {
-      return setupStatus.hasAiConfig ? 1 : 0
-    }
-    return [setupStatus.actualHasDbConfig, setupStatus.hasAiConfig].filter(Boolean).length
-  }, [setupStatus.hasAiConfig, setupStatus.actualHasDbConfig, setupStatus.isMemoryStorage])
+    return [setupStatus.hasAiConfig, setupStatus.hasProdDb].filter(Boolean).length
+  }, [setupStatus.hasAiConfig, setupStatus.hasProdDb])
   const setupProgress = (completedSteps / totalSteps) * 100
 
   const setupChecklist = useMemo(() => {
-    const items = []
-
-    // Database item - show as optional in memory mode
-    items.push({
-      label: setupStatus.isMemoryStorage ? 'Database connections (Optional)' : 'Database connections',
-      completed: setupStatus.actualHasDbConfig,
-      optional: setupStatus.isMemoryStorage,
-    })
-
-    items.push({
-      label: 'AI integration',
-      completed: setupStatus.hasAiConfig,
-      optional: false,
-    })
-
-    return items
-  }, [setupStatus.hasAiConfig, setupStatus.actualHasDbConfig, setupStatus.isMemoryStorage])
+    return [
+      {
+        label: 'AI integration',
+        completed: setupStatus.hasAiConfig,
+        optional: false,
+        note: 'Required for all workflows'
+      },
+      {
+        label: 'Production database',
+        completed: setupStatus.hasProdDb,
+        optional: false,
+        note: 'Required for merge operations'
+      },
+      {
+        label: 'Staging database',
+        completed: setupStatus.hasStagingDb,
+        optional: true,
+        note: 'Optional - uses in-memory if not configured'
+      }
+    ]
+  }, [setupStatus.hasAiConfig, setupStatus.hasProdDb, setupStatus.hasStagingDb])
 
   const handleNavigateToConfig = async (section?: string) => {
     setIsNavigating(true)
@@ -167,77 +168,48 @@ export function SetupWelcomeModal({ isOpen, onClose, setupStatus, onRefresh }: S
 
           <section className="stack-gap bg-background/85 p-8 backdrop-blur-panel">
             <div className="stack-gap">
+              {/* Production Database Card - Required for merge */}
               <Card
                 variant="glass"
                 className={cn(
                   'border-white/15 shadow-glass backdrop-blur-panel transition-all duration-200',
-                  setupStatus.actualHasDbConfig
+                  setupStatus.hasProdDb
                     ? 'bg-gradient-to-br from-success/15 via-background/40 to-background/10'
-                    : setupStatus.isMemoryStorage
-                      ? 'bg-gradient-to-br from-info/15 via-background/40 to-background/10'
-                      : 'bg-gradient-to-br from-warning/20 via-background/35 to-background/10'
+                    : 'bg-gradient-to-br from-warning/20 via-background/35 to-background/10'
                 )}
               >
                 <CardHeader className="pb-4">
                   <CardTitle className="flex items-center justify-between text-heading">
                     <span className="flex items-center gap-3">
                       <IconBadge
-                        variant={setupStatus.actualHasDbConfig ? 'success' : (setupStatus.isMemoryStorage ? 'info' : 'warning')}
+                        variant={setupStatus.hasProdDb ? 'success' : 'warning'}
                         size="sm"
                       >
-                        {setupStatus.isMemoryStorage && !setupStatus.actualHasDbConfig ? (
-                          <HardDrive className="h-4 w-4 text-info" />
-                        ) : (
-                          <Database className={cn('h-4 w-4', setupStatus.actualHasDbConfig ? 'text-success' : 'text-warning')} />
-                        )}
+                        <Database className={cn('h-4 w-4', setupStatus.hasProdDb ? 'text-success' : 'text-warning')} />
                       </IconBadge>
-                      Database configuration
+                      Production database
                     </span>
-                    <Badge variant={setupStatus.actualHasDbConfig ? 'success' : (setupStatus.isMemoryStorage ? 'info' : 'warning')}>
-                      {setupStatus.actualHasDbConfig ? 'Configured' : (setupStatus.isMemoryStorage ? 'Optional' : 'Required')}
+                    <Badge variant={setupStatus.hasProdDb ? 'success' : 'warning'}>
+                      {setupStatus.hasProdDb ? 'Configured' : 'Required for merge'}
                     </Badge>
                   </CardTitle>
                   <CardDescription>
-                    {setupStatus.isMemoryStorage
-                      ? 'Using in-memory storage. Configure databases for persistent storage across sessions.'
-                      : 'Connect staging and production Neo4j databases so workflow results can be persisted automatically.'}
+                    {setupStatus.hasProdDb
+                      ? 'Production Neo4j database connected for merge operations.'
+                      : 'Connect your production Neo4j database to enable merge operations.'}
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {setupStatus.actualHasDbConfig ? (
-                    <div className="grid gap-3 text-sm md:grid-cols-2">
-                      <div className="rounded-lg border border-success/25 bg-success/10 px-4 py-3 text-success">
-                        <p className="font-medium uppercase tracking-[0.14em] text-success/70">Staging</p>
-                        <p className="text-display-xs">✓</p>
-                        <p className="text-xs text-success/80">Connected</p>
-                      </div>
-                      <div className="rounded-lg border border-success/25 bg-success/10 px-4 py-3 text-success">
-                        <p className="font-medium uppercase tracking-[0.14em] text-success/70">Production</p>
-                        <p className="text-display-xs">✓</p>
-                        <p className="text-xs text-success/80">Connected</p>
-                      </div>
-                    </div>
-                  ) : setupStatus.isMemoryStorage ? (
-                    <div className="space-y-4">
-                      <div className="rounded-lg border border-info/25 bg-info/10 px-4 py-3 text-info">
-                        <p className="font-medium uppercase tracking-[0.14em] text-info/70">In-Memory Mode</p>
-                        <p className="text-xs text-info/80">Data stored temporarily. Configure databases for persistence.</p>
-                      </div>
-                      <Button
-                        onClick={() => handleNavigateToConfig('databases')}
-                        variant="outline"
-                        className="w-full justify-center text-sm"
-                        disabled={isNavigating}
-                      >
-                        <Database className="mr-2 h-4 w-4" />
-                        Configure databases (optional)
-                        <ArrowRight className="ml-2 h-4 w-4" />
-                      </Button>
+                  {setupStatus.hasProdDb ? (
+                    <div className="rounded-lg border border-success/25 bg-success/10 px-4 py-3 text-success">
+                      <p className="font-medium uppercase tracking-[0.14em] text-success/70">Production</p>
+                      <p className="text-display-xs">✓</p>
+                      <p className="text-xs text-success/80">Connected</p>
                     </div>
                   ) : (
                     <div className="space-y-4">
                       <p className="text-body text-muted-foreground">
-                        Provide unique URIs and credentials for both staging and production Neo4j clusters. Test each connection after saving to ensure Graphora can reach them.
+                        Provide your production Neo4j URI and credentials. This is required to merge staged data into your production graph.
                       </p>
                       <Button
                         onClick={() => handleNavigateToConfig('databases')}
@@ -246,7 +218,70 @@ export function SetupWelcomeModal({ isOpen, onClose, setupStatus, onRefresh }: S
                         disabled={isNavigating}
                       >
                         <Database className="mr-2 h-4 w-4" />
-                        Configure databases
+                        Configure production database
+                        <ArrowRight className="ml-2 h-4 w-4" />
+                      </Button>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Staging Database Card - Optional (in-memory fallback) */}
+              <Card
+                variant="glass"
+                className={cn(
+                  'border-white/15 shadow-glass backdrop-blur-panel transition-all duration-200',
+                  setupStatus.hasStagingDb
+                    ? 'bg-gradient-to-br from-success/15 via-background/40 to-background/10'
+                    : 'bg-gradient-to-br from-info/15 via-background/40 to-background/10'
+                )}
+              >
+                <CardHeader className="pb-4">
+                  <CardTitle className="flex items-center justify-between text-heading">
+                    <span className="flex items-center gap-3">
+                      <IconBadge
+                        variant={setupStatus.hasStagingDb ? 'success' : 'info'}
+                        size="sm"
+                      >
+                        {setupStatus.hasStagingDb ? (
+                          <Database className="h-4 w-4 text-success" />
+                        ) : (
+                          <HardDrive className="h-4 w-4 text-info" />
+                        )}
+                      </IconBadge>
+                      Staging database
+                    </span>
+                    <Badge variant={setupStatus.hasStagingDb ? 'success' : 'info'}>
+                      {setupStatus.hasStagingDb ? 'Configured' : 'Using in-memory'}
+                    </Badge>
+                  </CardTitle>
+                  <CardDescription>
+                    {setupStatus.hasStagingDb
+                      ? 'Staging Neo4j database connected for persistent staging.'
+                      : 'Using in-memory storage for staging. Configure a staging database for persistence across sessions.'}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {setupStatus.hasStagingDb ? (
+                    <div className="rounded-lg border border-success/25 bg-success/10 px-4 py-3 text-success">
+                      <p className="font-medium uppercase tracking-[0.14em] text-success/70">Staging</p>
+                      <p className="text-display-xs">✓</p>
+                      <p className="text-xs text-success/80">Connected</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      <div className="rounded-lg border border-info/25 bg-info/10 px-4 py-3 text-info">
+                        <p className="font-medium uppercase tracking-[0.14em] text-info/70">In-Memory Mode</p>
+                        <p className="text-xs text-info/80">Staged data is stored temporarily and will be cleared when the session ends.</p>
+                      </div>
+                      <Button
+                        onClick={() => handleNavigateToConfig('databases')}
+                        variant="outline"
+                        className="w-full justify-center text-sm"
+                        disabled={isNavigating}
+                      >
+                        <Database className="mr-2 h-4 w-4" />
+                        Configure staging database (optional)
                         <ArrowRight className="ml-2 h-4 w-4" />
                       </Button>
                     </div>

@@ -26,19 +26,6 @@ export function useUserConfig() {
       setLoading(true)
       setError(null)
 
-      // First check system info to see if memory storage is enabled
-      let memoryMode = false
-      try {
-        const systemInfoResponse = await fetch('/api/system-info')
-        if (systemInfoResponse.ok) {
-          const systemInfo = await systemInfoResponse.json()
-          memoryMode = systemInfo.storage_type === 'memory'
-          setIsMemoryStorage(memoryMode)
-        }
-      } catch {
-        // Default to neo4j mode if we can't fetch system info
-      }
-
       // Fetch both database and AI configurations
       const [dbResponse, aiResponse] = await Promise.all([
         fetch('/api/config'),
@@ -47,24 +34,29 @@ export function useUserConfig() {
 
       let dbConfig = null
       let aiConfig = null
+      let hasStagingDb = false
 
       // Handle database config
       if (dbResponse.status === 404) {
-        // Configuration not found - user needs to set up databases (unless in memory mode)
+        // No DB configuration - will use in-memory storage
         setConfig(null)
-        setHasConfig(memoryMode) // In memory mode, config is not required
+        hasStagingDb = false
       } else if (dbResponse.ok) {
         dbConfig = await dbResponse.json()
         setConfig(dbConfig)
-        setHasConfig(!!(dbConfig.stagingDb?.uri && dbConfig.prodDb?.uri) || memoryMode)
+        hasStagingDb = !!(dbConfig?.stagingDb?.uri)
       } else {
         throw new Error(`Failed to fetch database configuration: ${dbResponse.status}`)
       }
 
+      // DB config is optional - if not configured, system uses in-memory storage
+      // hasConfig is always true since memory storage is the fallback
+      setHasConfig(true)
+      setIsMemoryStorage(!hasStagingDb)
+
       // Handle AI config
       if (aiResponse.ok) {
         aiConfig = await aiResponse.json()
-        // Check if user has AI configuration (should be an object with api_key_masked and default_model_name)
         setHasAiConfig(!!(aiConfig?.api_key_masked && aiConfig?.default_model_name))
       } else if (aiResponse.status !== 404) {
         console.warn('Failed to fetch AI configuration:', aiResponse.status)
@@ -76,7 +68,7 @@ export function useUserConfig() {
     } catch (err) {
       console.error('Error fetching config:', err)
       setError(err instanceof Error ? err.message : 'Failed to load configuration')
-      setHasConfig(false)
+      setHasConfig(true) // Still true, memory storage always available
       setHasAiConfig(false)
     } finally {
       setLoading(false)
@@ -97,15 +89,12 @@ export function useUserConfig() {
       return false
     }
 
-    if (!hasConfig) {
-      router.push('/config?returnTo=' + encodeURIComponent(window.location.pathname + window.location.search))
-      return false
-    }
-
+    // DB config is optional (falls back to memory storage)
+    // hasConfig is always true, so this check always passes
     if (onSuccess) {
       onSuccess()
     }
-    
+
     return true
   }
 
@@ -119,16 +108,8 @@ export function useUserConfig() {
       return { success: false, error: 'User not authenticated' }
     }
 
-    if (!hasConfig && !hasAiConfig) {
-      router.push('/config?reason=workflow&returnTo=' + encodeURIComponent(window.location.pathname + window.location.search))
-      return { success: false, error: 'Database and AI configuration required to run workflows' }
-    }
-
-    if (!hasConfig) {
-      router.push('/config?reason=workflow&returnTo=' + encodeURIComponent(window.location.pathname + window.location.search))
-      return { success: false, error: 'Database configuration required to run workflows' }
-    }
-
+    // Only AI config is required for workflows
+    // DB config is optional - system uses in-memory storage if not configured
     if (!hasAiConfig) {
       router.push('/config?tab=ai&reason=workflow&returnTo=' + encodeURIComponent(window.location.pathname + window.location.search))
       return { success: false, error: 'AI configuration required to run workflows' }
