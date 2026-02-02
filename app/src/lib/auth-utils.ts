@@ -3,6 +3,11 @@ import { cookies } from 'next/headers'
 
 const DEFAULT_TOKEN_TEMPLATE = process.env.CLERK_BACKEND_TOKEN_TEMPLATE || 'session_token'
 
+// Check if auth bypass is enabled for local development
+const isAuthBypassEnabled = process.env.NEXT_PUBLIC_AUTH_BYPASS === 'true'
+const BYPASS_USER_ID = process.env.AUTH_BYPASS_USER_ID || 'local-dev-user'
+const BYPASS_EMAIL = process.env.AUTH_BYPASS_EMAIL || 'dev@localhost'
+
 function isTemplateMissingError(error: unknown): boolean {
   if (typeof error !== 'object' || error === null) {
     return false
@@ -13,6 +18,11 @@ function isTemplateMissingError(error: unknown): boolean {
 }
 
 export async function getUserEmail(): Promise<string | null> {
+  // Return bypass email in local dev mode
+  if (isAuthBypassEnabled) {
+    return BYPASS_EMAIL
+  }
+
   try {
     const { userId } = await auth()
     if (!userId) {
@@ -48,6 +58,14 @@ export async function getUserEmailOrThrow(): Promise<string> {
 }
 
 export async function getBackendAuthContext(): Promise<{ userId: string; token: string }> {
+  // Return bypass context in local dev mode
+  if (isAuthBypassEnabled) {
+    return {
+      userId: BYPASS_USER_ID,
+      token: 'bypass-token'
+    }
+  }
+
   const { userId, getToken } = await auth()
 
   if (!userId) {

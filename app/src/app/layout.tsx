@@ -22,6 +22,25 @@ export const metadata: Metadata = {
   },
 }
 
+// Check if auth bypass is enabled for local development
+const isAuthBypassEnabled = process.env.NEXT_PUBLIC_AUTH_BYPASS === 'true'
+
+function AppContent({ children }: { children: React.ReactNode }) {
+  return (
+    <ThemeProvider
+      attribute="class"
+      defaultTheme="system"
+      enableSystem
+      disableTransitionOnChange
+    >
+      <Toaster />
+      <SonnerToaster />
+      <NetworkStatus />
+      {children}
+    </ThemeProvider>
+  )
+}
+
 export default function RootLayout({
   children,
 }: {
@@ -30,19 +49,13 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={cn('min-h-screen font-sans')}>
-        <ClerkProvider>
-          <ThemeProvider
-            attribute="class"
-            defaultTheme="system"
-            enableSystem
-            disableTransitionOnChange
-          >
-            <Toaster />
-            <SonnerToaster />
-            <NetworkStatus />
-            {children}
-          </ThemeProvider>
-        </ClerkProvider>
+        {isAuthBypassEnabled ? (
+          <AppContent>{children}</AppContent>
+        ) : (
+          <ClerkProvider>
+            <AppContent>{children}</AppContent>
+          </ClerkProvider>
+        )}
       </body>
     </html>
   )
