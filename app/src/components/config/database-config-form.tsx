@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Loader2, Eye, EyeOff } from 'lucide-react'
+import { Loader2, Eye, EyeOff, Info, AlertTriangle, CheckCircle2 } from 'lucide-react'
 import { DatabaseConfig, ConnectionTestResponse } from '@/types/config'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
@@ -19,9 +19,25 @@ interface DatabaseConfigFormProps {
   onChange: (config: DatabaseConfig) => void
   disabled?: boolean
   isExistingConfig?: boolean
+  /** Whether this database is optional */
+  isOptional?: boolean
+  /** What feature requires this database (e.g., "merge operations") */
+  requiredFor?: string
+  /** Hint text when the database is not configured */
+  notConfiguredHint?: string
 }
 
-export function DatabaseConfigForm({ title, description, config, onChange, disabled, isExistingConfig }: DatabaseConfigFormProps) {
+export function DatabaseConfigForm({
+  title,
+  description,
+  config,
+  onChange,
+  disabled,
+  isExistingConfig,
+  isOptional = false,
+  requiredFor,
+  notConfiguredHint
+}: DatabaseConfigFormProps) {
   const [showPassword, setShowPassword] = useState(false)
   const [testing, setTesting] = useState(false)
   const [testResult, setTestResult] = useState<ConnectionTestResponse | null>(null)
@@ -87,20 +103,67 @@ export function DatabaseConfigForm({ title, description, config, onChange, disab
 
   const isFormValid = config.uri && config.username && (isExistingConfig || config.password)
 
+  // Determine status and styling
+  const getStatusBadge = () => {
+    if (isExistingConfig) {
+      return (
+        <Badge className="border-transparent bg-emerald-100/60 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300">
+          <CheckCircle2 className="mr-1 h-3 w-3" />
+          Connected
+        </Badge>
+      )
+    }
+    if (isOptional) {
+      return (
+        <Badge variant="outline" className="border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300">
+          <Info className="mr-1 h-3 w-3" />
+          Optional
+        </Badge>
+      )
+    }
+    if (requiredFor) {
+      return (
+        <Badge variant="outline" className="border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-300">
+          <AlertTriangle className="mr-1 h-3 w-3" />
+          Required for {requiredFor}
+        </Badge>
+      )
+    }
+    return null
+  }
+
   return (
-    <Card variant="glass" className="w-full border-white/15 bg-white/8 shadow-glass backdrop-blur-panel">
+    <Card variant="glass" className={cn(
+      "w-full border-white/15 bg-white/8 shadow-glass backdrop-blur-panel transition-all",
+      isExistingConfig && "border-emerald-500/20",
+      !isExistingConfig && isOptional && "border-blue-500/10 opacity-90",
+      !isExistingConfig && requiredFor && !isOptional && "border-amber-500/20"
+    )}>
       <CardHeader className="space-y-4 border-b border-white/10 pb-6">
         <div className="flex items-start justify-between gap-3">
-          <div className="space-y-1">
+          <div className="space-y-1.5">
             <CardTitle className="text-heading text-foreground">{title}</CardTitle>
             <CardDescription className="text-sm text-foreground/70">{description}</CardDescription>
           </div>
-          {isExistingConfig && (
-            <Badge variant="outline" className="border-white/20 bg-white/10 text-foreground/70">
-              Configured
-            </Badge>
-          )}
+          {getStatusBadge()}
         </div>
+
+        {/* Show hint when not configured */}
+        {!isExistingConfig && notConfiguredHint && (
+          <div className={cn(
+            "flex items-start gap-2 rounded-lg px-3 py-2 text-xs",
+            isOptional
+              ? "bg-blue-50 dark:bg-blue-950/20 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800"
+              : "bg-amber-50 dark:bg-amber-950/20 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800"
+          )}>
+            {isOptional ? (
+              <Info className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+            ) : (
+              <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+            )}
+            <span>{notConfiguredHint}</span>
+          </div>
+        )}
       </CardHeader>
       <CardContent className="space-y-6 p-6">
         <div className="rounded-xl border border-white/15 bg-white/10 p-4 text-xs text-foreground/80 shadow-inner">

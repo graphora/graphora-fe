@@ -11,7 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
-import { Loader2, ArrowLeft, HardDrive, Database } from 'lucide-react'
+import { Loader2, ArrowLeft, HardDrive, Database, Info, AlertTriangle, CheckCircle2, GitMerge } from 'lucide-react'
 import { DatabaseConfigForm } from '@/components/config/database-config-form'
 import { GeminiConfigForm } from '@/components/config/gemini-config-form'
 import { DatabaseConfig, DatabaseConfigInput, UserConfig, ConfigUpsertRequest } from '@/types/config'
@@ -252,12 +252,16 @@ function ConfigPageContent() {
 
       const sanitizedSavedConfig: UserConfig = {
         ...savedConfig,
-        stagingDb: { ...savedConfig.stagingDb, password: '' },
-        prodDb: { ...savedConfig.prodDb, password: '' },
+        stagingDb: savedConfig.stagingDb ? { ...savedConfig.stagingDb, password: '' } : null,
+        prodDb: savedConfig.prodDb ? { ...savedConfig.prodDb, password: '' } : null,
       }
       setConfig(sanitizedSavedConfig)
-      setStagingDb({ ...savedConfig.stagingDb, password: '' })
-      setProdDb({ ...savedConfig.prodDb, password: '' })
+      if (savedConfig.stagingDb) {
+        setStagingDb({ ...savedConfig.stagingDb, password: '' })
+      }
+      if (savedConfig.prodDb) {
+        setProdDb({ ...savedConfig.prodDb, password: '' })
+      }
       stagingDbDirtyRef.current = false
       prodDbDirtyRef.current = false
       toast.success(`Configuration ${isUpdate ? 'updated' : 'created'} successfully`)
@@ -415,97 +419,156 @@ function ConfigPageContent() {
               <TabsTrigger value="ai-config">AI Config</TabsTrigger>
             </TabsList>
 
-            <TabsContent value="databases" className="flex flex-col gap-5">
-              {/* Storage Mode Info */}
-              <Alert className={cn(
-                "border-blue-200 bg-blue-50 dark:bg-blue-950/30 dark:border-blue-800",
-                hasStagingDb && "border-emerald-200 bg-emerald-50 dark:bg-emerald-950/30 dark:border-emerald-800"
-              )}>
-                {hasStagingDb ? (
-                  <Database className="h-4 w-4" />
-                ) : (
-                  <HardDrive className="h-4 w-4" />
-                )}
-                <AlertDescription className={cn(
-                  "text-blue-800 dark:text-blue-300",
-                  hasStagingDb && "text-emerald-800 dark:text-emerald-300"
+            <TabsContent value="databases" className="flex flex-col gap-6">
+              {/* Quick Status Overview */}
+              <div className="grid gap-4 sm:grid-cols-2">
+                {/* Staging Status Card */}
+                <Card className={cn(
+                  "border transition-all",
+                  config?.stagingDb?.uri
+                    ? "border-emerald-200 dark:border-emerald-800 bg-emerald-50/50 dark:bg-emerald-950/20"
+                    : "border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-950/20"
                 )}>
-                  {hasStagingDb ? (
-                    <>
-                      <strong>Persistent Storage:</strong> Your data will be stored in Neo4j and persist across sessions.
-                    </>
-                  ) : (
-                    <>
-                      <strong>In-Memory Storage:</strong> Database configuration is optional. Without it, data is stored
-                      temporarily in memory and won't persist across server restarts. Configure a staging database below for persistent storage.
-                    </>
-                  )}
+                  <CardContent className="p-4">
+                    <div className="flex items-start gap-3">
+                      <div className={cn(
+                        "rounded-full p-2",
+                        config?.stagingDb?.uri
+                          ? "bg-emerald-100 dark:bg-emerald-900/50"
+                          : "bg-blue-100 dark:bg-blue-900/50"
+                      )}>
+                        {config?.stagingDb?.uri ? (
+                          <Database className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                        ) : (
+                          <HardDrive className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium text-sm">Staging</span>
+                          <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-blue-300 dark:border-blue-700 text-blue-600 dark:text-blue-400">
+                            Optional
+                          </Badge>
+                        </div>
+                        <p className={cn(
+                          "text-xs mt-0.5",
+                          config?.stagingDb?.uri
+                            ? "text-emerald-700 dark:text-emerald-300"
+                            : "text-blue-700 dark:text-blue-300"
+                        )}>
+                          {config?.stagingDb?.uri ? "Connected - Data persists across sessions" : "Using in-memory storage"}
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Production Status Card */}
+                <Card className={cn(
+                  "border transition-all",
+                  config?.prodDb?.uri
+                    ? "border-emerald-200 dark:border-emerald-800 bg-emerald-50/50 dark:bg-emerald-950/20"
+                    : "border-amber-200 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-950/20"
+                )}>
+                  <CardContent className="p-4">
+                    <div className="flex items-start gap-3">
+                      <div className={cn(
+                        "rounded-full p-2",
+                        config?.prodDb?.uri
+                          ? "bg-emerald-100 dark:bg-emerald-900/50"
+                          : "bg-amber-100 dark:bg-amber-900/50"
+                      )}>
+                        {config?.prodDb?.uri ? (
+                          <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                        ) : (
+                          <GitMerge className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium text-sm">Production</span>
+                          <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-amber-300 dark:border-amber-700 text-amber-600 dark:text-amber-400">
+                            For Merge
+                          </Badge>
+                        </div>
+                        <p className={cn(
+                          "text-xs mt-0.5",
+                          config?.prodDb?.uri
+                            ? "text-emerald-700 dark:text-emerald-300"
+                            : "text-amber-700 dark:text-amber-300"
+                        )}>
+                          {config?.prodDb?.uri ? "Connected - Ready for merge operations" : "Required to merge staged data"}
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Info Banner */}
+              <Alert className="border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50">
+                <Info className="h-4 w-4 text-slate-600 dark:text-slate-400" />
+                <AlertDescription className="text-slate-700 dark:text-slate-300 text-sm">
+                  <strong>How databases work:</strong> The staging database stores your work-in-progress data.
+                  When you're ready, you can merge staged data to your production database.
+                  Without a staging database, data is stored temporarily in memory.
                 </AlertDescription>
               </Alert>
 
-              {/* Configuration Status */}
-              <Card className="enhanced-card">
-                <CardHeader className="enhanced-card-header">
-                  <CardTitle className="flex items-center justify-between text-heading-sm">
-                    <span className="font-medium">Database Configuration</span>
-                    <div className="flex items-center gap-2">
-                      <Badge className={cn(
-                        'border border-transparent',
-                        hasStagingDb
-                          ? 'bg-emerald-100/60 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300'
-                          : 'bg-blue-100/60 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300'
-                      )}>
-                        {hasStagingDb ? (
-                          <>
-                            <Database className="h-3 w-3 mr-1" />
-                            Persistent
-                          </>
-                        ) : (
-                          <>
-                            <HardDrive className="h-3 w-3 mr-1" />
-                            In-Memory
-                          </>
-                        )}
-                      </Badge>
-                      <Badge variant="outline" className="text-muted-foreground">
-                        Optional
-                      </Badge>
-                    </div>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="enhanced-card-content">
-                  <div className="space-y-4">
-                    <div className="text-sm text-muted-foreground">
-                      Database configuration is optional. Configure a staging database for persistent storage,
-                      or skip to use in-memory storage (data won't persist across sessions).
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
               {/* Database Configuration Forms */}
-              <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-                <DatabaseConfigForm
-                  title="Staging Database"
-                  description="Neo4j database used for testing and development"
-                  config={stagingDb}
-                  onChange={handleStagingDbChange}
-                  disabled={saving}
-                  isExistingConfig={!!config?.stagingDb?.uri}
-                />
+              <div className="space-y-6">
+                {/* Production Database - Show first since it's more important for merge */}
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 px-1">
+                    <GitMerge className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                    <h3 className="text-sm font-medium text-foreground">Production Database</h3>
+                    <span className="text-xs text-muted-foreground">— Required for merge operations</span>
+                  </div>
+                  <DatabaseConfigForm
+                    title="Production Database"
+                    description="Your production Neo4j database where staged data gets merged"
+                    config={prodDb}
+                    onChange={handleProdDbChange}
+                    disabled={saving}
+                    isExistingConfig={!!config?.prodDb?.uri}
+                    isOptional={false}
+                    requiredFor="merge"
+                    notConfiguredHint="Configure this to merge your staged data into production. Without it, you can still process documents but cannot merge results."
+                  />
+                </div>
 
-                <DatabaseConfigForm
-                  title="Production Database"
-                  description="Neo4j database used for live data and production merges"
-                  config={prodDb}
-                  onChange={handleProdDbChange}
-                  disabled={saving}
-                  isExistingConfig={!!config?.prodDb?.uri}
-                />
+                {/* Staging Database */}
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 px-1">
+                    <HardDrive className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                    <h3 className="text-sm font-medium text-foreground">Staging Database</h3>
+                    <span className="text-xs text-muted-foreground">— Optional (uses in-memory if not set)</span>
+                  </div>
+                  <DatabaseConfigForm
+                    title="Staging Database"
+                    description="Neo4j database for work-in-progress data before merging to production"
+                    config={stagingDb}
+                    onChange={handleStagingDbChange}
+                    disabled={saving}
+                    isExistingConfig={!!config?.stagingDb?.uri}
+                    isOptional={true}
+                    notConfiguredHint="Not required. Without this, your staging data will be stored in memory and lost when the session ends. Configure for persistent staging."
+                  />
+                </div>
               </div>
 
               {/* Database Save Button */}
-              <div className="flex justify-end">
+              <div className="flex items-center justify-between gap-4 pt-2">
+                <p className="text-xs text-muted-foreground">
+                  {!stagingDb.uri && !prodDb.uri
+                    ? "Fill in at least one database to save"
+                    : stagingDb.uri && prodDb.uri
+                      ? "Both databases configured"
+                      : stagingDb.uri
+                        ? "Only staging configured — you won't be able to merge"
+                        : "Only production configured — staging will use in-memory storage"
+                  }
+                </p>
                 <Button
                   onClick={handleSave}
                   disabled={saving || (!stagingDb.uri && !prodDb.uri)}
@@ -514,7 +577,7 @@ function ConfigPageContent() {
                   {saving ? (
                     <>
                       <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Saving Database Configuration...
+                      Saving...
                     </>
                   ) : (
                     'Save Database Configuration'
@@ -522,28 +585,27 @@ function ConfigPageContent() {
                 </Button>
               </div>
 
-              {/* Connection Examples */}
-              <Card className="enhanced-card">
-                <CardHeader className="enhanced-card-header">
-                  <CardTitle className="text-base">Neo4j Connection Examples</CardTitle>
-                </CardHeader>
-                <CardContent className="enhanced-card-content">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                    <div className="p-3 rounded-lg bg-muted/30">
-                      <div className="font-medium mb-1">Local Development</div>
-                      <div className="text-muted-foreground font-mono text-xs">neo4j://localhost:7687</div>
-                    </div>
-                    <div className="p-3 rounded-lg bg-muted/30">
-                      <div className="font-medium mb-1">Neo4j Aura Cloud</div>
-                      <div className="text-muted-foreground font-mono text-xs">neo4j+s://your-instance.databases.neo4j.io</div>
-                    </div>
-                    <div className="p-3 rounded-lg bg-muted/30">
-                      <div className="font-medium mb-1">Self-hosted with TLS</div>
-                      <div className="text-muted-foreground font-mono text-xs">bolt+s://your-server:7687</div>
-                    </div>
+              {/* Connection Examples - Collapsed by default */}
+              <details className="group">
+                <summary className="cursor-pointer text-sm font-medium text-muted-foreground hover:text-foreground transition-colors flex items-center gap-2">
+                  <span className="group-open:rotate-90 transition-transform">▶</span>
+                  Neo4j Connection Examples
+                </summary>
+                <div className="mt-3 grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                  <div className="p-3 rounded-lg bg-muted/30 border border-border/50">
+                    <div className="font-medium mb-1">Local Development</div>
+                    <code className="text-muted-foreground text-xs">neo4j://localhost:7687</code>
                   </div>
-                </CardContent>
-              </Card>
+                  <div className="p-3 rounded-lg bg-muted/30 border border-border/50">
+                    <div className="font-medium mb-1">Neo4j Aura Cloud</div>
+                    <code className="text-muted-foreground text-xs">neo4j+s://xxx.databases.neo4j.io</code>
+                  </div>
+                  <div className="p-3 rounded-lg bg-muted/30 border border-border/50">
+                    <div className="font-medium mb-1">Self-hosted with TLS</div>
+                    <code className="text-muted-foreground text-xs">bolt+s://your-server:7687</code>
+                  </div>
+                </div>
+              </details>
             </TabsContent>
 
             <TabsContent value="ai-config" className="flex flex-col gap-5">
