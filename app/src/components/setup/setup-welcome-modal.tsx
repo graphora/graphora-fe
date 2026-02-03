@@ -4,7 +4,7 @@ import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
 import { IconBadge } from '@/components/ui/icon-badge'
@@ -66,6 +66,11 @@ export function SetupWelcomeModal({ isOpen, onClose, setupStatus, onRefresh }: S
     onClose()
   }
 
+  const handleDontShowAgain = () => {
+    localStorage.setItem('setup-modal-dismissed-permanent', 'true')
+    onClose()
+  }
+
   // Can skip if in memory mode (DB not required) or if DB is actually configured
   const canSkip = setupStatus.isMemoryStorage || setupStatus.actualHasDbConfig
 
@@ -76,9 +81,9 @@ export function SetupWelcomeModal({ isOpen, onClose, setupStatus, onRefresh }: S
         if (!open) onClose()
       }}
     >
-      <DialogContent className="glass-surface max-w-5xl overflow-hidden border border-white/15 p-0 text-card-foreground shadow-large">
-        <div className="grid gap-px bg-white/10 md:grid-cols-[1fr_1.2fr] lg:grid-cols-[1.05fr_1.25fr]">
-          <aside className="relative flex flex-col justify-between gap-8 bg-gradient-to-br from-primary/25 via-background/30 to-background/65 p-8 text-left backdrop-blur-panel">
+      <DialogContent className="glass-surface max-w-3xl max-h-[85vh] overflow-hidden border border-white/15 p-0 text-card-foreground shadow-large">
+        <div className="grid gap-px bg-white/10 md:grid-cols-[1fr_1.4fr] overflow-y-auto max-h-[85vh]">
+          <aside className="relative flex flex-col justify-between gap-6 bg-gradient-to-br from-primary/25 via-background/30 to-background/65 p-6 text-left backdrop-blur-panel">
             <div className="space-y-6">
               <div className="flex items-start justify-between">
                 <Badge
@@ -102,7 +107,7 @@ export function SetupWelcomeModal({ isOpen, onClose, setupStatus, onRefresh }: S
                 </DialogDescription>
               </div>
 
-              <div className="space-y-4 rounded-2xl border border-white/15 bg-white/8 p-6 shadow-inner backdrop-blur-xl">
+              <div className="space-y-3 rounded-xl border border-white/15 bg-white/8 p-4 shadow-inner backdrop-blur-xl">
                 <div className="flex items-center justify-between text-[0.7rem] font-medium uppercase tracking-[0.22em] text-foreground/60">
                   <span>Setup Progress</span>
                   <span className="text-foreground/80">
@@ -145,28 +150,22 @@ export function SetupWelcomeModal({ isOpen, onClose, setupStatus, onRefresh }: S
               </div>
             </div>
 
-            <div className="rounded-xl border border-white/10 bg-white/7 p-5 text-xs text-foreground/75 shadow-inner">
-              <div className="flex items-start gap-3">
-                <Shield className="h-4 w-4 text-primary" />
-                <div className="space-y-2">
-                  <p className="font-medium uppercase tracking-[0.16em] text-foreground/80">Security first</p>
-                  <p>
-                    Database credentials and API keys are encrypted with hardware-backed keys before they ever leave your browser. Graphora never stores plain-text secrets.
-                  </p>
-                  <button
-                    type="button"
-                    onClick={onRefresh}
-                    className="inline-flex items-center gap-2 font-medium text-primary transition-colors hover:text-primary/80"
-                  >
-                    <HelpCircle className="h-3.5 w-3.5" />
-                    Need assistance? Refresh status
-                  </button>
-                </div>
+            <div className="rounded-lg border border-white/10 bg-white/7 p-3 text-xs text-foreground/75">
+              <div className="flex items-center gap-2">
+                <Shield className="h-3.5 w-3.5 text-primary shrink-0" />
+                <p>Credentials are encrypted before leaving your browser.</p>
+                <button
+                  type="button"
+                  onClick={onRefresh}
+                  className="ml-auto text-primary hover:text-primary/80 shrink-0"
+                >
+                  <HelpCircle className="h-3.5 w-3.5" />
+                </button>
               </div>
             </div>
           </aside>
 
-          <section className="stack-gap bg-background/85 p-8 backdrop-blur-panel">
+          <section className="stack-gap bg-background/85 p-6 backdrop-blur-panel overflow-y-auto">
             <div className="stack-gap">
               {/* Production Database Card - Required for merge */}
               <Card
@@ -178,50 +177,31 @@ export function SetupWelcomeModal({ isOpen, onClose, setupStatus, onRefresh }: S
                     : 'bg-gradient-to-br from-warning/20 via-background/35 to-background/10'
                 )}
               >
-                <CardHeader className="pb-4">
-                  <CardTitle className="flex items-center justify-between text-heading">
-                    <span className="flex items-center gap-3">
-                      <IconBadge
-                        variant={setupStatus.hasProdDb ? 'success' : 'warning'}
-                        size="sm"
-                      >
-                        <Database className={cn('h-4 w-4', setupStatus.hasProdDb ? 'text-success' : 'text-warning')} />
-                      </IconBadge>
+                <CardHeader className="pb-2 pt-4 px-4">
+                  <CardTitle className="flex items-center justify-between text-sm">
+                    <span className="flex items-center gap-2">
+                      <Database className={cn('h-4 w-4', setupStatus.hasProdDb ? 'text-success' : 'text-warning')} />
                       Production database
                     </span>
-                    <Badge variant={setupStatus.hasProdDb ? 'success' : 'warning'}>
+                    <Badge variant={setupStatus.hasProdDb ? 'success' : 'warning'} className="text-xs">
                       {setupStatus.hasProdDb ? 'Configured' : 'Required for merge'}
                     </Badge>
                   </CardTitle>
-                  <CardDescription>
-                    {setupStatus.hasProdDb
-                      ? 'Production Neo4j database connected for merge operations.'
-                      : 'Connect your production Neo4j database to enable merge operations.'}
-                  </CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4">
+                <CardContent className="space-y-3 px-4 pb-4">
                   {setupStatus.hasProdDb ? (
-                    <div className="rounded-lg border border-success/25 bg-success/10 px-4 py-3 text-success">
-                      <p className="font-medium uppercase tracking-[0.14em] text-success/70">Production</p>
-                      <p className="text-display-xs">✓</p>
-                      <p className="text-xs text-success/80">Connected</p>
-                    </div>
+                    <p className="text-xs text-success">✓ Connected</p>
                   ) : (
-                    <div className="space-y-4">
-                      <p className="text-body text-muted-foreground">
-                        Provide your production Neo4j URI and credentials. This is required to merge staged data into your production graph.
-                      </p>
-                      <Button
-                        onClick={() => handleNavigateToConfig('databases')}
-                        variant="cta"
-                        className="w-full justify-center text-sm"
-                        disabled={isNavigating}
-                      >
-                        <Database className="mr-2 h-4 w-4" />
-                        Configure production database
-                        <ArrowRight className="ml-2 h-4 w-4" />
-                      </Button>
-                    </div>
+                    <Button
+                      onClick={() => handleNavigateToConfig('databases')}
+                      variant="cta"
+                      size="sm"
+                      className="w-full justify-center text-xs"
+                      disabled={isNavigating}
+                    >
+                      Configure
+                      <ArrowRight className="ml-1.5 h-3 w-3" />
+                    </Button>
                   )}
                 </CardContent>
               </Card>
@@ -236,55 +216,35 @@ export function SetupWelcomeModal({ isOpen, onClose, setupStatus, onRefresh }: S
                     : 'bg-gradient-to-br from-info/15 via-background/40 to-background/10'
                 )}
               >
-                <CardHeader className="pb-4">
-                  <CardTitle className="flex items-center justify-between text-heading">
-                    <span className="flex items-center gap-3">
-                      <IconBadge
-                        variant={setupStatus.hasStagingDb ? 'success' : 'info'}
-                        size="sm"
-                      >
-                        {setupStatus.hasStagingDb ? (
-                          <Database className="h-4 w-4 text-success" />
-                        ) : (
-                          <HardDrive className="h-4 w-4 text-info" />
-                        )}
-                      </IconBadge>
+                <CardHeader className="pb-2 pt-4 px-4">
+                  <CardTitle className="flex items-center justify-between text-sm">
+                    <span className="flex items-center gap-2">
+                      {setupStatus.hasStagingDb ? (
+                        <Database className="h-4 w-4 text-success" />
+                      ) : (
+                        <HardDrive className="h-4 w-4 text-info" />
+                      )}
                       Staging database
                     </span>
-                    <Badge variant={setupStatus.hasStagingDb ? 'success' : 'info'}>
-                      {setupStatus.hasStagingDb ? 'Configured' : 'Using in-memory'}
+                    <Badge variant={setupStatus.hasStagingDb ? 'success' : 'info'} className="text-xs">
+                      {setupStatus.hasStagingDb ? 'Configured' : 'In-memory'}
                     </Badge>
                   </CardTitle>
-                  <CardDescription>
-                    {setupStatus.hasStagingDb
-                      ? 'Staging Neo4j database connected for persistent staging.'
-                      : 'Using in-memory storage for staging. Configure a staging database for persistence across sessions.'}
-                  </CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4">
+                <CardContent className="space-y-3 px-4 pb-4">
                   {setupStatus.hasStagingDb ? (
-                    <div className="rounded-lg border border-success/25 bg-success/10 px-4 py-3 text-success">
-                      <p className="font-medium uppercase tracking-[0.14em] text-success/70">Staging</p>
-                      <p className="text-display-xs">✓</p>
-                      <p className="text-xs text-success/80">Connected</p>
-                    </div>
+                    <p className="text-xs text-success">✓ Connected</p>
                   ) : (
-                    <div className="space-y-4">
-                      <div className="rounded-lg border border-info/25 bg-info/10 px-4 py-3 text-info">
-                        <p className="font-medium uppercase tracking-[0.14em] text-info/70">In-Memory Mode</p>
-                        <p className="text-xs text-info/80">Staged data is stored temporarily and will be cleared when the session ends.</p>
-                      </div>
-                      <Button
-                        onClick={() => handleNavigateToConfig('databases')}
-                        variant="outline"
-                        className="w-full justify-center text-sm"
-                        disabled={isNavigating}
-                      >
-                        <Database className="mr-2 h-4 w-4" />
-                        Configure staging database (optional)
-                        <ArrowRight className="ml-2 h-4 w-4" />
-                      </Button>
-                    </div>
+                    <Button
+                      onClick={() => handleNavigateToConfig('databases')}
+                      variant="outline"
+                      size="sm"
+                      className="w-full justify-center text-xs"
+                      disabled={isNavigating}
+                    >
+                      Configure (optional)
+                      <ArrowRight className="ml-1.5 h-3 w-3" />
+                    </Button>
                   )}
                 </CardContent>
               </Card>
@@ -298,54 +258,34 @@ export function SetupWelcomeModal({ isOpen, onClose, setupStatus, onRefresh }: S
                     : 'bg-gradient-to-br from-info/10 via-background/35 to-background/10'
                 )}
               >
-                <CardHeader className="pb-4">
-                  <CardTitle className="flex items-center justify-between text-heading">
-                    <span className="flex items-center gap-3">
-                      <IconBadge variant="info" size="sm">
-                        <Sparkles className={cn('h-4 w-4', setupStatus.hasAiConfig ? 'text-info' : 'text-muted-foreground')} />
-                      </IconBadge>
+                <CardHeader className="pb-2 pt-4 px-4">
+                  <CardTitle className="flex items-center justify-between text-sm">
+                    <span className="flex items-center gap-2">
+                      <Sparkles className={cn('h-4 w-4', setupStatus.hasAiConfig ? 'text-info' : 'text-muted-foreground')} />
                       AI configuration
                     </span>
-                    <Badge variant={setupStatus.hasAiConfig ? 'info' : 'neutral'}>
-                      {setupStatus.hasAiConfig ? 'Configured' : 'Recommended'}
+                    <Badge variant={setupStatus.hasAiConfig ? 'info' : 'neutral'} className="text-xs">
+                      {setupStatus.hasAiConfig ? 'Configured' : 'Required'}
                     </Badge>
                   </CardTitle>
-                  <CardDescription>
-                    Unlock AI-powered summarisation, conflict resolution, and schema insights with Gemini.
-                  </CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4">
+                <CardContent className="space-y-3 px-4 pb-4">
                   {setupStatus.hasAiConfig ? (
-                    <div className="grid gap-3 text-sm">
-                      <div className="flex items-center justify-between rounded-lg border border-info/20 bg-info/10 px-4 py-3 text-info">
-                        <span className="uppercase tracking-[0.14em] text-info/70">Provider</span>
-                        <span className="font-medium">{setupStatus.aiConfig?.provider_display_name}</span>
-                      </div>
-                      <div className="flex items-center justify-between rounded-lg border border-info/20 bg-info/10 px-4 py-3 text-info">
-                        <span className="uppercase tracking-[0.14em] text-info/70">API key</span>
-                        <span className="font-mono text-sm">{setupStatus.aiConfig?.api_key_masked}</span>
-                      </div>
-                      <div className="flex items-center justify-between rounded-lg border border-info/20 bg-info/10 px-4 py-3 text-info">
-                        <span className="uppercase tracking-[0.14em] text-info/70">Default model</span>
-                        <span className="font-medium">{setupStatus.aiConfig?.default_model_display_name}</span>
-                      </div>
+                    <div className="space-y-1 text-xs text-info">
+                      <p>✓ {setupStatus.aiConfig?.provider_display_name}</p>
+                      <p className="text-muted-foreground">{setupStatus.aiConfig?.default_model_display_name}</p>
                     </div>
                   ) : (
-                    <div className="space-y-4">
-                      <p className="text-body text-muted-foreground">
-                        Add your Gemini API key and select a default model to enable intelligent enrichment and QA assistance across workflows.
-                      </p>
-                      <Button
-                        onClick={() => handleNavigateToConfig('ai-config')}
-                        variant="cta"
-                        className="w-full justify-center text-sm"
-                        disabled={isNavigating}
-                      >
-                        <Sparkles className="mr-2 h-4 w-4" />
-                        Configure AI integration
-                        <ArrowRight className="ml-2 h-4 w-4" />
-                      </Button>
-                    </div>
+                    <Button
+                      onClick={() => handleNavigateToConfig('ai-config')}
+                      variant="cta"
+                      size="sm"
+                      className="w-full justify-center text-xs"
+                      disabled={isNavigating}
+                    >
+                      Configure
+                      <ArrowRight className="ml-1.5 h-3 w-3" />
+                    </Button>
                   )}
                 </CardContent>
               </Card>
@@ -379,6 +319,18 @@ export function SetupWelcomeModal({ isOpen, onClose, setupStatus, onRefresh }: S
                 </Button>
               )}
             </div>
+
+            {!setupStatus.isFullyConfigured && (
+              <div className="pt-2 text-center">
+                <button
+                  type="button"
+                  onClick={handleDontShowAgain}
+                  className="text-xs text-muted-foreground/70 hover:text-muted-foreground transition-colors underline-offset-2 hover:underline"
+                >
+                  Don&apos;t show this again
+                </button>
+              </div>
+            )}
           </section>
         </div>
       </DialogContent>

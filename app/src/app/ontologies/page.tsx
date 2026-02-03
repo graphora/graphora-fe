@@ -6,9 +6,9 @@ import { PageHeader } from '@/components/layouts/page-header'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { 
-  Database, 
-  FileText, 
+import {
+  Database,
+  FileText,
   Edit,
   Play,
   Trash2,
@@ -16,7 +16,8 @@ import {
   Search,
   Filter,
   Download,
-  Clock
+  Clock,
+  LayoutTemplate
 } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import Link from 'next/link'
@@ -220,17 +221,27 @@ export default function OntologiesPage() {
                   {ontologies.length === 0 ? 'No ontologies found' : 'No matching ontologies'}
                 </h3>
                 <p className="text-muted-foreground">
-                  {ontologies.length === 0 
+                  {ontologies.length === 0
                     ? 'Create your first ontology to define the structure of your knowledge graph.'
                     : 'Try adjusting your search terms or create a new ontology.'
                   }
                 </p>
-                <Link href="/ontology">
-                  <Button variant="cta">
-                    <Plus className="h-4 w-4 mr-2" />
-                    Create First Ontology
-                  </Button>
-                </Link>
+                <div className="flex flex-col sm:flex-row items-center gap-3 mt-2">
+                  <Link href="/ontology">
+                    <Button variant="cta">
+                      <Plus className="h-4 w-4 mr-2" />
+                      Create from Scratch
+                    </Button>
+                  </Link>
+                  {ontologies.length === 0 && (
+                    <Link href="/ontology?templates=true">
+                      <Button variant="outline">
+                        <LayoutTemplate className="h-4 w-4 mr-2" />
+                        Browse Templates
+                      </Button>
+                    </Link>
+                  )}
+                </div>
               </CardContent>
             </Card>
           ) : (

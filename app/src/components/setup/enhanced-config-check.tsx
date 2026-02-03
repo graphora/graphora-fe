@@ -39,15 +39,22 @@ export function EnhancedConfigCheck({
   const [showModal, setShowModal] = useState(false)
   const [hasShownModal, setHasShownModal] = useState(false)
 
-  // Check if user has dismissed the modal recently (within 24 hours)
+  // Check if user has dismissed the modal
   const shouldShowModal = useCallback(() => {
     if (!showSetupModal) return false
-    
+
+    // Check for permanent dismissal
+    const permanentDismiss = localStorage.getItem('setup-modal-dismissed-permanent')
+    if (permanentDismiss === 'true') {
+      return false
+    }
+
+    // Check for temporary dismissal (7 days)
     const dismissed = localStorage.getItem('setup-modal-dismissed')
     if (dismissed) {
       const dismissedTime = parseInt(dismissed)
-      const oneDayMs = 24 * 60 * 60 * 1000
-      if (Date.now() - dismissedTime < oneDayMs) {
+      const sevenDaysMs = 7 * 24 * 60 * 60 * 1000
+      if (Date.now() - dismissedTime < sevenDaysMs) {
         return false
       }
     }

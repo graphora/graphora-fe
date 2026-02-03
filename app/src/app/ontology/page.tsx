@@ -8,12 +8,13 @@ import { Input } from '@/components/ui/input'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { YAMLEditor } from '@/components/ontology/yaml-editor'
 import { EntityList } from '@/components/ontology/entity-list'
+import { TemplateSelector } from '@/components/ontology/template-selector'
 import { useOntologyEditorStore } from '@/lib/store/ontology-editor-store'
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable'
 import { EnhancedWorkflowLayout, WorkflowStep } from '@/components/enhanced-workflow-layout'
 import { PageHeader } from '@/components/layouts/page-header'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { Search, Upload, Play, Code2, Grid2x2, SplitSquareVertical, Settings, Database, Save, ArrowLeft, Edit2, Check, X, Download } from 'lucide-react'
+import { Search, Upload, Play, Code2, Grid2x2, SplitSquareVertical, Settings, Database, Save, ArrowLeft, Edit2, Check, X, Download, LayoutTemplate } from 'lucide-react'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { VisualEditor } from '@/components/ontology/visual-editor'
 import { cn } from '@/lib/utils'
@@ -249,11 +250,20 @@ function OntologyPageContent() {
   const [editingFilename, setEditingFilename] = useState('')
   const [ontologyTitle, setOntologyTitle] = useState('My Ontology')
 
+  // Template selector state
+  const [isTemplateSelectorOpen, setIsTemplateSelectorOpen] = useState(false)
+
   // Load existing ontology if ID is provided in URL
   useEffect(() => {
     const ontologyId = searchParams.get('id')
     if (ontologyId) {
       loadExistingOntology(ontologyId)
+    }
+
+    // Auto-open template selector if templates=true is in URL
+    const showTemplates = searchParams.get('templates')
+    if (showTemplates === 'true') {
+      setIsTemplateSelectorOpen(true)
     }
   }, [searchParams]) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -488,6 +498,14 @@ function OntologyPageContent() {
     updateFromYaml(SAMPLE_YAML)
     setOntologyTitle('Sample Ontology')
     setHasUnsavedChanges(false) // Reset unsaved changes when loading sample
+  }, [updateFromYaml])
+
+  const handleSelectTemplate = useCallback((template: { name: string; content?: string }) => {
+    if (template.content) {
+      updateFromYaml(template.content)
+      setOntologyTitle(template.name)
+      setHasUnsavedChanges(true)
+    }
   }, [updateFromYaml])
 
   const handleFileUpload = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
@@ -732,9 +750,18 @@ function OntologyPageContent() {
                     <span className="text-xs font-medium">Entities</span>
                   </div>
                   <div className="flex gap-2 ml-auto">
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 bg-white/60 backdrop-blur-sm hover:bg-white/70 dark:bg-slate-800/70 dark:hover:bg-slate-700/70 shadow-soft"
+                      onClick={() => setIsTemplateSelectorOpen(true)}
+                      title="Browse Templates"
+                    >
+                      <LayoutTemplate className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
                       className="h-7 w-7 bg-white/60 backdrop-blur-sm hover:bg-white/70 dark:bg-slate-800/70 dark:hover:bg-slate-700/70 shadow-soft"
                       onClick={loadSampleYaml}
                       title="Load Sample Ontology"
@@ -743,9 +770,9 @@ function OntologyPageContent() {
                         <path d="M7.49991 0.876892C3.84222 0.876892 0.877075 3.84204 0.877075 7.49972C0.877075 11.1574 3.84222 14.1226 7.49991 14.1226C11.1576 14.1226 14.1227 11.1574 14.1227 7.49972C14.1227 3.84204 11.1576 0.876892 7.49991 0.876892ZM1.82707 7.49972C1.82707 4.36671 4.36689 1.82689 7.49991 1.82689C10.6329 1.82689 13.1727 4.36671 13.1727 7.49972C13.1727 10.6327 10.6329 13.1726 7.49991 13.1726C4.36689 13.1726 1.82707 10.6327 1.82707 7.49972ZM7.50003 4C7.77617 4 8.00003 4.22386 8.00003 4.5V7H10.5C10.7762 7 11 7.22386 11 7.5C11 7.77614 10.7762 8 10.5 8H7.50003C7.22389 8 7.00003 7.77614 7.00003 7.5V4.5C7.00003 4.22386 7.22389 4 7.50003 4Z" fill="currentColor" fillRule="evenodd" clipRule="evenodd"/>
                       </svg>
                     </Button>
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
+                    <Button
+                      variant="ghost"
+                      size="icon"
                       className="h-7 w-7 bg-white/60 backdrop-blur-sm hover:bg-white/70 dark:bg-slate-800/70 dark:hover:bg-slate-700/70 shadow-soft"
                       onClick={() => setIsCommandPaletteOpen(true)}
                       title="Search Entities"
@@ -858,6 +885,13 @@ function OntologyPageContent() {
           </ResizablePanelGroup>
         </div>
       </div>
+
+      {/* Template Selector Modal */}
+      <TemplateSelector
+        open={isTemplateSelectorOpen}
+        onOpenChange={setIsTemplateSelectorOpen}
+        onSelectTemplate={handleSelectTemplate}
+      />
     </EnhancedWorkflowLayout>
   )
 }
