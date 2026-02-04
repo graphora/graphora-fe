@@ -5,7 +5,7 @@ const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
 export async function POST(request: NextRequest) {
   try {
-    const headers = await getBackendAuthHeaders()
+    const { headers } = await getBackendAuthHeaders()
     const { searchParams } = new URL(request.url)
 
     // Forward query params
@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
     const response = await fetch(backendUrl.toString(), {
       method: 'POST',
       headers: {
-        ...headers,
+        ...(headers as Record<string, string>),
         'Content-Type': 'application/json',
       },
     })

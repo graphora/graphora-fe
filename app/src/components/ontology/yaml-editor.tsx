@@ -13,9 +13,11 @@ import { useTheme } from 'next-themes'
 interface YAMLEditorProps {
   value: string
   onChange: (value: string) => void
+  readOnly?: boolean
+  height?: string
 }
 
-export function YAMLEditor({ value, onChange }: YAMLEditorProps) {
+export function YAMLEditor({ value, onChange, readOnly = false, height }: YAMLEditorProps) {
   const [editorValue, setEditorValue] = useState(value)
   const [error, setError] = useState<string | null>(null)
   const [isFullScreen, setIsFullScreen] = useState(false)
@@ -65,14 +67,15 @@ export function YAMLEditor({ value, onChange }: YAMLEditorProps) {
         <div className="absolute inset-0 overflow-auto rounded-b-2xl">
           <CodeMirror
             value={editorValue}
-            height="100%"
+            height={height || "100%"}
             extensions={[
               StreamLanguage.define(yaml),
               EditorView.lineWrapping
             ]}
             onChange={handleChange}
+            editable={!readOnly}
             style={{
-              height: '100%',
+              height: height || '100%',
               minHeight: '100%',
               overflow: 'visible'
             }}

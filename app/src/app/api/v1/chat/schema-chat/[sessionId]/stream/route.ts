@@ -9,7 +9,7 @@ export async function POST(
 ) {
   try {
     const { sessionId } = await params
-    const headers = await getBackendAuthHeaders()
+    const { headers } = await getBackendAuthHeaders()
     const { searchParams } = new URL(request.url)
 
     // Forward query params to backend
@@ -22,7 +22,7 @@ export async function POST(
     const response = await fetch(backendUrl.toString(), {
       method: 'POST',
       headers: {
-        ...headers,
+        ...(headers as Record<string, string>),
         'Accept': 'text/event-stream',
       },
     })

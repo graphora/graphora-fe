@@ -9,7 +9,7 @@ export async function GET(
 ) {
   try {
     const { sessionId } = await params
-    const headers = await getBackendAuthHeaders()
+    const { headers } = await getBackendAuthHeaders()
 
     const response = await fetch(
       `${BACKEND_URL}/api/v1/chat/schema-chat/${sessionId}`,
