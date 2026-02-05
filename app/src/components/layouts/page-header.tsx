@@ -34,7 +34,7 @@ export function PageHeader({
   return (
     <div
       className={cn(
-        'relative sticky top-0 z-40 bg-background/92 backdrop-blur-xl shadow-[0_24px_60px_rgba(15,23,42,0.28)] p-4 after:pointer-events-none after:absolute after:bottom-0 after:left-0 after:right-0 after:h-px after:bg-gradient-to-r after:from-transparent after:via-white/12 after:to-transparent',
+        'relative sticky top-0 z-40 bg-background/95 backdrop-blur-sm border-b border-border/40 shadow-soft p-4',
         className
       )}
     >

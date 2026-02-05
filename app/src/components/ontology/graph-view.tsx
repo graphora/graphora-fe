@@ -273,13 +273,13 @@ export function GraphView({ ontology, onChange }: GraphViewProps) {
 
   const graphEditor = (
     <div className="h-full flex flex-col">
-      <div className="sticky top-0 z-10 flex justify-between items-center rounded-t-2xl border-b border-white/20 bg-white/70 p-2 shadow-[0_14px_32px_rgba(15,23,42,0.18)] backdrop-blur-xl dark:border-slate-700/60 dark:bg-slate-900/70">
+      <div className="sticky top-0 z-10 flex justify-between items-center rounded-t-xl  bg-card p-2 shadow-soft ">
         <div className="flex gap-1 pr-2 flex-nowrap text-foreground/80">
           {/* Hamburger menu only in standard view (not full screen) */}
           <div className={!isFullScreen ? 'block' : 'hidden'}>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="flex-shrink-0 h-8 w-8 bg-white/60 hover:bg-white/70 dark:bg-slate-800/70 dark:hover:bg-slate-700/70">
+                <Button variant="ghost" size="icon" className="flex-shrink-0 h-8 w-8 hover:bg-muted">
                   <Menu className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
@@ -347,7 +347,7 @@ export function GraphView({ ontology, onChange }: GraphViewProps) {
               variant="ghost"
               size="icon"
               onClick={handleZoomIn}
-              className="flex-shrink-0 ml-2 h-8 w-8 bg-white/60 hover:bg-white/70 dark:bg-slate-800/70 dark:hover:bg-slate-700/70"
+              className="flex-shrink-0 ml-2 h-8 w-8 hover:bg-muted"
             >
               <ZoomIn className="h-4 w-4" />
             </Button>
@@ -358,7 +358,7 @@ export function GraphView({ ontology, onChange }: GraphViewProps) {
               variant="ghost"
               size="icon"
               onClick={handleZoomOut}
-              className="flex-shrink-0 h-8 w-8 bg-white/60 hover:bg-white/70 dark:bg-slate-800/70 dark:hover:bg-slate-700/70"
+              className="flex-shrink-0 h-8 w-8 hover:bg-muted"
             >
               <ZoomOut className="h-4 w-4" />
             </Button>
@@ -369,7 +369,7 @@ export function GraphView({ ontology, onChange }: GraphViewProps) {
               variant="ghost"
               size="icon"
               onClick={handleResetView}
-              className="flex-shrink-0 h-8 w-8 bg-white/60 hover:bg-white/70 dark:bg-slate-800/70 dark:hover:bg-slate-700/70"
+              className="flex-shrink-0 h-8 w-8 hover:bg-muted"
             >
               <Group className="h-4 w-4" />
             </Button>
@@ -385,7 +385,7 @@ export function GraphView({ ontology, onChange }: GraphViewProps) {
                   variant="ghost"
                   size="icon"
                   onClick={handleAddNode}
-                  className="flex-shrink-0 h-8 w-8 bg-white/60 hover:bg-white/70 dark:bg-slate-800/70 dark:hover:bg-slate-700/70"
+                  className="flex-shrink-0 h-8 w-8 hover:bg-muted"
                 >
                   <Plus className="h-4 w-4" />
                 </Button>
@@ -444,7 +444,7 @@ export function GraphView({ ontology, onChange }: GraphViewProps) {
                   variant="ghost"
                   size="icon"
                   onClick={handleExportGraph}
-                  className="flex-shrink-0 h-8 w-8 bg-white/60 hover:bg-white/70 dark:bg-slate-800/70 dark:hover:bg-slate-700/70"
+                  className="flex-shrink-0 h-8 w-8 hover:bg-muted"
                 >
                   <Download className="h-4 w-4" />
                 </Button>
@@ -455,7 +455,7 @@ export function GraphView({ ontology, onChange }: GraphViewProps) {
                   variant="ghost"
                   size="icon"
                   onClick={handleImportGraph}
-                  className="flex-shrink-0 h-8 w-8 bg-white/60 hover:bg-white/70 dark:bg-slate-800/70 dark:hover:bg-slate-700/70"
+                  className="flex-shrink-0 h-8 w-8 hover:bg-muted"
                 >
                   <Upload className="h-4 w-4" />
                 </Button>
@@ -471,7 +471,7 @@ export function GraphView({ ontology, onChange }: GraphViewProps) {
               variant="ghost"
               size="icon"
               onClick={toggleFullScreen}
-              className="flex-shrink-0 h-8 w-8 bg-white/60 hover:bg-white/70 dark:bg-slate-800/70 dark:hover:bg-slate-700/70"
+              className="flex-shrink-0 h-8 w-8 hover:bg-muted"
             >
               {isFullScreen ? <Minimize className="h-4 w-4" /> : <Maximize className="h-4 w-4" />}
             </Button>
@@ -483,7 +483,7 @@ export function GraphView({ ontology, onChange }: GraphViewProps) {
               variant="cta"
               size="sm"
               onClick={handleSave}
-              className="flex-shrink-0 ml-2 shadow-[0_16px_32px_rgba(14,116,144,0.28)]"
+              className="flex-shrink-0 ml-2"
             >
               <Save className="h-4 w-4 mr-1" />
               Save to YAML
@@ -496,7 +496,7 @@ export function GraphView({ ontology, onChange }: GraphViewProps) {
         <GraphDisplay className="w-full h-full" />
       </div>
 
-      <div className="sticky bottom-0 z-10 rounded-b-2xl border-t border-white/15 bg-white/70 p-2 text-xs text-muted-foreground shadow-[0_-12px_28px_rgba(15,23,42,0.18)] backdrop-blur-xl dark:border-slate-700/60 dark:bg-slate-900/70">
+      <div className="sticky bottom-0 z-10 rounded-b-xl  bg-card p-2 text-xs text-muted-foreground shadow-soft ">
         <div className="flex justify-between">
           <div>
             <strong>Nodes:</strong> {Object.keys(graph.nodes).length} |

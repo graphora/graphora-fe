@@ -45,12 +45,12 @@ export function EntityList({ onLoadSample, showQuickActions = true }: EntityList
   return (
     <div className="space-y-5">
       {showQuickActions && (
-        <div className="rounded-2xl border border-white/20 bg-white/55 p-4 shadow-[0_18px_42px_rgba(15,23,42,0.14)] backdrop-blur-xl dark:border-slate-700/40 dark:bg-slate-900/45">
+        <div className="rounded-lg bg-card p-4 shadow-soft">
           <p className="text-xs font-semibold uppercase tracking-[0.28em] text-foreground/60">Quick Actions</p>
           <div className="mt-3 flex flex-col gap-2">
             <Button
               variant="cta"
-              className="w-full justify-center gap-2 text-sm shadow-[0_16px_32px_rgba(14,116,144,0.28)]"
+              className="w-full justify-center gap-2 text-sm"
               onClick={onLoadSample}
             >
               <Wand2 className="h-4 w-4" />
@@ -60,7 +60,7 @@ export function EntityList({ onLoadSample, showQuickActions = true }: EntityList
         </div>
       )}
 
-      <div className="rounded-2xl border border-white/15 bg-white/8 p-4 shadow-glass backdrop-blur-panel">
+      <div className="rounded-lg bg-muted/30 p-4">
         <p className="mb-3 text-xs uppercase tracking-[0.2em] text-foreground/55">Sections</p>
         <div className="space-y-2">
           {sections.length === 0 && (
@@ -70,7 +70,7 @@ export function EntityList({ onLoadSample, showQuickActions = true }: EntityList
             <div key={name} className="space-y-1">
               <button
                 type="button"
-                className="flex w-full items-center justify-between rounded-lg border border-transparent px-3 py-2 text-sm text-foreground/80 transition hover:border-primary/30 hover:bg-white/10"
+                className="flex w-full items-center justify-between rounded-lg  px-3 py-2 text-sm text-foreground/80 transition hover:border-primary/30 hover:bg-white/10"
                 onClick={() => toggleSection(name)}
               >
                 <span className="flex items-center gap-2">
@@ -103,7 +103,7 @@ export function EntityList({ onLoadSample, showQuickActions = true }: EntityList
         </div>
       </div>
 
-      <div className="rounded-2xl border border-white/15 bg-white/8 p-4 shadow-glass backdrop-blur-panel">
+      <div className="rounded-lg bg-muted/30 p-4">
         <p className="mb-3 text-xs uppercase tracking-[0.2em] text-foreground/55">Entities</p>
         <div className="space-y-1">
           {entities.length === 0 && (

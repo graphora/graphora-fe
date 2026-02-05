@@ -537,27 +537,27 @@ export default function DashboardPage() {
 
   const renderConflictSummary = () => {
     if (conflictsLoading) {
-      return <p className="text-body-xs text-muted-foreground">Loading conflicts…</p>
+      return <p className="text-xs text-muted-foreground">Loading conflicts…</p>
     }
 
     if (conflictsError) {
       return (
-        <p className="text-body-xs text-muted-foreground">
+        <p className="text-xs text-muted-foreground">
           Retry from the Merge tab once the service becomes available.
         </p>
       )
     }
 
     if (!conflictsSummary || conflictsSummary.conflicts_by_merge.length === 0) {
-      return <p className="text-body-xs text-muted-foreground">No conflicts require review.</p>
+      return <p className="text-xs text-muted-foreground">No conflicts require review.</p>
     }
 
     return conflictsSummary.conflicts_by_merge.slice(0, 4).map((conflict) => (
-      <div key={conflict.merge_id} className="rounded-lg border border-border/40 bg-background/70 p-3">
+      <div key={conflict.merge_id} className="rounded-lg bg-muted/30 p-3">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 space-y-1">
-            <p className="text-body-sm font-medium truncate">Merge {conflict.merge_id}</p>
-            <p className="text-body-xs text-muted-foreground">
+            <p className="text-sm font-medium truncate">Merge {conflict.merge_id}</p>
+            <p className="text-xs text-muted-foreground">
               {Object.entries(conflict.by_type)
                 .map(([type, count]) => `${type}: ${count}`)
                 .join(' · ')}
@@ -591,21 +591,21 @@ export default function DashboardPage() {
         />
 
         <div className="flex-1 overflow-y-auto min-h-0">
-          <div className="page-shell py-section stack-gap p-6 space-y-6">
+          <div className="p-6 space-y-6">
             {isDashboardLoading && (
-              <div className="flex items-center gap-2 rounded-xl border border-border/40 bg-card/60 px-3 py-2 text-body-xs text-muted-foreground">
+              <div className="flex items-center gap-2 px-3 py-2 text-xs text-muted-foreground">
                 <Loader2 className="h-4 w-4 animate-spin text-primary" />
                 Loading dashboard data…
               </div>
             )}
-            <section aria-labelledby="kpi-heading" className="space-y-4">
+            <section aria-labelledby="kpi-heading" className="space-y-3">
               <div className="flex items-center justify-between">
-                <h2 id="kpi-heading" className="text-heading-sm font-semibold">
+                <h2 id="kpi-heading" className="text-sm font-semibold">
                   Pipeline KPIs {windowStart && windowEnd ? `(${windowStart} → ${windowEnd})` : ''}
                 </h2>
                 {kpiErrorMessage && <Badge variant="destructive">{kpiErrorMessage}</Badge>}
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3">
                 <StatTile
                   value={formatNumber(metrics.totalRuns)}
                   label="Transforms"
@@ -646,14 +646,14 @@ export default function DashboardPage() {
               </div>
             </section>
 
-            <section aria-labelledby="action-center-heading" className="grid grid-cols-1 xl:grid-cols-3 gap-4">
-              <Card className="xl:col-span-2 border-border/40 bg-card/80 backdrop-blur">
+            <section aria-labelledby="action-center-heading" className="grid grid-cols-1 xl:grid-cols-3 gap-3">
+              <Card className="xl:col-span-2">
                 <CardHeader className="flex flex-row items-center justify-between gap-3">
                   <div>
-                    <CardTitle id="action-center-heading" className="text-heading-sm">
+                    <CardTitle id="action-center-heading" className="text-sm">
                       Action Center
                     </CardTitle>
-                    <p className="text-body-xs text-muted-foreground">
+                    <p className="text-xs text-muted-foreground">
                       Quality reviews, failed runs, and open merge conflicts
                     </p>
                   </div>
@@ -661,10 +661,10 @@ export default function DashboardPage() {
                     {derived.reviewQueue.length || 'No'} reviews
                   </Badge>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="rounded-xl border border-border/30 bg-muted/10 p-4">
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center gap-2 text-body-sm font-semibold text-foreground">
+                <CardContent className="space-y-3">
+                  <div className="rounded-md bg-muted/30 p-3">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2 text-xs font-medium text-foreground">
                         <TrendIcon icon={Gauge} tone="warning" /> Quality review queue
                       </div>
                       <Badge variant="outline">{derived.reviewQueue.length}</Badge>
@@ -677,8 +677,8 @@ export default function DashboardPage() {
                             className="flex items-center justify-between gap-3 rounded-lg bg-background/80 px-3 py-2 transition hover:bg-background"
                           >
                             <div className="min-w-0">
-                              <p className="text-body-sm font-medium truncate">{run.document_name}</p>
-                              <p className="text-body-xs text-muted-foreground">
+                              <p className="text-sm font-medium truncate">{run.document_name}</p>
+                              <p className="text-xs text-muted-foreground">
                                 Gate: {qualityStatusLabel(run.quality_gate_status)}
                               </p>
                             </div>
@@ -692,13 +692,13 @@ export default function DashboardPage() {
                         ))}
                       </div>
                     ) : (
-                      <p className="text-body-xs text-muted-foreground">No quality reviews pending.</p>
+                      <p className="text-xs text-muted-foreground">No quality reviews pending.</p>
                     )}
                   </div>
 
-                  <div className="rounded-xl border border-border/30 bg-muted/10 p-4">
+                  <div className="rounded-md bg-muted/30 p-4">
                     <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center gap-2 text-body-sm font-semibold text-foreground">
+                      <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
                         <TrendIcon icon={Flame} tone={derived.failedRuns.length ? 'critical' : 'default'} /> Failed runs
                       </div>
                       <Badge variant="outline">{derived.failedRuns.length}</Badge>
@@ -711,8 +711,8 @@ export default function DashboardPage() {
                             className="flex items-center justify-between gap-3 rounded-lg bg-background/80 px-3 py-2"
                           >
                             <div className="min-w-0">
-                              <p className="text-body-sm font-medium truncate">{run.document_name}</p>
-                              <p className="text-body-xs text-muted-foreground">
+                              <p className="text-sm font-medium truncate">{run.document_name}</p>
+                              <p className="text-xs text-muted-foreground">
                                 {dashboardDateFormatter(run.processing_started_at)}
                               </p>
                             </div>
@@ -721,19 +721,19 @@ export default function DashboardPage() {
                         ))}
                       </div>
                     ) : (
-                      <p className="text-body-xs text-muted-foreground">No failed runs in this window.</p>
+                      <p className="text-xs text-muted-foreground">No failed runs in this window.</p>
                     )}
                   </div>
                 </CardContent>
               </Card>
 
-              <Card className="border-border/40 bg-card/80 backdrop-blur">
+              <Card className="">
                 <CardHeader className="flex flex-row items-center justify-between gap-2">
                   <div className="space-y-1">
-                    <CardTitle className="text-heading-sm">Merge conflicts</CardTitle>
-                    <p className="text-body-xs text-muted-foreground">Open items needing manual resolution</p>
+                    <CardTitle className="text-sm">Merge conflicts</CardTitle>
+                    <p className="text-xs text-muted-foreground">Open items needing manual resolution</p>
                     {conflictsError && (
-                      <p className="text-body-xs text-destructive">{conflictsError}</p>
+                      <p className="text-xs text-destructive">{conflictsError}</p>
                     )}
                   </div>
                   <Badge
@@ -752,14 +752,14 @@ export default function DashboardPage() {
               </Card>
             </section>
 
-            <section aria-labelledby="performance-heading" className="grid grid-cols-1 xl:grid-cols-3 gap-4">
-              <Card className="xl:col-span-2 border-border/40 bg-card/80 backdrop-blur">
-                <CardHeader className="flex items-center justify-between gap-3">
+            <section aria-labelledby="performance-heading" className="grid grid-cols-1 xl:grid-cols-3 gap-3">
+              <Card className="xl:col-span-2 ">
+                <CardHeader className="flex flex-row items-center justify-between gap-3">
                   <div>
-                    <CardTitle id="performance-heading" className="text-heading-sm">
+                    <CardTitle id="performance-heading" className="text-sm">
                       Performance &amp; LLM usage
                     </CardTitle>
-                    <p className="text-body-xs text-muted-foreground">
+                    <p className="text-xs text-muted-foreground">
                       Latency, throughput, and token consumption for the selected window
                     </p>
                   </div>
@@ -771,15 +771,15 @@ export default function DashboardPage() {
                     </Badge>
                   )}
                 </CardHeader>
-                <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="rounded-lg border border-border/40 bg-background/70 p-4 space-y-3">
-                    <div className="flex items-center gap-2 text-body-sm font-semibold text-foreground">
+                <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div className="rounded-lg bg-muted/30 p-4 space-y-3">
+                    <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
                       <BarChart3 className="h-4 w-4 text-primary" /> Pipeline duration
                     </div>
-                    <dl className="grid grid-cols-2 gap-3 text-body-xs text-muted-foreground">
+                    <dl className="grid grid-cols-2 gap-3 text-xs text-muted-foreground">
                       <div>
                         <dt>Average</dt>
-                        <dd className="text-body-sm font-medium text-foreground">
+                        <dd className="text-sm font-medium text-foreground">
                           {metrics.averageDurationSeconds !== null
                             ? formatSeconds(metrics.averageDurationSeconds)
                             : '—'}
@@ -787,7 +787,7 @@ export default function DashboardPage() {
                       </div>
                       <div>
                         <dt>P95</dt>
-                        <dd className="text-body-sm font-medium text-foreground">
+                        <dd className="text-sm font-medium text-foreground">
                           {metrics.p95DurationSeconds !== null
                             ? formatSeconds(metrics.p95DurationSeconds)
                             : '—'}
@@ -795,51 +795,51 @@ export default function DashboardPage() {
                       </div>
                       <div>
                         <dt>Total runs</dt>
-                        <dd className="text-body-sm font-medium text-foreground">
+                        <dd className="text-sm font-medium text-foreground">
                           {formatNumber(metrics.totalRuns)}
                         </dd>
                       </div>
                       <div>
                         <dt>Runs/day</dt>
-                        <dd className="text-body-sm font-medium text-foreground">
+                        <dd className="text-sm font-medium text-foreground">
                           {metrics.runsPerDay ?? '—'}
                         </dd>
                       </div>
                     </dl>
                   </div>
 
-                  <div className="rounded-lg border border-border/40 bg-background/70 p-4 space-y-3">
-                    <div className="flex items-center gap-2 text-body-sm font-semibold text-foreground">
+                  <div className="rounded-lg bg-muted/30 p-4 space-y-3">
+                    <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
                       <Zap className="h-4 w-4 text-primary" /> LLM tokens &amp; cost
                     </div>
-                    <dl className="grid grid-cols-2 gap-3 text-body-xs text-muted-foreground">
+                    <dl className="grid grid-cols-2 gap-3 text-xs text-muted-foreground">
                       <div>
                         <dt>Total tokens</dt>
-                        <dd className="text-body-sm font-medium text-foreground">
+                        <dd className="text-sm font-medium text-foreground">
                           {metrics.totalTokens ? formatNumber(metrics.totalTokens) : '—'}
                         </dd>
                       </div>
                       <div>
                         <dt>Total calls</dt>
-                        <dd className="text-body-sm font-medium text-foreground">
+                        <dd className="text-sm font-medium text-foreground">
                           {metrics.totalCalls ? formatNumber(metrics.totalCalls) : '—'}
                         </dd>
                       </div>
                       <div>
                         <dt>Avg tokens/run</dt>
-                        <dd className="text-body-sm font-medium text-foreground">
+                        <dd className="text-sm font-medium text-foreground">
                           {metrics.avgTokensPerRun ? formatNumber(metrics.avgTokensPerRun) : '—'}
                         </dd>
                       </div>
                       <div>
                         <dt>Estimated cost</dt>
-                        <dd className="text-body-sm font-medium text-foreground">
+                        <dd className="text-sm font-medium text-foreground">
                           {metrics.totalCost ? `$${metrics.totalCost.toFixed(4)}` : '—'}
                         </dd>
                       </div>
                     </dl>
                     {derived.llmTotals.models.length > 0 && (
-                      <div className="flex flex-wrap gap-2 text-body-xs">
+                      <div className="flex flex-wrap gap-2 text-xs">
                         {derived.llmTotals.models.map((model) => (
                           <Badge key={model} variant="outline">
                             {model}
@@ -851,26 +851,26 @@ export default function DashboardPage() {
                 </CardContent>
               </Card>
 
-              <Card className="border-border/40 bg-card/80 backdrop-blur">
-                <CardHeader className="flex flex-col gap-1">
-                  <CardTitle className="text-heading-sm">Quality signals</CardTitle>
-                  <p className="text-body-xs text-muted-foreground">
+              <Card className="">
+                <CardHeader className="flex flex-row items-center justify-between gap-3">
+                  <CardTitle className="text-sm">Quality signals</CardTitle>
+                  <p className="text-xs text-muted-foreground">
                     Gate outcomes, confidence trends, and recent rule triggers
                   </p>
                   {qualityErrorMessage && (
-                    <p className="text-body-xs text-destructive">{qualityErrorMessage}</p>
+                    <p className="text-xs text-destructive">{qualityErrorMessage}</p>
                   )}
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="flex items-center gap-2 text-body-sm">
+                  <div className="flex items-center gap-2 text-sm">
                     <Badge variant="success">Pass {metrics.passCount}</Badge>
                     <Badge variant="warning">Warn {metrics.warnCount}</Badge>
                     <Badge variant="destructive">Fail {metrics.failCount}</Badge>
                   </div>
-                  <div className="rounded-lg border border-border/40 bg-background/70 p-3 space-y-3">
-                    <p className="text-body-xs text-muted-foreground">Top recent reasons</p>
+                  <div className="rounded-lg bg-muted/30 p-3 space-y-3">
+                    <p className="text-xs text-muted-foreground">Top recent reasons</p>
                     {metrics.recentReasons.length ? (
-                      <ul className="space-y-2 text-body-xs text-foreground">
+                      <ul className="space-y-2 text-xs text-foreground">
                         {metrics.recentReasons.map((reason) => (
                           <li key={reason} className="flex items-start gap-2">
                             <span className="mt-[2px] h-1.5 w-1.5 rounded-full bg-primary" />
@@ -879,7 +879,7 @@ export default function DashboardPage() {
                         ))}
                       </ul>
                     ) : (
-                      <p className="text-body-xs text-muted-foreground">No rule violations in this window.</p>
+                      <p className="text-xs text-muted-foreground">No rule violations in this window.</p>
                     )}
                   </div>
                 </CardContent>
@@ -887,13 +887,13 @@ export default function DashboardPage() {
             </section>
 
             <section aria-labelledby="recent-runs-heading" className="space-y-4">
-              <Card className="border-border/40 bg-card/80 backdrop-blur">
+              <Card className="">
                 <CardHeader className="flex flex-row items-center justify-between gap-3">
                   <div>
-                    <CardTitle id="recent-runs-heading" className="text-heading-sm">
+                    <CardTitle id="recent-runs-heading" className="text-sm">
                       Recent transforms
                     </CardTitle>
-                    <p className="text-body-xs text-muted-foreground">
+                    <p className="text-xs text-muted-foreground">
                       Latest runs with quality gates, nodes, and quick actions
                     </p>
                   </div>
@@ -901,14 +901,14 @@ export default function DashboardPage() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   {runsLoading ? (
-                    <p className="text-body-xs text-muted-foreground">Fetching run history…</p>
+                    <p className="text-xs text-muted-foreground">Fetching run history…</p>
                   ) : runs.length === 0 ? (
-                    <p className="text-body-xs text-muted-foreground">
+                    <p className="text-xs text-muted-foreground">
                       No transforms recorded in this window. Run a document to populate the dashboard.
                     </p>
                   ) : (
                     <div className="overflow-x-auto">
-                      <table className="min-w-full text-left text-body-xs">
+                      <table className="min-w-full text-left text-xs">
                         <thead className="text-muted-foreground">
                           <tr className="border-b border-border/40">
                             <th className="px-3 py-2 font-medium">Document</th>
@@ -929,10 +929,10 @@ export default function DashboardPage() {
                               <tr key={run.transform_id} className="border-b border-border/20">
                                 <td className="px-3 py-3 align-top">
                                   <div className="space-y-1">
-                                    <p className="text-body-sm font-medium text-foreground truncate">
+                                    <p className="text-sm font-medium text-foreground truncate">
                                       {run.document_name}
                                     </p>
-                                    <p className="text-body-xs text-muted-foreground">
+                                    <p className="text-xs text-muted-foreground">
                                       {dashboardDateFormatter(run.processing_started_at)}
                                     </p>
                                   </div>
@@ -942,28 +942,28 @@ export default function DashboardPage() {
                                     <Badge variant={qualityStatusVariant(run.quality_gate_status)}>
                                       {qualityStatusLabel(run.quality_gate_status)}
                                     </Badge>
-                                    <p className="text-body-xs text-muted-foreground">
+                                    <p className="text-xs text-muted-foreground">
                                       Score {run.quality_score?.toFixed(1) ?? '—'}
                                     </p>
                                   </div>
                                 </td>
-                                <td className="px-3 py-3 align-top text-body-sm text-foreground">
+                                <td className="px-3 py-3 align-top text-sm text-foreground">
                                   {run.processing_duration_ms
                                     ? formatSeconds(toSeconds(run.processing_duration_ms) || 0)
                                     : '—'}
                                 </td>
-                                <td className="px-3 py-3 align-top text-body-sm text-foreground">
+                                <td className="px-3 py-3 align-top text-sm text-foreground">
                                   {run.llm_usage.total_tokens
                                     ? formatNumber(run.llm_usage.total_tokens)
                                     : '—'}
                                 </td>
-                                <td className="px-3 py-3 align-top text-body-sm text-foreground">
+                                <td className="px-3 py-3 align-top text-sm text-foreground">
                                   {formatNumber(run.nodes_extracted)} · {formatNumber(run.relationships_extracted)}
                                 </td>
-                                <td className="px-3 py-3 align-top text-body-sm text-foreground">
+                                <td className="px-3 py-3 align-top text-sm text-foreground">
                                   <div className="space-y-1">
                                     <p>{formatBytes(run.document_size_bytes)}</p>
-                                    <p className="text-body-xs text-muted-foreground">
+                                    <p className="text-xs text-muted-foreground">
                                       {formatNumber(run.chunks_created)} chunks
                                     </p>
                                   </div>

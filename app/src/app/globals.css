@@ -22,9 +22,15 @@
     --accent-emerald: #10b981;
     --text-muted: #64748b;
     --text-light: #94a3b8;
-    --shadow-soft: 0 10px 30px rgba(15, 23, 42, 0.08);
-    --shadow-medium: 0 18px 36px rgba(15, 23, 42, 0.12);
-    --shadow-large: 0 32px 60px rgba(15, 23, 42, 0.16);
+    /* Refined shadow scale - lighter, professional liquid glass */
+    --shadow-xs: 0 1px 2px rgba(15, 23, 42, 0.03);
+    --shadow-soft: 0 2px 8px rgba(15, 23, 42, 0.04), 0 1px 2px rgba(15, 23, 42, 0.02);
+    --shadow-medium: 0 4px 16px rgba(15, 23, 42, 0.05), 0 2px 4px rgba(15, 23, 42, 0.03);
+    --shadow-large: 0 8px 32px rgba(15, 23, 42, 0.06), 0 4px 8px rgba(15, 23, 42, 0.03);
+    --shadow-xl: 0 12px 48px rgba(15, 23, 42, 0.08);
+    /* Glass effect shadows */
+    --shadow-glass: 0 4px 24px rgba(15, 23, 42, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.6);
+    --shadow-glass-hover: 0 8px 32px rgba(15, 23, 42, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.7);
     --border-radius: 14px;
     --border-radius-lg: 18px;
 
@@ -59,30 +65,30 @@
     --neutral: 148 163 184; /* slate-400 */
     --neutral-foreground: 30 41 59; /* slate-800 */
 
-    /* Typography scale */
-    --font-size-xs: 0.7rem;
-    --font-size-sm: 0.82rem;
-    --font-size-base: 0.9rem;
-    --font-size-lg: 1.02rem;
-    --font-size-xl: 1.16rem;
-    --font-size-2xl: clamp(1.28rem, 0.75vw + 1.05rem, 1.52rem);
-    --font-size-3xl: clamp(1.52rem, 1vw + 1.2rem, 1.8rem);
+    /* Typography scale - compact */
+    --font-size-xs: 0.6875rem;
+    --font-size-sm: 0.75rem;
+    --font-size-base: 0.8125rem;
+    --font-size-lg: 0.875rem;
+    --font-size-xl: 1rem;
+    --font-size-2xl: 1.125rem;
+    --font-size-3xl: 1.25rem;
 
-    --line-height-tight: 1.15;
-    --line-height-snug: 1.3;
-    --line-height-relaxed: 1.6;
+    --line-height-tight: 1.2;
+    --line-height-snug: 1.35;
+    --line-height-relaxed: 1.5;
 
-    /* Layout spacing scale */
-    --space-content-sm: 0.85rem;
-    --space-content-md: 1.25rem;
-    --space-content-lg: 1.75rem;
-    --space-section-sm: clamp(1.5rem, calc(1.4vw + 1rem), 2.5rem);
-    --space-section: clamp(2.25rem, calc(2vw + 1rem), 3.5rem);
-    --space-section-lg: clamp(3rem, calc(3vw + 1.5rem), 4.75rem);
-    --space-section-inline: clamp(1.25rem, calc(1.8vw + 0.9rem), 3rem);
-    --space-content-gap: clamp(1.25rem, calc(1vw + 1rem), 2.1rem);
-    --space-stack: clamp(2.4rem, calc(2.5vw + 1.6rem), 3.8rem);
-    --space-stack-lg: clamp(3.2rem, calc(3.5vw + 2rem), 5.2rem);
+    /* Layout spacing scale - tighter */
+    --space-content-sm: 0.5rem;
+    --space-content-md: 0.75rem;
+    --space-content-lg: 1rem;
+    --space-section-sm: 1rem;
+    --space-section: 1.5rem;
+    --space-section-lg: 2rem;
+    --space-section-inline: 1rem;
+    --space-content-gap: 1rem;
+    --space-stack: 1.5rem;
+    --space-stack-lg: 2rem;
 
     --border: 226 232 240; /* slate-200 */
     --input: 255 255 255; /* white */
@@ -139,9 +145,14 @@
     --input: 48 64 96;
     --ring: 99 102 241;
 
-    --shadow-soft: 0 18px 36px rgba(12, 74, 110, 0.32);
-    --shadow-medium: 0 26px 56px rgba(8, 47, 73, 0.45);
-    --shadow-large: 0 38px 78px rgba(7, 34, 70, 0.55);
+    /* Refined dark mode shadows - subtle, not oppressive */
+    --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.15);
+    --shadow-soft: 0 2px 8px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.08);
+    --shadow-medium: 0 4px 16px rgba(0, 0, 0, 0.16), 0 2px 4px rgba(0, 0, 0, 0.10);
+    --shadow-large: 0 8px 32px rgba(0, 0, 0, 0.20), 0 4px 8px rgba(0, 0, 0, 0.12);
+    --shadow-xl: 0 12px 48px rgba(0, 0, 0, 0.24);
+    --shadow-glass: 0 4px 24px rgba(0, 0, 0, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    --shadow-glass-hover: 0 8px 32px rgba(0, 0, 0, 0.20), inset 0 1px 0 rgba(255, 255, 255, 0.08);
   }
 }
 
@@ -303,22 +314,27 @@
   }
 
   .surface-base {
-    background: color-mix(in srgb, rgb(var(--surface-base)) 90%, transparent);
-    border: 1px solid rgb(var(--surface-border));
+    background: rgb(var(--card) / 0.92);
+    border: 1px solid rgb(var(--border) / 0.4);
     box-shadow: var(--shadow-soft);
   }
 
   .surface-elevated {
-    background: color-mix(in srgb, rgb(var(--surface-elevated)) 92%, transparent);
-    border: 1px solid rgb(var(--surface-outline));
+    background: rgb(var(--card) / 0.96);
+    border: 1px solid rgb(var(--border) / 0.5);
     box-shadow: var(--shadow-medium);
   }
 
   .glass-surface {
-    background: linear-gradient(135deg, rgb(var(--glass-tint)), rgb(var(--glass-highlight)) 80%);
-    border: 1px solid rgb(var(--surface-outline));
-    box-shadow: 0 12px 40px rgb(var(--glass-shadow));
-    backdrop-filter: blur(18px);
+    background: rgb(var(--card) / 0.8);
+    border: 1px solid rgb(var(--border) / 0.3);
+    box-shadow: var(--shadow-glass);
+    backdrop-filter: blur(12px);
+  }
+
+  .glass-surface:hover {
+    box-shadow: var(--shadow-glass-hover);
+    border-color: rgb(var(--border) / 0.4);
   }
 
   /* Fixed opacity for modals and tooltips in light theme */
@@ -375,25 +391,23 @@
     backdrop-filter: none !important;
   }
 
-  /* Enhanced Card Styles - Professional Look */
+  /* Standard Card - ONE consistent style for entire app */
   .enhanced-card {
-    border-radius: var(--border-radius-lg);
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(243, 246, 255, 0.78));
-    border: 1px solid rgba(226, 232, 240, 0.32);
-    box-shadow: var(--shadow-medium);
-    backdrop-filter: blur(18px);
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-    position: relative;
+    border-radius: 0.5rem;
+    background: rgb(var(--card));
+    box-shadow: var(--shadow-soft);
   }
 
   .dark .enhanced-card {
-    background: linear-gradient(135deg, rgba(20, 28, 48, 0.72), rgba(30, 41, 59, 0.74));
-    border-color: color-mix(in srgb, rgb(var(--surface-outline)) 85%, transparent);
+    background: rgb(var(--card));
   }
 
-  .enhanced-card:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-large);
+  .enhanced-card-header {
+    padding: 0.75rem 1rem;
+  }
+
+  .enhanced-card-content {
+    padding: 0 1rem 1rem;
   }
 
   .enhanced-card-header {

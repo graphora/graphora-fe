@@ -170,7 +170,7 @@ export function QualityActionButtons({
               variant="cta"
               size="lg"
               disabled={isApproving}
-              className="group relative px-10 py-6 text-lg font-semibold shadow-[0_18px_38px_rgba(14,165,233,0.28)] dark:shadow-[0_0_35px_rgba(45,212,191,0.45)] dark:!text-slate-50"
+              className="group relative px-10 py-6 text-lg font-semibold"
             >
               <CheckCircle className="h-6 w-6 mr-2" />
               Approve & Continue to Merge
@@ -216,7 +216,7 @@ export function QualityActionButtons({
                   variant="success"
                   onClick={handleApprove}
                   disabled={isApproving}
-                  className="bg-gradient-to-r from-emerald-400 via-teal-400 to-cyan-400 text-slate-900 shadow-[0_16px_30px_rgba(16,185,129,0.35)] dark:text-slate-900"
+                  className="shadow-medium"
                 >
                   {isApproving ? (
                     <>

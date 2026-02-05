@@ -21,20 +21,19 @@ export function DashboardLayout({
   return (
     <EnhancedConfigCheck showSetupModal={true} lightweight={true} requireDbConfig={false} requireAiConfig={false}>
       <div className={cn(
-        "relative flex h-screen overflow-hidden bg-gradient-to-br from-background via-background to-muted/20",
+        "relative flex h-screen overflow-hidden bg-background",
         className
       )}>
-        <div className="pointer-events-none absolute inset-0 opacity-60 [background-image:radial-gradient(circle_at_0%_0%,rgba(56,189,248,0.14),transparent_55%),radial-gradient(circle_at_100%_0%,rgba(45,212,191,0.12),transparent_45%),radial-gradient(circle_at_50%_100%,rgba(37,99,235,0.12),transparent_50%)]" aria-hidden />
 
         {showSidebar && (
           <SidebarNavigation
             defaultCollapsed={sidebarCollapsed}
-            className="relative z-20 flex-shrink-0"
+            className="flex-shrink-0"
           />
         )}
 
-        <div className="relative z-10 flex-1 overflow-y-auto overflow-x-hidden">
-          <div className="flex min-h-full flex-col bg-background/92 backdrop-blur-sm">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden">
+          <div className="flex min-h-full flex-col">
             {children}
           </div>
         </div>

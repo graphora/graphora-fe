@@ -86,18 +86,17 @@ export function EnhancedWorkflowLayout({
   }
 
   return (
-    <div className="relative flex h-screen overflow-hidden bg-gradient-to-br from-background via-background to-muted/20">
-      <div className="pointer-events-none absolute inset-0 opacity-55 [background-image:radial-gradient(circle_at_15%_20%,rgba(56,189,248,0.14),transparent_55%),radial-gradient(circle_at_85%_15%,rgba(45,212,191,0.12),transparent_50%),radial-gradient(circle_at_50%_90%,rgba(37,99,235,0.12),transparent_45%)]" aria-hidden />
+    <div className="flex h-screen overflow-hidden bg-background">
       {showSidebar && (
         <SidebarNavigation
           defaultCollapsed={sidebarCollapsed}
-          className="relative z-20 flex-shrink-0"
+          className="flex-shrink-0"
         />
       )}
 
       {/* Main Content */}
-      <div className="relative z-10 flex-1 overflow-y-auto overflow-x-hidden">
-        <div className="flex min-h-full flex-col bg-background/92 backdrop-blur-sm">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden">
+        <div className="flex min-h-full flex-col">
           <PageHeader
             title={projectTitle}
             description={description}
@@ -120,7 +119,7 @@ export function EnhancedWorkflowLayout({
 
           {/* Workflow Steps */}
           {!isCollapsed && (
-            <div className="border-t border-border/40 bg-muted/20">
+            <div className="bg-muted/30">
               <div className="page-shell py-4">
                 <div className="flex items-center justify-center gap-2 overflow-x-auto">
                   {steps.map((step, index) => {
@@ -152,27 +151,27 @@ export function EnhancedWorkflowLayout({
                             disabled={!isClickable}
                             onClick={() => handleStepClick(step, index)}
                             className={cn(
-                              'flex min-w-[120px] flex-col items-center gap-1.5 rounded-lg border px-3 py-2 text-center transition-all',
+                              'flex min-w-[100px] flex-col items-center gap-1 rounded-lg px-3 py-2 text-center transition-all',
                               'disabled:cursor-not-allowed disabled:opacity-60',
-                              isCompleted && 'border-emerald-400/60 bg-emerald-500/10 text-emerald-600',
-                              isCurrent && 'border-primary/60 bg-primary/10 text-primary shadow-sm',
-                              !isCompleted && !isCurrent && !isBlocked && 'border-border/40 bg-muted/30 text-muted-foreground',
-                              isBlocked && 'border-destructive/50 bg-destructive/15 text-destructive'
+                              isCompleted && 'bg-emerald-500/10 text-emerald-600',
+                              isCurrent && 'bg-primary/10 text-primary',
+                              !isCompleted && !isCurrent && !isBlocked && 'bg-muted/50 text-muted-foreground',
+                              isBlocked && 'bg-destructive/10 text-destructive'
                             )}
                           >
                             <span
                               className={cn(
-                                'flex h-8 w-8 items-center justify-center rounded-full border-2 text-xs font-semibold transition-colors',
+                                'flex h-6 w-6 items-center justify-center rounded-full text-xs font-medium transition-colors',
                                 isCompleted
-                                  ? 'border-emerald-500 bg-emerald-500 text-white'
+                                  ? 'bg-emerald-500 text-white'
                                   : isCurrent
-                                    ? 'border-primary bg-primary/20 text-primary'
+                                    ? 'bg-primary text-primary-foreground'
                                     : isBlocked
-                                      ? 'border-destructive text-destructive'
-                                      : 'border-border/50 text-muted-foreground'
+                                      ? 'bg-destructive/20 text-destructive'
+                                      : 'bg-muted text-muted-foreground'
                               )}
                             >
-                              {isCompleted ? <Check className="h-4 w-4" /> : index + 1}
+                              {isCompleted ? <Check className="h-3 w-3" /> : index + 1}
                             </span>
                             <span className="text-[11px] font-medium leading-tight text-current">
                               {step.title}
@@ -180,7 +179,7 @@ export function EnhancedWorkflowLayout({
                           </button>
                         </Tooltip>
                         {index < steps.length - 1 && (
-                          <span className="h-px w-12 flex-shrink-0 bg-border/60" aria-hidden />
+                          <span className="h-px w-8 flex-shrink-0 bg-muted-foreground/20" aria-hidden />
                         )}
                       </div>
                     )

@@ -1463,7 +1463,7 @@ function TransformPageContent() {
       )}
 
       {/* Action Bar */}
-      <div className="border-b border-border/40 bg-muted/20 px-6 py-3">
+      <div className="bg-muted/30 px-6 py-3">
         <div className="flex items-center justify-end gap-2">
           {isChunkingAvailable && (
             <Button
@@ -1623,42 +1623,30 @@ function TransformPageContent() {
                 </div>
                 <div className="enhanced-card-content flex-1 relative overflow-hidden rounded-lg min-h-0">
                   {isProcessing ? (
-                    <div className={`h-full flex items-center justify-center ${
-                      isDark
-                        ? 'bg-gradient-to-br from-slate-800 via-slate-700 to-slate-900'
-                        : 'bg-gradient-to-br from-sky-50 via-cyan-50 to-emerald-50'
-                    }`}>
-                      <div className="text-center space-y-content max-w-md">
-                        <div className={`w-20 h-20 rounded-full flex items-center justify-center mx-auto shadow-xl border-2 ${
-                          isDark
-                            ? 'bg-slate-800 border-slate-600'
-                            : 'bg-white border-blue-200'
-                        }`}>
-                          <Loader2 className={`h-10 w-10 animate-spin ${isDark ? 'text-blue-400' : 'text-blue-600'}`} />
+                    <div className="h-full flex items-center justify-center bg-muted/30">
+                      <div className="text-center space-y-4 max-w-md">
+                        <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto bg-card shadow-soft">
+                          <Loader2 className="h-8 w-8 animate-spin text-primary" />
                         </div>
-                        <div className="space-y-3">
-                          <h3 className={`text-xl font-semibold ${isDark ? 'text-white' : 'text-slate-800'}`}>Transforming Document</h3>
-                          <p className={`text-sm ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>{currentStep || 'Processing your document...'}</p>
+                        <div className="space-y-2">
+                          <h3 className="text-lg font-semibold text-foreground">Transforming Document</h3>
+                          <p className="text-sm text-muted-foreground">{currentStep || 'Processing your document...'}</p>
                           <div className="w-full max-w-xs mx-auto">
-                            <Progress value={progress} className="w-full h-3" />
-                            <p className={`text-lg font-bold mt-2 ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>{progress}% Complete</p>
+                            <Progress value={progress} className="w-full h-2" />
+                            <p className="text-sm font-medium mt-2 text-primary">{progress}% Complete</p>
                           </div>
                         </div>
-                        <div className={`rounded-lg p-4 space-y-2 backdrop-blur-sm shadow-lg border ${
-                          isDark
-                            ? 'bg-slate-800/95 border-slate-600'
-                            : 'bg-white/90 border-blue-200'
-                        }`}>
-                          <div className={`flex items-center gap-2 text-sm ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
-                            <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                        <div className="rounded-lg p-3 space-y-1.5 bg-card shadow-soft">
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                            <div className="w-1.5 h-1.5 bg-primary rounded-full animate-pulse"></div>
                             <span>Parsing document structure</span>
                           </div>
-                          <div className={`flex items-center gap-2 text-sm ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
-                            <div className="w-2 h-2 bg-cyan-500 rounded-full animate-pulse"></div>
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                            <div className="w-1.5 h-1.5 bg-primary rounded-full animate-pulse"></div>
                             <span>Extracting entities and relationships</span>
                           </div>
-                          <div className={`flex items-center gap-2 text-sm ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
-                            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                            <div className="w-1.5 h-1.5 bg-primary rounded-full animate-pulse"></div>
                             <span>Building knowledge graph</span>
                           </div>
                         </div>
@@ -1770,10 +1758,10 @@ function TransformPageContent() {
         open={isChunkingAvailable && showChunkingConfig}
         onOpenChange={(value) => setShowChunkingConfig(isChunkingAvailable && value)}
       >
-        <DialogContent className="glass-surface max-w-5xl h-[90vh] max-h-[90vh] overflow-x-hidden overflow-y-auto border border-white/15 p-0 text-card-foreground shadow-large">
+        <DialogContent className="glass-surface max-w-5xl h-[90vh] max-h-[90vh] overflow-x-hidden overflow-y-auto border  p-0 text-card-foreground shadow-large">
           <DialogTitle className="sr-only">Chunking Configuration</DialogTitle>
           <div className="grid h-full min-h-0 md:grid-cols-[320px_1fr]">
-            <aside className="flex h-full min-h-0 flex-col bg-gradient-to-br from-primary/18 via-background/30 to-background/60 p-8 text-left backdrop-blur-panel">
+            <aside className="flex h-full min-h-0 flex-col bg-gradient-to-br from-primary/18 via-background/30 to-background/60 p-8 text-left ">
               <div className="flex-1 min-h-0 space-y-6 overflow-y-auto pr-3">
                 <div className="space-y-2">
                   <p className="text-xs uppercase tracking-[0.24em] text-foreground/55">Document</p>
@@ -1784,7 +1772,7 @@ function TransformPageContent() {
                     {file ? `${formattedFileSize ?? '—'} • ${file.type || 'unknown type'}` : 'Upload a document to tailor chunking.'}
                   </p>
                 </div>
-                <div className="space-y-3 rounded-xl border border-white/15 bg-white/10 p-5 shadow-inner min-h-[220px]">
+                <div className="space-y-3 rounded-xl border  bg-white/10 p-5 shadow-inner min-h-[220px]">
                   <p className="text-xs uppercase tracking-[0.2em] text-foreground/55">Current configuration</p>
                   {hasCustomChunking ? (
                     <div className="space-y-3 text-sm text-foreground/80">
@@ -1817,7 +1805,7 @@ function TransformPageContent() {
                 </div>
               </div>
 
-              <div className="mt-6 flex-shrink-0 space-y-3 rounded-xl border border-white/12 bg-white/8 p-5 text-xs text-foreground/75 shadow-inner">
+              <div className="mt-6 flex-shrink-0 space-y-3 rounded-xl border  bg-white/8 p-5 text-xs text-foreground/75 shadow-inner">
                 <p className="font-medium uppercase tracking-[0.16em] text-foreground/70">Recommendations</p>
                 <ul className="space-y-2 text-foreground/80">
                   <li>• Smaller chunks improve retrieval accuracy for dense documents.</li>
@@ -1827,8 +1815,8 @@ function TransformPageContent() {
               </div>
             </aside>
 
-            <div className="flex h-full min-h-0 flex-col bg-background/92 backdrop-blur-panel overflow-hidden">
-              <header className="flex items-center justify-between border-b border-white/10 p-8 pb-6 flex-shrink-0">
+            <div className="flex h-full min-h-0 flex-col bg-background/92  overflow-hidden">
+              <header className="flex items-center justify-between border-b  p-8 pb-6 flex-shrink-0">
                 <div className="flex items-center gap-3">
                   <span className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-primary/70 text-white shadow-glass">
                     <Settings2 className="h-5 w-5" />
@@ -1847,15 +1835,15 @@ function TransformPageContent() {
                   fileContent={fileContent ?? undefined}
                   fileName={file?.name}
                   onConfigChange={setChunkingConfig}
-                  className="border-white/15 bg-white/10 shadow-glass backdrop-blur-panel"
+                  className=" bg-white/10 shadow-glass "
                 />
               </div>
 
-              <footer className="flex items-center justify-end gap-3 border-t border-white/10 bg-white/5 px-8 py-6 flex-shrink-0">
+              <footer className="flex items-center justify-end gap-3 border-t  bg-white/5 px-8 py-6 flex-shrink-0">
                 <Button
                   variant="outline"
                   onClick={() => setShowChunkingConfig(false)}
-                  className="border-white/20 text-foreground hover:bg-white/10"
+                  className=" text-foreground hover:bg-white/10"
                 >
                   Cancel
                 </Button>

@@ -295,7 +295,7 @@ export function ConflictDetailsView({
               ) : changeLog ? (
                 <>
                   {/* Description */}
-                  <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-6 shadow-[0_10px_40px_rgba(0,0,0,0.25)]">
+                  <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-6 shadow-soft">
                     <div className="mb-6">
                       <h3 className="text-lg font-semibold text-foreground">Property Conflicts</h3>
                       <p className="text-sm text-muted-foreground">Select the version you want to keep for each conflicting property</p>
@@ -357,7 +357,7 @@ export function ConflictDetailsView({
                       </div>
                     </div>
 
-                  <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-6 shadow-[0_10px_40px_rgba(0,0,0,0.25)]">
+                  <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-6 shadow-soft">
                     <div className="mb-4">
                       <h3 className="text-lg font-semibold text-foreground">Learning Comment</h3>
                       <p className="text-sm text-muted-foreground">Add a comment / rule to help the system learn from this resolution</p>
@@ -381,7 +381,7 @@ export function ConflictDetailsView({
 
           {/* Footer Actions */}
           {!conflict.resolved && (
-            <div className="flex-none bg-background/80 backdrop-blur border-t border-white/5 shadow-[0_-12px_40px_rgba(0,0,0,0.25)] p-3 fixed bottom-0 left-0 w-full">
+            <div className="flex-none bg-card/95 backdrop-blur-sm border-t border-border/40 shadow-soft p-3 fixed bottom-0 left-0 w-full">
               <div className="flex items-center justify-between">
                 <div>
                   {/* Left side actions if needed */}

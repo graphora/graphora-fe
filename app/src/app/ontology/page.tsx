@@ -621,7 +621,7 @@ function OntologyPageContent() {
         {/* Toolbar Header */}
         <div className="bg-transparent">
           <div className="px-6 pt-4 pb-3">
-            <div className="flex flex-wrap items-center justify-between gap-4 rounded-3xl border border-white/20 bg-white/65 px-5 py-4 shadow-[0_26px_48px_rgba(15,23,42,0.18)] backdrop-blur-xl dark:border-slate-700/40 dark:bg-slate-900/70">
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg bg-card px-4 py-3 shadow-soft">
               <div className="flex flex-wrap items-center gap-3">
                 {isEditMode && (
                   <Link href="/ontologies">
@@ -701,7 +701,7 @@ function OntologyPageContent() {
                     disabled={!yaml.trim() || isSubmitting || !hasUnsavedChanges}
                     size="sm"
                     variant="outline"
-                    className="border-white/30 text-foreground/90 hover:bg-white/30 dark:border-slate-600/60 dark:text-slate-100"
+                    className="text-foreground hover:bg-muted"
                   >
                     <Save className="h-4 w-4 mr-1.5" />
                     {isSubmitting ? 'Saving...' : 'Save'}
@@ -713,7 +713,7 @@ function OntologyPageContent() {
                   disabled={!yaml.trim() || isSubmitting}
                   size="sm"
                   variant="cta"
-                  className="shadow-[0_20px_40px_rgba(14,116,144,0.32)]"
+                  className="shadow-medium"
                 >
                   <Play className="h-4 w-4 mr-1.5" />
                   {isSubmitting ? 'Processing...' : (isEditMode ? 'Use for Transform' : 'Submit')}
@@ -739,8 +739,8 @@ function OntologyPageContent() {
               maxSize={60}
               className="flex"
             >
-              <div className="enhanced-card h-full w-full flex flex-col overflow-hidden border border-white/20 dark:border-slate-700/45 shadow-[0_32px_72px_rgba(15,23,42,0.16)]">
-                <div className="relative flex items-center justify-between px-4 py-3 bg-white/60 dark:bg-slate-900/40 backdrop-blur-xl sticky top-0 z-20 after:absolute after:bottom-0 after:left-4 after:right-4 after:h-px after:bg-gradient-to-r after:from-transparent after:via-white/45 after:to-transparent dark:after:via-white/15">
+              <div className="enhanced-card h-full w-full flex flex-col overflow-hidden">
+                <div className="flex items-center justify-between px-4 py-3 bg-card  sticky top-0 z-20">
                   <div className="flex items-center gap-1.5 text-foreground">
                     <div className="bg-primary/5 w-5 h-5 rounded flex items-center justify-center">
                       <svg width="14" height="14" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -753,7 +753,7 @@ function OntologyPageContent() {
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-7 w-7 bg-white/60 backdrop-blur-sm hover:bg-white/70 dark:bg-slate-800/70 dark:hover:bg-slate-700/70 shadow-soft"
+                      className="h-7 w-7 hover:bg-muted shadow-soft"
                       onClick={() => setIsTemplateSelectorOpen(true)}
                       title="Browse Templates"
                     >
@@ -762,7 +762,7 @@ function OntologyPageContent() {
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-7 w-7 bg-white/60 backdrop-blur-sm hover:bg-white/70 dark:bg-slate-800/70 dark:hover:bg-slate-700/70 shadow-soft"
+                      className="h-7 w-7 hover:bg-muted shadow-soft"
                       onClick={loadSampleYaml}
                       title="Load Sample Ontology"
                     >
@@ -773,7 +773,7 @@ function OntologyPageContent() {
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-7 w-7 bg-white/60 backdrop-blur-sm hover:bg-white/70 dark:bg-slate-800/70 dark:hover:bg-slate-700/70 shadow-soft"
+                      className="h-7 w-7 hover:bg-muted shadow-soft"
                       onClick={() => setIsCommandPaletteOpen(true)}
                       title="Search Entities"
                     >
@@ -788,10 +788,10 @@ function OntologyPageContent() {
                 </ScrollArea>
               </div>
             </ResizablePanel>
-            <ResizableHandle className="w-1 bg-transparent after:bg-gradient-to-b after:from-transparent after:via-white/40 after:to-transparent dark:after:via-white/15" />
+            <ResizableHandle className="w-1 bg-transparent " />
             <ResizablePanel defaultSize={75} className="flex">
-              <div className="enhanced-card h-full w-full flex flex-col overflow-hidden border border-white/20 dark:border-slate-700/45 shadow-[0_32px_72px_rgba(15,23,42,0.16)]">
-                <div className="relative flex flex-wrap items-center gap-4 px-4 py-3 bg-white/60 dark:bg-slate-900/40 backdrop-blur-xl sticky top-0 z-20 after:absolute after:bottom-0 after:left-4 after:right-4 after:h-px after:bg-gradient-to-r after:from-transparent after:via-white/45 after:to-transparent dark:after:via-white/15">
+              <div className="enhanced-card h-full w-full flex flex-col overflow-hidden">
+                <div className="flex flex-wrap items-center gap-4 px-4 py-3 bg-card  sticky top-0 z-20">
                   <div className="flex items-center gap-2 text-foreground">
                     <div className="bg-primary/5 w-5 h-5 rounded flex items-center justify-center">
                       <svg width="14" height="14" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -805,7 +805,7 @@ function OntologyPageContent() {
                       <Button 
                         variant="ghost" 
                         size="icon"
-                        className="h-7 w-7 bg-white/60 hover:bg-white/70 dark:bg-slate-800/70 dark:hover:bg-slate-700/70 shadow-soft"
+                        className="h-7 w-7 hover:bg-muted shadow-soft"
                         title="Upload YAML File"
                       >
                         <Upload className="h-3.5 w-3.5" />
@@ -823,7 +823,7 @@ function OntologyPageContent() {
                       onValueChange={(value) => setViewMode(value as ViewMode)}
                       className="hidden sm:block flex-1"
                     >
-                      <TabsList className="w-full grid grid-cols-3 bg-white/55 px-1.5 py-1 backdrop-blur-lg shadow-[0_12px_28px_rgba(15,23,42,0.16)] dark:bg-slate-900/70 dark:ring-1 dark:ring-slate-700/55">
+                      <TabsList className="w-full grid grid-cols-3">
                         <TabsTrigger value="code">
                           <span className="flex items-center gap-2">
                             <Code2 className="h-4 w-4" />
@@ -848,9 +848,9 @@ function OntologyPageContent() {
                 </div>
                 <div className="flex-1 overflow-auto">
                   {viewMode === 'split' ? (
-                    <div className="h-full w-full rounded-[24px] bg-white/60 dark:bg-slate-900/40 backdrop-blur-xl overflow-hidden shadow-[0_26px_60px_rgba(15,23,42,0.12)]">
+                    <div className="h-full w-full rounded-xl bg-card overflow-hidden ">
                       <div className="grid h-full grid-cols-2">
-                        <div className="relative h-full overflow-auto p-4 after:absolute after:top-4 after:bottom-4 after:right-0 after:w-px after:bg-gradient-to-b after:from-transparent after:via-white/45 after:to-transparent dark:after:via-white/20">
+                        <div className="relative h-full overflow-auto p-4 ">
                           <YAMLEditor
                             value={yaml}
                             onChange={(value) => {
@@ -864,16 +864,16 @@ function OntologyPageContent() {
                       </div>
                     </div>
                   ) : viewMode === 'code' ? (
-                    <div className="h-full w-full rounded-[24px] border border-white/18 dark:border-slate-700/45 bg-white/60 dark:bg-slate-900/40 backdrop-blur-xl overflow-hidden shadow-[0_26px_60px_rgba(15,23,42,0.12)] p-4">
-                      <YAMLEditor 
-                        value={yaml} 
+                    <div className="h-full w-full rounded-xl  bg-card overflow-hidden p-4">
+                      <YAMLEditor
+                        value={yaml}
                         onChange={(value) => {
                           updateFromYaml(value)
                         }}
                       />
                     </div>
                   ) : (
-                    <div className="h-full w-full rounded-[24px] border border-white/18 dark:border-slate-700/45 bg-white/60 dark:bg-slate-900/40 backdrop-blur-xl overflow-hidden shadow-[0_26px_60px_rgba(15,23,42,0.12)] p-4">
+                    <div className="h-full w-full rounded-xl  bg-card overflow-hidden p-4">
                       <div className="h-full overflow-auto">
                         <VisualEditor />
                       </div>

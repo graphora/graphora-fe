@@ -78,7 +78,7 @@ export function QualityMetricsPanel({
     <div className={cn('space-y-8', className)}>
       {/* Overview Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-muted/30 rounded-xl p-6 border border-border/40">
+        <div className="bg-muted/30 rounded-xl p-6 shadow-soft">
           <div className="flex items-center gap-3">
             <Database className="h-8 w-8 text-info flex-shrink-0" />
             <div>
@@ -88,7 +88,7 @@ export function QualityMetricsPanel({
           </div>
         </div>
 
-        <div className="bg-muted/30 rounded-xl p-6 border border-border/40">
+        <div className="bg-muted/30 rounded-xl p-6 shadow-soft">
           <div className="flex items-center gap-3">
             <Network className="h-8 w-8 text-primary flex-shrink-0" />
             <div>
@@ -98,7 +98,7 @@ export function QualityMetricsPanel({
           </div>
         </div>
 
-        <div className="bg-muted/30 rounded-xl p-6 border border-border/40">
+        <div className="bg-muted/30 rounded-xl p-6 shadow-soft">
           <div className="flex items-center gap-3">
             <Target className="h-8 w-8 text-success flex-shrink-0" />
             <div>
@@ -108,7 +108,7 @@ export function QualityMetricsPanel({
           </div>
         </div>
 
-        <div className="bg-muted/30 rounded-xl p-6 border border-border/40">
+        <div className="bg-muted/30 rounded-xl p-6 shadow-soft">
           <div className="flex items-center gap-3">
             <AlertTriangle className="h-8 w-8 text-warning flex-shrink-0" />
             <div>
@@ -120,7 +120,7 @@ export function QualityMetricsPanel({
       </div>
 
       {/* Violation Rates */}
-      <div className="bg-muted/30 rounded-2xl p-8 border border-border/40">
+      <div className="bg-muted/30 rounded-2xl p-8 shadow-soft">
         <div className="mb-6">
           <h4 className="text-lg font-semibold text-foreground flex items-center gap-2">
             <TrendingUp className="h-5 w-5 text-info" />
@@ -184,7 +184,7 @@ export function QualityMetricsPanel({
       </div>
 
       {/* Confidence Scores */}
-      <div className="bg-muted/30 rounded-2xl p-8 border border-border/40">
+      <div className="bg-muted/30 rounded-2xl p-8 shadow-soft">
         <div className="mb-6">
           <h4 className="text-lg font-semibold text-foreground flex items-center gap-2">
             <CheckCircle className="h-5 w-5 text-success" />
@@ -247,7 +247,7 @@ export function QualityMetricsPanel({
 
       {/* Property Completeness & Coverage */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <div className="bg-muted/30 rounded-2xl p-8 border border-border/40">
+        <div className="bg-muted/30 rounded-2xl p-8 shadow-soft">
           <div className="mb-6">
             <h4 className="text-lg font-semibold text-foreground flex items-center gap-2">
               <Target className="h-5 w-5 text-success" />
@@ -299,7 +299,7 @@ export function QualityMetricsPanel({
           </div>
         </div>
 
-        <div className="bg-muted/30 rounded-2xl p-8 border border-border/40">
+        <div className="bg-muted/30 rounded-2xl p-8 shadow-soft">
           <div className="mb-6">
             <h4 className="text-lg font-semibold text-foreground flex items-center gap-2">
               <Users className="h-5 w-5 text-info" />
@@ -333,7 +333,7 @@ export function QualityMetricsPanel({
 
       {/* Entity Quality Summary */}
       {Object.keys(entityQualitySummary).length > 0 && (
-        <div className="bg-muted/30 rounded-2xl p-8 border border-border/40">
+        <div className="bg-muted/30 rounded-2xl p-8 shadow-soft">
           <div className="mb-6">
             <h4 className="text-lg font-semibold text-foreground flex items-center gap-2">
               <BarChart3 className="h-5 w-5 text-primary" />

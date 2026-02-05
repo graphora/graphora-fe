@@ -48,9 +48,9 @@ export function YAMLEditor({ value, onChange, readOnly = false, height }: YAMLEd
   }
 
   const editorComponent = (
-    <div className={`h-full ${isFullScreen ? '' : 'rounded-2xl shadow-[0_18px_42px_rgba(15,23,42,0.14)] backdrop-blur-xl overflow-hidden'} flex flex-col`}>
+    <div className={`h-full ${isFullScreen ? '' : 'rounded-lg shadow-soft overflow-hidden'} flex flex-col bg-card`}>
       {/* Header with fullscreen button */}
-      <div className="sticky top-0 z-10 flex items-center justify-between rounded-t-2xl border-b border-white/25 bg-white/75 px-3 py-2.5 backdrop-blur-lg dark:border-slate-700/55 dark:bg-slate-900/70">
+      <div className="sticky top-0 z-10 flex items-center justify-between bg-muted/30 px-3 py-2">
         <span className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground dark:text-slate-200">YAML Editor</span>
         <Button
           variant="ghost"

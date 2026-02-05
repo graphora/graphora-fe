@@ -250,7 +250,7 @@ export default function OntologiesPage() {
                 <Card
                   key={ontology.id}
                   variant="transparent"
-                  className="enhanced-card cursor-pointer transition-transform duration-200 group hover:-translate-y-1 hover:shadow-[0_28px_64px_rgba(15,23,42,0.18)]"
+                  className="enhanced-card cursor-pointer group"
                 >
                   <CardHeader className="enhanced-card-header pb-4">
                     <div className="flex items-start justify-between">

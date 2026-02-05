@@ -4,24 +4,24 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 
 const cardVariants = cva(
-  "relative rounded-[var(--border-radius-lg)] border border-transparent bg-card/90 text-card-foreground transition-transform duration-200 shadow-[0_18px_42px_rgba(15,23,42,0.08)]",
+  "rounded-lg bg-card text-card-foreground shadow-soft",
   {
     variants: {
       variant: {
-        default: "surface-base overflow-hidden",
-        elevated: "surface-elevated overflow-hidden",
-        glass: "glass-surface border-white/10 bg-white/12 text-foreground backdrop-blur-panel",
-        muted: "border-transparent bg-muted/70 shadow-soft overflow-hidden",
-        transparent: "border-transparent bg-transparent shadow-none overflow-hidden",
+        default: "",
+        elevated: "shadow-medium",
+        glass: "bg-card/90 backdrop-blur-sm",
+        muted: "bg-muted shadow-none",
+        transparent: "bg-transparent shadow-none",
       },
       hover: {
         none: "",
-        lift: "hover:shadow-medium hover:translate-y-[-2px]",
+        lift: "",
       },
     },
     defaultVariants: {
       variant: "default",
-      hover: "lift",
+      hover: "none",
     },
   }
 )
@@ -47,7 +47,7 @@ const CardHeader = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <div
     ref={ref}
-    className={cn("flex flex-col gap-2.5 p-6", className)}
+    className={cn("flex flex-col gap-1.5 p-4", className)}
     {...props}
   />
 ))
@@ -81,7 +81,7 @@ const CardContent = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
 >(({ className, ...props }, ref) => (
-  <div ref={ref} className={cn("p-6 pt-0", className)} {...props} />
+  <div ref={ref} className={cn("p-4 pt-0", className)} {...props} />
 ))
 CardContent.displayName = "CardContent"
 
@@ -91,7 +91,7 @@ const CardFooter = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <div
     ref={ref}
-    className={cn("flex items-center p-6 pt-0", className)}
+    className={cn("flex items-center p-4 pt-0", className)}
     {...props}
   />
 ))

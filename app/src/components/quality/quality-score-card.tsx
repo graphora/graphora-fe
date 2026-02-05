@@ -6,7 +6,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
 import { type QualityResults } from '@/types/quality'
-import { useTheme } from 'next-themes'
 
 interface QualityScoreCardProps {
   qualityResults: QualityResults;
@@ -14,8 +13,6 @@ interface QualityScoreCardProps {
 }
 
 export function QualityScoreCard({ qualityResults, className = '' }: QualityScoreCardProps) {
-  const { theme } = useTheme();
-  const isDark = theme === 'dark';
 
   const getScoreColor = (score: number) => {
     if (score >= 90) return 'text-success';
@@ -52,28 +49,22 @@ export function QualityScoreCard({ qualityResults, className = '' }: QualityScor
 
   return (
     <div className={className}>
-      <div className="mb-6">
-        <h4 className="text-lg font-semibold text-foreground flex items-center gap-2">
-          <Trophy className="h-5 w-5 text-primary" />
+      <div className="mb-4">
+        <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
+          <Trophy className="h-4 w-4 text-primary" />
           Quality Score
         </h4>
-        <p className="text-sm text-muted-foreground mt-1">
+        <p className="text-xs text-muted-foreground mt-0.5">
           Overall data quality assessment for this extraction
         </p>
       </div>
 
-      <div
-        className={`rounded-3xl p-12 ${
-          isDark
-            ? 'bg-gradient-to-br from-slate-800/80 to-slate-900/80 border-0 shadow-none'
-            : 'bg-gradient-to-br from-slate-50 to-slate-100/80 border border-slate-200/60 shadow-md'
-        }`}
-      >
-        <div className="flex flex-col md:flex-row items-center md:items-start gap-12">
+      <div className="rounded-xl p-6 bg-muted/30 shadow-soft">
+        <div className="flex flex-col md:flex-row items-center md:items-start gap-8">
           {/* Score Display */}
           <div className="flex flex-col items-center justify-center flex-shrink-0">
             <div className="relative inline-flex items-center justify-center">
-              <svg className="w-40 h-40 transform -rotate-90" viewBox="0 0 100 100">
+              <svg className="w-32 h-32 transform -rotate-90" viewBox="0 0 100 100">
                 {/* Background circle */}
                 <circle
                   cx="50"
@@ -82,7 +73,7 @@ export function QualityScoreCard({ qualityResults, className = '' }: QualityScor
                   stroke="currentColor"
                   strokeWidth="6"
                   fill="none"
-                  className={isDark ? 'text-slate-700/30' : 'text-slate-300/60'}
+                  className="text-muted-foreground/20"
                 />
                 {/* Progress circle */}
                 <circle
@@ -99,72 +90,72 @@ export function QualityScoreCard({ qualityResults, className = '' }: QualityScor
               </svg>
               <div className="absolute inset-0 flex items-center justify-center">
                 <div className="text-center">
-                  <div className={`text-6xl leading-none font-bold ${getScoreColor(qualityResults.overall_score)}`}>
+                  <div className={`text-4xl leading-none font-bold ${getScoreColor(qualityResults.overall_score)}`}>
                     {Math.round(qualityResults.overall_score)}
                   </div>
-                  <div className={`text-xs mt-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>out of 100</div>
+                  <div className="text-xs mt-1 text-muted-foreground">out of 100</div>
                 </div>
               </div>
             </div>
 
             <Badge
               variant="outline"
-              className={`mt-4 text-lg px-4 py-1.5 ${getGradeColor(qualityResults.grade)}`}
+              className={`mt-3 text-sm px-3 py-1 ${getGradeColor(qualityResults.grade)}`}
             >
               GRADE {qualityResults.grade}
             </Badge>
           </div>
 
           {/* Key Metrics */}
-          <div className="flex-1 grid md:grid-cols-2 gap-8">
-            <div className="space-y-4">
+          <div className="flex-1 grid md:grid-cols-2 gap-6">
+            <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <span className={`text-sm font-medium ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>Entities Processed</span>
-                <span className={`font-bold text-2xl ${isDark ? 'text-white' : 'text-slate-800'}`}>{qualityResults.metrics.total_entities}</span>
+                <span className="text-xs text-muted-foreground">Entities Processed</span>
+                <span className="font-semibold text-lg text-foreground">{qualityResults.metrics.total_entities}</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className={`text-sm font-medium ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>Relationships</span>
-                <span className={`font-bold text-2xl ${isDark ? 'text-white' : 'text-slate-800'}`}>{qualityResults.metrics.total_relationships}</span>
+                <span className="text-xs text-muted-foreground">Relationships</span>
+                <span className="font-semibold text-lg text-foreground">{qualityResults.metrics.total_relationships}</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className={`text-sm font-medium ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>Total Violations</span>
-                <span className={`font-bold text-2xl ${isDark ? 'text-white' : 'text-slate-800'}`}>{qualityResults.violations.length}</span>
+                <span className="text-xs text-muted-foreground">Total Violations</span>
+                <span className="font-semibold text-lg text-foreground">{qualityResults.violations.length}</span>
               </div>
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-3">
               <div>
-                <div className="flex items-center justify-between mb-2">
-                  <span className={`text-sm font-medium ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>Property Completeness</span>
-                  <span className={`font-semibold ${isDark ? 'text-white' : 'text-slate-800'}`}>{Math.round(qualityResults.metrics.property_completeness_rate)}%</span>
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="text-xs text-muted-foreground">Property Completeness</span>
+                  <span className="text-xs font-medium text-foreground">{Math.round(qualityResults.metrics.property_completeness_rate)}%</span>
                 </div>
                 <Progress
                   value={qualityResults.metrics.property_completeness_rate}
-                  className={`h-2 ${getProgressColor(qualityResults.metrics.property_completeness_rate)}`}
+                  className={`h-1.5 ${getProgressColor(qualityResults.metrics.property_completeness_rate)}`}
                 />
               </div>
 
               <div>
-                <div className="flex items-center justify-between mb-2">
-                  <span className={`text-sm font-medium ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>Extraction Confidence</span>
-                  <span className={`font-semibold ${isDark ? 'text-white' : 'text-slate-800'}`}>{Math.round(qualityResults.metrics.avg_entity_confidence * 100)}%</span>
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="text-xs text-muted-foreground">Extraction Confidence</span>
+                  <span className="text-xs font-medium text-foreground">{Math.round(qualityResults.metrics.avg_entity_confidence * 100)}%</span>
                 </div>
                 <Progress
                   value={qualityResults.metrics.avg_entity_confidence * 100}
-                  className={`h-2 ${getProgressColor(qualityResults.metrics.avg_entity_confidence * 100)}`}
+                  className={`h-1.5 ${getProgressColor(qualityResults.metrics.avg_entity_confidence * 100)}`}
                 />
               </div>
 
-              <div className={`pt-4 border-t ${isDark ? 'border-slate-600/40' : 'border-slate-200/60'}`}>
+              <div className="pt-3 border-t border-border/40">
                 {qualityResults.requires_review ? (
                   <div className="flex items-center gap-2">
-                    <div className="w-2.5 h-2.5 rounded-full bg-warning"></div>
-                    <span className="text-sm font-semibold text-warning">Manual Review Required</span>
+                    <div className="w-2 h-2 rounded-full bg-warning"></div>
+                    <span className="text-xs font-medium text-warning">Manual Review Required</span>
                   </div>
                 ) : (
                   <div className="flex items-center gap-2">
-                    <div className="w-2.5 h-2.5 rounded-full bg-success"></div>
-                    <span className="text-sm font-semibold text-success">Ready for Auto-Approval</span>
+                    <div className="w-2 h-2 rounded-full bg-success"></div>
+                    <span className="text-xs font-medium text-success">Ready for Auto-Approval</span>
                   </div>
                 )}
               </div>

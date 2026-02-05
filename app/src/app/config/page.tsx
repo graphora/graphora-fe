@@ -419,278 +419,125 @@ function ConfigPageContent() {
               <TabsTrigger value="ai-config">AI Config</TabsTrigger>
             </TabsList>
 
-            <TabsContent value="databases" className="flex flex-col gap-6">
-              {/* Quick Status Overview */}
-              <div className="grid gap-4 sm:grid-cols-2">
-                {/* Staging Status Card */}
-                <Card className={cn(
-                  "border transition-all",
-                  config?.stagingDb?.uri
-                    ? "border-emerald-200 dark:border-emerald-800 bg-emerald-50/50 dark:bg-emerald-950/20"
-                    : "border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-950/20"
-                )}>
-                  <CardContent className="p-4">
-                    <div className="flex items-start gap-3">
-                      <div className={cn(
-                        "rounded-full p-2",
-                        config?.stagingDb?.uri
-                          ? "bg-emerald-100 dark:bg-emerald-900/50"
-                          : "bg-blue-100 dark:bg-blue-900/50"
-                      )}>
-                        {config?.stagingDb?.uri ? (
-                          <Database className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-                        ) : (
-                          <HardDrive className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium text-sm">Staging</span>
-                          <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-blue-300 dark:border-blue-700 text-blue-600 dark:text-blue-400">
-                            Optional
-                          </Badge>
-                        </div>
-                        <p className={cn(
-                          "text-xs mt-0.5",
-                          config?.stagingDb?.uri
-                            ? "text-emerald-700 dark:text-emerald-300"
-                            : "text-blue-700 dark:text-blue-300"
-                        )}>
-                          {config?.stagingDb?.uri ? "Connected - Data persists across sessions" : "Using in-memory storage"}
-                        </p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Production Status Card */}
-                <Card className={cn(
-                  "border transition-all",
-                  config?.prodDb?.uri
-                    ? "border-emerald-200 dark:border-emerald-800 bg-emerald-50/50 dark:bg-emerald-950/20"
-                    : "border-amber-200 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-950/20"
-                )}>
-                  <CardContent className="p-4">
-                    <div className="flex items-start gap-3">
-                      <div className={cn(
-                        "rounded-full p-2",
-                        config?.prodDb?.uri
-                          ? "bg-emerald-100 dark:bg-emerald-900/50"
-                          : "bg-amber-100 dark:bg-amber-900/50"
-                      )}>
-                        {config?.prodDb?.uri ? (
-                          <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-                        ) : (
-                          <GitMerge className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium text-sm">Production</span>
-                          <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-amber-300 dark:border-amber-700 text-amber-600 dark:text-amber-400">
-                            For Merge
-                          </Badge>
-                        </div>
-                        <p className={cn(
-                          "text-xs mt-0.5",
-                          config?.prodDb?.uri
-                            ? "text-emerald-700 dark:text-emerald-300"
-                            : "text-amber-700 dark:text-amber-300"
-                        )}>
-                          {config?.prodDb?.uri ? "Connected - Ready for merge operations" : "Required to merge staged data"}
-                        </p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-
-              {/* Info Banner */}
-              <Alert className="border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50">
-                <Info className="h-4 w-4 text-slate-600 dark:text-slate-400" />
-                <AlertDescription className="text-slate-700 dark:text-slate-300 text-sm">
-                  <strong>How databases work:</strong> The staging database stores your work-in-progress data.
-                  When you're ready, you can merge staged data to your production database.
-                  Without a staging database, data is stored temporarily in memory.
-                </AlertDescription>
-              </Alert>
-
+            <TabsContent value="databases" className="flex flex-col gap-5">
               {/* Database Configuration Forms */}
-              <div className="space-y-6">
-                {/* Production Database - Show first since it's more important for merge */}
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2 px-1">
-                    <GitMerge className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-                    <h3 className="text-sm font-medium text-foreground">Production Database</h3>
-                    <span className="text-xs text-muted-foreground">— Required for merge operations</span>
-                  </div>
-                  <DatabaseConfigForm
-                    title="Production Database"
-                    description="Your production Neo4j database where staged data gets merged"
-                    config={prodDb}
-                    onChange={handleProdDbChange}
-                    disabled={saving}
-                    isExistingConfig={!!config?.prodDb?.uri}
-                    isOptional={false}
-                    requiredFor="merge"
-                    notConfiguredHint="Configure this to merge your staged data into production. Without it, you can still process documents but cannot merge results."
-                  />
-                </div>
+              <div className="grid gap-4 lg:grid-cols-2">
+                <DatabaseConfigForm
+                  title="Production Database"
+                  description="Where staged data gets merged"
+                  config={prodDb}
+                  onChange={handleProdDbChange}
+                  disabled={saving}
+                  isExistingConfig={!!config?.prodDb?.uri}
+                  isOptional={false}
+                  requiredFor="merge"
+                />
 
-                {/* Staging Database */}
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2 px-1">
-                    <HardDrive className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                    <h3 className="text-sm font-medium text-foreground">Staging Database</h3>
-                    <span className="text-xs text-muted-foreground">— Optional (uses in-memory if not set)</span>
-                  </div>
-                  <DatabaseConfigForm
-                    title="Staging Database"
-                    description="Neo4j database for work-in-progress data before merging to production"
-                    config={stagingDb}
-                    onChange={handleStagingDbChange}
-                    disabled={saving}
-                    isExistingConfig={!!config?.stagingDb?.uri}
-                    isOptional={true}
-                    notConfiguredHint="Not required. Without this, your staging data will be stored in memory and lost when the session ends. Configure for persistent staging."
-                  />
-                </div>
+                <DatabaseConfigForm
+                  title="Staging Database"
+                  description="Work-in-progress storage (optional)"
+                  config={stagingDb}
+                  onChange={handleStagingDbChange}
+                  disabled={saving}
+                  isExistingConfig={!!config?.stagingDb?.uri}
+                  isOptional={true}
+                />
               </div>
 
-              {/* Database Save Button */}
-              <div className="flex items-center justify-between gap-4 pt-2">
-                <p className="text-xs text-muted-foreground">
-                  {!stagingDb.uri && !prodDb.uri
-                    ? "Fill in at least one database to save"
-                    : stagingDb.uri && prodDb.uri
-                      ? "Both databases configured"
-                      : stagingDb.uri
-                        ? "Only staging configured — you won't be able to merge"
-                        : "Only production configured — staging will use in-memory storage"
-                  }
-                </p>
+              {/* Save Button */}
+              <div className="flex items-center justify-end gap-3 pt-2">
                 <Button
                   onClick={handleSave}
                   disabled={saving || (!stagingDb.uri && !prodDb.uri)}
                   variant="cta"
+                  size="sm"
                 >
                   {saving ? (
                     <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      <Loader2 className="h-3.5 w-3.5 mr-2 animate-spin" />
                       Saving...
                     </>
                   ) : (
-                    'Save Database Configuration'
+                    'Save Databases'
                   )}
                 </Button>
               </div>
 
-              {/* Connection Examples - Collapsed by default */}
-              <details className="group">
-                <summary className="cursor-pointer text-sm font-medium text-muted-foreground hover:text-foreground transition-colors flex items-center gap-2">
-                  <span className="group-open:rotate-90 transition-transform">▶</span>
-                  Neo4j Connection Examples
-                </summary>
-                <div className="mt-3 grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                  <div className="p-3 rounded-lg bg-muted/30 border border-border/50">
-                    <div className="font-medium mb-1">Local Development</div>
-                    <code className="text-muted-foreground text-xs">neo4j://localhost:7687</code>
-                  </div>
-                  <div className="p-3 rounded-lg bg-muted/30 border border-border/50">
-                    <div className="font-medium mb-1">Neo4j Aura Cloud</div>
-                    <code className="text-muted-foreground text-xs">neo4j+s://xxx.databases.neo4j.io</code>
-                  </div>
-                  <div className="p-3 rounded-lg bg-muted/30 border border-border/50">
-                    <div className="font-medium mb-1">Self-hosted with TLS</div>
-                    <code className="text-muted-foreground text-xs">bolt+s://your-server:7687</code>
-                  </div>
+              {/* Connection Examples */}
+              <div className="rounded-lg bg-muted/30 p-3">
+                <p className="text-xs font-medium text-muted-foreground mb-2">Connection examples</p>
+                <div className="flex flex-wrap gap-3 text-xs">
+                  <code className="px-2 py-1 rounded bg-muted">neo4j://localhost:7687</code>
+                  <code className="px-2 py-1 rounded bg-muted">neo4j+s://xxx.neo4j.io</code>
+                  <code className="px-2 py-1 rounded bg-muted">bolt+s://server:7687</code>
                 </div>
-              </details>
+              </div>
             </TabsContent>
 
-            <TabsContent value="ai-config" className="flex flex-col gap-5">
-              {isWorkflowRedirect && (
-                <Alert className="border-amber-200 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-800">
-                  <AlertDescription className="text-amber-800 dark:text-amber-300">
-                    <strong>AI Configuration Required:</strong> Configure an AI provider to enable intelligent document processing and entity extraction in workflows. You'll be redirected once setup is complete.
-                  </AlertDescription>
-                </Alert>
-              )}
-              
-              {/* AI Configuration Status */}
-              <Card className="enhanced-card">
-                <CardHeader className="enhanced-card-header">
-                  <CardTitle className="flex items-center justify-between text-heading-sm">
-                    <span className="font-medium">AI Configuration Status</span>
-                    <Badge className={cn(
-                      'border border-transparent bg-muted/60 text-foreground/80 dark:text-foreground',
-                      aiConfig ? 'bg-emerald-100/60 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300' : 'bg-amber-100/60 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300'
-                    )}>
-                      {aiConfig ? 'Configured' : 'Setup Required'}
-                    </Badge>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="enhanced-card-content">
-                  <div className="space-y-4">
-                    <div className="text-sm text-muted-foreground">
-                      Configure your AI provider for intelligent document processing, entity extraction, 
-                      and conflict resolution. Currently supporting Google Gemini AI Studio.
+            <TabsContent value="ai-config" className="flex flex-col gap-4">
+              {/* Current Status */}
+              {aiConfig && (
+                <Card className="shadow-soft">
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-sm font-medium">Current Configuration</span>
+                      <Badge variant="outline" className="text-emerald-600 border-emerald-200 dark:border-emerald-800">
+                        <CheckCircle2 className="h-3 w-3 mr-1" />
+                        Active
+                      </Badge>
                     </div>
-                    
-                    {aiConfig && (
-                      <div className="p-4 rounded-lg bg-muted/30 space-y-2">
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm font-medium">Current Provider:</span>
-                          <span className="text-sm">{aiConfig.provider_display_name}</span>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm font-medium">API Key:</span>
-                          <span className="text-sm font-mono">{aiConfig.api_key_masked}</span>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm font-medium">Default Model:</span>
-                          <span className="text-sm">{aiConfig.default_model_display_name}</span>
-                        </div>
+                    <div className="grid gap-2 text-xs">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Provider</span>
+                        <span>{aiConfig.provider_display_name}</span>
                       </div>
-                    )}
-                    
-                    {!aiConfig && (
-                      <Alert>
-                        <AlertDescription>
-                          Provide a Gemini API key and select a default model to enable AI features. You can manage keys from Google AI Studio.
-                        </AlertDescription>
-                      </Alert>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">API Key</span>
+                        <code className="font-mono">{aiConfig.api_key_masked}</code>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Model</span>
+                        <span>{aiConfig.default_model_display_name}</span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
 
               {/* Gemini Configuration Form */}
-              <div className="flex flex-col gap-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-heading-sm font-medium text-foreground">Google Gemini AI Studio</h3>
-                  <Button
-                    onClick={handleSaveAI}
-                    disabled={savingAI || !geminiConfig.api_key || !geminiConfig.default_model_name}
-                    variant="cta"
-                  >
-                    {savingAI ? (
-                      <>
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        Saving AI Configuration...
-                      </>
-                    ) : (
-                      (aiConfig ? 'Update AI Configuration' : 'Save AI Configuration')
-                    )}
-                  </Button>
-                </div>
-                <GeminiConfigForm
-                  config={geminiConfig}
-                  onChange={handleGeminiConfigChange}
-                  disabled={savingAI}
-                  isExistingConfig={!!aiConfig}
-                />
-              </div>
+              <Card className="shadow-soft">
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle className="text-sm font-medium">Google Gemini</CardTitle>
+                      <p className="text-xs text-muted-foreground mt-0.5">AI provider for document processing</p>
+                    </div>
+                    <Button
+                      onClick={handleSaveAI}
+                      disabled={savingAI || !geminiConfig.api_key || !geminiConfig.default_model_name}
+                      variant="cta"
+                      size="sm"
+                    >
+                      {savingAI ? (
+                        <>
+                          <Loader2 className="h-3.5 w-3.5 mr-2 animate-spin" />
+                          Saving...
+                        </>
+                      ) : (
+                        (aiConfig ? 'Update' : 'Save')
+                      )}
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <GeminiConfigForm
+                    config={geminiConfig}
+                    onChange={handleGeminiConfigChange}
+                    disabled={savingAI}
+                    isExistingConfig={!!aiConfig}
+                  />
+                </CardContent>
+              </Card>
             </TabsContent>
 
           </Tabs>
