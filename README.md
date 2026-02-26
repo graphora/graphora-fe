@@ -1,6 +1,6 @@
 # Graphora Frontend
 
-[![License: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Next.js](https://img.shields.io/badge/Next.js-15.2-black)](https://nextjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue)](https://www.typescriptlang.org/)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
@@ -164,13 +164,11 @@ We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) f
 
 ## License
 
-This project is licensed under the **GNU Affero General Public License v3.0 (AGPL-3.0)**.
+This project is licensed under the **MIT License**.
 
-- ✅ Use for free under AGPL v3 terms
-- ✅ Modify and distribute with source code
-- ❌ Cannot use as closed-source SaaS without commercial license
-
-For commercial licensing (closed-source SaaS, enterprise deployments, OEM), contact: **sales@graphora.io**
+- ✅ Use freely in open or closed-source projects
+- ✅ Modify, distribute, and embed without restriction
+- ✅ Use in commercial SaaS, enterprise, and OEM products
 
 See [LICENSE](LICENSE) for full terms.
 

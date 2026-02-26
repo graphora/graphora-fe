@@ -84,7 +84,7 @@ If you fork or create a derivative of Graphora:
 - **MUST** use a different name that doesn't include "Graphora"
 - **SHOULD** clearly state it's based on or derived from Graphora
 - **MAY** state "Based on Graphora by Arivan Labs" in documentation
-- **MUST** comply with the AGPL v3 license terms
+- **MUST** comply with the MIT license terms
 
 Example: "GraphWeaver - a knowledge graph tool based on Graphora"
 
