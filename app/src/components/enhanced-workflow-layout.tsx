@@ -7,7 +7,6 @@ import { Check, ChevronDown, Clock } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Tooltip } from '@/components/ui/tooltip'
 import { PageHeader } from '@/components/layouts/page-header'
-import { DashboardLayout } from '@/components/layouts/dashboard-layout'
 import type { Crumb } from '@/components/layouts/top-bar'
 
 export type WorkflowStep = {
@@ -40,10 +39,14 @@ export interface EnhancedWorkflowLayoutProps {
 
 /**
  * EnhancedWorkflowLayout — shared shell for the multi-step workflow routes
- * (/ontology, /transform, /merge). Renders the Graphora aesthetic:
- * TopBar + ambient graph backdrop (via DashboardLayout), kicker+title
- * PageHeader, and the prototype's workflow stepper — numbered mono circles,
- * accent-active, thin separator lines.
+ * (/ontology, /transform, /merge). Renders the kicker+title PageHeader
+ * and the prototype's workflow stepper on top of the persistent
+ * (app) route-group layout, which already provides the sidebar, topbar,
+ * and ambient-graph backdrop. No double-wrapping.
+ *
+ * `showSidebar`, `sidebarCollapsed`, `showAmbientGraph`, and `crumbs`
+ * props are retained on the interface for call-site compatibility, but
+ * are now no-ops — they live on the route-group layout.
  */
 export function EnhancedWorkflowLayout({
   children,
@@ -54,12 +57,12 @@ export function EnhancedWorkflowLayout({
   projectTitle = 'Graphora workflow',
   description,
   onStepClick,
-  showSidebar = true,
-  sidebarCollapsed = true,
+  showSidebar: _showSidebar = true,
+  sidebarCollapsed: _sidebarCollapsed = true,
   headerActions,
   kicker,
-  crumbs,
-  showAmbientGraph = true,
+  crumbs: _crumbs,
+  showAmbientGraph: _showAmbientGraph = true,
 }: EnhancedWorkflowLayoutProps) {
   const [stepsCollapsed, setStepsCollapsed] = useState(false)
 
@@ -103,12 +106,7 @@ export function EnhancedWorkflowLayout({
   const derivedKicker = kicker ?? (steps.length ? `Workflow · Step ${currentStepIndex + 1} of ${steps.length}` : undefined)
 
   return (
-    <DashboardLayout
-      showSidebar={showSidebar}
-      sidebarCollapsed={sidebarCollapsed}
-      showAmbientGraph={showAmbientGraph}
-      crumbs={crumbs}
-    >
+    <>
       <div style={{ padding: '28px 32px 24px', maxWidth: 1600 }}>
         <PageHeader
           kicker={derivedKicker}
@@ -151,7 +149,7 @@ export function EnhancedWorkflowLayout({
       )}
 
       <div className="flex-1 min-h-0">{children}</div>
-    </DashboardLayout>
+    </>
   )
 }
 

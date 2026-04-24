@@ -1,7 +1,6 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { DashboardLayout } from '@/components/layouts/dashboard-layout'
 import { PageHeader } from '@/components/layouts/page-header'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -149,21 +148,18 @@ export default function OntologiesPage() {
 
   if (loading) {
     return (
-      <DashboardLayout>
-        <div className="flex-1 flex items-center justify-center">
-          <div className="text-center">
-            <Database className="h-8 w-8 mx-auto mb-4 text-muted-foreground animate-pulse" />
-            <p className="text-muted-foreground">Loading ontologies...</p>
-          </div>
+      <div className="flex-1 flex items-center justify-center">
+        <div className="text-center">
+          <Database className="h-8 w-8 mx-auto mb-4 text-muted-foreground animate-pulse" />
+          <p className="text-muted-foreground">Loading ontologies...</p>
         </div>
-      </DashboardLayout>
+      </div>
     )
   }
 
   return (
-    <DashboardLayout>
-      <div className="flex flex-col h-full">
-        <div style={{ padding: '28px 32px 0' }}>
+    <div className="flex flex-col h-full">
+      <div style={{ padding: '28px 32px 0' }}>
           <PageHeader
             kicker="Workspace · ontology library"
             title="Ontology library"
@@ -327,7 +323,6 @@ export default function OntologiesPage() {
             </div>
           )}
         </div>
-      </div>
-    </DashboardLayout>
+    </div>
   )
-} 
+}

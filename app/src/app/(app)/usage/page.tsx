@@ -12,7 +12,6 @@ import {
   Sigma,
 } from 'lucide-react'
 
-import { DashboardLayout } from '@/components/layouts/dashboard-layout'
 import { PageHeader } from '@/components/layouts/page-header'
 import { Button } from '@/components/ui/button'
 import { useUsageSummary, useModelUsage } from '@/hooks/useUsageData'
@@ -68,7 +67,7 @@ export default function UsagePage() {
     `${new Date(summary.current_period.start).toLocaleDateString()} – ${new Date(summary.current_period.end).toLocaleDateString()}`
 
   return (
-    <DashboardLayout>
+    <>
       <div className="gx-page-enter" style={{ padding: '28px 32px 48px', maxWidth: 1600 }}>
         <PageHeader
           kicker="System · usage & billing"
@@ -265,7 +264,7 @@ export default function UsagePage() {
           </>
         )}
       </div>
-    </DashboardLayout>
+    </>
   )
 }
 

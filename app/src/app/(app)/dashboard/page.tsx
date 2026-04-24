@@ -7,7 +7,6 @@ import { Download, Plus, RefreshCw, Eye, ArrowRight } from 'lucide-react'
 import { useUser } from '@/hooks/useAuth'
 import { useUserConfig } from '@/hooks/useUserConfig'
 
-import { DashboardLayout } from '@/components/layouts/dashboard-layout'
 import { PageHeader } from '@/components/layouts/page-header'
 import { Button } from '@/components/ui/button'
 import { NodePill, Spark } from '@/components/graphora'
@@ -275,7 +274,7 @@ export default function DashboardPage() {
   }, [runs])
 
   return (
-    <DashboardLayout>
+    <>
       <div className="gx-page-enter" style={{ padding: '28px 32px 48px', maxWidth: 1600 }}>
         <PageHeader
           kicker={`Overview · Last ${timeframe}`}
@@ -505,7 +504,7 @@ export default function DashboardPage() {
           </div>
         )}
       </div>
-    </DashboardLayout>
+    </>
   )
 }
 

@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback, useRef, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useUser } from '@/hooks/useAuth'
-import { DashboardLayout } from '@/components/layouts/dashboard-layout'
 import { PageHeader } from '@/components/layouts/page-header'
 import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -360,36 +359,31 @@ function ConfigPageContent() {
 
   if (!isLoaded) {
     return (
-      <DashboardLayout>
-        <div className="flex-1 flex items-center justify-center">
-          <Loader2 className="h-6 w-6 animate-spin" style={{ color: 'var(--gx-accent)' }} />
-        </div>
-      </DashboardLayout>
+      <div className="flex-1 flex items-center justify-center">
+        <Loader2 className="h-6 w-6 animate-spin" style={{ color: 'var(--gx-accent)' }} />
+      </div>
     )
   }
 
   if (!user) {
     return (
-      <DashboardLayout>
-        <div className="flex-1 flex items-center justify-center">
-          <div className="text-center max-w-xs">
-            <div className="gx-kicker" style={{ marginBottom: 6 }}>Sign-in required</div>
-            <h2 style={{ fontSize: 20, fontWeight: 500, color: 'var(--fg)', letterSpacing: '-0.015em', margin: 0, lineHeight: 1.2 }}>
-              Authentication required
-            </h2>
-            <p style={{ color: 'var(--fg-muted)', fontSize: 13, marginTop: 6 }}>
-              Please sign in to access configuration.
-            </p>
-          </div>
+      <div className="flex-1 flex items-center justify-center">
+        <div className="text-center max-w-xs">
+          <div className="gx-kicker" style={{ marginBottom: 6 }}>Sign-in required</div>
+          <h2 style={{ fontSize: 20, fontWeight: 500, color: 'var(--fg)', letterSpacing: '-0.015em', margin: 0, lineHeight: 1.2 }}>
+            Authentication required
+          </h2>
+          <p style={{ color: 'var(--fg-muted)', fontSize: 13, marginTop: 6 }}>
+            Please sign in to access configuration.
+          </p>
         </div>
-      </DashboardLayout>
+      </div>
     )
   }
 
   return (
-    <DashboardLayout>
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <div style={{ padding: '28px 32px 0' }}>
+    <div className="flex-1 flex flex-col overflow-hidden">
+      <div style={{ padding: '28px 32px 0' }}>
           <PageHeader
             kicker={isWorkflowRedirect ? 'Setup · workflow prerequisites' : 'System · configuration'}
             title="Configuration"
@@ -604,24 +598,21 @@ function ConfigPageContent() {
           </Tabs>
           </div>
         </div>
-      </div>
-    </DashboardLayout>
+    </div>
   )
 }
 
 export default function ConfigPage() {
   return (
     <Suspense fallback={
-      <DashboardLayout>
-        <div className="flex-1 flex items-center justify-center">
-          <div className="text-center">
-            <Loader2 className="h-6 w-6 animate-spin mx-auto mb-3" style={{ color: 'var(--gx-accent)' }} />
-            <p className="gx-mono" style={{ color: 'var(--fg-muted)', fontSize: 11, letterSpacing: '0.08em' }}>
-              LOADING CONFIGURATION…
-            </p>
-          </div>
+      <div className="flex-1 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="h-6 w-6 animate-spin mx-auto mb-3" style={{ color: 'var(--gx-accent)' }} />
+          <p className="gx-mono" style={{ color: 'var(--fg-muted)', fontSize: 11, letterSpacing: '0.08em' }}>
+            LOADING CONFIGURATION…
+          </p>
         </div>
-      </DashboardLayout>
+      </div>
     }>
       <ConfigPageContent />
     </Suspense>

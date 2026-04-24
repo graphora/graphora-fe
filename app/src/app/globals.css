@@ -555,6 +555,95 @@
     border-bottom-color: var(--gx-accent);
   }
 
+  /* ---- Schema-chat assistant markdown bubble ----
+     ReactMarkdown renders raw p/ul/code/pre tags. The typography plugin
+     isn't installed, so we style these children directly to stay
+     consistent with the Graphora token system. */
+  .gx-chat-md > :first-child { margin-top: 0; }
+  .gx-chat-md > :last-child { margin-bottom: 0; }
+  .gx-chat-md p {
+    margin: 0 0 8px;
+    color: var(--fg);
+    line-height: 1.55;
+  }
+  .gx-chat-md p:last-child { margin-bottom: 0; }
+  .gx-chat-md strong { color: var(--fg); font-weight: 600; }
+  .gx-chat-md em { color: var(--fg); font-style: italic; }
+  .gx-chat-md a {
+    color: var(--gx-accent);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+  .gx-chat-md ul, .gx-chat-md ol {
+    margin: 0 0 8px;
+    padding-left: 20px;
+  }
+  .gx-chat-md li { margin: 2px 0; color: var(--fg); }
+  .gx-chat-md li::marker { color: var(--fg-muted); }
+  .gx-chat-md h1, .gx-chat-md h2, .gx-chat-md h3 {
+    color: var(--fg);
+    font-weight: 500;
+    letter-spacing: -0.01em;
+    margin: 10px 0 6px;
+  }
+  .gx-chat-md h1 { font-size: 16px; }
+  .gx-chat-md h2 { font-size: 14px; }
+  .gx-chat-md h3 { font-size: 13px; }
+  .gx-chat-md code {
+    font-family: var(--font-mono), 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    padding: 1px 5px;
+    border-radius: 3px;
+    background: var(--bg-elev);
+    border: 1px solid var(--line);
+    color: var(--gx-accent);
+  }
+  .gx-chat-md pre {
+    margin: 8px 0;
+    padding: 12px 14px;
+    background: var(--bg);
+    border: 1px solid var(--line);
+    border-radius: var(--r-sm);
+    overflow-x: auto;
+    font-family: var(--font-mono), 'IBM Plex Mono', monospace;
+    font-size: 11.5px;
+    line-height: 1.6;
+  }
+  .gx-chat-md pre code {
+    padding: 0;
+    background: transparent;
+    border: 0;
+    color: var(--fg);
+    font-size: inherit;
+  }
+  .gx-chat-md blockquote {
+    margin: 8px 0;
+    padding: 4px 12px;
+    border-left: 2px solid var(--line-strong);
+    color: var(--fg-muted);
+  }
+  .gx-chat-md hr {
+    border: 0;
+    border-top: 1px solid var(--line);
+    margin: 12px 0;
+  }
+  .gx-chat-md table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 8px 0;
+    font-size: 12px;
+  }
+  .gx-chat-md th, .gx-chat-md td {
+    border: 1px solid var(--line);
+    padding: 6px 8px;
+    text-align: left;
+  }
+  .gx-chat-md th {
+    background: var(--bg-elev);
+    color: var(--fg-muted);
+    font-weight: 500;
+  }
+
   /* ---- Motion utilities ---- */
   .gx-page-enter {
     animation: gxPageEnter var(--dur-3) var(--ease-out) both;

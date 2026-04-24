@@ -1,17 +1,16 @@
 'use client'
 
 import React, { useEffect, useState } from 'react'
-import { useRouter, usePathname } from 'next/navigation'
+import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import {
   Home,
   Database,
   Zap,
   Bot,
-  GitMerge,
   Settings,
   Sigma,
-  Shuffle,
   LogOut,
   Search,
   ChevronsLeft,
@@ -52,9 +51,7 @@ const NAV_SECTIONS: NavigationSection[] = [
     items: [
       { id: 'dashboard', name: 'Dashboard', path: '/dashboard', icon: <Home className="h-[14px] w-[14px]" />, description: 'Pipeline overview and KPIs' },
       { id: 'ontologies', name: 'Ontologies', path: '/ontologies', icon: <Database className="h-[14px] w-[14px]" />, description: 'Knowledge graph schemas' },
-      { id: 'run-workflow', name: 'Run workflow', path: '/ontology', icon: <Zap className="h-[14px] w-[14px]" />, description: 'Start a new graph build' },
-      { id: 'transform', name: 'Transform', path: '/transform', icon: <Shuffle className="h-[14px] w-[14px]" />, description: 'Extraction runs and quality gate' },
-      { id: 'merge', name: 'Merge', path: '/merge', icon: <GitMerge className="h-[14px] w-[14px]" />, description: 'Conflict resolution queue' },
+      { id: 'run-workflow', name: 'Run workflow', path: '/ontology', icon: <Zap className="h-[14px] w-[14px]" />, description: 'Start a new graph build — Ontology → Transform → Merge' },
     ],
   },
   {
@@ -73,7 +70,6 @@ const NAV_SECTIONS: NavigationSection[] = [
 ]
 
 export function SidebarNavigation({ className, defaultCollapsed = false }: SidebarNavigationProps) {
-  const router = useRouter()
   const pathname = usePathname()
 
   const [isCollapsed, setIsCollapsed] = useState(() => {
@@ -97,10 +93,6 @@ export function SidebarNavigation({ className, defaultCollapsed = false }: Sideb
   const isActivePath = (path: string) => {
     if (path === '/') return pathname === '/'
     return pathname.startsWith(path)
-  }
-
-  const handleNavigation = (path: string) => {
-    router.push(path)
   }
 
   const toggle = () => {
@@ -223,10 +215,14 @@ export function SidebarNavigation({ className, defaultCollapsed = false }: Sideb
             <nav className="flex flex-col" style={{ padding: isCollapsed ? '8px 10px' : '0 8px' }}>
               {section.items.map((item) => {
                 const active = isActivePath(item.path)
+                // `<Link prefetch>` triggers route prefetch on hover AND on
+                // viewport-enter, dramatically reducing cold-click wait in dev
+                // mode — `router.push(path)` only starts compiling after click.
                 const btn = (
-                  <button
+                  <Link
                     key={item.id}
-                    onClick={() => handleNavigation(item.path)}
+                    href={item.path}
+                    prefetch
                     className={cn('gx-rail-item relative', active && 'is-active')}
                     style={{
                       display: 'flex',
@@ -242,6 +238,7 @@ export function SidebarNavigation({ className, defaultCollapsed = false }: Sideb
                       justifyContent: isCollapsed ? 'center' : 'flex-start',
                       width: '100%',
                       transition: 'background var(--dur-1) var(--ease), color var(--dur-1) var(--ease)',
+                      textDecoration: 'none',
                     }}
                   >
                     {active && !isCollapsed && (
@@ -282,7 +279,7 @@ export function SidebarNavigation({ className, defaultCollapsed = false }: Sideb
                         )}
                       </>
                     )}
-                  </button>
+                  </Link>
                 )
 
                 if (isCollapsed && item.description) {
