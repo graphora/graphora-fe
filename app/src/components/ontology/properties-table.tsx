@@ -51,15 +51,18 @@ export function PropertiesTable({ properties, onChange }: PropertiesTableProps) 
       {properties.map((property, index) => (
         <div
           key={index}
-          className={cn(
-            'group relative rounded-2xl border border-white/15 bg-white/8 p-6 shadow-glass transition-all',
-            'hover:border-primary/40 hover:shadow-large'
-          )}
+          className="group relative transition-colors"
+          style={{
+            background: 'var(--bg-elev)',
+            border: '1px solid var(--line)',
+            borderRadius: 'var(--r-md)',
+            padding: 16,
+          }}
         >
           <Button
             variant="ghost"
             size="icon"
-            className="absolute right-4 top-4 h-8 w-8 rounded-full border border-white/20 bg-white/10 text-foreground/60 hover:bg-destructive/10 hover:text-destructive"
+            className="absolute right-3 top-3 h-7 w-7"
             onClick={(e) => {
               e.stopPropagation()
               removeProperty(index)
@@ -142,7 +145,17 @@ export function PropertiesTable({ properties, onChange }: PropertiesTableProps) 
       ))}
 
       {properties.length === 0 && (
-        <div className="rounded-2xl border border-dashed border-white/15 bg-white/5 p-6 text-center text-foreground/60">
+        <div
+          className="text-center"
+          style={{
+            background: 'var(--bg-deep)',
+            border: '1px dashed var(--line-strong)',
+            borderRadius: 'var(--r-md)',
+            padding: 20,
+            color: 'var(--fg-muted)',
+            fontSize: 12.5,
+          }}
+        >
           No properties added yet
         </div>
       )}

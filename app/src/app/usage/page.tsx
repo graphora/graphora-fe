@@ -1,279 +1,447 @@
 'use client'
 
-import React, { useState } from 'react'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Progress } from '@/components/ui/progress'
-import { Button } from '@/components/ui/button'
-import { PageHeader } from '@/components/layouts/page-header'
-import { 
-  BarChart3, 
-  Zap, 
-  FileText, 
-  TrendingUp, 
-  Clock, 
+import React from 'react'
+import {
+  Zap,
+  FileText,
+  Clock,
   AlertTriangle,
   CheckCircle,
-  Activity,
   Calendar,
-  RefreshCw
+  RefreshCw,
+  Sigma,
 } from 'lucide-react'
+
+import { DashboardLayout } from '@/components/layouts/dashboard-layout'
+import { PageHeader } from '@/components/layouts/page-header'
+import { Button } from '@/components/ui/button'
 import { useUsageSummary, useModelUsage } from '@/hooks/useUsageData'
 import { cn } from '@/lib/utils'
 
+const formatNumber = (num: number) => new Intl.NumberFormat('en-US').format(num)
+
+const getUsagePercentage = (current: number, limit: number | null) => {
+  if (!limit) return 0
+  return Math.min((current / limit) * 100, 100)
+}
+
+const parseLimit = (usageString: string | undefined): number | null => {
+  if (!usageString || usageString.includes('unlimited')) return null
+  const parts = usageString.split('/')
+  if (parts.length < 2) return null
+  const parsed = parseInt(parts[1], 10)
+  return Number.isFinite(parsed) ? parsed : null
+}
+
 export default function UsagePage() {
-  const [activeTab, setActiveTab] = useState('overview')
-  
-  const { data: summary, loading: summaryLoading, error: summaryError, refetch: refetchSummary } = useUsageSummary()
-  const { data: modelUsage, loading: modelLoading, error: modelError, refetch: refetchModelUsage } = useModelUsage(30)
-
-  const formatNumber = (num: number) => {
-    return new Intl.NumberFormat('en-US').format(num)
-  }
-
-  const getUsagePercentage = (current: number, limit: number | null) => {
-    if (!limit) return 0
-    return Math.min((current / limit) * 100, 100)
-  }
+  const {
+    data: summary,
+    loading: summaryLoading,
+    error: summaryError,
+    refetch: refetchSummary,
+  } = useUsageSummary()
+  const {
+    data: modelUsage,
+    loading: modelLoading,
+    refetch: refetchModelUsage,
+  } = useModelUsage(30)
 
   const handleRefresh = () => {
     refetchSummary()
     refetchModelUsage()
   }
 
+  // Aggregate model usage across providers
+  let totalInputTokens = 0
+  let totalOutputTokens = 0
+  if (modelUsage) {
+    Object.values(modelUsage.by_provider).forEach((models) => {
+      Object.values(models).forEach((usage) => {
+        totalInputTokens += usage.input_tokens
+        totalOutputTokens += usage.output_tokens
+      })
+    })
+  }
+
+  const periodRange =
+    summary &&
+    `${new Date(summary.current_period.start).toLocaleDateString()} – ${new Date(summary.current_period.end).toLocaleDateString()}`
+
   return (
-    <div className="min-h-screen bg-background">
-      <PageHeader
-        title="Usage & Billing"
-        description="Track your document processing and AI usage"
-        icon={<BarChart3 className="w-8 h-8" />}
-        actions={
-          <Button 
-            variant="outline" 
-            onClick={handleRefresh}
-            disabled={summaryLoading || modelLoading}
+    <DashboardLayout>
+      <div className="gx-page-enter" style={{ padding: '28px 32px 48px', maxWidth: 1600 }}>
+        <PageHeader
+          kicker="System · usage & billing"
+          title="Usage & billing"
+          description="Track document processing, AI tokens, and plan limits across the current billing period."
+          actions={
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleRefresh}
+              disabled={summaryLoading || modelLoading}
+              className="gap-1.5"
+            >
+              <RefreshCw
+                className={cn('h-[13px] w-[13px]', (summaryLoading || modelLoading) && 'animate-spin')}
+              />
+              Refresh
+            </Button>
+          }
+        />
+
+        {summaryError ? (
+          <div
+            className="mt-7 flex items-center gap-3"
+            style={{
+              padding: '14px 16px',
+              background: 'color-mix(in oklch, var(--danger), transparent 92%)',
+              border: '1px solid color-mix(in oklch, var(--danger), transparent 70%)',
+              borderRadius: 'var(--r-md)',
+              color: 'var(--fg)',
+            }}
           >
-            <RefreshCw className={cn("w-4 h-4 mr-2", (summaryLoading || modelLoading) && "animate-spin")} />
-            Refresh
-          </Button>
-        }
-      />
+            <AlertTriangle className="h-[15px] w-[15px]" style={{ color: 'var(--danger)' }} />
+            <span style={{ fontSize: 12.5 }}>
+              Error loading usage data: <span className="gx-mono">{summaryError}</span>
+            </span>
+          </div>
+        ) : (
+          <>
+            {/* Current billing period - stat row */}
+            <section className="gx-stagger mt-7 grid grid-cols-1 gap-4 md:grid-cols-3">
+              <StatTile
+                label="Documents"
+                value={summaryLoading ? '…' : formatNumber(summary?.current_period.documents_processed || 0)}
+                icon={<FileText className="h-[13px] w-[13px]" />}
+              />
+              <StatTile
+                label="Pages"
+                value={summaryLoading ? '…' : formatNumber(summary?.current_period.pages_processed || 0)}
+                icon={<Clock className="h-[13px] w-[13px]" />}
+              />
+              <StatTile
+                label="Tokens"
+                value={summaryLoading ? '…' : formatNumber(summary?.current_period.tokens_used || 0)}
+                icon={<Zap className="h-[13px] w-[13px]" />}
+                tone="edge"
+              />
+            </section>
 
-      <div className="container mx-auto px-6 py-8">
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-1">
-            <TabsTrigger value="overview" className="flex items-center gap-2">
-              <Activity className="w-4 h-4" />
-              Usage Overview
-            </TabsTrigger>
-          </TabsList>
+            {periodRange && (
+              <div
+                className="gx-mono gx-faint mt-3 flex items-center gap-2"
+                style={{ fontSize: 10.5, letterSpacing: '0.08em' }}
+              >
+                <Calendar className="h-[11px] w-[11px]" />
+                <span>BILLING PERIOD · {periodRange.toUpperCase()}</span>
+              </div>
+            )}
 
-          <TabsContent value="overview" className="space-y-6">
-            {summaryError ? (
-              <Card className="border-destructive/50 bg-destructive/5">
-                <CardContent className="p-6">
-                  <div className="flex items-center gap-2 text-destructive">
-                    <AlertTriangle className="w-5 h-5" />
-                    <span>Error loading usage data: {summaryError}</span>
+            {/* Plan limits */}
+            {summary && (
+              <section className="gx-stagger mt-6 grid grid-cols-1 gap-4 xl:grid-cols-[2fr_1fr]">
+                <Card
+                  title="Plan limits"
+                  kicker="Current usage against your tier"
+                  headerRight={
+                    <span
+                      className={cn('gx-badge', summary.limits.within_limits ? 'success' : 'danger')}
+                    >
+                      <span className="tick" /> {summary.limits.tier}
+                    </span>
+                  }
+                >
+                  <div style={{ padding: 16 }} className="space-y-4">
+                    <LimitBar
+                      label="Documents"
+                      display={summary.limits.document_usage}
+                      value={summary.current_period.documents_processed}
+                      limit={parseLimit(summary.limits.document_usage)}
+                    />
+                    <LimitBar
+                      label="Pages"
+                      display={summary.limits.page_usage}
+                      value={summary.current_period.pages_processed}
+                      limit={parseLimit(summary.limits.page_usage)}
+                    />
+                    <LimitBar
+                      label="Tokens"
+                      display={summary.limits.token_usage}
+                      value={summary.current_period.tokens_used}
+                      limit={parseLimit(summary.limits.token_usage)}
+                    />
+                    {summary.limits.warnings.length > 0 && (
+                      <div
+                        style={{
+                          marginTop: 12,
+                          padding: 12,
+                          background: 'color-mix(in oklch, var(--warn), transparent 92%)',
+                          border: '1px solid color-mix(in oklch, var(--warn), transparent 70%)',
+                          borderRadius: 'var(--r-sm)',
+                        }}
+                      >
+                        <div
+                          className="gx-mono flex items-center gap-2"
+                          style={{
+                            color: 'var(--warn)',
+                            fontSize: 10.5,
+                            letterSpacing: '0.08em',
+                            textTransform: 'uppercase',
+                          }}
+                        >
+                          <AlertTriangle className="h-[11px] w-[11px]" />
+                          Warnings
+                        </div>
+                        <ul
+                          className="mt-2 gx-mlist"
+                          style={{ fontSize: 11.5, color: 'var(--fg)' }}
+                        >
+                          {summary.limits.warnings.map((warning, i) => (
+                            <li key={i}>· {warning}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
                   </div>
-                </CardContent>
-              </Card>
-            ) : (
-              <>
-                {/* Current Billing Period */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Calendar className="w-5 h-5" />
-                      Current Billing Period
-                    </CardTitle>
-                    <CardDescription>
-                      {summary && new Date(summary.current_period.start).toLocaleDateString()} - {summary && new Date(summary.current_period.end).toLocaleDateString()}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                      <div className="text-center p-4 bg-muted/50 rounded-lg">
-                        <FileText className="w-6 h-6 mx-auto mb-2 text-blue-600" />
-                        <div className="text-2xl font-bold text-foreground">
-                          {summaryLoading ? '...' : formatNumber(summary?.current_period.documents_processed || 0)}
-                        </div>
-                        <div className="text-sm text-muted-foreground">Documents</div>
-                      </div>
-                      <div className="text-center p-4 bg-muted/50 rounded-lg">
-                        <Clock className="w-6 h-6 mx-auto mb-2 text-green-600" />
-                        <div className="text-2xl font-bold text-foreground">
-                          {summaryLoading ? '...' : formatNumber(summary?.current_period.pages_processed || 0)}
-                        </div>
-                        <div className="text-sm text-muted-foreground">Pages</div>
-                      </div>
-                      <div className="text-center p-4 bg-muted/50 rounded-lg">
-                        <Zap className="w-6 h-6 mx-auto mb-2 text-yellow-600" />
-                        <div className="text-2xl font-bold text-foreground">
-                          {summaryLoading ? '...' : formatNumber(summary?.current_period.tokens_used || 0)}
-                        </div>
-                        <div className="text-sm text-muted-foreground">Tokens</div>
-                      </div>
-                    </div>
-                  </CardContent>
                 </Card>
 
-                {/* Usage Limits */}
-                {summary && (
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <TrendingUp className="w-5 h-5" />
-                        Usage Limits
-                        <Badge variant={summary.limits.within_limits ? "default" : "destructive"} className="ml-2">
-                          {summary.limits.tier}
-                        </Badge>
-                      </CardTitle>
-                      <CardDescription>
-                        Current usage against your plan limits
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      {/* Document Usage */}
-                      <div>
-                        <div className="flex justify-between items-center mb-2">
-                          <span className="text-sm font-medium">Documents</span>
-                          <span className="text-sm text-muted-foreground">{summary.limits.document_usage}</span>
-                        </div>
-                        <Progress 
-                          value={getUsagePercentage(summary.current_period.documents_processed, summary.limits.document_usage.includes('unlimited') ? null : parseInt(summary.limits.document_usage.split('/')[1]))} 
-                          className="h-2"
-                        />
+                {summary.performance && (
+                  <Card
+                    title="Performance"
+                    kicker="Pipeline vitals"
+                    headerRight={<Sigma className="h-[14px] w-[14px]" style={{ color: 'var(--fg-faint)' }} />}
+                  >
+                    <div style={{ padding: 16 }} className="gx-mlist">
+                      <div className="flex items-center justify-between" style={{ padding: '5px 0' }}>
+                        <span className="k">avg_time   </span>
+                        <span className="v">
+                          {summary.performance.avg_processing_time_ms
+                            ? `${(summary.performance.avg_processing_time_ms / 1000).toFixed(2)}s`
+                            : '—'}
+                        </span>
                       </div>
-
-                      {/* Page Usage */}
-                      <div>
-                        <div className="flex justify-between items-center mb-2">
-                          <span className="text-sm font-medium">Pages</span>
-                          <span className="text-sm text-muted-foreground">{summary.limits.page_usage}</span>
-                        </div>
-                        <Progress 
-                          value={getUsagePercentage(summary.current_period.pages_processed, summary.limits.page_usage.includes('unlimited') ? null : parseInt(summary.limits.page_usage.split('/')[1]))} 
-                          className="h-2"
-                        />
-                      </div>
-
-                      {/* Token Usage */}
-                      <div>
-                        <div className="flex justify-between items-center mb-2">
-                          <span className="text-sm font-medium">Tokens</span>
-                          <span className="text-sm text-muted-foreground">{summary.limits.token_usage}</span>
-                        </div>
-                        <Progress 
-                          value={getUsagePercentage(summary.current_period.tokens_used, summary.limits.token_usage.includes('unlimited') ? null : parseInt(summary.limits.token_usage.split('/')[1]))} 
-                          className="h-2"
-                        />
-                      </div>
-
-                      {summary.limits.warnings.length > 0 && (
-                        <div className="mt-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
-                          <div className="flex items-center gap-2 text-yellow-800 dark:text-yellow-200">
-                            <AlertTriangle className="w-4 h-4" />
-                            <span className="font-medium">Warnings</span>
-                          </div>
-                          <ul className="mt-2 text-sm text-yellow-700 dark:text-yellow-300">
-                            {summary.limits.warnings.map((warning, index) => (
-                              <li key={index}>• {warning}</li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                )}
-
-                {/* Performance Metrics */}
-                {summary && summary.performance && (
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <Activity className="w-5 h-5" />
-                        Performance
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="grid grid-cols-2 gap-6">
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm font-medium">Average Processing Time</span>
-                          <span className="text-foreground">
-                            {summary.performance.avg_processing_time_ms 
-                              ? `${(summary.performance.avg_processing_time_ms / 1000).toFixed(2)}s`
-                              : 'N/A'
-                            }
-                          </span>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm font-medium">Success Rate</span>
-                          <div className="flex items-center gap-2">
-                            <span className="text-foreground">
-                              {summary.performance.success_rate ? `${parseFloat(summary.performance.success_rate).toFixed(1)}%` : 'N/A'}
-                            </span>
-                            {summary.performance.success_rate && parseFloat(summary.performance.success_rate) >= 95 && (
-                              <CheckCircle className="w-4 h-4 text-green-600" />
+                      <div className="flex items-center justify-between" style={{ padding: '5px 0' }}>
+                        <span className="k">success    </span>
+                        <span className="v flex items-center gap-1.5">
+                          {summary.performance.success_rate
+                            ? `${parseFloat(summary.performance.success_rate).toFixed(1)}%`
+                            : '—'}
+                          {summary.performance.success_rate &&
+                            parseFloat(summary.performance.success_rate) >= 95 && (
+                              <CheckCircle
+                                className="h-[12px] w-[12px]"
+                                style={{ color: 'var(--gx-success)' }}
+                              />
                             )}
-                          </div>
-                        </div>
+                        </span>
                       </div>
-                    </CardContent>
+                    </div>
                   </Card>
                 )}
-
-                {/* Model Usage Breakdown */}
-                {modelUsage && Object.keys(modelUsage.by_provider).length > 0 && (
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <Zap className="w-5 h-5" />
-                        Model Usage
-                      </CardTitle>
-                      <CardDescription>
-                        AI model usage breakdown for the current period
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      {(() => {
-                        // Calculate total input and output tokens across all models and providers
-                        let totalInputTokens = 0;
-                        let totalOutputTokens = 0;
-                        
-                        Object.values(modelUsage.by_provider).forEach(models => {
-                          Object.values(models).forEach(usage => {
-                            totalInputTokens += usage.input_tokens;
-                            totalOutputTokens += usage.output_tokens;
-                          });
-                        });
-                        
-                        return (
-                          <div className="grid grid-cols-2 gap-4">
-                            <div className="text-center p-4 bg-muted/50 rounded-lg">
-                              <div className="text-2xl font-bold text-foreground">
-                                {formatNumber(totalInputTokens)}
-                              </div>
-                              <div className="text-sm text-muted-foreground">Input Tokens</div>
-                            </div>
-                            <div className="text-center p-4 bg-muted/50 rounded-lg">
-                              <div className="text-2xl font-bold text-foreground">
-                                {formatNumber(totalOutputTokens)}
-                              </div>
-                              <div className="text-sm text-muted-foreground">Output Tokens</div>
-                            </div>
-                          </div>
-                        );
-                      })()}
-                    </CardContent>
-                  </Card>
-                )}
-              </>
+              </section>
             )}
-          </TabsContent>
-        </Tabs>
+
+            {/* Token breakdown */}
+            {modelUsage && Object.keys(modelUsage.by_provider).length > 0 && (
+              <section className="gx-stagger mt-6">
+                <Card
+                  title="Model usage"
+                  kicker="Input / output tokens, last 30d"
+                  headerRight={
+                    <span className="gx-mono gx-faint" style={{ fontSize: 10, letterSpacing: '0.08em' }}>
+                      {Object.keys(modelUsage.by_provider).length} PROVIDER
+                      {Object.keys(modelUsage.by_provider).length > 1 ? 'S' : ''}
+                    </span>
+                  }
+                >
+                  <div style={{ padding: 16 }} className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                    <TokenTile label="Input tokens" value={formatNumber(totalInputTokens)} />
+                    <TokenTile label="Output tokens" value={formatNumber(totalOutputTokens)} tone="edge" />
+                  </div>
+                </Card>
+              </section>
+            )}
+          </>
+        )}
+      </div>
+    </DashboardLayout>
+  )
+}
+
+// ============ Subcomponents =============================================
+
+function StatTile({
+  label,
+  value,
+  icon,
+  tone,
+}: {
+  label: string
+  value: React.ReactNode
+  icon?: React.ReactNode
+  tone?: 'default' | 'edge'
+}) {
+  return (
+    <div
+      style={{
+        padding: '16px 18px',
+        background: 'var(--bg-elev)',
+        border: '1px solid var(--line)',
+        borderRadius: 'var(--r-md)',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 8,
+      }}
+    >
+      <div className="flex items-center gap-2">
+        <span
+          className="gx-kicker"
+          style={{ margin: 0, color: 'var(--fg-faint)' }}
+        >
+          {label}
+        </span>
+        <span style={{ marginLeft: 'auto', color: tone === 'edge' ? 'var(--edge)' : 'var(--gx-accent)' }}>
+          {icon}
+        </span>
+      </div>
+      <div
+        style={{
+          fontWeight: 500,
+          fontSize: 28,
+          letterSpacing: '-0.02em',
+          color: 'var(--fg)',
+          fontVariantNumeric: 'tabular-nums',
+          lineHeight: 1.1,
+        }}
+      >
+        {value}
       </div>
     </div>
   )
-} 
+}
+
+function TokenTile({
+  label,
+  value,
+  tone,
+}: {
+  label: string
+  value: React.ReactNode
+  tone?: 'default' | 'edge'
+}) {
+  return (
+    <div
+      style={{
+        padding: '18px 20px',
+        background: 'var(--bg-deep)',
+        border: '1px solid var(--line)',
+        borderRadius: 'var(--r-sm)',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 6,
+      }}
+    >
+      <span className="gx-kicker" style={{ margin: 0, color: 'var(--fg-faint)' }}>
+        {label}
+      </span>
+      <span
+        style={{
+          fontWeight: 500,
+          fontSize: 26,
+          letterSpacing: '-0.02em',
+          color: tone === 'edge' ? 'var(--edge)' : 'var(--fg)',
+          fontVariantNumeric: 'tabular-nums',
+        }}
+      >
+        {value}
+      </span>
+    </div>
+  )
+}
+
+function Card({
+  title,
+  kicker,
+  headerRight,
+  children,
+}: {
+  title: string
+  kicker?: string
+  headerRight?: React.ReactNode
+  children: React.ReactNode
+}) {
+  return (
+    <div
+      style={{
+        background: 'var(--bg-elev)',
+        border: '1px solid var(--line)',
+        borderRadius: 'var(--r-md)',
+        overflow: 'hidden',
+      }}
+    >
+      <div
+        style={{
+          padding: '14px 16px',
+          borderBottom: '1px solid var(--line)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 12,
+        }}
+      >
+        <div>
+          <h3
+            style={{
+              fontSize: '13.5px',
+              fontWeight: 500,
+              color: 'var(--fg)',
+              margin: 0,
+              letterSpacing: '-0.01em',
+            }}
+          >
+            {title}
+          </h3>
+          {kicker && (
+            <div style={{ fontSize: 11, color: 'var(--fg-faint)', marginTop: 2 }}>
+              {kicker}
+            </div>
+          )}
+        </div>
+        {headerRight}
+      </div>
+      {children}
+    </div>
+  )
+}
+
+function LimitBar({
+  label,
+  display,
+  value,
+  limit,
+}: {
+  label: string
+  display: string
+  value: number
+  limit: number | null
+}) {
+  const pct = getUsagePercentage(value, limit)
+  const tone: 'success' | 'warn' | 'danger' = pct >= 95 ? 'danger' : pct >= 75 ? 'warn' : 'success'
+  return (
+    <div>
+      <div className="flex items-center justify-between" style={{ marginBottom: 6 }}>
+        <span style={{ fontSize: 12.5, fontWeight: 500, color: 'var(--fg)' }}>{label}</span>
+        <span
+          className="gx-mono"
+          style={{ fontSize: 11, color: 'var(--fg-muted)', letterSpacing: '0.02em' }}
+        >
+          {display}
+        </span>
+      </div>
+      <div className={`gx-bar ${tone}`}>
+        <span style={{ width: `${Math.max(0, Math.min(100, pct))}%` }} />
+      </div>
+    </div>
+  )
+}

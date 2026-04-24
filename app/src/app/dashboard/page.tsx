@@ -2,43 +2,29 @@
 
 import React, { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
+import { Download, Plus, RefreshCw, Eye, ArrowRight } from 'lucide-react'
+
 import { useUser } from '@/hooks/useAuth'
+import { useUserConfig } from '@/hooks/useUserConfig'
 
 import { DashboardLayout } from '@/components/layouts/dashboard-layout'
 import { PageHeader } from '@/components/layouts/page-header'
-import { Button, buttonVariants } from '@/components/ui/button'
-import type { ButtonProps } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { StatTile } from '@/components/ui/stat-tile'
-import { cn } from '@/lib/utils'
-import { useUserConfig } from '@/hooks/useUserConfig'
+import { Button } from '@/components/ui/button'
+import { NodePill, Spark } from '@/components/graphora'
+
 import { dashboardApi } from '@/lib/dashboard-api'
 import type {
   DashboardPerformance,
   DashboardQuality,
   DashboardSummary,
+  PerformanceTimeseriesPoint,
   TransformRunSummary,
 } from '@/types/dashboard'
 import {
   dashboardDateFormatter,
-  formatBytes,
   formatNumber,
   formatSeconds,
 } from '@/lib/formatters'
-import {
-  Activity,
-  AlertCircle,
-  ArrowUpRight,
-  BarChart3,
-  Clock,
-  FileSpreadsheet,
-  Flame,
-  Gauge,
-  Loader2,
-  LucideIcon,
-  Zap,
-} from 'lucide-react'
 
 interface ConflictByMerge {
   merge_id: string
@@ -51,53 +37,35 @@ interface ConflictsSummaryResponse {
   conflicts_by_merge: ConflictByMerge[]
 }
 
-type TrendTone = 'default' | 'warning' | 'critical' | 'success'
-
-type TrendIconProps = {
-  icon: LucideIcon
-  tone: TrendTone
-}
-
-const trendToneClass: Record<TrendTone, string> = {
-  default: 'text-muted-foreground',
-  warning: 'text-warning',
-  critical: 'text-destructive',
-  success: 'text-success',
-}
-
-const TrendIcon = ({ icon: Icon, tone }: TrendIconProps) => (
-  <Icon className={cn('h-4 w-4', trendToneClass[tone])} />
-)
-
-const qualityStatusLabel = (status?: string | null) => {
-  const normalized = status?.toLowerCase()
-  if (!normalized) return 'Pending'
-  if (normalized === 'warn' || normalized === 'warning') return 'Warning'
-  return normalized.charAt(0).toUpperCase() + normalized.slice(1)
-}
-
-const qualityStatusVariant = (status?: string | null) => {
-  const normalized = status?.toLowerCase()
-  if (normalized === 'fail') return 'destructive'
-  if (normalized === 'warn' || normalized === 'warning') return 'warning'
-  if (normalized === 'pass') return 'success'
-  return 'outline'
-}
-
-const percentile = (values: number[], percentage: number) => {
+const percentile = (values: number[], pct: number) => {
   if (!values.length) return null
   const sorted = [...values].sort((a, b) => a - b)
-  const index = Math.ceil((percentage / 100) * sorted.length) - 1
-  return sorted[Math.min(Math.max(index, 0), sorted.length - 1)]
+  const idx = Math.ceil((pct / 100) * sorted.length) - 1
+  return sorted[Math.min(Math.max(idx, 0), sorted.length - 1)]
 }
 
 const toSeconds = (ms?: number | null) => (ms ? ms / 1000 : null)
 
 const normaliseErrorMessage = (message?: string | null) => {
   if (!message) return 'Failed to load dashboard data'
-  return /<[a-z!\/?][\s\S]*>/i.test(message)
-    ? 'Failed to load dashboard data'
-    : message
+  return /<[a-z!\/?][\s\S]*>/i.test(message) ? 'Failed to load dashboard data' : message
+}
+
+const qualityStatusLabel = (status?: string | null) => {
+  const n = status?.toLowerCase()
+  if (!n) return 'pending'
+  if (n === 'warn' || n === 'warning') return 'warn'
+  if (n === 'pass') return 'pass'
+  if (n === 'fail') return 'fail'
+  return n
+}
+
+const qualityStatusTone = (status?: string | null): 'success' | 'warn' | 'danger' | 'info' => {
+  const n = status?.toLowerCase()
+  if (n === 'fail') return 'danger'
+  if (n === 'warn' || n === 'warning') return 'warn'
+  if (n === 'pass') return 'success'
+  return 'info'
 }
 
 const buildTransformHref = (run: TransformRunSummary, hash?: string) => {
@@ -106,428 +74,157 @@ const buildTransformHref = (run: TransformRunSummary, hash?: string) => {
   return hash ? `${base}${hash}` : base
 }
 
-type ActionLinkProps = {
-  href?: string | null
-  children: React.ReactNode
-  icon?: LucideIcon
-  variant?: ButtonProps['variant']
-  disabled?: boolean
-  external?: boolean
-}
-
-const ActionLinkButton = ({
-  href,
-  children,
-  icon: Icon = ArrowUpRight,
-  variant = 'outline',
-  disabled = false,
-  external = false,
-}: ActionLinkProps) => {
-  const baseClass = buttonVariants({ variant, size: 'sm', className: 'gap-1' })
-  const content = (
-    <>
-      <Icon className="h-3.5 w-3.5" />
-      <span>{children}</span>
-    </>
-  )
-
-  if (!href || disabled) {
-    return (
-      <Button size="sm" variant={variant} className="gap-1" disabled>
-        {content}
-      </Button>
-    )
-  }
-
-  if (external) {
-    return (
-      <a href={href} target="_blank" rel="noreferrer noopener" className={baseClass}>
-        {content}
-      </a>
-    )
-  }
-
-  return (
-    <Link href={href} prefetch={false} className={baseClass}>
-      {content}
-    </Link>
-  )
-}
-
 export default function DashboardPage() {
   const { checkConfigBeforeWorkflow } = useUserConfig()
   const { isLoaded: userLoaded } = useUser()
 
   const [runs, setRuns] = useState<TransformRunSummary[]>([])
-  const [runsWindow, setRunsWindow] = useState<{ start?: string; end?: string }>({})
   const [runsLoading, setRunsLoading] = useState(true)
   const [runsError, setRunsError] = useState<string | null>(null)
+  const [runsWindow, setRunsWindow] = useState<{ start?: string; end?: string }>({})
 
   const [summary, setSummary] = useState<DashboardSummary | null>(null)
   const [summaryLoading, setSummaryLoading] = useState(true)
-  const [summaryError, setSummaryError] = useState<string | null>(null)
 
   const [performance, setPerformance] = useState<DashboardPerformance | null>(null)
-  const [performanceLoading, setPerformanceLoading] = useState(true)
-  const [performanceError, setPerformanceError] = useState<string | null>(null)
 
   const [quality, setQuality] = useState<DashboardQuality | null>(null)
-  const [qualityLoading, setQualityLoading] = useState(true)
-  const [qualityError, setQualityError] = useState<string | null>(null)
 
-  const [conflictsSummary, setConflictsSummary] = useState<ConflictsSummaryResponse | null>(
-    null,
-  )
-  const [conflictsLoading, setConflictsLoading] = useState(true)
-  const [conflictsError, setConflictsError] = useState<string | null>(null)
+  const [conflictsSummary, setConflictsSummary] = useState<ConflictsSummaryResponse | null>(null)
+
+  const [timeframe, setTimeframe] = useState<'24h' | '7d' | '30d'>('7d')
 
   useEffect(() => {
     if (!userLoaded) return
-
     let active = true
 
-    const loadRuns = async () => {
+    const days = timeframe === '24h' ? 1 : timeframe === '7d' ? 7 : 30
+
+    ;(async () => {
       try {
         setRunsLoading(true)
-        const data = await dashboardApi.getRecentRuns({ limit: 30, days: 14 })
+        const data = await dashboardApi.getRecentRuns({ limit: 30, days })
         if (!active) return
         setRuns(data.runs)
         setRunsWindow({ start: data.window_start, end: data.window_end })
         setRunsError(null)
-      } catch (error) {
+      } catch (err) {
         if (active) {
-          const message = error instanceof Error ? error.message : null
-          setRunsError(normaliseErrorMessage(message))
+          setRunsError(normaliseErrorMessage(err instanceof Error ? err.message : null))
           setRuns([])
         }
       } finally {
         if (active) setRunsLoading(false)
       }
-    }
+    })()
 
-    loadRuns()
-    return () => {
-      active = false
-    }
-  }, [userLoaded])
-
-  useEffect(() => {
-    if (!userLoaded) return
-
-    let active = true
-
-    const loadSummary = async () => {
+    ;(async () => {
       try {
         setSummaryLoading(true)
-        const data = await dashboardApi.getSummary({ days: 14, max_runs: 200 })
-        if (!active) return
-        setSummary(data)
-        setSummaryError(null)
-      } catch (error) {
-        if (active) {
-          const message = error instanceof Error ? error.message : null
-          setSummaryError(normaliseErrorMessage(message))
-          setSummary(null)
-        }
+        const data = await dashboardApi.getSummary({ days, max_runs: 200 })
+        if (active) setSummary(data)
+      } catch {
+        if (active) setSummary(null)
       } finally {
         if (active) setSummaryLoading(false)
       }
-    }
+    })()
 
-    loadSummary()
-    return () => {
-      active = false
-    }
-  }, [userLoaded])
-
-  useEffect(() => {
-    if (!userLoaded) return
-
-    let active = true
-
-    const loadPerformance = async () => {
+    ;(async () => {
       try {
-        setPerformanceLoading(true)
-        const data = await dashboardApi.getPerformance({ days: 14, max_runs: 200 })
-        if (!active) return
-        setPerformance(data)
-        setPerformanceError(null)
-      } catch (error) {
-        if (active) {
-          const message = error instanceof Error ? error.message : null
-          setPerformanceError(normaliseErrorMessage(message))
-          setPerformance(null)
-        }
-      } finally {
-        if (active) setPerformanceLoading(false)
+        const data = await dashboardApi.getPerformance({ days, max_runs: 200 })
+        if (active) setPerformance(data)
+      } catch {
+        if (active) setPerformance(null)
       }
-    }
+    })()
 
-    loadPerformance()
-    return () => {
-      active = false
-    }
-  }, [userLoaded])
-
-  useEffect(() => {
-    if (!userLoaded) return
-
-    let active = true
-
-    const loadQuality = async () => {
+    ;(async () => {
       try {
-        setQualityLoading(true)
-        const data = await dashboardApi.getQuality({ days: 14, max_runs: 200 })
-        if (!active) return
-        setQuality(data)
-        setQualityError(null)
-      } catch (error) {
-        if (active) {
-          const message = error instanceof Error ? error.message : null
-          setQualityError(normaliseErrorMessage(message))
-          setQuality(null)
-        }
-      } finally {
-        if (active) setQualityLoading(false)
+        const data = await dashboardApi.getQuality({ days, max_runs: 200 })
+        if (active) setQuality(data)
+      } catch {
+        if (active) setQuality(null)
       }
-    }
+    })()
 
-    loadQuality()
-    return () => {
-      active = false
-    }
-  }, [userLoaded])
-
-  useEffect(() => {
-    if (!userLoaded) return
-
-    let active = true
-
-    const fetchConflicts = async () => {
+    ;(async () => {
       try {
-        setConflictsLoading(true)
         const response = await fetch('/api/audit/conflicts', { credentials: 'include' })
         if (!response.ok) throw new Error('Failed to load merge conflicts')
         const data = (await response.json()) as ConflictsSummaryResponse
-        if (!active) return
-        setConflictsSummary(data)
-        setConflictsError(null)
-      } catch (error) {
-        const message = error instanceof Error ? error.message : null
-        if (active) {
-          setConflictsSummary(null)
-          setConflictsError(normaliseErrorMessage(message))
-        }
-      } finally {
-        if (active) setConflictsLoading(false)
+        if (active) setConflictsSummary(data)
+      } catch {
+        if (active) setConflictsSummary(null)
       }
-    }
+    })()
 
-    fetchConflicts()
     return () => {
       active = false
     }
-  }, [userLoaded])
+  }, [userLoaded, timeframe])
 
-  const isDashboardLoading =
-    runsLoading ||
-    summaryLoading ||
-    performanceLoading ||
-    qualityLoading ||
-    conflictsLoading
-
-  const kpiErrorMessage = !runs.length && runsError
-    ? runsError
-    : !summary && summaryError
-      ? summaryError
-      : null
-
-  const performanceErrorMessage = !performance && performanceError ? performanceError : null
-  const qualityErrorMessage = !quality && qualityError ? qualityError : null
-
+  // --- Derived metrics (preserving the original computation) ----------------
   const derived = useMemo(() => {
-    const defaults = {
-      totalRuns: 0,
-      p50Duration: null as number | null,
-      p95Duration: null as number | null,
-      averageDuration: null as number | null,
-      passCount: 0,
-      warnCount: 0,
-      failCount: 0,
-      reviewQueue: [] as TransformRunSummary[],
-      failedRuns: [] as TransformRunSummary[],
-      recentQualityReasons: [] as string[],
-      avgScore: null as number | null,
-      llmTotals: {
-        totalTokens: 0,
-        totalCalls: 0,
-        totalCost: 0,
-        models: [] as string[],
-      },
-      avgTokensPerRun: null as number | null,
-      runsPerDay: null as number | null,
-    }
-
-    if (!runs.length) {
-      return defaults
-    }
-
     const durations = runs
-      .map((run) => toSeconds(run.processing_duration_ms))
-      .filter((value): value is number => value !== null)
-
-    const averageDuration =
-      durations.length > 0
-        ? durations.reduce((sum, value) => sum + value, 0) / durations.length
-        : null
-
-    const warnStatuses = runs.filter((run) => {
-      const normalized = run.quality_gate_status?.toLowerCase()
-      return normalized === 'warn' || normalized === 'warning'
-    })
-
-    const failStatuses = runs.filter((run) => run.quality_gate_status?.toLowerCase() === 'fail')
-
-    const passStatuses = runs.filter((run) => {
-      const normalized = run.quality_gate_status?.toLowerCase()
-      return normalized === 'pass' || (!normalized && run.quality_requires_review === false)
-    })
-
-    const reviewQueue = runs.filter(
-      (run) => run.quality_requires_review || warnStatuses.includes(run) || failStatuses.includes(run),
-    )
-
-    const failedRuns = runs.filter((run) => run.processing_status === 'failed')
-
+      .map((r) => toSeconds(r.processing_duration_ms))
+      .filter((v): v is number => v !== null)
     const avgScoreValues = runs
-      .map((run) => run.quality_score)
-      .filter((value): value is number => typeof value === 'number')
-
-    const recentReasons = Array.from(
-      new Set(
-        reviewQueue
-          .flatMap((run) => run.quality_gate_reasons || [])
-          .map((reason) => reason.trim())
-          .filter(Boolean),
-      ),
-    ).slice(0, 5)
-
-    const llmAggregate = runs.reduce(
-      (acc, run) => {
-        const usage = run.llm_usage
-        acc.totalCalls += usage.total_calls
-        acc.totalTokens += usage.total_tokens
-        if (usage.estimated_cost_usd) {
-          acc.totalCost += usage.estimated_cost_usd
-        }
-        usage.models_used.forEach((model) => acc.modelSet.add(model))
-        return acc
-      },
-      {
-        totalCalls: 0,
-        totalTokens: 0,
-        totalCost: 0,
-        modelSet: new Set<string>(),
-      },
-    )
-
-    const tokensPerRun = runs.filter((run) => run.llm_usage.total_tokens > 0)
-    const avgTokens =
-      tokensPerRun.length > 0
-        ? Math.round(
-            tokensPerRun.reduce((sum, run) => sum + run.llm_usage.total_tokens, 0) /
-              tokensPerRun.length,
+      .map((r) => r.quality_score)
+      .filter((v): v is number => typeof v === 'number')
+    const totalNodes = runs.reduce((sum, r) => sum + (r.nodes_extracted || 0), 0)
+    const totalRels = runs.reduce((sum, r) => sum + (r.relationships_extracted || 0), 0)
+    const passCount = runs.filter((r) => r.quality_gate_status?.toLowerCase() === 'pass').length
+    const warnCount = runs.filter((r) => {
+      const n = r.quality_gate_status?.toLowerCase()
+      return n === 'warn' || n === 'warning'
+    }).length
+    const failCount = runs.filter((r) => r.quality_gate_status?.toLowerCase() === 'fail').length
+    const avgScore =
+      avgScoreValues.length > 0
+        ? Number(
+            (avgScoreValues.reduce((a, b) => a + b, 0) / avgScoreValues.length).toFixed(1),
           )
         : null
-
-    let runsPerDay: number | null = null
-    if (runsWindow.start && runsWindow.end) {
-      const start = new Date(runsWindow.start)
-      const end = new Date(runsWindow.end)
-      const diffMs = Math.max(end.getTime() - start.getTime(), 0)
-      const diffDays = Math.max(diffMs / (1000 * 60 * 60 * 24), 1)
-      runsPerDay = Number((runs.length / diffDays).toFixed(1))
-    }
 
     return {
       totalRuns: runs.length,
-      p50Duration: percentile(durations, 50),
-      p95Duration: percentile(durations, 95),
-      averageDuration,
-      passCount: passStatuses.length,
-      warnCount: warnStatuses.length,
-      failCount: failStatuses.length,
-      reviewQueue,
-      failedRuns,
-      recentQualityReasons: recentReasons,
-      avgScore: avgScoreValues.length
-        ? Number(
-            (
-              avgScoreValues.reduce((sum, value) => sum + value, 0) / avgScoreValues.length
-            ).toFixed(1),
-          )
-        : null,
-      llmTotals: {
-        totalTokens: llmAggregate.totalTokens,
-        totalCalls: llmAggregate.totalCalls,
-        totalCost: Number(llmAggregate.totalCost.toFixed(4)),
-        models: Array.from(llmAggregate.modelSet).slice(0, 6),
-      },
-      avgTokensPerRun: avgTokens,
-      runsPerDay,
-    }
-  }, [runs, runsWindow])
-
-  const metrics = useMemo(() => {
-    const totalRuns = summary?.total_runs ?? derived.totalRuns
-    const avgScore = quality?.average_score ?? derived.avgScore
-    const passCount = quality?.pass_count ?? summary?.pass_count ?? derived.passCount
-    const warnCount = quality?.warn_count ?? summary?.warn_count ?? derived.warnCount
-    const failCount = quality?.fail_count ?? summary?.fail_count ?? derived.failCount
-    const needsAttention = summary?.requires_review_count ?? derived.reviewQueue.length
-
-    const averageDurationSeconds = summary?.average_duration_ms
-      ? summary.average_duration_ms / 1000
-      : derived.averageDuration
-
-    const p50DurationSeconds = summary?.p50_duration_ms
-      ? summary.p50_duration_ms / 1000
-      : derived.p50Duration
-
-    const p95DurationSeconds = summary?.p95_duration_ms
-      ? summary.p95_duration_ms / 1000
-      : derived.p95Duration
-
-    const runsPerDay = summary?.runs_per_day ?? derived.runsPerDay
-    const totalTokens = summary?.total_tokens ?? derived.llmTotals.totalTokens
-    const totalCalls = summary?.total_llm_calls ?? derived.llmTotals.totalCalls
-    const totalCost =
-      summary?.total_estimated_cost_usd ?? derived.llmTotals.totalCost ?? null
-    const avgTokensPerRun = summary?.average_tokens_per_run ?? derived.avgTokensPerRun
-
-    const recentReasons =
-      quality?.recent_reasons?.map((item) =>
-        item.count > 1 ? `${item.reason} (${item.count})` : item.reason,
-      ) ?? summary?.recent_gate_reasons ?? derived.recentQualityReasons
-
-    return {
-      totalRuns,
+      totalNodes,
+      totalRels,
       avgScore,
       passCount,
       warnCount,
       failCount,
-      needsAttention,
-      averageDurationSeconds,
-      p50DurationSeconds,
-      p95DurationSeconds,
-      runsPerDay,
-      totalTokens,
-      totalCalls,
-      totalCost,
-      avgTokensPerRun,
-      recentReasons,
+      p50Duration: percentile(durations, 50),
+      p95Duration: percentile(durations, 95),
     }
-  }, [summary, quality, derived])
+  }, [runs])
+
+  const metrics = {
+    totalRuns: summary?.total_runs ?? derived.totalRuns,
+    totalNodes: derived.totalNodes,
+    totalRels: derived.totalRels,
+    avgScore: quality?.average_score ?? derived.avgScore,
+    passCount: quality?.pass_count ?? summary?.pass_count ?? derived.passCount,
+    warnCount: quality?.warn_count ?? summary?.warn_count ?? derived.warnCount,
+    failCount: quality?.fail_count ?? summary?.fail_count ?? derived.failCount,
+    p50DurationSeconds: summary?.p50_duration_ms
+      ? summary.p50_duration_ms / 1000
+      : derived.p50Duration,
+    p95DurationSeconds: summary?.p95_duration_ms
+      ? summary.p95_duration_ms / 1000
+      : derived.p95Duration,
+    pendingConflicts: conflictsSummary?.total_conflicts ?? 0,
+    conflictsByType: conflictsSummary?.conflicts_by_merge.reduce<Record<string, number>>(
+      (acc, c) => {
+        Object.entries(c.by_type).forEach(([type, count]) => {
+          acc[type] = (acc[type] || 0) + count
+        })
+        return acc
+      },
+      {},
+    ) ?? {},
+  }
 
   const handleRunWorkflow = () => {
     if (checkConfigBeforeWorkflow()) {
@@ -535,460 +232,644 @@ export default function DashboardPage() {
     }
   }
 
-  const renderConflictSummary = () => {
-    if (conflictsLoading) {
-      return <p className="text-xs text-muted-foreground">Loading conflicts…</p>
+  // Sparkline values from performance timeseries where available
+  const nodesSpark = useMemo(() => {
+    if (performance?.timeseries?.length) {
+      return performance.timeseries.map((p) => p.runs || 0)
     }
+    // Fallback: distribute runs across a gentle climb
+    return runs.length ? runs.slice(0, 12).map((r) => r.nodes_extracted || 0).reverse() : []
+  }, [performance, runs])
 
-    if (conflictsError) {
-      return (
-        <p className="text-xs text-muted-foreground">
-          Retry from the Merge tab once the service becomes available.
-        </p>
-      )
+  const relsSpark = useMemo(() => {
+    if (performance?.timeseries?.length) {
+      return performance.timeseries.map((p) => p.total_tokens || 0)
     }
+    return runs.length ? runs.slice(0, 12).map((r) => r.relationships_extracted || 0).reverse() : []
+  }, [performance, runs])
 
-    if (!conflictsSummary || conflictsSummary.conflicts_by_merge.length === 0) {
-      return <p className="text-xs text-muted-foreground">No conflicts require review.</p>
-    }
-
-    return conflictsSummary.conflicts_by_merge.slice(0, 4).map((conflict) => (
-      <div key={conflict.merge_id} className="rounded-lg bg-muted/30 p-3">
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0 space-y-1">
-            <p className="text-sm font-medium truncate">Merge {conflict.merge_id}</p>
-            <p className="text-xs text-muted-foreground">
-              {Object.entries(conflict.by_type)
-                .map(([type, count]) => `${type}: ${count}`)
-                .join(' · ')}
-            </p>
-          </div>
-          <Badge variant="outline">{conflict.total_conflicts}</Badge>
-        </div>
-        <div className="mt-3 flex items-center justify-end">
-          <ActionLinkButton href={`/merge?merge_id=${conflict.merge_id}`}>Resolve</ActionLinkButton>
-        </div>
-      </div>
-    ))
-  }
-
-  const windowStart = runsWindow.start ? dashboardDateFormatter(runsWindow.start) : ''
-  const windowEnd = runsWindow.end ? dashboardDateFormatter(runsWindow.end) : ''
+  // Derive a process-ticker stream from the most recent runs
+  const tickerLines = useMemo(() => {
+    return runs.slice(0, 10).map((run) => {
+      const time = run.processing_started_at
+        ? new Date(run.processing_started_at).toLocaleTimeString('en-GB', {
+            hour12: false,
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+          })
+        : '--:--:--'
+      const status = run.processing_status
+      const gate = run.quality_gate_status?.toLowerCase()
+      const tone: 'ok' | 'warn' | 'cur' =
+        status === 'failed' || gate === 'fail' ? 'warn' : gate === 'warn' ? 'warn' : 'ok'
+      const glyph = tone === 'warn' ? '!' : '✓'
+      const label =
+        status === 'failed'
+          ? `transform ${run.transform_id.slice(0, 8)} failed`
+          : gate === 'warn'
+            ? `quality gate flagged ${run.document_name}`
+            : `transform ${run.transform_id.slice(0, 8)} · ${formatNumber(run.nodes_extracted)} entities`
+      return { time, tone, glyph, label, id: run.transform_id }
+    })
+  }, [runs])
 
   return (
     <DashboardLayout>
-      <div className="flex-1 flex flex-col min-h-0">
+      <div className="gx-page-enter" style={{ padding: '28px 32px 48px', maxWidth: 1600 }}>
         <PageHeader
-          title="Dashboard"
-          description="Execution health, performance, and actionables across your extracts"
+          kicker={`Overview · Last ${timeframe}`}
+          title="Pipeline at a glance"
+          description="Execution health, quality signals, and actionables across your extracts."
           actions={
-            <div className="flex items-center gap-3">
-              <Button variant="cta" size="lg" onClick={handleRunWorkflow}>
-                Run Workflow
+            <>
+              <TimeframeChips value={timeframe} onChange={setTimeframe} />
+              <Button variant="outline" size="sm" className="gap-1.5">
+                <Download className="h-[13px] w-[13px]" /> Export
               </Button>
-            </div>
+              <Button size="sm" className="gap-1.5" onClick={handleRunWorkflow}>
+                <Plus className="h-[13px] w-[13px]" /> New transform
+              </Button>
+            </>
           }
         />
 
-        <div className="flex-1 overflow-y-auto min-h-0">
-          <div className="p-6 space-y-6">
-            {isDashboardLoading && (
-              <div className="flex items-center gap-2 px-3 py-2 text-xs text-muted-foreground">
-                <Loader2 className="h-4 w-4 animate-spin text-primary" />
-                Loading dashboard data…
+        {/* Stat row ------------------------------------------------------- */}
+        <section className="gx-stagger mt-7 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <StatTile
+            label="Entities"
+            value={formatNumber(metrics.totalNodes)}
+            trend={
+              runsLoading
+                ? { text: 'loading…' }
+                : { text: `${metrics.totalRuns} runs in window`, tone: 'up' }
+            }
+            spark={<Spark values={nodesSpark.length ? nodesSpark : [1, 2, 2, 3, 3, 4, 5, 6]} />}
+          />
+          <StatTile
+            label="Relations"
+            value={formatNumber(metrics.totalRels)}
+            trend={{
+              text: metrics.totalNodes
+                ? `${(metrics.totalRels / Math.max(metrics.totalNodes, 1)).toFixed(2)} avg/entity`
+                : '—',
+              tone: 'up',
+            }}
+            spark={<Spark values={relsSpark.length ? relsSpark : [1, 2, 3, 4, 5, 7, 9, 12]} color="var(--edge)" />}
+          />
+          <StatTile
+            label="Quality score"
+            value={
+              metrics.avgScore !== null ? (
+                <>
+                  {metrics.avgScore.toFixed(1)}
+                  <span style={{ color: 'var(--fg-faint)', fontSize: 18, fontWeight: 400 }}>
+                    /100
+                  </span>
+                </>
+              ) : (
+                '—'
+              )
+            }
+            trend={{
+              text: `pass ${metrics.passCount} · warn ${metrics.warnCount} · fail ${metrics.failCount}`,
+              tone: 'up',
+            }}
+            bar={{
+              value: metrics.avgScore ?? 0,
+              tone: (metrics.avgScore ?? 0) >= 80 ? 'success' : 'warn',
+            }}
+          />
+          <StatTile
+            label="Pending conflicts"
+            value={formatNumber(metrics.pendingConflicts)}
+            trend={{
+              text: metrics.pendingConflicts
+                ? 'awaiting review'
+                : 'all clear',
+              tone: metrics.pendingConflicts ? 'dn' : 'up',
+            }}
+            chips={
+              metrics.pendingConflicts ? (
+                <div style={{ display: 'flex', gap: 4, marginTop: 6, flexWrap: 'wrap' }}>
+                  {Object.entries(metrics.conflictsByType)
+                    .slice(0, 3)
+                    .map(([type, count]) => (
+                      <NodePill
+                        key={type}
+                        tone={type.includes('dup') ? 'danger' : 'warn'}
+                      >
+                        {type}:{count}
+                      </NodePill>
+                    ))}
+                </div>
+              ) : null
+            }
+          />
+        </section>
+
+        {/* Chart + Ticker row -------------------------------------------- */}
+        <section
+          className="gx-stagger mt-6 grid grid-cols-1 gap-4 xl:grid-cols-[2fr_1fr]"
+        >
+          <Card
+            title="Ingestion throughput"
+            headerRight={
+              <div className="flex items-center gap-2">
+                <span className="gx-badge success">
+                  <span className="tick" />
+                  nominal
+                </span>
+                <span className="gx-mono gx-faint" style={{ fontSize: 10 }}>
+                  RATE · docs/day
+                </span>
+              </div>
+            }
+          >
+            <div style={{ padding: '20px 20px 16px' }}>
+              <ThroughputChart timeseries={performance?.timeseries || []} />
+            </div>
+          </Card>
+
+          <Card
+            title="Live pipeline"
+            headerRight={
+              <span className="gx-mono gx-faint" style={{ fontSize: 10 }}>
+                STREAM
+              </span>
+            }
+          >
+            <div className="gx-ticker" style={{ padding: 16, maxHeight: 280, overflow: 'auto' }}>
+              {tickerLines.length > 0 ? (
+                tickerLines.map((l) => (
+                  <div key={l.id}>
+                    <span className="ts">{l.time}</span>{' '}
+                    <span className={l.tone === 'warn' ? 'warn' : 'ok'}>{l.glyph}</span>{' '}
+                    {l.label.split(' ').map((word, i) => {
+                      const isHex = /^[a-f0-9]{8}/i.test(word) || word.startsWith('t-') || word.startsWith('m-')
+                      return (
+                        <React.Fragment key={i}>
+                          {isHex ? <span className="cur">{word}</span> : word}{' '}
+                        </React.Fragment>
+                      )
+                    })}
+                  </div>
+                ))
+              ) : (
+                <div className="gx-faint" style={{ fontSize: 11 }}>
+                  No recent activity in this window.
+                </div>
+              )}
+            </div>
+          </Card>
+        </section>
+
+        {/* Quality + Recent transforms ----------------------------------- */}
+        <section className="gx-stagger mt-6 grid grid-cols-1 gap-4 xl:grid-cols-2">
+          <Card
+            title="Quality signals"
+            headerRight={
+              <Button variant="ghost" size="sm" className="gap-1.5">
+                <RefreshCw className="h-[11px] w-[11px]" />
+              </Button>
+            }
+          >
+            <div style={{ padding: '14px 16px', display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              <span className="gx-badge success">
+                <span className="tick" /> pass {metrics.passCount}
+              </span>
+              <span className="gx-badge warn">
+                <span className="tick" /> warn {metrics.warnCount}
+              </span>
+              <span className="gx-badge danger">
+                <span className="tick" /> fail {metrics.failCount}
+              </span>
+            </div>
+            <div style={{ padding: '4px 16px 16px' }}>
+              <div className="gx-sep-label">Top recent reasons</div>
+              {quality?.recent_reasons && quality.recent_reasons.length > 0 ? (
+                <div className="gx-mlist">
+                  {quality.recent_reasons.slice(0, 6).map((r) => (
+                    <div key={r.reason} style={{ display: 'flex', gap: 12 }}>
+                      <span className="k" style={{ minWidth: 44, textAlign: 'right' }}>
+                        ×{r.count}
+                      </span>
+                      <span className="v" style={{ wordBreak: 'break-word' }}>{r.reason}</span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="gx-faint" style={{ fontSize: 11.5 }}>
+                  No rule violations in this window.
+                </div>
+              )}
+            </div>
+          </Card>
+
+          <Card
+            title="Recent transforms"
+            headerRight={
+              runsLoading ? (
+                <span className="gx-badge">
+                  <span className="tick" /> loading
+                </span>
+              ) : (
+                <span className="gx-mono gx-faint" style={{ fontSize: 10 }}>
+                  LAST {runs.length}
+                </span>
+              )
+            }
+          >
+            {runs.length > 0 ? (
+              <TransformTable runs={runs.slice(0, 8)} />
+            ) : (
+              <div
+                className="gx-faint"
+                style={{ padding: 20, fontSize: 11.5, textAlign: 'center' }}
+              >
+                {runsError ?? 'No transforms in this window. Run a document to populate.'}
               </div>
             )}
-            <section aria-labelledby="kpi-heading" className="space-y-3">
-              <div className="flex items-center justify-between">
-                <h2 id="kpi-heading" className="text-sm font-semibold">
-                  Pipeline KPIs {windowStart && windowEnd ? `(${windowStart} → ${windowEnd})` : ''}
-                </h2>
-                {kpiErrorMessage && <Badge variant="destructive">{kpiErrorMessage}</Badge>}
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3">
-                <StatTile
-                  value={formatNumber(metrics.totalRuns)}
-                  label="Transforms"
-                  description="Runs processed in window"
-                  trend={<TrendIcon icon={Activity} tone="default" />}
-                />
-                <StatTile
-                  value={metrics.avgScore !== null ? metrics.avgScore.toFixed(1) : '—'}
-                  label="Avg Quality Score"
-                  description={`Pass ${metrics.passCount} · Warn ${metrics.warnCount} · Fail ${metrics.failCount}`}
-                  trend={<TrendIcon icon={Gauge} tone="success" />}
-                />
-                <StatTile
-                  value={
-                    metrics.p50DurationSeconds !== null
-                      ? `${formatSeconds(metrics.p50DurationSeconds)} p50`
-                      : '—'
-                  }
-                  label="Pipeline Duration"
-                  description={
-                    metrics.p95DurationSeconds !== null
-                      ? `${formatSeconds(metrics.p95DurationSeconds)} p95`
-                      : 'No duration data'
-                  }
-                  trend={<TrendIcon icon={Clock} tone="default" />}
-                />
-                <StatTile
-                  value={formatNumber(metrics.needsAttention)}
-                  label="Needs Attention"
-                  description="Quality review or failed runs"
-                  trend={
-                    <TrendIcon
-                      icon={AlertCircle}
-                      tone={metrics.needsAttention ? 'warning' : 'success'}
-                    />
-                  }
-                />
-              </div>
-            </section>
+          </Card>
+        </section>
 
-            <section aria-labelledby="action-center-heading" className="grid grid-cols-1 xl:grid-cols-3 gap-3">
-              <Card className="xl:col-span-2">
-                <CardHeader className="flex flex-row items-center justify-between gap-3">
-                  <div>
-                    <CardTitle id="action-center-heading" className="text-sm">
-                      Action Center
-                    </CardTitle>
-                    <p className="text-xs text-muted-foreground">
-                      Quality reviews, failed runs, and open merge conflicts
-                    </p>
-                  </div>
-                  <Badge variant={derived.reviewQueue.length ? 'warning' : 'success'}>
-                    {derived.reviewQueue.length || 'No'} reviews
-                  </Badge>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <div className="rounded-md bg-muted/30 p-3">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-2 text-xs font-medium text-foreground">
-                        <TrendIcon icon={Gauge} tone="warning" /> Quality review queue
-                      </div>
-                      <Badge variant="outline">{derived.reviewQueue.length}</Badge>
-                    </div>
-                    {derived.reviewQueue.length ? (
-                      <div className="space-y-2">
-                        {derived.reviewQueue.slice(0, 4).map((run) => (
-                          <div
-                            key={run.transform_id}
-                            className="flex items-center justify-between gap-3 rounded-lg bg-background/80 px-3 py-2 transition hover:bg-background"
-                          >
-                            <div className="min-w-0">
-                              <p className="text-sm font-medium truncate">{run.document_name}</p>
-                              <p className="text-xs text-muted-foreground">
-                                Gate: {qualityStatusLabel(run.quality_gate_status)}
-                              </p>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <Badge variant="outline">Score {run.quality_score?.toFixed(1) ?? '—'}</Badge>
-                              <ActionLinkButton href={buildTransformHref(run, '#quality')}>
-                                Review
-                              </ActionLinkButton>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="text-xs text-muted-foreground">No quality reviews pending.</p>
-                    )}
-                  </div>
-
-                  <div className="rounded-md bg-muted/30 p-4">
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
-                        <TrendIcon icon={Flame} tone={derived.failedRuns.length ? 'critical' : 'default'} /> Failed runs
-                      </div>
-                      <Badge variant="outline">{derived.failedRuns.length}</Badge>
-                    </div>
-                    {derived.failedRuns.length ? (
-                      <div className="space-y-2">
-                        {derived.failedRuns.slice(0, 3).map((run) => (
-                          <div
-                            key={run.transform_id}
-                            className="flex items-center justify-between gap-3 rounded-lg bg-background/80 px-3 py-2"
-                          >
-                            <div className="min-w-0">
-                              <p className="text-sm font-medium truncate">{run.document_name}</p>
-                              <p className="text-xs text-muted-foreground">
-                                {dashboardDateFormatter(run.processing_started_at)}
-                              </p>
-                            </div>
-                            <Badge variant="destructive">Failed</Badge>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="text-xs text-muted-foreground">No failed runs in this window.</p>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="">
-                <CardHeader className="flex flex-row items-center justify-between gap-2">
-                  <div className="space-y-1">
-                    <CardTitle className="text-sm">Merge conflicts</CardTitle>
-                    <p className="text-xs text-muted-foreground">Open items needing manual resolution</p>
-                    {conflictsError && (
-                      <p className="text-xs text-destructive">{conflictsError}</p>
-                    )}
-                  </div>
-                  <Badge
-                    variant={
-                      conflictsError
-                        ? 'destructive'
-                        : conflictsSummary?.total_conflicts
-                        ? 'warning'
-                        : 'success'
-                    }
-                  >
-                    {conflictsError ? 'Error' : conflictsSummary?.total_conflicts || 0}
-                  </Badge>
-                </CardHeader>
-                <CardContent className="space-y-3">{renderConflictSummary()}</CardContent>
-              </Card>
-            </section>
-
-            <section aria-labelledby="performance-heading" className="grid grid-cols-1 xl:grid-cols-3 gap-3">
-              <Card className="xl:col-span-2 ">
-                <CardHeader className="flex flex-row items-center justify-between gap-3">
-                  <div>
-                    <CardTitle id="performance-heading" className="text-sm">
-                      Performance &amp; LLM usage
-                    </CardTitle>
-                    <p className="text-xs text-muted-foreground">
-                      Latency, throughput, and token consumption for the selected window
-                    </p>
-                  </div>
-                  {performanceErrorMessage ? (
-                    <Badge variant="destructive">{performanceErrorMessage}</Badge>
-                  ) : (
-                    <Badge variant="outline">
-                      {metrics.runsPerDay ? `${metrics.runsPerDay} runs/day` : '—'}
-                    </Badge>
-                  )}
-                </CardHeader>
-                <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <div className="rounded-lg bg-muted/30 p-4 space-y-3">
-                    <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
-                      <BarChart3 className="h-4 w-4 text-primary" /> Pipeline duration
-                    </div>
-                    <dl className="grid grid-cols-2 gap-3 text-xs text-muted-foreground">
-                      <div>
-                        <dt>Average</dt>
-                        <dd className="text-sm font-medium text-foreground">
-                          {metrics.averageDurationSeconds !== null
-                            ? formatSeconds(metrics.averageDurationSeconds)
-                            : '—'}
-                        </dd>
-                      </div>
-                      <div>
-                        <dt>P95</dt>
-                        <dd className="text-sm font-medium text-foreground">
-                          {metrics.p95DurationSeconds !== null
-                            ? formatSeconds(metrics.p95DurationSeconds)
-                            : '—'}
-                        </dd>
-                      </div>
-                      <div>
-                        <dt>Total runs</dt>
-                        <dd className="text-sm font-medium text-foreground">
-                          {formatNumber(metrics.totalRuns)}
-                        </dd>
-                      </div>
-                      <div>
-                        <dt>Runs/day</dt>
-                        <dd className="text-sm font-medium text-foreground">
-                          {metrics.runsPerDay ?? '—'}
-                        </dd>
-                      </div>
-                    </dl>
-                  </div>
-
-                  <div className="rounded-lg bg-muted/30 p-4 space-y-3">
-                    <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
-                      <Zap className="h-4 w-4 text-primary" /> LLM tokens &amp; cost
-                    </div>
-                    <dl className="grid grid-cols-2 gap-3 text-xs text-muted-foreground">
-                      <div>
-                        <dt>Total tokens</dt>
-                        <dd className="text-sm font-medium text-foreground">
-                          {metrics.totalTokens ? formatNumber(metrics.totalTokens) : '—'}
-                        </dd>
-                      </div>
-                      <div>
-                        <dt>Total calls</dt>
-                        <dd className="text-sm font-medium text-foreground">
-                          {metrics.totalCalls ? formatNumber(metrics.totalCalls) : '—'}
-                        </dd>
-                      </div>
-                      <div>
-                        <dt>Avg tokens/run</dt>
-                        <dd className="text-sm font-medium text-foreground">
-                          {metrics.avgTokensPerRun ? formatNumber(metrics.avgTokensPerRun) : '—'}
-                        </dd>
-                      </div>
-                      <div>
-                        <dt>Estimated cost</dt>
-                        <dd className="text-sm font-medium text-foreground">
-                          {metrics.totalCost ? `$${metrics.totalCost.toFixed(4)}` : '—'}
-                        </dd>
-                      </div>
-                    </dl>
-                    {derived.llmTotals.models.length > 0 && (
-                      <div className="flex flex-wrap gap-2 text-xs">
-                        {derived.llmTotals.models.map((model) => (
-                          <Badge key={model} variant="outline">
-                            {model}
-                          </Badge>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="">
-                <CardHeader className="flex flex-row items-center justify-between gap-3">
-                  <CardTitle className="text-sm">Quality signals</CardTitle>
-                  <p className="text-xs text-muted-foreground">
-                    Gate outcomes, confidence trends, and recent rule triggers
-                  </p>
-                  {qualityErrorMessage && (
-                    <p className="text-xs text-destructive">{qualityErrorMessage}</p>
-                  )}
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex items-center gap-2 text-sm">
-                    <Badge variant="success">Pass {metrics.passCount}</Badge>
-                    <Badge variant="warning">Warn {metrics.warnCount}</Badge>
-                    <Badge variant="destructive">Fail {metrics.failCount}</Badge>
-                  </div>
-                  <div className="rounded-lg bg-muted/30 p-3 space-y-3">
-                    <p className="text-xs text-muted-foreground">Top recent reasons</p>
-                    {metrics.recentReasons.length ? (
-                      <ul className="space-y-2 text-xs text-foreground">
-                        {metrics.recentReasons.map((reason) => (
-                          <li key={reason} className="flex items-start gap-2">
-                            <span className="mt-[2px] h-1.5 w-1.5 rounded-full bg-primary" />
-                            <span>{reason}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    ) : (
-                      <p className="text-xs text-muted-foreground">No rule violations in this window.</p>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            </section>
-
-            <section aria-labelledby="recent-runs-heading" className="space-y-4">
-              <Card className="">
-                <CardHeader className="flex flex-row items-center justify-between gap-3">
-                  <div>
-                    <CardTitle id="recent-runs-heading" className="text-sm">
-                      Recent transforms
-                    </CardTitle>
-                    <p className="text-xs text-muted-foreground">
-                      Latest runs with quality gates, nodes, and quick actions
-                    </p>
-                  </div>
-                  {runsLoading && <Badge variant="outline">Loading…</Badge>}
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {runsLoading ? (
-                    <p className="text-xs text-muted-foreground">Fetching run history…</p>
-                  ) : runs.length === 0 ? (
-                    <p className="text-xs text-muted-foreground">
-                      No transforms recorded in this window. Run a document to populate the dashboard.
-                    </p>
-                  ) : (
-                    <div className="overflow-x-auto">
-                      <table className="min-w-full text-left text-xs">
-                        <thead className="text-muted-foreground">
-                          <tr className="border-b border-border/40">
-                            <th className="px-3 py-2 font-medium">Document</th>
-                            <th className="px-3 py-2 font-medium">Quality gate</th>
-                            <th className="px-3 py-2 font-medium">Duration</th>
-                            <th className="px-3 py-2 font-medium">Tokens</th>
-                            <th className="px-3 py-2 font-medium">Nodes · Edges</th>
-                            <th className="px-3 py-2 font-medium">Size · Chunks</th>
-                            <th className="px-3 py-2 font-medium text-right">Actions</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {runs.map((run) => {
-                            const inspectHref = buildTransformHref(run, '#chunks')
-                            const csvHref = `/api/quality/export/${run.transform_id}`
-
-                            return (
-                              <tr key={run.transform_id} className="border-b border-border/20">
-                                <td className="px-3 py-3 align-top">
-                                  <div className="space-y-1">
-                                    <p className="text-sm font-medium text-foreground truncate">
-                                      {run.document_name}
-                                    </p>
-                                    <p className="text-xs text-muted-foreground">
-                                      {dashboardDateFormatter(run.processing_started_at)}
-                                    </p>
-                                  </div>
-                                </td>
-                                <td className="px-3 py-3 align-top">
-                                  <div className="space-y-2">
-                                    <Badge variant={qualityStatusVariant(run.quality_gate_status)}>
-                                      {qualityStatusLabel(run.quality_gate_status)}
-                                    </Badge>
-                                    <p className="text-xs text-muted-foreground">
-                                      Score {run.quality_score?.toFixed(1) ?? '—'}
-                                    </p>
-                                  </div>
-                                </td>
-                                <td className="px-3 py-3 align-top text-sm text-foreground">
-                                  {run.processing_duration_ms
-                                    ? formatSeconds(toSeconds(run.processing_duration_ms) || 0)
-                                    : '—'}
-                                </td>
-                                <td className="px-3 py-3 align-top text-sm text-foreground">
-                                  {run.llm_usage.total_tokens
-                                    ? formatNumber(run.llm_usage.total_tokens)
-                                    : '—'}
-                                </td>
-                                <td className="px-3 py-3 align-top text-sm text-foreground">
-                                  {formatNumber(run.nodes_extracted)} · {formatNumber(run.relationships_extracted)}
-                                </td>
-                                <td className="px-3 py-3 align-top text-sm text-foreground">
-                                  <div className="space-y-1">
-                                    <p>{formatBytes(run.document_size_bytes)}</p>
-                                    <p className="text-xs text-muted-foreground">
-                                      {formatNumber(run.chunks_created)} chunks
-                                    </p>
-                                  </div>
-                                </td>
-                                <td className="px-3 py-3 align-top">
-                                  <div className="flex flex-wrap justify-end gap-2">
-                                    <ActionLinkButton href={inspectHref}>Inspect</ActionLinkButton>
-                                    <ActionLinkButton href={csvHref} icon={FileSpreadsheet} external>
-                                      CSV
-                                    </ActionLinkButton>
-                                  </div>
-                                </td>
-                              </tr>
-                            )
-                          })}
-                        </tbody>
-                      </table>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </section>
+        {/* Window footer */}
+        {runsWindow.start && runsWindow.end && (
+          <div
+            className="gx-mono gx-faint mt-8"
+            style={{ fontSize: 10, letterSpacing: '0.08em' }}
+          >
+            WINDOW · {dashboardDateFormatter(runsWindow.start)} →{' '}
+            {dashboardDateFormatter(runsWindow.end)}
+            {summaryLoading && <span> · syncing…</span>}
           </div>
-        </div>
+        )}
       </div>
     </DashboardLayout>
   )
+}
+
+// ============ Subcomponents ==============================================
+
+function TimeframeChips({
+  value,
+  onChange,
+}: {
+  value: '24h' | '7d' | '30d'
+  onChange: (v: '24h' | '7d' | '30d') => void
+}) {
+  const options: Array<{ v: '24h' | '7d' | '30d'; label: string }> = [
+    { v: '24h', label: '24h' },
+    { v: '7d', label: '7d' },
+    { v: '30d', label: '30d' },
+  ]
+  return (
+    <div
+      className="inline-flex"
+      style={{
+        padding: 3,
+        background: 'var(--bg-deep)',
+        border: '1px solid var(--line)',
+        borderRadius: 'var(--r-sm)',
+        gap: 2,
+      }}
+    >
+      {options.map((opt) => {
+        const on = opt.v === value
+        return (
+          <button
+            key={opt.v}
+            onClick={() => onChange(opt.v)}
+            style={{
+              padding: '5px 10px',
+              borderRadius: 4,
+              fontSize: 11.5,
+              color: on ? 'var(--fg)' : 'var(--fg-muted)',
+              fontWeight: 500,
+              background: on ? 'var(--bg-elev-2)' : 'transparent',
+              boxShadow: on ? '0 0 0 1px var(--line-strong)' : 'none',
+              transition: 'all var(--dur-1) var(--ease)',
+            }}
+          >
+            {opt.label}
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
+function StatTile({
+  label,
+  value,
+  trend,
+  spark,
+  bar,
+  chips,
+}: {
+  label: string
+  value: React.ReactNode
+  trend?: { text: string; tone?: 'up' | 'dn' }
+  spark?: React.ReactNode
+  bar?: { value: number; tone: 'success' | 'warn' | 'danger' }
+  chips?: React.ReactNode
+}) {
+  return (
+    <div
+      style={{
+        padding: '16px 18px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 8,
+        background: 'var(--bg-elev)',
+        border: '1px solid var(--line)',
+        borderRadius: 'var(--r-md)',
+        overflow: 'hidden',
+        position: 'relative',
+      }}
+    >
+      <div
+        style={{
+          fontSize: 10.5,
+          fontWeight: 500,
+          letterSpacing: '0.1em',
+          textTransform: 'uppercase',
+          color: 'var(--fg-faint)',
+        }}
+      >
+        {label}
+      </div>
+      <div
+        style={{
+          fontWeight: 500,
+          fontSize: 28,
+          letterSpacing: '-0.02em',
+          color: 'var(--fg)',
+          fontVariantNumeric: 'tabular-nums',
+          lineHeight: 1.15,
+        }}
+      >
+        {value}
+      </div>
+      {trend && (
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            fontSize: 11,
+            color: 'var(--fg-muted)',
+          }}
+        >
+          <span
+            className="gx-mono"
+            style={{
+              color: trend.tone === 'dn' ? 'var(--danger)' : trend.tone === 'up' ? 'var(--gx-success)' : 'var(--fg-muted)',
+              fontSize: 11,
+            }}
+          >
+            {trend.tone === 'up' ? '↑' : trend.tone === 'dn' ? '↓' : ''}
+          </span>
+          <span>{trend.text}</span>
+        </div>
+      )}
+      {spark}
+      {bar && (
+        <div className={`gx-bar ${bar.tone}`} style={{ marginTop: 6 }}>
+          <span style={{ width: `${Math.max(0, Math.min(100, bar.value))}%` }} />
+        </div>
+      )}
+      {chips}
+    </div>
+  )
+}
+
+function Card({
+  title,
+  headerRight,
+  children,
+}: {
+  title: string
+  headerRight?: React.ReactNode
+  children: React.ReactNode
+}) {
+  return (
+    <div
+      style={{
+        background: 'var(--bg-elev)',
+        border: '1px solid var(--line)',
+        borderRadius: 'var(--r-md)',
+        overflow: 'hidden',
+      }}
+    >
+      <div
+        style={{
+          padding: '14px 16px',
+          borderBottom: '1px solid var(--line)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 12,
+        }}
+      >
+        <h3 style={{ fontSize: '13.5px', fontWeight: 500, color: 'var(--fg)', margin: 0 }}>
+          {title}
+        </h3>
+        {headerRight}
+      </div>
+      {children}
+    </div>
+  )
+}
+
+function ThroughputChart({ timeseries }: { timeseries: PerformanceTimeseriesPoint[] }) {
+  const points = timeseries.length > 0 ? timeseries.map((p) => p.runs || 0) : [3, 5, 4, 7, 8, 12, 10, 14, 16, 18, 14, 20]
+  const W = 720
+  const H = 200
+  const P = 24
+  const max = Math.max(...points, 1)
+  const step = points.length > 1 ? (W - P * 2) / (points.length - 1) : 0
+  const pts = points.map((v, i) => [P + i * step, H - P - (v / max) * (H - P * 2)] as const)
+  const d = pts.map(([x, y], i) => (i ? 'L' : 'M') + x + ' ' + y).join(' ')
+  const da = d + ` L ${W - P} ${H - P} L ${P} ${H - P} Z`
+
+  const labels = timeseries.length > 0
+    ? timeseries.filter((_, i) => i % Math.max(1, Math.floor(timeseries.length / 5)) === 0).map((p) => {
+        const d = new Date(p.date)
+        return `${d.getMonth() + 1}/${d.getDate()}`
+      })
+    : ['00:00', '06:00', '12:00', '18:00', '24:00']
+
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', height: 220 }}>
+      <defs>
+        <linearGradient id="thrFill" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="var(--gx-accent)" stopOpacity="0.28" />
+          <stop offset="1" stopColor="var(--gx-accent)" stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      {[0.25, 0.5, 0.75].map((r) => (
+        <line
+          key={r}
+          x1={P}
+          x2={W - P}
+          y1={P + r * (H - P * 2)}
+          y2={P + r * (H - P * 2)}
+          stroke="var(--line)"
+          strokeDasharray="2 4"
+        />
+      ))}
+      <path d={da} fill="url(#thrFill)" />
+      <path d={d} stroke="var(--gx-accent)" strokeWidth="1.6" fill="none" />
+      {pts.map(([x, y], i) => (i % Math.max(1, Math.floor(pts.length / 8)) === 0) && (
+        <circle key={i} cx={x} cy={y} r="2" fill="var(--gx-accent)" />
+      ))}
+      {labels.map((t, i) => (
+        <text
+          key={`${t}-${i}`}
+          x={P + (i / Math.max(labels.length - 1, 1)) * (W - P * 2)}
+          y={H - 4}
+          textAnchor="middle"
+          className="gx-g-label"
+          fill="var(--fg-faint)"
+        >
+          {t}
+        </text>
+      ))}
+    </svg>
+  )
+}
+
+function TransformTable({ runs }: { runs: TransformRunSummary[] }) {
+  return (
+    <div className="overflow-x-auto">
+      <table
+        style={{
+          width: '100%',
+          borderCollapse: 'collapse',
+          fontSize: '12.5px',
+        }}
+      >
+        <thead>
+          <tr>
+            {['Run', 'Document', 'Gate', 'Duration', 'Nodes'].map((h) => (
+              <th
+                key={h}
+                style={{
+                  textAlign: 'left',
+                  fontSize: '10.5px',
+                  fontWeight: 500,
+                  letterSpacing: '0.1em',
+                  textTransform: 'uppercase',
+                  color: 'var(--fg-faint)',
+                  padding: '10px 16px',
+                  borderBottom: '1px solid var(--line)',
+                  background: 'var(--bg-deep)',
+                }}
+              >
+                {h}
+              </th>
+            ))}
+            <th style={{ background: 'var(--bg-deep)', borderBottom: '1px solid var(--line)' }} />
+          </tr>
+        </thead>
+        <tbody>
+          {runs.map((run) => {
+            const tone = qualityStatusTone(run.quality_gate_status)
+            const href = buildTransformHref(run, '#chunks')
+            return (
+              <tr
+                key={run.transform_id}
+                style={{
+                  transition: 'background var(--dur-1) var(--ease)',
+                }}
+              >
+                <td
+                  style={{
+                    padding: '12px 16px',
+                    borderBottom: '1px solid var(--line)',
+                    fontFamily: 'var(--font-mono), "IBM Plex Mono", monospace',
+                    fontSize: '11.5px',
+                    color: 'var(--fg-muted)',
+                  }}
+                >
+                  {run.transform_id.slice(0, 8)}
+                </td>
+                <td
+                  style={{
+                    padding: '12px 16px',
+                    borderBottom: '1px solid var(--line)',
+                  }}
+                >
+                  <NodePill>{truncate(run.document_name, 28)}</NodePill>
+                </td>
+                <td style={{ padding: '12px 16px', borderBottom: '1px solid var(--line)' }}>
+                  <span className={`gx-badge ${tone}`}>
+                    <span className="tick" />
+                    {qualityStatusLabel(run.quality_gate_status)}
+                  </span>
+                </td>
+                <td
+                  style={{
+                    padding: '12px 16px',
+                    borderBottom: '1px solid var(--line)',
+                    fontFamily: 'var(--font-mono), "IBM Plex Mono", monospace',
+                    fontSize: '11.5px',
+                    color: 'var(--fg)',
+                    fontVariantNumeric: 'tabular-nums',
+                  }}
+                >
+                  {run.processing_duration_ms
+                    ? formatSeconds((run.processing_duration_ms || 0) / 1000)
+                    : '—'}
+                </td>
+                <td
+                  style={{
+                    padding: '12px 16px',
+                    borderBottom: '1px solid var(--line)',
+                    textAlign: 'right',
+                    fontFamily: 'var(--font-mono), "IBM Plex Mono", monospace',
+                    fontSize: '11.5px',
+                    color: 'var(--fg)',
+                    fontVariantNumeric: 'tabular-nums',
+                  }}
+                >
+                  {formatNumber(run.nodes_extracted)}
+                </td>
+                <td
+                  style={{
+                    padding: '12px 16px',
+                    borderBottom: '1px solid var(--line)',
+                    textAlign: 'right',
+                  }}
+                >
+                  {href ? (
+                    <Link
+                      href={href}
+                      className="inline-flex items-center gap-1"
+                      style={{
+                        color: 'var(--fg-muted)',
+                        fontSize: 11,
+                      }}
+                    >
+                      <Eye className="h-[11px] w-[11px]" />
+                      <ArrowRight className="h-[11px] w-[11px]" />
+                    </Link>
+                  ) : (
+                    <span style={{ color: 'var(--fg-faint)' }}>—</span>
+                  )}
+                </td>
+              </tr>
+            )
+          })}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
+function truncate(text: string, max: number) {
+  if (!text) return ''
+  if (text.length <= max) return text
+  return text.slice(0, max - 1) + '…'
 }

@@ -396,7 +396,7 @@ export function ChunkingConfig({ fileContent, fileName, onConfigChange, classNam
         )}
 
         {/* Configuration Toggle */}
-        <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
+        <div className="flex items-center justify-between p-3 bg-[color:var(--bg-deep)] rounded-lg">
           <div className="flex items-center space-x-3">
             <div className={`w-2 h-2 rounded-full ${useCustomConfig ? 'bg-blue-500' : 'bg-gray-400'}`} />
             <div>
@@ -603,7 +603,7 @@ export function ChunkingConfig({ fileContent, fileName, onConfigChange, classNam
             </div>
 
             {showAdvanced && (
-              <div className="space-y-3 p-3 bg-muted/30 rounded border">
+              <div className="space-y-3 p-3 bg-[color:var(--bg-deep)] rounded border">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm">Force Strategy</p>

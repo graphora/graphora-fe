@@ -621,28 +621,37 @@ function OntologyPageContent() {
         {/* Toolbar Header */}
         <div className="bg-transparent">
           <div className="px-6 pt-4 pb-3">
-            <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg bg-card px-4 py-3 shadow-soft">
+            <div
+              className="flex flex-wrap items-center justify-between gap-3"
+              style={{
+                background: 'var(--bg-elev)',
+                border: '1px solid var(--line)',
+                borderRadius: 'var(--r-md)',
+                padding: '10px 14px',
+              }}
+            >
               <div className="flex flex-wrap items-center gap-3">
                 {isEditMode && (
                   <Link href="/ontologies">
-                    <Button variant="ghost" size="sm" className="mr-1 text-muted-foreground hover:text-foreground">
-                      <ArrowLeft className="h-4 w-4 mr-1" />
-                      Back to Library
+                    <Button variant="ghost" size="sm" className="mr-1 text-muted-foreground hover:text-foreground gap-1.5">
+                      <ArrowLeft className="h-[13px] w-[13px]" />
+                      Back to library
                     </Button>
                   </Link>
                 )}
-                <Database className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                <Database className="h-[15px] w-[15px]" style={{ color: 'var(--gx-accent)' }} />
                 <div>
                   <div className="flex items-center gap-2">
                     {isLoadingOntology ? (
-                      <h2 className="text-lg font-semibold text-foreground">Loading Ontology...</h2>
+                      <h2 style={{ fontSize: 14.5, fontWeight: 500, color: 'var(--fg)', letterSpacing: '-0.01em', margin: 0 }}>Loading ontology…</h2>
                     ) : isEditingFilename ? (
                       <div className="flex items-center gap-2">
                         <Input
                           value={editingFilename}
                           onChange={(e) => setEditingFilename(e.target.value)}
                           onKeyDown={handleFilenameKeyDown}
-                          className="text-lg font-semibold h-8 px-2 py-1 w-64"
+                          className="h-8 px-2 py-1 w-64"
+                          style={{ fontSize: 14.5, fontWeight: 500 }}
                           placeholder="Enter ontology name..."
                           autoFocus
                         />
@@ -652,7 +661,7 @@ function OntologyPageContent() {
                           className="h-7 w-7"
                           onClick={handleSaveFilename}
                         >
-                          <Check className="h-4 w-4 text-green-600" />
+                          <Check className="h-4 w-4" style={{ color: 'var(--gx-success)' }} />
                         </Button>
                         <Button
                           size="icon"
@@ -660,12 +669,12 @@ function OntologyPageContent() {
                           className="h-7 w-7"
                           onClick={handleCancelEditingFilename}
                         >
-                          <X className="h-4 w-4 text-red-600" />
+                          <X className="h-4 w-4" style={{ color: 'var(--danger)' }} />
                         </Button>
                       </div>
                     ) : (
                       <div className="flex items-center gap-2 group">
-                        <h2 className="text-lg font-semibold text-foreground">
+                        <h2 style={{ fontSize: 14.5, fontWeight: 500, color: 'var(--fg)', letterSpacing: '-0.01em', margin: 0 }}>
                           {isEditMode ? `Edit: ${ontologyTitle}` : ontologyTitle}
                         </h2>
                         <Button
@@ -680,18 +689,17 @@ function OntologyPageContent() {
                       </div>
                     )}
                   </div>
-                  <p className="text-sm text-muted-foreground">
+                  <p style={{ fontSize: 11.5, color: 'var(--fg-muted)', marginTop: 2, lineHeight: 1.45 }}>
                     {isEditMode && loadedOntology
-                      ? `Version ${loadedOntology.version} • ${loadedOntology.source === 'file' ? 'File System' : 'Database'}`
-                      : 'Define your knowledge graph structure using YAML or visual editor'
+                      ? `Version ${loadedOntology.version} · ${loadedOntology.source === 'file' ? 'File system' : 'Database'}`
+                      : 'Define your knowledge graph structure using YAML or visual editor.'
                     }
                   </p>
                 </div>
                 {hasUnsavedChanges && (
-                  <div className="flex items-center space-x-2 text-amber-600 dark:text-amber-400">
-                    <div className="w-2 h-2 bg-amber-500 rounded-full animate-pulse" />
-                    <span className="text-xs font-medium">Unsaved changes</span>
-                  </div>
+                  <span className="gx-badge warn">
+                    <span className="tick" /> unsaved changes
+                  </span>
                 )}
               </div>
               <div className="flex flex-wrap items-center gap-2">
@@ -739,21 +747,38 @@ function OntologyPageContent() {
               maxSize={60}
               className="flex"
             >
-              <div className="enhanced-card h-full w-full flex flex-col overflow-hidden">
-                <div className="flex items-center justify-between px-4 py-3 bg-card  sticky top-0 z-20">
-                  <div className="flex items-center gap-1.5 text-foreground">
-                    <div className="bg-primary/5 w-5 h-5 rounded flex items-center justify-center">
+              <div
+                className="h-full w-full flex flex-col overflow-hidden"
+                style={{
+                  background: 'var(--bg-elev)',
+                  border: '1px solid var(--line)',
+                  borderRadius: 'var(--r-md)',
+                }}
+              >
+                <div
+                  className="flex items-center justify-between sticky top-0 z-20"
+                  style={{
+                    padding: '10px 14px',
+                    background: 'var(--bg-elev)',
+                    borderBottom: '1px solid var(--line)',
+                  }}
+                >
+                  <div className="flex items-center gap-1.5" style={{ color: 'var(--fg)' }}>
+                    <div
+                      className="w-5 h-5 rounded flex items-center justify-center"
+                      style={{ background: 'color-mix(in oklch, var(--gx-accent), transparent 90%)', color: 'var(--gx-accent)' }}
+                    >
                       <svg width="14" height="14" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <path d="M1.40594 0C0.629627 0 0 0.629627 0 1.40594V13.5941C0 14.3704 0.629627 15 1.40594 15H3.2013C3.97761 15 4.60724 14.3704 4.60724 13.5941V1.40594C4.60724 0.629627 3.97761 0 3.2013 0H1.40594ZM3.45161 1.64516C3.45161 1.75305 3.36434 1.84032 3.25645 1.84032H1.35079C1.24289 1.84032 1.15563 1.75305 1.15563 1.64516V1.29563C1.15563 1.18774 1.24289 1.10047 1.35079 1.10047H3.25645C3.36434 1.10047 3.45161 1.18774 3.45161 1.29563V1.64516ZM3.25645 2.94079H1.35079C1.24289 2.94079 1.15563 3.02805 1.15563 3.13595V3.48547C1.15563 3.59337 1.24289 3.68063 1.35079 3.68063H3.25645C3.36434 3.68063 3.45161 3.59337 3.45161 3.48547V3.13595C3.45161 3.02805 3.36434 2.94079 3.25645 2.94079ZM3.25645 4.78111H1.35079C1.24289 4.78111 1.15563 4.86837 1.15563 4.97626V5.32579C1.15563 5.43368 1.24289 5.52095 1.35079 5.52095H3.25645C3.36434 5.52095 3.45161 5.43368 3.45161 5.32579V4.97626C3.45161 4.86837 3.36434 4.78111 3.25645 4.78111ZM13.5941 0C14.3704 0 15 0.629627 15 1.40594V13.5941C15 14.3704 14.3704 15 13.5941 15H6.95161C6.17529 15 5.54567 14.3704 5.54567 13.5941V1.40594C5.54567 0.629627 6.17529 0 6.95161 0H13.5941ZM10.9695 7.50047C12.0816 7.50047 12.9853 6.59677 12.9853 5.48453C12.9853 4.37229 12.0816 3.46859 10.9695 3.46859C9.85724 3.46859 8.95354 4.37229 8.95354 5.48453C8.95354 6.59677 9.85724 7.50047 10.9695 7.50047ZM13.3226 9.92905C13.3226 9.17811 12.6083 8.46374 11.8574 8.46374H10.0816C9.33066 8.46374 8.61629 9.17811 8.61629 9.92905V13.9839H13.3226V9.92905Z" fill="currentColor"/>
                       </svg>
                     </div>
-                    <span className="text-xs font-medium">Entities</span>
+                    <span style={{ fontSize: '13.5px', fontWeight: 500, color: 'var(--fg)' }}>Entities</span>
                   </div>
                   <div className="flex gap-2 ml-auto">
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-7 w-7 hover:bg-muted shadow-soft"
+                      className="h-7 w-7 hover:bg-muted"
                       onClick={() => setIsTemplateSelectorOpen(true)}
                       title="Browse Templates"
                     >
@@ -762,7 +787,7 @@ function OntologyPageContent() {
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-7 w-7 hover:bg-muted shadow-soft"
+                      className="h-7 w-7 hover:bg-muted"
                       onClick={loadSampleYaml}
                       title="Load Sample Ontology"
                     >
@@ -773,7 +798,7 @@ function OntologyPageContent() {
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-7 w-7 hover:bg-muted shadow-soft"
+                      className="h-7 w-7 hover:bg-muted"
                       onClick={() => setIsCommandPaletteOpen(true)}
                       title="Search Entities"
                     >
@@ -790,22 +815,39 @@ function OntologyPageContent() {
             </ResizablePanel>
             <ResizableHandle className="w-1 bg-transparent " />
             <ResizablePanel defaultSize={75} className="flex">
-              <div className="enhanced-card h-full w-full flex flex-col overflow-hidden">
-                <div className="flex flex-wrap items-center gap-4 px-4 py-3 bg-card  sticky top-0 z-20">
-                  <div className="flex items-center gap-2 text-foreground">
-                    <div className="bg-primary/5 w-5 h-5 rounded flex items-center justify-center">
+              <div
+                className="h-full w-full flex flex-col overflow-hidden"
+                style={{
+                  background: 'var(--bg-elev)',
+                  border: '1px solid var(--line)',
+                  borderRadius: 'var(--r-md)',
+                }}
+              >
+                <div
+                  className="flex flex-wrap items-center gap-4 sticky top-0 z-20"
+                  style={{
+                    padding: '10px 14px',
+                    background: 'var(--bg-elev)',
+                    borderBottom: '1px solid var(--line)',
+                  }}
+                >
+                  <div className="flex items-center gap-2" style={{ color: 'var(--fg)' }}>
+                    <div
+                      className="w-5 h-5 rounded flex items-center justify-center"
+                      style={{ background: 'color-mix(in oklch, var(--gx-accent), transparent 90%)', color: 'var(--gx-accent)' }}
+                    >
                       <svg width="14" height="14" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <path d="M3.94993 2.95002L3.94993 4.49998C3.94993 4.74851 3.74845 4.94998 3.49993 4.94998C3.2514 4.94998 3.04993 4.74851 3.04993 4.49998V2.49998C3.04993 2.45565 3.05698 2.41268 3.06997 2.37194C3.09608 2.28868 3.1462 2.21526 3.21386 2.15795C3.23285 2.14099 3.25313 2.12618 3.27449 2.11351C3.32415 2.08558 3.38185 2.06943 3.44214 2.06595C3.4609 2.06489 3.47993 2.06489 3.49993 2.06595C3.51993 2.06489 3.53896 2.06489 3.55772 2.06595C3.61802 2.06943 3.67571 2.08558 3.72537 2.11351C3.74673 2.12618 3.76701 2.14099 3.786 2.15795C3.85366 2.21526 3.90378 2.28868 3.92989 2.37194C3.94288 2.41268 3.94993 2.45565 3.94993 2.49998V2.95002ZM3.94993 4.49998V2.95002L3.94993 4.49998ZM1.99993 2.49998C1.99993 1.94769 2.44764 1.49998 2.99993 1.49998H11.9999C12.5522 1.49998 12.9999 1.94769 12.9999 2.49998V12.5C12.9999 13.0522 12.5522 13.5 11.9999 13.5H2.99993C2.44764 13.5 1.99993 13.0522 1.99993 12.5V2.49998ZM2.99993 2.49998L2.94993 2.49998C2.9222 2.49998 2.89993 2.52224 2.89993 2.54998L2.89993 12.45C2.89993 12.4777 2.9222 12.5 2.94993 12.5H11.9999C12.0277 12.5 12.0499 12.4777 12.0499 12.45V2.54998C12.0499 2.52224 12.0277 2.49998 11.9999 2.49998H10.4999C10.2514 2.49998 10.0499 2.2985 10.0499 2.04998C10.0499 1.80146 10.2514 1.59998 10.4999 1.59998H11.9999C12.5522 1.59998 12.9999 2.04769 12.9999 2.59998V12.4C12.9999 12.9522 12.5522 13.4 11.9999 13.4H2.99993C2.44764 13.4 1.99993 12.9522 1.99993 12.4V2.59998C1.99993 2.04769 2.44764 1.59998 2.99993 1.59998H4.49993C4.74845 1.59998 4.94993 1.80146 4.94993 2.04998C4.94993 2.2985 4.74845 2.49998 4.49993 2.49998H2.99993ZM6.82899 5.12621L5.12434 10.1281C5.04468 10.3637 4.78353 10.4996 4.54797 10.4199C4.31241 10.3403 4.17654 10.0791 4.2562 9.84357L5.96085 4.84167C6.04051 4.60611 6.30165 4.47024 6.53721 4.5499C6.77277 4.62956 6.90865 4.89071 6.82899 5.12621ZM8.31378 9.4394L10.1566 7.50002L8.31378 5.56063C8.13641 5.37325 8.1455 5.0803 8.33288 4.90293C8.52026 4.72556 8.81321 4.73465 8.99058 4.92202L11.1906 7.23072C11.3638 7.41434 11.3638 7.58569 11.1906 7.76931L8.99058 10.078C8.81321 10.2654 8.52026 10.2745 8.33288 10.0971C8.1455 9.91974 8.13641 9.62678 8.31378 9.4394Z" fill="currentColor" fillRule="evenodd" clipRule="evenodd"/>
                       </svg>
                     </div>
-                    <span className="text-xs font-medium">Editor</span>
+                    <span style={{ fontSize: '13.5px', fontWeight: 500, color: 'var(--fg)' }}>Editor</span>
                   </div>
                   <div className="flex flex-wrap items-center gap-3 ml-auto text-foreground/80">
                     <label>
                       <Button 
                         variant="ghost" 
                         size="icon"
-                        className="h-7 w-7 hover:bg-muted shadow-soft"
+                        className="h-7 w-7 hover:bg-muted"
                         title="Upload YAML File"
                       >
                         <Upload className="h-3.5 w-3.5" />

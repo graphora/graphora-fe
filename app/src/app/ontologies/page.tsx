@@ -163,23 +163,23 @@ export default function OntologiesPage() {
   return (
     <DashboardLayout>
       <div className="flex flex-col h-full">
-        <PageHeader
-          title="Ontology Library"
-          description="Manage and organize your knowledge graph ontologies"
-          icon={<Database className="h-6 w-6" />}
-          actions={
-            <div className="flex items-center space-x-3">
+        <div style={{ padding: '28px 32px 0' }}>
+          <PageHeader
+            kicker="Workspace · ontology library"
+            title="Ontology library"
+            description="Manage and organize your knowledge graph ontologies."
+            actions={
               <Link href="/ontology">
-                <Button variant="cta" size="sm">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Create New
+                <Button size="sm" className="gap-1.5">
+                  <Plus className="h-[13px] w-[13px]" />
+                  New ontology
                 </Button>
               </Link>
-            </div>
-          }
-        />
+            }
+          />
+        </div>
 
-        <div className="flex-1 overflow-y-auto min-h-0 p-6 space-y-6">
+        <div className="flex-1 overflow-y-auto min-h-0 space-y-6" style={{ padding: '20px 32px 40px', maxWidth: 1600 }}>
           {/* Error Alert */}
           {error && (
             <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4">
@@ -214,96 +214,115 @@ export default function OntologiesPage() {
 
           {/* Ontologies Grid */}
           {filteredOntologies.length === 0 ? (
-            <Card className="enhanced-card text-center">
-              <CardContent className="enhanced-card-content py-12 space-y-4">
-                <Database className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                <h3 className="text-lg font-medium mb-2">
-                  {ontologies.length === 0 ? 'No ontologies found' : 'No matching ontologies'}
-                </h3>
-                <p className="text-muted-foreground">
-                  {ontologies.length === 0
-                    ? 'Create your first ontology to define the structure of your knowledge graph.'
-                    : 'Try adjusting your search terms or create a new ontology.'
-                  }
-                </p>
-                <div className="flex flex-col sm:flex-row items-center gap-3 mt-2">
-                  <Link href="/ontology">
-                    <Button variant="cta">
-                      <Plus className="h-4 w-4 mr-2" />
-                      Create from Scratch
+            <div
+              className="text-center"
+              style={{
+                background: 'var(--bg-elev)',
+                border: '1px solid var(--line)',
+                borderRadius: 'var(--r-md)',
+                padding: '48px 24px',
+              }}
+            >
+              <Database className="h-10 w-10 mx-auto mb-4" style={{ color: 'var(--fg-muted)' }} />
+              <div className="gx-kicker" style={{ marginBottom: 6 }}>
+                {ontologies.length === 0 ? 'Empty library' : 'No matches'}
+              </div>
+              <h3 style={{ fontSize: 16, fontWeight: 500, color: 'var(--fg)', letterSpacing: '-0.01em', margin: 0 }}>
+                {ontologies.length === 0 ? 'No ontologies yet' : 'No matching ontologies'}
+              </h3>
+              <p style={{ color: 'var(--fg-muted)', fontSize: 13, marginTop: 6, lineHeight: 1.5 }}>
+                {ontologies.length === 0
+                  ? 'Create your first ontology to define the structure of your knowledge graph.'
+                  : 'Try adjusting your search terms or create a new ontology.'}
+              </p>
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-2 mt-4">
+                <Link href="/ontology">
+                  <Button size="sm" className="gap-1.5">
+                    <Plus className="h-[13px] w-[13px]" />
+                    Create from scratch
+                  </Button>
+                </Link>
+                {ontologies.length === 0 && (
+                  <Link href="/ontology?templates=true">
+                    <Button variant="outline" size="sm" className="gap-1.5">
+                      <LayoutTemplate className="h-[13px] w-[13px]" />
+                      Browse templates
                     </Button>
                   </Link>
-                  {ontologies.length === 0 && (
-                    <Link href="/ontology?templates=true">
-                      <Button variant="outline">
-                        <LayoutTemplate className="h-4 w-4 mr-2" />
-                        Browse Templates
-                      </Button>
-                    </Link>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
+                )}
+              </div>
+            </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {filteredOntologies.map((ontology) => (
-                <Card
+                <div
                   key={ontology.id}
-                  variant="transparent"
-                  className="enhanced-card cursor-pointer group"
+                  className="group cursor-pointer transition-colors"
+                  style={{
+                    background: 'var(--bg-elev)',
+                    border: '1px solid var(--line)',
+                    borderRadius: 'var(--r-md)',
+                    overflow: 'hidden',
+                  }}
                 >
-                  <CardHeader className="enhanced-card-header pb-4">
-                    <div className="flex items-start justify-between">
+                  <div style={{ padding: '14px 16px', borderBottom: '1px solid var(--line)' }}>
+                    <div className="flex items-start justify-between gap-3">
                       <div className="flex-1 min-w-0">
-                        <CardTitle className="text-lg font-semibold truncate text-foreground group-hover:text-primary transition-colors">
+                        <h3
+                          className="truncate group-hover:text-[color:var(--gx-accent)] transition-colors"
+                          style={{ fontSize: '13.5px', fontWeight: 500, color: 'var(--fg)', letterSpacing: '-0.01em', margin: 0 }}
+                        >
                           {ontology.name || ontology.file_name.replace('.yaml', '')}
-                        </CardTitle>
-                        <CardDescription className="text-body-sm text-muted-foreground/80 mt-1">
-                          ID: {ontology.id}
-                        </CardDescription>
+                        </h3>
+                        <div className="gx-mono mt-1" style={{ fontSize: 11, color: 'var(--fg-faint)' }}>
+                          {ontology.id.slice(0, 8)}
+                        </div>
                       </div>
                       {getSourceBadge(ontology.source)}
                     </div>
-                  </CardHeader>
-                  
-                  <CardContent className="enhanced-card-content space-y-5 pt-0">
+                  </div>
+
+                  <div style={{ padding: 16 }} className="space-y-4">
                     {/* Metadata */}
-                    <div className="space-y-2 text-sm">
-                      <div className="flex items-center text-muted-foreground">
-                        <Clock className="h-4 w-4 mr-2" />
-                        <span>Version {ontology.version}</span>
+                    <div className="gx-mlist" style={{ fontSize: 11.5 }}>
+                      <div className="flex items-center gap-2" style={{ padding: '2px 0' }}>
+                        <Clock className="h-[12px] w-[12px]" style={{ color: 'var(--fg-muted)' }} />
+                        <span className="k">version</span>
+                        <span className="v">{ontology.version}</span>
                       </div>
-                      <div className="text-xs text-muted-foreground">
-                        Updated: {formatDate(ontology.updated_at)}
+                      <div className="flex items-center gap-2" style={{ padding: '2px 0' }}>
+                        <span className="k" style={{ paddingLeft: 18 }}>updated</span>
+                        <span className="v">{formatDate(ontology.updated_at)}</span>
                       </div>
-                      <div className="text-xs text-muted-foreground">
-                        Created: {formatDate(ontology.created_at)}
+                      <div className="flex items-center gap-2" style={{ padding: '2px 0' }}>
+                        <span className="k" style={{ paddingLeft: 18 }}>created</span>
+                        <span className="v">{formatDate(ontology.created_at)}</span>
                       </div>
                     </div>
 
                     {/* Actions */}
-                    <div className="flex items-center space-x-2 pt-1">
+                    <div className="flex items-center gap-2 pt-1">
                       <Button
                         size="sm"
-                        variant="destructive"
+                        variant="danger"
                         onClick={() => handleDeleteOntology(ontology.id)}
-                        className="flex-1"
+                        className="flex-1 gap-1"
                       >
-                        <Trash2 className="h-3 w-3 mr-1" />
+                        <Trash2 className="h-[13px] w-[13px]" />
                         Delete
                       </Button>
                       <Button
                         size="sm"
                         variant="cta"
-                        className="flex-1"
+                        className="flex-1 gap-1"
                         onClick={() => handleUseOntology(ontology.id)}
                       >
-                        <Play className="h-3 w-3 mr-1" />
+                        <Play className="h-[13px] w-[13px]" />
                         Use
                       </Button>
                     </div>
-                  </CardContent>
-                </Card>
+                  </div>
+                </div>
               ))}
             </div>
           )}

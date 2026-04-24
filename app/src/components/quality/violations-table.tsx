@@ -12,6 +12,7 @@ import {
   ExternalLink
 } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -74,11 +75,11 @@ export function ViolationsTable({ violations, transformId, className = '' }: Vio
   const getSeverityIcon = (severity: QualitySeverity) => {
     switch (severity) {
       case 'error':
-        return <XCircle className="h-4 w-4 text-destructive" />;
+        return <XCircle className="h-4 w-4" style={{ color: 'var(--danger)' }} />;
       case 'warning':
-        return <AlertTriangle className="h-4 w-4 text-amber-500 dark:text-amber-400" />;
+        return <AlertTriangle className="h-4 w-4" style={{ color: 'var(--warn)' }} />;
       default:
-        return <Info className="h-4 w-4 text-blue-500 dark:text-blue-400" />;
+        return <Info className="h-4 w-4" style={{ color: 'var(--gx-info)' }} />;
     }
   };
 
@@ -112,14 +113,26 @@ export function ViolationsTable({ violations, transformId, className = '' }: Vio
 
   if (violations.length === 0) {
     return (
-      <Card variant="glass" className={className}>
-        <CardContent className="text-center py-12">
-          <div className="space-y-content-sm">
-            <div className="text-green-600 dark:text-green-400 text-lg">✨ No violations found!</div>
-            <p className="text-muted-foreground">All quality checks passed successfully.</p>
+      <div
+        className={cn('text-center py-12', className)}
+        style={{
+          background: 'var(--bg-elev)',
+          border: '1px solid var(--line)',
+          borderRadius: 'var(--r-md)',
+        }}
+      >
+        <div className="space-y-2">
+          <div className="gx-kicker" style={{ marginBottom: 6, color: 'var(--gx-success)' }}>
+            All checks passed
           </div>
-        </CardContent>
-      </Card>
+          <p style={{ color: 'var(--fg)', fontSize: 14, fontWeight: 500 }}>
+            No violations found.
+          </p>
+          <p style={{ color: 'var(--fg-muted)', fontSize: 12 }}>
+            Every configured quality rule is satisfied.
+          </p>
+        </div>
+      </div>
     );
   }
 
@@ -305,13 +318,27 @@ export function ViolationsTable({ violations, transformId, className = '' }: Vio
                                 <div className="space-y-2 text-sm">
                                   <div>
                                     <span className="text-muted-foreground">Expected: </span>
-                                    <span className="font-mono bg-green-100 dark:bg-green-900 px-2 py-1 rounded text-green-800 dark:text-green-200">
+                                    <span
+                                      className="font-mono px-2 py-1 rounded"
+                                      style={{
+                                        background: 'color-mix(in oklch, var(--gx-success), transparent 85%)',
+                                        color: 'var(--gx-success)',
+                                        border: '1px solid color-mix(in oklch, var(--gx-success), transparent 70%)',
+                                      }}
+                                    >
                                       {violation.expected}
                                     </span>
                                   </div>
                                   <div>
                                     <span className="text-muted-foreground">Actual: </span>
-                                    <span className="font-mono bg-red-100 dark:bg-red-900 px-2 py-1 rounded text-red-800 dark:text-red-200">
+                                    <span
+                                      className="font-mono px-2 py-1 rounded"
+                                      style={{
+                                        background: 'color-mix(in oklch, var(--danger), transparent 85%)',
+                                        color: 'var(--danger)',
+                                        border: '1px solid color-mix(in oklch, var(--danger), transparent 70%)',
+                                      }}
+                                    >
                                       {violation.actual}
                                     </span>
                                   </div>
@@ -342,8 +369,14 @@ export function ViolationsTable({ violations, transformId, className = '' }: Vio
                             {violation.suggestion && (
                               <div>
                                 <h4 className="text-sm font-medium mb-2">💡 Suggestion</h4>
-                                <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded p-3">
-                                  <p className="text-sm text-blue-800 dark:text-blue-200">{violation.suggestion}</p>
+                                <div
+                                  className="rounded p-3"
+                                  style={{
+                                    background: 'color-mix(in oklch, var(--gx-info), transparent 90%)',
+                                    border: '1px solid color-mix(in oklch, var(--gx-info), transparent 70%)',
+                                  }}
+                                >
+                                  <p className="text-sm" style={{ color: 'var(--fg)' }}>{violation.suggestion}</p>
                                 </div>
                               </div>
                             )}

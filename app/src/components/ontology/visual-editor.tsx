@@ -46,7 +46,7 @@ export function VisualEditor() {
 
   return (
     <div className="h-full flex flex-col">
-      <div className="sticky top-0 z-10 flex items-center justify-between bg-muted/30 px-3 py-2">
+      <div className="sticky top-0 z-10 flex items-center justify-between bg-[color:var(--bg-deep)] px-3 py-2">
         <div className="flex items-center gap-2">
           <Button
             variant="ghost"
@@ -55,7 +55,7 @@ export function VisualEditor() {
             className={cn(
               "flex items-center gap-1.5 rounded-full  px-3 text-sm font-medium transition-all duration-150",
               viewMode === 'tree'
-                ? "bg-card text-foreground shadow-soft"
+                ? "bg-card text-foreground"
                 : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
           )}
           >
@@ -85,7 +85,7 @@ export function VisualEditor() {
             className={cn(
               "flex items-center gap-1.5 rounded-full  px-3 text-sm font-medium transition-all duration-150",
               viewMode === 'graph'
-                ? "bg-card text-foreground shadow-soft"
+                ? "bg-card text-foreground"
                 : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
           )}
           >

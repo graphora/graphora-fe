@@ -835,73 +835,103 @@ function MergePageContent() {
 
       {/* Main Content */}
       <div className="flex-1 overflow-auto">
-        <div className="page-shell py-section stack-gap">
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-10 space-y-6">
-            <div className="flex items-center justify-between gap-4">
-              <TabsList className="w-full">
-                <TabsTrigger value="progress" className="flex-1">
-                  <Activity className="h-4 w-4 mr-2" />
+        <div style={{ padding: '20px 32px 40px', maxWidth: 1600 }}>
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-5">
+            <div
+              className="flex items-end justify-between gap-4"
+              style={{ borderBottom: '1px solid var(--line)' }}
+            >
+              <TabsList style={{ borderBottom: 0 }}>
+                <TabsTrigger value="progress">
+                  <Activity className="h-[13px] w-[13px]" />
                   Progress
                 </TabsTrigger>
-                <TabsTrigger value="conflicts" className="flex-1">
-                  <AlertTriangle className="h-4 w-4 mr-2" />
+                <TabsTrigger value="conflicts">
+                  <AlertTriangle className="h-[13px] w-[13px]" />
                   Conflicts
                   {conflictStats.total > 0 && (
-                    <Badge variant="secondary" className="ml-2">
+                    <span
+                      className="gx-mono"
+                      style={{
+                        marginLeft: 6,
+                        padding: '1px 6px',
+                        fontSize: 10,
+                        color: 'var(--fg-muted)',
+                        border: '1px solid var(--line)',
+                        borderRadius: 4,
+                      }}
+                    >
                       {conflictStats.resolved}/{conflictStats.total}
-                    </Badge>
+                    </span>
                   )}
                 </TabsTrigger>
-                <TabsTrigger value="visualization" className="flex-1">
-                  <Network className="h-4 w-4 mr-2" />
-                  Graph View
+                <TabsTrigger value="visualization">
+                  <Network className="h-[13px] w-[13px]" />
+                  Graph view
                   {allConflictsResolved && (
-                    <Badge variant="outline" className="ml-2 bg-green-100 text-green-800">
-                      <CheckCircle2 className="h-3 w-3" />
-                    </Badge>
+                    <span
+                      className="gx-badge success"
+                      style={{ marginLeft: 6 }}
+                    >
+                      <span className="tick" />
+                    </span>
                   )}
                 </TabsTrigger>
               </TabsList>
-              
-              <div className="flex items-center space-x-2 flex-shrink-0 ml-4">
+
+              <div className="flex items-center gap-2 flex-shrink-0 pb-[10px]">
                 {/* Timer Display */}
                 {startTime &&
                   status !== MergeStatus.COMPLETED &&
                   status !== MergeStatus.FAILED &&
                   status !== MergeStatus.CANCELLED && (
-                  <div className="flex items-center text-sm text-muted-foreground bg-muted px-2 py-1 rounded whitespace-nowrap" title="Elapsed Time">
-                    <Clock className="h-4 w-4 mr-1 flex-shrink-0" />
-                    <span className="font-mono">{formatElapsedTime(elapsedTime)}</span>
-                  </div>
-                )}
-                
-                {/* View Status Button */}
-                <Button 
-                  variant="outline" 
-                  size="sm" 
+                    <span
+                      className="gx-mono"
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 6,
+                        padding: '4px 10px',
+                        fontSize: 11,
+                        color: 'var(--fg-muted)',
+                        background: 'var(--bg-elev)',
+                        border: '1px solid var(--line)',
+                        borderRadius: 'var(--r-sm)',
+                      }}
+                      title="Elapsed time"
+                    >
+                      <Clock className="h-[12px] w-[12px]" />
+                      {formatElapsedTime(elapsedTime)}
+                    </span>
+                  )}
+
+                <Button
+                  variant="outline"
+                  size="sm"
                   onClick={handleViewStatus}
                   disabled={!currentMergeId}
                   title="View detailed execution status in Prefect"
+                  className="gap-1.5"
                 >
-                  <Monitor className="h-4 w-4 mr-1" />
-                  View Status
+                  <Monitor className="h-[13px] w-[13px]" />
+                  View status
                 </Button>
 
-                {/* Retry Button for Failed Merges */}
                 {status === MergeStatus.FAILED && (
-                  <Button 
-                    variant="destructive" 
-                    size="sm" 
+                  <Button
+                    variant="destructive"
+                    size="sm"
                     onClick={handleRetry}
                     disabled={isRetrying}
                     title="Retry the merge process"
+                    className="gap-1.5"
                   >
                     {isRetrying ? (
-                      <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                      <Loader2 className="h-[13px] w-[13px] animate-spin" />
                     ) : (
-                      <RefreshCcw className="h-4 w-4 mr-1" />
+                      <RefreshCcw className="h-[13px] w-[13px]" />
                     )}
-                    {isRetrying ? 'Retrying...' : 'Retry'}
+                    {isRetrying ? 'Retrying…' : 'Retry'}
                   </Button>
                 )}
               </div>
@@ -919,92 +949,124 @@ function MergePageContent() {
                     isRetrying={isRetrying}
                   />
                 ) : (
-                  <div className="enhanced-card">
-                    <div className="enhanced-card-content flex flex-col items-center justify-center gap-3 py-12 min-h-[80vh]">
-                      <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                      <p className="text-muted-foreground">Initializing merge process...</p>
-                    </div>
+                  <div
+                    className="flex flex-col items-center justify-center gap-3 py-12 min-h-[70vh]"
+                    style={{
+                      background: 'var(--bg-elev)',
+                      border: '1px solid var(--line)',
+                      borderRadius: 'var(--r-md)',
+                    }}
+                  >
+                    <Loader2 className="h-6 w-6 animate-spin" style={{ color: 'var(--gx-accent)' }} />
+                    <p className="gx-mono" style={{ color: 'var(--fg-muted)', fontSize: 11, letterSpacing: '0.08em' }}>
+                      INITIALIZING MERGE PROCESS…
+                    </p>
                   </div>
                 )}
             </TabsContent>
             
             <TabsContent value="conflicts" className="space-y-4">
-              <div className="enhanced-card">
-                <div className="enhanced-card-content h-[80vh] relative p-0 overflow-hidden rounded-lg">
-                  {currentMergeId ? (
-                    <ConflictList
-                      mergeId={currentMergeId}
-                      onConflictSelect={handleConflictSelect}
-                      selectedConflicts={selectedConflicts}
-                      onSelectionChange={setSelectedConflicts}
-                      onAutoResolveComplete={handleAutoResolveComplete}
-                      onViewMergedResults={() => {/* navigate to results */}}
-                      onViewFinalGraph={handleViewFinalGraph}
-                    />
-                  ) : (
-                    <div className="flex items-center justify-center h-full">
-                      <div className="text-center space-y-4">
-                        <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
-                        <p className="text-muted-foreground">Loading conflicts...</p>
-                      </div>
+              <div
+                className="h-[78vh] relative overflow-hidden"
+                style={{
+                  background: 'var(--bg-elev)',
+                  border: '1px solid var(--line)',
+                  borderRadius: 'var(--r-md)',
+                }}
+              >
+                {currentMergeId ? (
+                  <ConflictList
+                    mergeId={currentMergeId}
+                    onConflictSelect={handleConflictSelect}
+                    selectedConflicts={selectedConflicts}
+                    onSelectionChange={setSelectedConflicts}
+                    onAutoResolveComplete={handleAutoResolveComplete}
+                    onViewMergedResults={() => {/* navigate to results */}}
+                    onViewFinalGraph={handleViewFinalGraph}
+                  />
+                ) : (
+                  <div className="flex h-full items-center justify-center">
+                    <div className="text-center">
+                      <Loader2 className="h-6 w-6 animate-spin mx-auto mb-3" style={{ color: 'var(--gx-accent)' }} />
+                      <p className="gx-mono" style={{ color: 'var(--fg-muted)', fontSize: 11, letterSpacing: '0.08em' }}>
+                        LOADING CONFLICTS…
+                      </p>
                     </div>
-                  )}
-                </div>
+                  </div>
+                )}
               </div>
             </TabsContent>
             
             <TabsContent value="visualization" className="space-y-4">
-              <div className="enhanced-card">
-                <div className="enhanced-card-content h-[80vh] relative p-0 overflow-hidden rounded-lg">
+              <div
+                className="h-[78vh] relative overflow-hidden"
+                style={{
+                  background: 'var(--bg-elev)',
+                  border: '1px solid var(--line)',
+                  borderRadius: 'var(--r-md)',
+                }}
+              >
+                {isLoadingGraph && (
+                  <div
+                    className="absolute inset-0 flex items-center justify-center z-20"
+                    style={{ background: 'rgb(var(--background) / 0.8)' }}
+                  >
+                    <div className="text-center">
+                      <Loader2 className="h-6 w-6 animate-spin mx-auto mb-3" style={{ color: 'var(--gx-accent)' }} />
+                      <p className="gx-mono" style={{ color: 'var(--fg-muted)', fontSize: 11, letterSpacing: '0.08em' }}>
+                        LOADING GRAPH…
+                      </p>
+                    </div>
+                  </div>
+                )}
 
-                  
-                  {isLoadingGraph && (
-                    <div className="absolute inset-0 flex items-center justify-center bg-background/80 z-20">
-                      <div className="text-center">
-                        <Loader2 className="h-8 w-8 animate-spin mx-auto mb-2 text-primary" />
-                        <p className="text-muted-foreground">Loading graph...</p>
-                      </div>
+                {graphDataMemo ? (
+                  <MergeGraphVisualization
+                    transformId={transformId}
+                    mergeId={currentMergeId || undefined}
+                    currentConflict={currentConflict}
+                    graphData={graphDataMemo}
+                  />
+                ) : visualizationLoading ? (
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="text-center">
+                      <Loader2 className="h-6 w-6 animate-spin mx-auto mb-3" style={{ color: 'var(--gx-accent)' }} />
+                      <p className="gx-mono" style={{ color: 'var(--fg-muted)', fontSize: 11, letterSpacing: '0.08em' }}>
+                        LOADING VISUALIZATION…
+                      </p>
                     </div>
-                  )}
-                  
-                  {graphDataMemo ? (
-                    <MergeGraphVisualization
-                      transformId={transformId}
-                      mergeId={currentMergeId || undefined}
-                      currentConflict={currentConflict}
-                      graphData={graphDataMemo}
-                    />
-                  ) : visualizationLoading ? (
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <div className="text-center space-y-4">
-                        <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
-                        <p className="text-muted-foreground">Loading visualization...</p>
-                      </div>
+                  </div>
+                ) : (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
+                    <div
+                      style={{
+                        width: 72,
+                        height: 72,
+                        borderRadius: '50%',
+                        background: 'var(--bg-elev-2)',
+                        border: '1px solid var(--line)',
+                        display: 'grid',
+                        placeItems: 'center',
+                      }}
+                    >
+                      <Network className="h-7 w-7" style={{ color: 'var(--fg-muted)' }} />
                     </div>
-                  ) : (
-                    <div className="absolute inset-0 flex items-center justify-center flex-col">
-                      <div className="text-center space-y-4">
-                        <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto">
-                          <Network className="h-8 w-8 text-muted-foreground" />
-                        </div>
-                        <div>
-                          <p className="text-lg font-medium text-foreground">No Graph Data</p>
-                          <p className="text-sm text-muted-foreground">Graph visualization will appear here after merge completion</p>
-                        </div>
-                        {(status === MergeStatus.COMPLETED) && (
-                          <Button
-                            onClick={refreshVisualization}
-                            variant="outline"
-                            className="mt-4"
-                          >
-                            <RefreshCcw className="h-4 w-4 mr-2" />
-                            Refresh Graph
-                          </Button>
-                        )}
+                    <div className="text-center">
+                      <div className="gx-kicker" style={{ marginBottom: 6 }}>
+                        No graph data
                       </div>
+                      <p style={{ fontSize: 13, color: 'var(--fg-muted)' }}>
+                        Graph visualization appears here after merge completion.
+                      </p>
                     </div>
-                  )}
-                </div>
+                    {status === MergeStatus.COMPLETED && (
+                      <Button onClick={refreshVisualization} variant="outline" size="sm" className="gap-1.5">
+                        <RefreshCcw className="h-[13px] w-[13px]" />
+                        Refresh graph
+                      </Button>
+                    )}
+                  </div>
+                )}
               </div>
             </TabsContent>
           </Tabs>
@@ -1037,8 +1099,10 @@ export default function MergePage() {
       <Suspense fallback={
         <div className="flex items-center justify-center h-full">
           <div className="text-center">
-            <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-            <p className="text-gray-600">Initializing merge process...</p>
+            <Loader2 className="h-6 w-6 animate-spin mx-auto mb-3" style={{ color: 'var(--gx-accent)' }} />
+            <p className="gx-mono" style={{ color: 'var(--fg-muted)', fontSize: 11, letterSpacing: '0.08em' }}>
+              INITIALIZING MERGE PROCESS…
+            </p>
           </div>
         </div>
       }>

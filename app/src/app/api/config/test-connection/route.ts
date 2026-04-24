@@ -1,126 +1,60 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerAuth } from '@/lib/server-auth'
+import { getBackendAuthHeaders } from '@/lib/auth-utils'
 import type { ConnectionTestResponse } from '@/types/config'
 
 export const runtime = 'nodejs'
 
-const CONNECTION_TIMEOUT_MS = 10_000
-const MAX_CONNECTION_LIFETIME_MS = 30_000
-const ACQUISITION_TIMEOUT_MS = 10_000
-
-const successResponse: ConnectionTestResponse = {
-  success: true,
-  message: 'Connection successful! Neo4j database is reachable and responding correctly.'
-}
-
-const invalidParamsResponse: ConnectionTestResponse = {
-  success: false,
-  message: 'Missing required connection parameters',
-  error: 'URI, username, and password are required'
-}
-
-const invalidProtocolResponse: ConnectionTestResponse = {
-  success: false,
-  message: 'Invalid Neo4j URI format',
-  error: 'URI must start with neo4j://, bolt://, neo4j+s://, or bolt+s://'
-}
-
-const toNumber = (maybeInt: unknown): number => {
-  if (typeof maybeInt === 'number') {
-    return maybeInt
-  }
-
-  if (typeof maybeInt === 'object' && maybeInt !== null && 'toNumber' in maybeInt && typeof maybeInt.toNumber === 'function') {
-    try {
-      return maybeInt.toNumber()
-    } catch {
-      return Number.NaN
-    }
-  }
-
-  return Number.NaN
-}
-
+/**
+ * Test-connection route.
+ *
+ * **Why this is a proxy, not a direct Neo4j driver.** The Next.js server runs
+ * on the host machine; the backend API runs inside a Docker container on a
+ * private network. In a docker-compose dev stack, Neo4j is reachable:
+ *   - from the host as `bolt://localhost:7687`
+ *   - from the API container as `bolt://neo4j-staging:7687`
+ *
+ * If this route creates its own Neo4j driver, it executes in the host's
+ * network context and fails for the hostnames the backend actually uses at
+ * runtime. Proxying to the backend's `/api/v1/config/test-connection`
+ * endpoint guarantees that "test connection" validates the exact URL the
+ * backend will use when actually processing transforms — so a green test
+ * here means merges and transforms will succeed too.
+ */
 export async function POST(request: NextRequest) {
   try {
-    const { userId } = await getServerAuth()
-    if (!userId) {
+    const backendBaseUrl = process.env.BACKEND_API_URL || 'http://localhost:8000'
+    const { headers } = await getBackendAuthHeaders({
+      'Content-Type': 'application/json',
+    })
+
+    const body = await request.json()
+
+    const backendUrl = `${backendBaseUrl}/api/v1/config/test-connection`
+    const backendResponse = await fetch(backendUrl, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(body),
+    })
+
+    // Pass through the backend's response verbatim, including the matching
+    // HTTP status. Backend returns a fully-formed ConnectionTestResponse for
+    // both success (200) and failure (4xx/5xx with {success:false,...}).
+    const data = (await backendResponse.json()) as ConnectionTestResponse
+    return NextResponse.json(data, { status: backendResponse.status })
+  } catch (error) {
+    if (error instanceof Error && error.message === 'Unauthorized') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const body = await request.json()
-    const { uri, username, password } = body ?? {}
-
-    if (!uri || !username || !password) {
-      return NextResponse.json(invalidParamsResponse, { status: 400 })
-    }
-
-    const normalizedUri = String(uri)
-    if (!/^neo4j(\+s)?:\/\//.test(normalizedUri) && !/^bolt(\+s)?:\/\//.test(normalizedUri)) {
-      return NextResponse.json(invalidProtocolResponse, { status: 400 })
-    }
-
-    const neo4j = await import('neo4j-driver')
-    const connection = neo4j.driver(normalizedUri, neo4j.auth.basic(String(username), String(password)), {
-      connectionTimeout: CONNECTION_TIMEOUT_MS,
-      maxConnectionLifetime: MAX_CONNECTION_LIFETIME_MS,
-      maxConnectionPoolSize: 1,
-      connectionAcquisitionTimeout: ACQUISITION_TIMEOUT_MS,
-      disableLosslessIntegers: false
-    })
-
-    const session = connection.session()
-
-    try {
-      const result = await session.run('RETURN 1 as test, "Hello Neo4j" as message')
-      const record = result.records[0]
-
-      if (!record) {
-        return NextResponse.json({
-          success: false,
-          message: 'Connection test failed',
-          error: 'No records returned from test query'
-        })
-      }
-
-      const testValue = toNumber(record.get('test'))
-      if (Number.isNaN(testValue) || testValue !== 1) {
-        return NextResponse.json({
-          success: false,
-          message: 'Connection test failed',
-          error: `Unexpected response from database. Expected 1, received ${testValue}`
-        })
-      }
-
-      return NextResponse.json(successResponse)
-    } finally {
-      await session.close()
-      await connection.close()
-    }
-  } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error'
-    let friendlyMessage = 'Connection failed'
-    let friendlyDetail = message
-
-    if (/authentication|credentials/i.test(message)) {
-      friendlyMessage = 'Authentication failed'
-      friendlyDetail = 'Invalid username or password'
-    } else if (/timeout/i.test(message)) {
-      friendlyMessage = 'Connection timeout'
-      friendlyDetail = 'Database did not respond within the timeout period'
-    } else if (/ENOTFOUND|ECONNREFUSED|ServiceUnavailable/i.test(message)) {
-      friendlyMessage = 'Database unreachable'
-      friendlyDetail = 'Unable to reach the Neo4j instance. Verify the URI and network connectivity.'
-    }
-
-    console.error('Neo4j connection test failed:', friendlyDetail)
+    console.error('Test-connection proxy failed:', message)
 
     const response: ConnectionTestResponse = {
       success: false,
-      message: friendlyMessage,
-      error: friendlyDetail
+      message: 'Connection test unavailable',
+      error: 'Could not reach the Graphora API. Is the backend running?',
     }
 
-    return NextResponse.json(response, { status: 500 })
+    return NextResponse.json(response, { status: 502 })
   }
 }

@@ -139,41 +139,53 @@ export function QualityActionButtons({
   const errorViolations = qualityResults.violations.filter(v => v.severity === 'error').length;
   const warningViolations = qualityResults.violations.filter(v => v.severity === 'warning').length;
 
+  const recommendationTone = recommendation.tone
+  const recIconColor =
+    recommendationTone === 'success' ? 'var(--gx-success)'
+    : recommendationTone === 'info' ? 'var(--gx-info)'
+    : recommendationTone === 'warning' ? 'var(--warn)'
+    : 'var(--danger)'
+
   return (
-    <div className={cn("bg-gradient-to-br from-muted/40 via-muted/30 to-background rounded-2xl p-10 border-2 border-border/60 shadow-lg", className)}>
-      <div className="mb-8 text-center">
-        <h3 className="text-2xl font-bold text-foreground mb-2">
-          What would you like to do?
-        </h3>
-        <p className="text-muted-foreground">
-          Review the quality results and decide whether to proceed with merge
-        </p>
-      </div>
+    <div
+      className={cn(className)}
+      style={{
+        background: 'var(--bg-elev)',
+        border: '1px solid var(--line)',
+        borderRadius: 'var(--r-md)',
+        padding: '16px 20px',
+      }}
+    >
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        {/* Recommendation line — inline, no framing */}
+        <div className="flex items-start gap-2.5 min-w-0 flex-1">
+          <Info className="h-[15px] w-[15px] flex-shrink-0 mt-0.5" style={{ color: recIconColor }} />
+          <div className="min-w-0">
+            <div
+              className="gx-kicker"
+              style={{ margin: 0, marginBottom: 2, color: recIconColor }}
+            >
+              Recommendation
+            </div>
+            <p style={{ fontSize: 12.5, color: 'var(--fg)', lineHeight: 1.45, margin: 0 }}>
+              {recommendation.message}
+            </p>
+          </div>
+        </div>
 
-      {/* Recommendation Alert */}
-      <Alert
-        variant={toneVariant[recommendation.tone]}
-        className={cn('border-l-4 mb-8', toneBorder[recommendation.tone])}
-      >
-        <Info className={cn('h-4 w-4', toneText[recommendation.tone])} />
-        <AlertDescription className={cn('font-semibold text-base', toneText[recommendation.tone])}>
-          <strong>Recommendation:</strong> {recommendation.message}
-        </AlertDescription>
-      </Alert>
-
-      {/* Action Buttons - Now Prominent */}
-      <div className="flex flex-wrap justify-center gap-6 mb-8">
+        {/* Action buttons — right-aligned, compact */}
+        <div className="flex flex-wrap items-center gap-2 flex-shrink-0">
           {/* Approve Dialog */}
           <Dialog open={approveDialogOpen} onOpenChange={setApproveDialogOpen}>
           <DialogTrigger asChild>
             <Button
-              variant="cta"
+              variant="success"
               size="lg"
               disabled={isApproving}
-              className="group relative px-10 py-6 text-lg font-semibold"
+              className="gap-2"
             >
-              <CheckCircle className="h-6 w-6 mr-2" />
-              Approve & Continue to Merge
+              <CheckCircle className="h-[15px] w-[15px]" />
+              Approve & continue to merge
             </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-md bg-background border-border">
@@ -238,13 +250,13 @@ export function QualityActionButtons({
           <Dialog open={rejectDialogOpen} onOpenChange={setRejectDialogOpen}>
             <DialogTrigger asChild>
               <Button
-                variant="outline"
+                variant="danger"
                 size="lg"
                 disabled={isRejecting}
-                className="px-8 py-6 text-lg border-2 hover:bg-destructive/10 hover:border-destructive hover:text-destructive transition-all"
+                className="gap-2"
               >
-                <XCircle className="h-6 w-6 mr-2" />
-                Reject & Stop Process
+                <XCircle className="h-[15px] w-[15px]" />
+                Reject
               </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-md bg-background border-border">
@@ -312,13 +324,6 @@ export function QualityActionButtons({
             </DialogContent>
           </Dialog>
         </div>
-
-      {/* Summary Stats - Moved to bottom, less prominent */}
-      <div className="text-center text-sm text-muted-foreground pt-6 border-t border-border/40">
-        <p>Quality Score: <span className="font-semibold text-foreground">{Math.round(qualityResults.overall_score)}</span> •
-        Errors: <span className="font-semibold text-destructive">{errorViolations}</span> •
-        Warnings: <span className="font-semibold text-warning">{warningViolations}</span> •
-        Grade: <span className="font-semibold text-foreground">{qualityResults.grade}</span></p>
       </div>
     </div>
   );

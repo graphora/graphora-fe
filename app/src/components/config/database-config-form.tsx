@@ -4,8 +4,6 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Loader2, Eye, EyeOff, Info, AlertTriangle, CheckCircle2 } from 'lucide-react'
 import { DatabaseConfig, ConnectionTestResponse } from '@/types/config'
@@ -107,47 +105,59 @@ export function DatabaseConfigForm({
   const getStatusBadge = () => {
     if (isExistingConfig) {
       return (
-        <Badge className="border-transparent bg-emerald-100/60 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300">
-          <CheckCircle2 className="mr-1 h-3 w-3" />
-          Connected
-        </Badge>
+        <span className="gx-badge success">
+          <CheckCircle2 className="h-[10px] w-[10px]" />
+          connected
+        </span>
       )
     }
     if (isOptional) {
       return (
-        <Badge variant="outline" className="border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300">
-          <Info className="mr-1 h-3 w-3" />
-          Optional
-        </Badge>
+        <span className="gx-badge info">
+          <Info className="h-[10px] w-[10px]" />
+          optional
+        </span>
       )
     }
     if (requiredFor) {
       return (
-        <Badge variant="outline" className="border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-300">
-          <AlertTriangle className="mr-1 h-3 w-3" />
-          Required for {requiredFor}
-        </Badge>
+        <span className="gx-badge warn">
+          <AlertTriangle className="h-[10px] w-[10px]" />
+          required for {requiredFor}
+        </span>
       )
     }
     return null
   }
 
   return (
-    <Card className="w-full shadow-soft">
-      <CardHeader className="pb-4">
-        <div className="flex items-center justify-between gap-3">
+    <div
+      className="w-full"
+      style={{
+        background: 'var(--bg-elev)',
+        border: '1px solid var(--line)',
+        borderRadius: 'var(--r-md)',
+        overflow: 'hidden',
+      }}
+    >
+      <div style={{ padding: '14px 16px', borderBottom: '1px solid var(--line)' }}>
+        <div className="flex items-start justify-between gap-3">
           <div>
-            <CardTitle className="text-sm font-medium">{title}</CardTitle>
-            <CardDescription className="text-xs">{description}</CardDescription>
+            <h3 style={{ fontSize: '13.5px', fontWeight: 500, color: 'var(--fg)', margin: 0, letterSpacing: '-0.01em' }}>
+              {title}
+            </h3>
+            <p style={{ fontSize: 11.5, color: 'var(--fg-muted)', marginTop: 2, lineHeight: 1.45 }}>
+              {description}
+            </p>
           </div>
           {getStatusBadge()}
         </div>
-      </CardHeader>
-      <CardContent className="space-y-4 pt-0">
+      </div>
+      <div style={{ padding: 16 }} className="space-y-4">
 
         <div className="grid gap-3 sm:grid-cols-2">
           <div className="space-y-1.5">
-            <Label htmlFor={`${title.toLowerCase()}-name`} className="text-xs">Database name</Label>
+            <Label htmlFor={`${title.toLowerCase()}-name`} style={{ fontSize: 11.5, color: 'var(--fg-muted)', fontWeight: 500 }}>Database name</Label>
             <Input
               id={`${title.toLowerCase()}-name`}
               placeholder="e.g., Staging Neo4j"
@@ -157,7 +167,7 @@ export function DatabaseConfigForm({
             />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor={`${title.toLowerCase()}-username`} className="text-xs">Username</Label>
+            <Label htmlFor={`${title.toLowerCase()}-username`} style={{ fontSize: 11.5, color: 'var(--fg-muted)', fontWeight: 500 }}>Username</Label>
             <Input
               id={`${title.toLowerCase()}-username`}
               placeholder="neo4j"
@@ -169,7 +179,7 @@ export function DatabaseConfigForm({
         </div>
 
         <div className="space-y-1.5">
-          <Label htmlFor={`${title.toLowerCase()}-uri`} className="text-xs">Neo4j URI</Label>
+          <Label htmlFor={`${title.toLowerCase()}-uri`} style={{ fontSize: 11.5, color: 'var(--fg-muted)', fontWeight: 500 }}>Neo4j URI</Label>
           <Input
             id={`${title.toLowerCase()}-uri`}
             placeholder="neo4j://localhost:7687"
@@ -180,7 +190,7 @@ export function DatabaseConfigForm({
         </div>
 
         <div className="space-y-1.5">
-          <Label htmlFor={`${title.toLowerCase()}-password`} className="text-xs">Password</Label>
+          <Label htmlFor={`${title.toLowerCase()}-password`} style={{ fontSize: 11.5, color: 'var(--fg-muted)', fontWeight: 500 }}>Password</Label>
           <div className="relative">
             <Input
               id={`${title.toLowerCase()}-password`}
@@ -210,12 +220,31 @@ export function DatabaseConfigForm({
         </div>
 
         {testResult && (
-          <Alert className={testResult.success ? 'border-emerald-200 bg-emerald-50 dark:border-emerald-800 dark:bg-emerald-950/30' : ''} variant={testResult.success ? undefined : 'destructive'}>
-            <AlertDescription className="text-xs">
+          testResult.success ? (
+            <div
+              style={{
+                padding: '10px 12px',
+                background: 'color-mix(in oklch, var(--gx-success), transparent 92%)',
+                border: '1px solid color-mix(in oklch, var(--gx-success), transparent 70%)',
+                borderRadius: 'var(--r-sm)',
+                fontSize: 12,
+                color: 'var(--fg)',
+              }}
+            >
+              <span className="gx-mono" style={{ color: 'var(--gx-success)', fontSize: 10.5, letterSpacing: '0.08em', textTransform: 'uppercase', marginRight: 6 }}>
+                OK
+              </span>
               {testResult.message}
               {testResult.error && ` – ${testResult.error}`}
-            </AlertDescription>
-          </Alert>
+            </div>
+          ) : (
+            <Alert variant="destructive">
+              <AlertDescription className="text-xs">
+                {testResult.message}
+                {testResult.error && ` – ${testResult.error}`}
+              </AlertDescription>
+            </Alert>
+          )
         )}
 
         <Button
@@ -227,13 +256,13 @@ export function DatabaseConfigForm({
           {testing ? (
             <>
               <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
-              Testing...
+              Testing…
             </>
           ) : (
-            'Test Connection'
+            'Test connection'
           )}
         </Button>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   )
 }

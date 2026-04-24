@@ -2,50 +2,93 @@ import * as React from "react"
 import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 
+/**
+ * Graphora button system — flat, token-driven variants.
+ *
+ * ## Why inline-style CSS-var backgrounds
+ *
+ * Tailwind's `<alpha-value>` expansion in `tailwind.config.ts` appears to not
+ * be generating the expected `rgb(var(--x) / var(--tw-bg-opacity))` output for
+ * our custom colors — instead emitting `background-color: var(--background);`
+ * which is invalid CSS (the var resolves to "27 32 43" — a bare RGB triplet
+ * that isn't a color function). Result: every `bg-primary` / `bg-card` / etc.
+ * rendered as `rgba(0, 0, 0, 0)` — transparent.
+ *
+ * Rather than fight the config, we use explicit inline `style={{ background:
+ * 'var(--gx-accent)' }}` on each variant. The CSS variables themselves are OKLCH
+ * color functions (e.g. `oklch(82% 0.155 200)`), so `var(--gx-accent)` resolves
+ * directly to a valid color. Inline styles win over any class-based rule and
+ * are immune to Tailwind's JIT or content-scanning quirks.
+ *
+ * Borders, rounding, transitions, and focus rings stay in Tailwind classes —
+ * those work fine because they don't depend on the custom-color tokens.
+ */
+
+type Variant =
+  | "default" | "cta"
+  | "secondary" | "outline" | "ghost"
+  | "destructive" | "danger"
+  | "success" | "warning" | "info"
+  | "subtle" | "neutral" | "glass"
+  | "link"
+
+const variantStyle: Record<Variant, React.CSSProperties> = {
+  default:     { background: "var(--gx-accent)",     color: "var(--gx-accent-fg)", borderColor: "var(--gx-accent)" },
+  cta:         { background: "var(--gx-accent)",     color: "var(--gx-accent-fg)", borderColor: "var(--gx-accent)" },
+  secondary:   { background: "var(--bg-elev)",    color: "var(--fg)",        borderColor: "var(--line-strong)" },
+  outline:     { background: "transparent",       color: "var(--fg)",        borderColor: "var(--line-strong)" },
+  ghost:       { background: "transparent",       color: "var(--fg-muted)",  borderColor: "transparent" },
+  destructive: { background: "var(--danger)",     color: "#fff",             borderColor: "var(--danger)" },
+  danger:      { background: "transparent",       color: "var(--danger)",    borderColor: "color-mix(in oklch, var(--danger), transparent 70%)" },
+  success:     { background: "var(--gx-success)",    color: "#fff",             borderColor: "var(--gx-success)" },
+  warning:     { background: "var(--warn)",       color: "var(--gx-accent-fg)", borderColor: "var(--warn)" },
+  info:        { background: "var(--gx-info)",       color: "#fff",             borderColor: "var(--gx-info)" },
+  subtle:      { background: "var(--bg-elev)",    color: "var(--fg-muted)",  borderColor: "var(--line)" },
+  neutral:     { background: "var(--bg-elev)",    color: "var(--fg)",        borderColor: "var(--line-strong)" },
+  glass:       { background: "transparent",       color: "var(--fg)",        borderColor: "var(--line-strong)" },
+  link:        { background: "transparent",       color: "var(--gx-accent)",    borderColor: "transparent" },
+}
+
 const buttonVariants = cva(
-  "relative inline-flex items-center justify-center overflow-hidden rounded-[var(--radius)] text-body-sm font-medium tracking-tight transition-all duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-55 aria-disabled:pointer-events-none aria-disabled:opacity-55 active:translate-y-[1px]",
+  [
+    "inline-flex items-center justify-center gap-1.5 whitespace-nowrap",
+    "rounded-[var(--r-sm)] font-medium",
+    "border transition-[filter,background-color,color,border-color] duration-150 ease-out",
+    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-0",
+    "disabled:pointer-events-none disabled:opacity-50",
+    "aria-disabled:pointer-events-none aria-disabled:opacity-50",
+    // Hover effects are wired via data-variant selectors in globals.css
+  ].join(" "),
   {
     variants: {
       variant: {
-        default:
-          "bg-gradient-to-r from-primary/95 via-primary to-primary/90 text-primary-foreground shadow-soft hover:shadow-medium dark:!bg-primary dark:!text-white",
-        secondary:
-          "bg-secondary/85 text-secondary-foreground shadow-soft hover:bg-secondary",
-        destructive:
-          "bg-destructive text-destructive-foreground shadow-soft hover:bg-destructive/90",
-        outline:
-          "border border-border/70 bg-background/40 text-foreground/90 shadow-soft hover:bg-muted/40",
-        ghost:
-          "bg-transparent text-foreground/75 hover:text-foreground hover:bg-muted/30",
-        link:
-          "underline-offset-4 text-primary hover:underline",
-        glass:
-          "backdrop-blur-panel border-2 border-border/40 bg-background/60 text-foreground shadow-soft hover:bg-background/80 hover:border-border/60 dark:border-white/15 dark:bg-white/8 dark:hover:bg-white/12 dark:hover:border-white/25",
-        cta:
-          "bg-gradient-to-r from-cyan-500 to-teal-500 !text-white shadow-medium hover:shadow-large hover:from-cyan-600 hover:to-teal-600 focus-visible:ring-primary/45 font-semibold dark:from-cyan-400 dark:to-teal-400 dark:!text-slate-900",
-        subtle:
-          "bg-muted/60 text-foreground/80 shadow-soft hover:bg-muted",
-        success:
-          "bg-success/90 text-success-foreground shadow-soft hover:bg-success dark:!text-slate-900",
-        warning:
-          "bg-warning/90 text-warning-foreground shadow-soft hover:bg-warning",
-        info:
-          "bg-info/90 text-info-foreground shadow-soft hover:bg-info dark:!text-slate-900",
-        neutral:
-          "bg-neutral/25 text-neutral-foreground shadow-soft hover:bg-neutral/35",
+        default: "gx-btn-solid",
+        cta: "gx-btn-solid",
+        secondary: "gx-btn-surface",
+        outline: "gx-btn-surface",
+        ghost: "gx-btn-ghost",
+        destructive: "gx-btn-solid",
+        danger: "gx-btn-danger",
+        success: "gx-btn-solid",
+        warning: "gx-btn-solid",
+        info: "gx-btn-solid",
+        subtle: "gx-btn-surface",
+        neutral: "gx-btn-surface",
+        glass: "gx-btn-surface",
+        link: "gx-btn-link",
       },
       size: {
-        default: "h-10 px-4",
-        sm: "h-8 px-3 text-body-xs rounded-[calc(var(--radius)-4px)]",
-        lg: "h-11 px-6 text-body rounded-[calc(var(--radius)+2px)]",
-        icon: "h-10 w-10",
+        default: "h-8 px-3.5 text-[12.5px]",
+        sm: "h-7 px-2.5 text-[11.5px]",
+        lg: "h-9 px-4 text-[13.5px]",
+        icon: "h-8 w-8 px-0",
       },
     },
     defaultVariants: {
       variant: "default",
       size: "default",
     },
-  }
+  },
 )
 
 export interface ButtonProps
@@ -53,16 +96,18 @@ export interface ButtonProps
     VariantProps<typeof buttonVariants> {}
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant, size, ...props }, ref) => {
+  ({ className, variant, size, style, ...props }, ref) => {
+    const v = (variant ?? "default") as Variant
     return (
       <button
         className={cn(buttonVariants({ variant, size, className }))}
+        style={{ ...variantStyle[v], ...style }}
         ref={ref}
         {...props}
       />
     )
-  }
+  },
 )
 Button.displayName = "Button"
 
-export { Button, buttonVariants } 
+export { Button, buttonVariants }

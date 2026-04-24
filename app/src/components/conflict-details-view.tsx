@@ -249,20 +249,20 @@ export function ConflictDetailsView({
 
               <div className="mt-4 flex items-start justify-between">
                 <div>
-                  <div className="flex items-center gap-2">
-                    <h2 className="text-lg font-semibold">Conflict</h2>
-                    <Badge variant="outline" className="flex items-center gap-1">
-                      {conflictTypeIcons[conflict.conflict_type.toLowerCase()] || 
-                        <AlertTriangle className="h-4 w-4" />}
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h2 style={{ fontSize: 16, fontWeight: 500, color: 'var(--fg)', letterSpacing: '-0.01em', margin: 0 }}>Conflict</h2>
+                    <span className="gx-badge">
+                      {conflictTypeIcons[conflict.conflict_type.toLowerCase()] ||
+                        <AlertTriangle className="h-[10px] w-[10px]" />}
                       {conflict.conflict_type}
-                    </Badge>
-                    <Badge className={cn(severityStyle?.bg, severityStyle?.text, severityStyle?.border)}>
-                      {severityLabel}
-                    </Badge>
+                    </span>
+                    <span className={cn('gx-badge', severityLabel === 'High' ? 'danger' : severityLabel === 'Medium' ? 'warn' : 'info')}>
+                      <span className="tick" /> {severityLabel}
+                    </span>
                     {conflict.resolved && (
-                      <Badge className="bg-green-100 text-green-800 border-green-200">
-                        Resolved
-                      </Badge>
+                      <span className="gx-badge success">
+                        <span className="tick" /> resolved
+                      </span>
                     )}
                   </div>
                   <p className="text-sm text-muted-foreground mt-1">
@@ -295,10 +295,10 @@ export function ConflictDetailsView({
               ) : changeLog ? (
                 <>
                   {/* Description */}
-                  <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-6 shadow-soft">
+                  <div style={{ background: 'var(--bg-elev)', border: '1px solid var(--line)', borderRadius: 'var(--r-md)', padding: 16 }}>
                     <div className="mb-6">
-                      <h3 className="text-lg font-semibold text-foreground">Property Conflicts</h3>
-                      <p className="text-sm text-muted-foreground">Select the version you want to keep for each conflicting property</p>
+                      <h3 style={{ fontSize: '13.5px', fontWeight: 500, color: 'var(--fg)', letterSpacing: '-0.01em', margin: 0 }}>Property conflicts</h3>
+                      <p style={{ fontSize: 11.5, color: 'var(--fg-muted)', marginTop: 2 }}>Select the version you want to keep for each conflicting property.</p>
                     </div>
                       <RadioGroup 
                         value={selectedResolution} 
@@ -325,7 +325,7 @@ export function ConflictDetailsView({
                         </div>
                       </RadioGroup>
 
-                      <div className="mt-6 rounded-2xl border border-white/5 bg-background/40">
+                      <div className="mt-6" style={{ background: 'var(--bg-deep)', border: '1px solid var(--line)', borderRadius: 'var(--r-sm)' }}>
                         <Table className="[&_th]:text-xs [&_td]:text-sm">
                           <TableHeader>
                             <TableRow className="border-white/5">
@@ -357,10 +357,10 @@ export function ConflictDetailsView({
                       </div>
                     </div>
 
-                  <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-6 shadow-soft">
+                  <div style={{ background: 'var(--bg-elev)', border: '1px solid var(--line)', borderRadius: 'var(--r-md)', padding: 16 }}>
                     <div className="mb-4">
-                      <h3 className="text-lg font-semibold text-foreground">Learning Comment</h3>
-                      <p className="text-sm text-muted-foreground">Add a comment / rule to help the system learn from this resolution</p>
+                      <h3 style={{ fontSize: '13.5px', fontWeight: 500, color: 'var(--fg)', letterSpacing: '-0.01em', margin: 0 }}>Learning comment</h3>
+                      <p style={{ fontSize: 11.5, color: 'var(--fg-muted)', marginTop: 2 }}>Add a comment to help the system learn from this resolution.</p>
                     </div>
                     <Textarea
                       placeholder="Why did you choose this resolution? This helps improve automated conflict resolution."
@@ -381,7 +381,7 @@ export function ConflictDetailsView({
 
           {/* Footer Actions */}
           {!conflict.resolved && (
-            <div className="flex-none bg-card/95 backdrop-blur-sm border-t border-border/40 shadow-soft p-3 fixed bottom-0 left-0 w-full">
+            <div className="flex-none bg-card/95 backdrop-blur-sm border-t border-border/40 p-3 fixed bottom-0 left-0 w-full">
               <div className="flex items-center justify-between">
                 <div>
                   {/* Left side actions if needed */}

@@ -548,19 +548,27 @@ export function MergeProgress({ mergeId, sessionId, transformId, onViewConflicts
   const isReadyToFinalize = progress.overall_status === MergeStatus.READY_TO_MERGE;
 
   return (
-    <Card variant="glass" className="w-full flex flex-col min-h-[80vh] shadow-soft">
-      <CardHeader className="flex-shrink-0 p-6 pb-4">
+    <div
+      className="w-full flex flex-col min-h-[75vh]"
+      style={{
+        background: 'var(--bg-elev)',
+        border: '1px solid var(--line)',
+        borderRadius: 'var(--r-md)',
+        overflow: 'hidden',
+      }}
+    >
+      <div style={{ padding: '14px 16px', borderBottom: '1px solid var(--line)' }} className="flex-shrink-0">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-heading-sm">Merge Progress</CardTitle>
+          <h3 style={{ fontSize: '13.5px', fontWeight: 500, color: 'var(--fg)', letterSpacing: '-0.01em', margin: 0 }}>Merge progress</h3>
           <div className="flex items-center gap-2">
             {getStatusBadge(progress.overall_status)}
           </div>
         </div>
-        <CardDescription className="mt-1">
+        <p style={{ fontSize: 11.5, color: 'var(--fg-muted)', marginTop: 2 }}>
           Started {formatDateTime(progress.start_time)}
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="flex-grow p-6">
+        </p>
+      </div>
+      <div className="flex-grow" style={{ padding: 16 }}>
         <div className="space-y-6">
           {/* Show loading spinner when merge is in progress */}
           {(progress.overall_status === MergeStatus.STARTED || 
@@ -731,10 +739,17 @@ export function MergeProgress({ mergeId, sessionId, transformId, onViewConflicts
           </div>
         </div>
         </div>
-      </CardContent>
-      
+      </div>
+
       {/* Action Buttons - Fixed at the bottom */}
-      <CardFooter className="sticky bottom-0 z-10 mt-auto flex items-center justify-between gap-3 border-t border-border/60 bg-background/80 px-6 py-4 backdrop-blur-sm">
+      <div
+        className="sticky bottom-0 z-10 mt-auto flex items-center justify-between gap-3"
+        style={{
+          borderTop: '1px solid var(--line)',
+          background: 'var(--bg-elev)',
+          padding: '12px 16px',
+        }}
+      >
         <div>
           {onCancel && (progress.overall_status === MergeStatus.STARTED || 
                          progress.overall_status === MergeStatus.AUTO_RESOLVE ||
@@ -756,7 +771,7 @@ export function MergeProgress({ mergeId, sessionId, transformId, onViewConflicts
             </Button>
           )}
         </div>
-      </CardFooter>
+      </div>
 
       {/* Floating Action Button for Conflicts */}
       {progress.overall_status === MergeStatus.HUMAN_REVIEW && onViewConflicts && (
@@ -764,12 +779,12 @@ export function MergeProgress({ mergeId, sessionId, transformId, onViewConflicts
           <Button
             onClick={onViewConflicts}
             variant="warning"
-            className="rounded-full w-14 h-14 shadow-lg"
+            className="rounded-full w-14 h-14"
           >
             <div className="relative">
               <AlertTriangle className="h-6 w-6" />
-              <Badge 
-                variant="destructive" 
+              <Badge
+                variant="destructive"
                 className="absolute -top-2 -right-2 min-w-[1.5rem] h-6 rounded-full animate-pulse"
               >
                 {progress.conflict_count}
@@ -778,6 +793,6 @@ export function MergeProgress({ mergeId, sessionId, transformId, onViewConflicts
           </Button>
         </div>
       )}
-    </Card>
+    </div>
   );
 }

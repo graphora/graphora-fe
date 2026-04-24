@@ -121,10 +121,11 @@ export default function SchemaChatPage() {
   return (
     <DashboardLayout>
       <div className="flex flex-col h-full">
+        <div style={{ padding: '28px 32px 0' }}>
         <PageHeader
-          title="Schema Designer"
-          description="Design your knowledge graph schema through conversation"
-          icon={<Sparkles className="h-6 w-6" />}
+          kicker="Tools · AI schema designer"
+          title="Schema designer"
+          description="Design your knowledge graph schema through conversation."
           actions={
             <div className="flex items-center gap-2">
               <Button
@@ -152,14 +153,23 @@ export default function SchemaChatPage() {
             </div>
           }
         />
+        </div>
 
         <div className="flex-1 overflow-hidden">
           <div className={cn(
-            'h-full grid gap-4 p-4',
+            'h-full grid gap-4',
             viewMode === 'split' ? 'grid-cols-2' : 'grid-cols-1'
-          )}>
+          )} style={{ padding: '20px 32px 40px' }}>
             {/* Chat Panel */}
-            <div className="flex flex-col h-full bg-card rounded-lg shadow-soft">
+            <div
+              className="flex flex-col h-full"
+              style={{
+                background: 'var(--bg-elev)',
+                border: '1px solid var(--line)',
+                borderRadius: 'var(--r-md)',
+                overflow: 'hidden',
+              }}
+            >
               {/* Messages */}
               <ScrollArea className="flex-1 p-4">
                 <div className="space-y-4">
@@ -238,11 +248,24 @@ export default function SchemaChatPage() {
 
             {/* Schema Preview Panel */}
             {viewMode === 'split' && (
-              <div className="flex flex-col h-full bg-card rounded-lg shadow-soft overflow-hidden">
-                <div className="flex items-center justify-between px-4 py-3 bg-muted/30">
+              <div
+                className="flex flex-col h-full overflow-hidden"
+                style={{
+                  background: 'var(--bg-elev)',
+                  border: '1px solid var(--line)',
+                  borderRadius: 'var(--r-md)',
+                }}
+              >
+                <div
+                  className="flex items-center justify-between"
+                  style={{
+                    padding: '10px 14px',
+                    borderBottom: '1px solid var(--line)',
+                  }}
+                >
                   <div className="flex items-center gap-2">
-                    <Code2 className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm font-medium">Schema Preview</span>
+                    <Code2 className="h-[13px] w-[13px]" style={{ color: 'var(--fg-muted)' }} />
+                    <span style={{ fontSize: '13.5px', fontWeight: 500, color: 'var(--fg)' }}>Schema preview</span>
                   </div>
                   {currentSchema && (
                     <div className="flex items-center gap-1">
@@ -254,7 +277,7 @@ export default function SchemaChatPage() {
                         title="Copy schema"
                       >
                         {copied ? (
-                          <Check className="h-4 w-4 text-green-500" />
+                          <Check className="h-4 w-4" style={{ color: 'var(--gx-success)' }} />
                         ) : (
                           <Copy className="h-4 w-4" />
                         )}

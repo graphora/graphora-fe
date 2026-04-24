@@ -1179,7 +1179,7 @@ function TransformPageContent() {
       action: () => setShowMergeConfirm(true),
       disabled: !graphData || isProcessing,
       primary: true,
-      className: "bg-green-500 hover:bg-green-600 text-white"
+      className: "!bg-success hover:!bg-success/90 !text-white",
     },
     {
       id: 'settings',
@@ -1518,12 +1518,24 @@ function TransformPageContent() {
             {/* Upload Panel */}
             <div className="flex flex-col h-full overflow-auto">
               {/* File Upload Section */}
-              <div className="enhanced-card h-full flex-shrink-0">
-                <div className="enhanced-card-header pb-3">
-                  <h3 className="text-sm font-semibold text-foreground">Document Upload</h3>
-                  <p className="text-xs text-muted-foreground mt-0.5">Upload a document to transform into a knowledge graph</p>
+              <div
+                className="h-full flex-shrink-0"
+                style={{
+                  background: 'var(--bg-elev)',
+                  border: '1px solid var(--line)',
+                  borderRadius: 'var(--r-md)',
+                  overflow: 'hidden',
+                }}
+              >
+                <div style={{ padding: '14px 16px', borderBottom: '1px solid var(--line)' }}>
+                  <h3 style={{ fontSize: '13.5px', fontWeight: 500, color: 'var(--fg)', margin: 0 }}>
+                    Document upload
+                  </h3>
+                  <p style={{ fontSize: 11.5, color: 'var(--fg-muted)', marginTop: 2 }}>
+                    Ingest a single document to transform into a knowledge graph.
+                  </p>
                 </div>
-                <div className="enhanced-card-content space-y-4">
+                <div style={{ padding: 16 }} className="space-y-4">
                   {!file ? (
                     <div
                       {...getRootProps()}
@@ -1560,7 +1572,7 @@ function TransformPageContent() {
                     <div className="border rounded-lg p-3 bg-muted">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-2">
-                          <FileText className="h-6 w-6 text-blue-600" />
+                          <FileText className="h-6 w-6" style={{ color: 'var(--gx-accent)' }} />
                           <div>
                             <p className="text-sm font-medium text-foreground">{file.name}</p>
                             <p className="text-xs text-muted-foreground">{(file.size / (1024 * 1024)).toFixed(2)} MB</p>
@@ -1600,7 +1612,8 @@ function TransformPageContent() {
                             variant="ghost"
                             size="sm"
                             onClick={() => window.open(sampleFile.path, '_blank')}
-                            className="w-full text-xs h-6 text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
+                            className="w-full text-xs h-6"
+                            style={{ color: 'var(--gx-accent)' }}
                           >
                             Preview File
                           </Button>
@@ -1614,41 +1627,99 @@ function TransformPageContent() {
 
             {/* Graph Visualization Panel */}
             <div className="flex flex-col h-full">
-              <div className="enhanced-card flex flex-col h-full text-sm text-muted-foreground">
-                <div className="enhanced-card-header pb-3 flex-shrink-0">
-                  <h3 className="text-sm font-semibold text-foreground">Knowledge Graph</h3>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    {graphData ? 'Interactive visualization of your knowledge graph' : 'Graph will appear here after transformation'}
+              <div
+                className="flex flex-col h-full"
+                style={{
+                  background: 'var(--bg-elev)',
+                  border: '1px solid var(--line)',
+                  borderRadius: 'var(--r-md)',
+                  color: 'var(--fg-muted)',
+                  fontSize: '12.5px',
+                  overflow: 'hidden',
+                }}
+              >
+                <div
+                  style={{
+                    padding: '14px 16px',
+                    borderBottom: '1px solid var(--line)',
+                    flexShrink: 0,
+                  }}
+                >
+                  <h3 style={{ fontSize: '13.5px', fontWeight: 500, color: 'var(--fg)', margin: 0 }}>
+                    Knowledge graph
+                  </h3>
+                  <p style={{ fontSize: 11.5, color: 'var(--fg-muted)', marginTop: 2 }}>
+                    {graphData ? 'Interactive visualization of your knowledge graph.' : 'Graph appears here once the transform completes.'}
                   </p>
                 </div>
-                <div className="enhanced-card-content flex-1 relative overflow-hidden rounded-lg min-h-0">
+                <div className="flex-1 relative overflow-hidden min-h-0">
                   {isProcessing ? (
-                    <div className="h-full flex items-center justify-center bg-muted/30">
-                      <div className="text-center space-y-4 max-w-md">
-                        <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto bg-card shadow-soft">
-                          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    <div
+                      className="h-full flex items-center justify-center"
+                      style={{ background: 'var(--bg-deep)' }}
+                    >
+                      <div className="w-full max-w-md px-6 py-8 gx-stagger">
+                        <div className="gx-kicker" style={{ marginBottom: 6 }}>
+                          Transform · in progress
                         </div>
-                        <div className="space-y-2">
-                          <h3 className="text-lg font-semibold text-foreground">Transforming Document</h3>
-                          <p className="text-sm text-muted-foreground">{currentStep || 'Processing your document...'}</p>
-                          <div className="w-full max-w-xs mx-auto">
-                            <Progress value={progress} className="w-full h-2" />
-                            <p className="text-sm font-medium mt-2 text-primary">{progress}% Complete</p>
-                          </div>
+                        <h3
+                          style={{
+                            fontSize: 22,
+                            fontWeight: 500,
+                            letterSpacing: '-0.015em',
+                            color: 'var(--fg)',
+                            lineHeight: 1.2,
+                          }}
+                        >
+                          Building knowledge graph
+                        </h3>
+                        <p style={{ fontSize: 13, color: 'var(--fg-muted)', marginTop: 4 }}>
+                          {currentStep || 'Processing your document…'}
+                        </p>
+
+                        <div className="gx-bar" style={{ marginTop: 18 }}>
+                          <span style={{ width: `${Math.max(0, Math.min(100, progress))}%` }} />
                         </div>
-                        <div className="rounded-lg p-3 space-y-1.5 bg-card shadow-soft">
-                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                            <div className="w-1.5 h-1.5 bg-primary rounded-full animate-pulse"></div>
-                            <span>Parsing document structure</span>
-                          </div>
-                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                            <div className="w-1.5 h-1.5 bg-primary rounded-full animate-pulse"></div>
-                            <span>Extracting entities and relationships</span>
-                          </div>
-                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                            <div className="w-1.5 h-1.5 bg-primary rounded-full animate-pulse"></div>
-                            <span>Building knowledge graph</span>
-                          </div>
+                        <div
+                          className="flex items-center justify-between mt-2"
+                          style={{ fontSize: 11, color: 'var(--fg-muted)' }}
+                        >
+                          <span className="gx-mono">{progress}% complete</span>
+                          <span className="gx-mono gx-faint" style={{ letterSpacing: '0.08em' }}>
+                            STREAMING
+                          </span>
+                        </div>
+
+                        <div
+                          style={{
+                            marginTop: 20,
+                            padding: 14,
+                            background: 'var(--bg-elev)',
+                            border: '1px solid var(--line)',
+                            borderRadius: 'var(--r-sm)',
+                          }}
+                          className="gx-mlist"
+                        >
+                          {[
+                            { k: 'parse', v: 'Document structure' },
+                            { k: 'extract', v: 'Entities + relations' },
+                            { k: 'build', v: 'Knowledge graph' },
+                          ].map((stage) => (
+                            <div key={stage.k} className="flex items-center gap-2" style={{ padding: '3px 0' }}>
+                              <span
+                                style={{
+                                  width: 6,
+                                  height: 6,
+                                  borderRadius: '50%',
+                                  background: 'var(--gx-accent)',
+                                  animation: 'gxStaggerIn 1.2s ease-in-out infinite alternate',
+                                  flexShrink: 0,
+                                }}
+                              />
+                              <span className="k" style={{ minWidth: 60 }}>{stage.k}</span>
+                              <span className="v">{stage.v}</span>
+                            </div>
+                          ))}
                         </div>
                       </div>
                     </div>
@@ -1758,7 +1829,7 @@ function TransformPageContent() {
         open={isChunkingAvailable && showChunkingConfig}
         onOpenChange={(value) => setShowChunkingConfig(isChunkingAvailable && value)}
       >
-        <DialogContent className="glass-surface max-w-5xl h-[90vh] max-h-[90vh] overflow-x-hidden overflow-y-auto border  p-0 text-card-foreground shadow-large">
+        <DialogContent className="glass-surface max-w-5xl h-[90vh] max-h-[90vh] overflow-x-hidden overflow-y-auto border  p-0 text-card-foreground">
           <DialogTitle className="sr-only">Chunking Configuration</DialogTitle>
           <div className="grid h-full min-h-0 md:grid-cols-[320px_1fr]">
             <aside className="flex h-full min-h-0 flex-col bg-gradient-to-br from-primary/18 via-background/30 to-background/60 p-8 text-left ">
@@ -1818,7 +1889,7 @@ function TransformPageContent() {
             <div className="flex h-full min-h-0 flex-col bg-background/92  overflow-hidden">
               <header className="flex items-center justify-between border-b  p-8 pb-6 flex-shrink-0">
                 <div className="flex items-center gap-3">
-                  <span className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-primary/70 text-white shadow-glass">
+                  <span className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-primary/70 text-white">
                     <Settings2 className="h-5 w-5" />
                   </span>
                   <div className="space-y-1">
@@ -1835,7 +1906,7 @@ function TransformPageContent() {
                   fileContent={fileContent ?? undefined}
                   fileName={file?.name}
                   onConfigChange={setChunkingConfig}
-                  className=" bg-white/10 shadow-glass "
+                  className=" bg-white/10 "
                 />
               </div>
 
