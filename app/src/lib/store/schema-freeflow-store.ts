@@ -8,6 +8,30 @@ import { immer } from 'zustand/middleware/immer'
  * Supports streaming responses and live schema preview.
  */
 
+/**
+ * Convert a raw backend error string (often a Google RPC/JSON blob) into
+ * something readable in the chat bubble + error banner. Falls back to the
+ * original text truncated to a safe length.
+ */
+function prettifyChatError(raw: string): string {
+  if (!raw) return 'Something went wrong — please try again.'
+  const s = raw.toLowerCase()
+  if (s.includes('429') || s.includes('resource_exhausted') || s.includes('quota')) {
+    // Try to extract a retry delay like "Please retry in 27s" from the blob
+    const retry = raw.match(/retry in ([0-9.]+)\s*s/i)
+    const when = retry ? ` Try again in ~${Math.ceil(Number(retry[1]))}s.` : ''
+    return `Rate limit hit on the AI provider (free-tier quota exhausted).${when} You can also switch models in Configuration.`
+  }
+  if (s.includes('401') || s.includes('unauthorized') || s.includes('api key')) {
+    return 'AI provider rejected the API key. Check your key in Configuration → AI provider.'
+  }
+  if (s.includes('network') || s.includes('timeout') || s.includes('econn')) {
+    return 'Network hiccup reaching the AI provider — please retry in a moment.'
+  }
+  // Fallback — keep it short
+  return raw.length > 240 ? raw.slice(0, 240) + '…' : raw
+}
+
 // Message types
 export interface ChatMessage {
   id: string
@@ -229,31 +253,39 @@ export const useFreeflowChatStore = create<FreeflowChatState & FreeflowChatActio
           const lines = chunk.split('\n')
 
           for (const line of lines) {
-            if (line.startsWith('data: ')) {
-              try {
-                const data = JSON.parse(line.slice(6))
+            if (!line.startsWith('data: ')) continue
 
-                if (data.type === 'text') {
-                  accumulatedContent += data.content
-                  get().appendToStreamingMessage(data.content)
-                } else if (data.type === 'schema_update') {
-                  schemaUpdate = data.content
-                  set((draft) => {
-                    draft.currentSchema = data.content
-                    draft.schemaHistory.push({
-                      content: data.content,
-                      timestamp: new Date(),
-                    })
-                  })
-                } else if (data.type === 'done') {
-                  get().finalizeStreamingMessage(schemaUpdate)
-                } else if (data.type === 'error') {
-                  throw new Error(data.content)
-                }
-              } catch (parseError) {
-                // Skip invalid JSON lines
-                console.debug('Skipping invalid SSE line:', line)
-              }
+            // Parse the SSE data payload. If the JSON is malformed we
+            // log and skip — but critically, we must NOT wrap the
+            // `data.type === 'error'` branch in the same try/catch,
+            // or the `throw` we use to surface backend errors would
+            // be caught here and silently turned into "invalid SSE".
+            let data: any
+            try {
+              data = JSON.parse(line.slice(6))
+            } catch (parseError) {
+              console.debug('Skipping invalid SSE line:', line)
+              continue
+            }
+
+            if (data.type === 'text') {
+              accumulatedContent += data.content
+              get().appendToStreamingMessage(data.content)
+            } else if (data.type === 'schema_update') {
+              schemaUpdate = data.content
+              set((draft) => {
+                draft.currentSchema = data.content
+                draft.schemaHistory.push({
+                  content: data.content,
+                  timestamp: new Date(),
+                })
+              })
+            } else if (data.type === 'done') {
+              get().finalizeStreamingMessage(schemaUpdate)
+            } else if (data.type === 'error') {
+              throw new Error(
+                typeof data.content === 'string' ? data.content : 'Schema chat error',
+              )
             }
           }
         }
@@ -263,14 +295,18 @@ export const useFreeflowChatStore = create<FreeflowChatState & FreeflowChatActio
 
       } catch (error) {
         console.error('Error sending message:', error)
+        const raw = error instanceof Error ? error.message : String(error)
+        // Humanise the most common backend failures instead of dumping
+        // the raw Gemini/Google RPC payload into the error banner.
+        const friendly = prettifyChatError(raw)
         set((draft) => {
           draft.isStreaming = false
-          draft.error = error instanceof Error ? error.message : 'Failed to send message'
+          draft.error = friendly
 
           // Update the streaming message to show error
           const msgIndex = draft.messages.findIndex(m => m.id === assistantMessageId)
           if (msgIndex !== -1) {
-            draft.messages[msgIndex].content = 'Sorry, an error occurred. Please try again.'
+            draft.messages[msgIndex].content = friendly
             draft.messages[msgIndex].isStreaming = false
           }
         })
