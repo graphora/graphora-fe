@@ -1,8 +1,8 @@
 'use client'
 
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import {
   Home,
@@ -22,6 +22,7 @@ import { UserButton } from '@/components/ui/user-button'
 import { ThemeToggle } from '@/components/ui/theme-toggle'
 import { Tooltip } from '@/components/ui/tooltip'
 import { useUser, useAuth, isAuthBypassEnabled } from '@/hooks/useAuth'
+import { CommandPalette, type CommandItem } from '@/components/command-center/command-palette'
 
 interface NavigationItem {
   id: string
@@ -71,6 +72,27 @@ const NAV_SECTIONS: NavigationSection[] = [
 
 export function SidebarNavigation({ className, defaultCollapsed = false }: SidebarNavigationProps) {
   const pathname = usePathname()
+  const router = useRouter()
+  const [paletteOpen, setPaletteOpen] = useState(false)
+
+  // Flatten NAV_SECTIONS into CommandPalette items — nav items become
+  // "Go to …" commands. The `useRouter().push` hook gives instant
+  // client-side navigation without full reload.
+  const paletteCommands = useMemo<CommandItem[]>(
+    () =>
+      NAV_SECTIONS.flatMap((section) =>
+        section.items.map((item) => ({
+          id: item.id,
+          label: `Go to ${item.name}`,
+          description: item.description,
+          group: section.label,
+          icon: item.icon,
+          keywords: [item.name, item.id, section.label],
+          action: () => router.push(item.path),
+        })),
+      ),
+    [router],
+  )
 
   const [isCollapsed, setIsCollapsed] = useState(() => {
     if (typeof window !== 'undefined') {
@@ -146,10 +168,13 @@ export function SidebarNavigation({ className, defaultCollapsed = false }: Sideb
         )}
       </div>
 
-      {/* Search */}
+      {/* Search — opens the command palette */}
       {!isCollapsed && (
-        <div
-          className="flex items-center"
+        <button
+          type="button"
+          onClick={() => setPaletteOpen(true)}
+          aria-label="Open command palette"
+          className="flex w-auto items-center text-left transition-colors hover:bg-[var(--bg-elev-2)]"
           style={{
             margin: '12px 14px',
             padding: '7px 10px',
@@ -159,6 +184,7 @@ export function SidebarNavigation({ className, defaultCollapsed = false }: Sideb
             gap: 8,
             color: 'var(--fg-subtle)',
             fontSize: '12.5px',
+            cursor: 'pointer',
           }}
         >
           <Search className="h-[13px] w-[13px]" />
@@ -177,7 +203,7 @@ export function SidebarNavigation({ className, defaultCollapsed = false }: Sideb
           >
             ⌘K
           </kbd>
-        </div>
+        </button>
       )}
 
       {isCollapsed && (
@@ -344,6 +370,13 @@ export function SidebarNavigation({ className, defaultCollapsed = false }: Sideb
           v{APP_VERSION}
         </div>
       )}
+
+      <CommandPalette
+        open={paletteOpen}
+        onOpenChange={setPaletteOpen}
+        commands={paletteCommands}
+        placeholder="Jump to a page…"
+      />
     </aside>
   )
 }
