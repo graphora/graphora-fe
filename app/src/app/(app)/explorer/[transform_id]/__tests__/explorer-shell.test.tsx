@@ -107,6 +107,56 @@ describe('ExplorerShell', () => {
     })
   })
 
+  it('does NOT re-fetch the ontology when the user toggles back to Schema', async () => {
+    const fetchSpy = global.fetch as unknown as ReturnType<typeof vi.fn>
+    render(<ExplorerShell transformId="tx-1" />)
+
+    // First Schema activation → one /inferred-ontology call.
+    await userEvent.click(screen.getByRole('tab', { name: /schema/i }))
+    await waitFor(() => {
+      expect(screen.getByTestId('yaml-editor')).toBeInTheDocument()
+    })
+    const ontoCallsAfterFirstOpen = fetchSpy.mock.calls
+      .map((c) => String(c[0]))
+      .filter((u) => u.includes('/inferred-ontology'))
+    expect(ontoCallsAfterFirstOpen).toHaveLength(1)
+
+    // Toggle Graph → Schema again. Inference must NOT re-fire because
+    // the response is cached in the parent state.
+    await userEvent.click(screen.getByRole('tab', { name: /graph/i }))
+    await userEvent.click(screen.getByRole('tab', { name: /schema/i }))
+    await waitFor(() => {
+      expect(screen.getByTestId('yaml-editor')).toBeInTheDocument()
+    })
+    const ontoCallsAfterRevisit = fetchSpy.mock.calls
+      .map((c) => String(c[0]))
+      .filter((u) => u.includes('/inferred-ontology'))
+    expect(ontoCallsAfterRevisit).toHaveLength(1)
+  })
+
+  it('only re-fetches the ontology when Re-infer is clicked', async () => {
+    const fetchSpy = global.fetch as unknown as ReturnType<typeof vi.fn>
+    render(<ExplorerShell transformId="tx-1" />)
+    await userEvent.click(screen.getByRole('tab', { name: /schema/i }))
+    await waitFor(() => {
+      expect(screen.getByTestId('yaml-editor')).toBeInTheDocument()
+    })
+    expect(
+      fetchSpy.mock.calls.filter((c) =>
+        String(c[0]).includes('/inferred-ontology')
+      )
+    ).toHaveLength(1)
+
+    await userEvent.click(screen.getByRole('button', { name: /re-infer/i }))
+    await waitFor(() => {
+      expect(
+        fetchSpy.mock.calls.filter((c) =>
+          String(c[0]).includes('/inferred-ontology')
+        )
+      ).toHaveLength(2)
+    })
+  })
+
   it('renders an error panel when the graph fetch fails', async () => {
     vi.stubGlobal(
       'fetch',

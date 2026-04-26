@@ -41,6 +41,12 @@ export function GraphTab({ data }: GraphTabProps) {
   const [search, setSearch] = useState('')
   const [activeTypes, setActiveTypes] = useState<Set<string>>(new Set())
   const searchRef = useRef<HTMLInputElement>(null)
+  // Tracks whether we've populated activeTypes from the data once.
+  // Without this guard, an effect that "fills the set when empty"
+  // would re-fill the moment the user clicks "None", silently
+  // undoing their action. A ref + first-time-only branch lets the
+  // empty state be a real, user-controllable value.
+  const filterInitialized = useRef(false)
 
   const allTypes = useMemo(() => {
     const set = new Set<string>()
@@ -50,12 +56,15 @@ export function GraphTab({ data }: GraphTabProps) {
     return Array.from(set).sort()
   }, [data.nodes])
 
-  // Initialize "all types selected" the first time the type list loads.
+  // Default to "all types selected" the FIRST time we see a non-empty
+  // type list. Subsequent toggles (including clearing to empty via
+  // the None button) are user intent and must be respected.
   useEffect(() => {
-    if (activeTypes.size === 0 && allTypes.length > 0) {
+    if (!filterInitialized.current && allTypes.length > 0) {
+      filterInitialized.current = true
       setActiveTypes(new Set(allTypes))
     }
-  }, [allTypes, activeTypes.size])
+  }, [allTypes])
 
   const filteredData = useMemo(() => {
     if (!search && activeTypes.size === allTypes.length) {

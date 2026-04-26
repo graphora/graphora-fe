@@ -1,11 +1,11 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Skeleton } from '@/components/ui/skeleton'
 import { type GraphData } from '@/types/graph'
 import { GraphTab } from './graph-tab'
-import { SchemaTab } from './schema-tab'
+import { SchemaTab, type InferredOntologyResponse } from './schema-tab'
 import { Network, FileCode2, Quote, Download } from 'lucide-react'
 
 type TabKey = 'graph' | 'schema' | 'evidence' | 'export'
@@ -28,6 +28,13 @@ export function ExplorerShell({ transformId }: ExplorerShellProps) {
   const [graphError, setGraphError] = useState<string | null>(null)
   const [graphLoading, setGraphLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<TabKey>('graph')
+
+  // Schema tab state is owned here, not in SchemaTab itself, so the
+  // already-fetched response survives tab switches. SchemaTab is a
+  // pure presentation component.
+  const [schemaData, setSchemaData] = useState<InferredOntologyResponse | null>(null)
+  const [schemaError, setSchemaError] = useState<string | null>(null)
+  const [schemaLoading, setSchemaLoading] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -56,6 +63,42 @@ export function ExplorerShell({ transformId }: ExplorerShellProps) {
       cancelled = true
     }
   }, [transformId])
+
+  const loadSchema = useCallback(async () => {
+    try {
+      setSchemaLoading(true)
+      setSchemaError(null)
+      const resp = await fetch(`/api/transform/${transformId}/inferred-ontology`)
+      const text = await resp.text()
+      if (!resp.ok) {
+        const detail = safeParse<{ detail?: string; error?: string }>(text)
+        throw new Error(
+          detail?.detail || detail?.error || `Failed to infer ontology (${resp.status})`
+        )
+      }
+      const parsed = JSON.parse(text) as InferredOntologyResponse
+      setSchemaData(parsed)
+    } catch (err) {
+      setSchemaError(err instanceof Error ? err.message : String(err))
+    } finally {
+      setSchemaLoading(false)
+    }
+  }, [transformId])
+
+  // First-time-only auto-load when the user opens Schema. Subsequent
+  // visits show the cached data; the Re-infer button is the only way
+  // to trigger a fresh request after the first response lands. Avoids
+  // burning an LLM round-trip per tab toggle.
+  useEffect(() => {
+    if (
+      activeTab === 'schema' &&
+      schemaData === null &&
+      schemaError === null &&
+      !schemaLoading
+    ) {
+      loadSchema()
+    }
+  }, [activeTab, schemaData, schemaError, schemaLoading, loadSchema])
 
   return (
     <div className="flex h-full flex-col">
@@ -117,10 +160,16 @@ export function ExplorerShell({ transformId }: ExplorerShellProps) {
         </TabsContent>
 
         <TabsContent value="schema" className="flex-1 overflow-auto">
-          {/* Active-tab gate so the inferred-ontology call (which costs an
-              LLM round-trip on the backend) only fires when the user
-              actually clicks Schema. */}
-          {activeTab === 'schema' && <SchemaTab transformId={transformId} />}
+          {/* SchemaTab is always rendered once the Explorer is open;
+              ExplorerShell owns the data state, so the fetch fires
+              once on first activation (gated in the loadSchema effect)
+              and the response survives Graph↔Schema toggling. */}
+          <SchemaTab
+            data={schemaData}
+            loading={schemaLoading}
+            error={schemaError}
+            onRefresh={loadSchema}
+          />
         </TabsContent>
 
         <TabsContent value="evidence" className="flex-1 overflow-auto">
@@ -170,4 +219,12 @@ function ComingSoon({ title, description }: { title: string; description: string
       </div>
     </div>
   )
+}
+
+function safeParse<T>(text: string): T | null {
+  try {
+    return JSON.parse(text) as T
+  } catch {
+    return null
+  }
 }

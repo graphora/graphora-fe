@@ -1,7 +1,6 @@
 'use client'
 
 import dynamic from 'next/dynamic'
-import { useEffect, useState } from 'react'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Button } from '@/components/ui/button'
 import { RefreshCw } from 'lucide-react'
@@ -14,11 +13,7 @@ const YAMLEditor = dynamic(
   }
 )
 
-interface SchemaTabProps {
-  transformId: string
-}
-
-interface InferredOntologyResponse {
+export interface InferredOntologyResponse {
   transform_id: string
   ontology_yaml: string
   ontology: {
@@ -33,48 +28,26 @@ interface InferredOntologyResponse {
   }
 }
 
+interface SchemaTabProps {
+  data: InferredOntologyResponse | null
+  loading: boolean
+  error: string | null
+  onRefresh: () => void
+}
+
 /**
- * Schema tab — runs post-hoc ontology inference and shows the YAML.
+ * Schema tab — renders the post-hoc inferred ontology.
  *
- * Calls /api/transform/<id>/inferred-ontology, which the backend
- * computes by feeding a graph summary back into the LLM. Each call
- * is a real round-trip (no caching yet), so we expose a manual
- * "Re-infer" button rather than auto-refreshing.
+ * Pure presentation: data + loading + error + onRefresh come from
+ * ExplorerShell. Lifting state to the parent prevents the LLM
+ * round-trip from re-firing every time the user navigates away from
+ * Schema and back — the manual "Re-infer" button is the only path
+ * to a fresh request once the first response has landed.
  *
- * Read-only display in PR1; a future iteration adds an "Accept &
- * persist" action that hits POST /finalize-ontology.
+ * Read-only display in PR1; "Accept & persist" (POST /finalize-ontology)
+ * lands in PR2 alongside the export buttons.
  */
-export function SchemaTab({ transformId }: SchemaTabProps) {
-  const [data, setData] = useState<InferredOntologyResponse | null>(null)
-  const [error, setError] = useState<string | null>(null)
-  const [loading, setLoading] = useState(true)
-
-  async function load() {
-    try {
-      setLoading(true)
-      setError(null)
-      const resp = await fetch(`/api/transform/${transformId}/inferred-ontology`)
-      const text = await resp.text()
-      if (!resp.ok) {
-        const detail = safeParse<{ detail?: string; error?: string }>(text)
-        throw new Error(
-          detail?.detail || detail?.error || `Failed to infer ontology (${resp.status})`
-        )
-      }
-      const parsed = JSON.parse(text) as InferredOntologyResponse
-      setData(parsed)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err))
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  useEffect(() => {
-    load()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [transformId])
-
+export function SchemaTab({ data, loading, error, onRefresh }: SchemaTabProps) {
   return (
     <div className="flex h-full flex-col gap-4 p-6">
       <div className="flex items-baseline justify-between">
@@ -86,7 +59,7 @@ export function SchemaTab({ transformId }: SchemaTabProps) {
             actually surfaced.
           </p>
         </div>
-        <Button variant="outline" size="sm" onClick={load} disabled={loading}>
+        <Button variant="outline" size="sm" onClick={onRefresh} disabled={loading}>
           <RefreshCw className={`mr-2 h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
           Re-infer
         </Button>
@@ -101,7 +74,10 @@ export function SchemaTab({ transformId }: SchemaTabProps) {
         </div>
       )}
 
-      <div className="flex-1 overflow-hidden rounded-lg border" style={{ borderColor: 'var(--line)' }}>
+      <div
+        className="flex-1 overflow-hidden rounded-lg border"
+        style={{ borderColor: 'var(--line)' }}
+      >
         {loading ? (
           <div className="space-y-2 p-4">
             <Skeleton className="h-6 w-48" />
@@ -138,12 +114,4 @@ function StatTile({ label, value }: { label: string; value: number }) {
       <p className="mt-1 text-2xl font-semibold tabular-nums">{value}</p>
     </div>
   )
-}
-
-function safeParse<T>(text: string): T | null {
-  try {
-    return JSON.parse(text) as T
-  } catch {
-    return null
-  }
 }
