@@ -170,8 +170,70 @@ describe('ExplorerShell', () => {
     })
   })
 
+  it('refetches when the transformId changes via a key swap', async () => {
+    /**
+     * Regression for the cross-transform leak. Production code wraps
+     * ExplorerShell with `key={transform_id}` in page.tsx so that
+     * React remounts the shell on navigation; this test mirrors that
+     * pattern to assert the contract holds. Without the key, cached
+     * graph data and schema ontology from transform A would survive
+     * into transform B.
+     */
+    const fetchSpy = global.fetch as unknown as ReturnType<typeof vi.fn>
+
+    function Wrapper({ id }: { id: string }) {
+      return <ExplorerShell key={id} transformId={id} />
+    }
+
+    const { rerender } = render(<Wrapper id="tx-A" />)
+    await waitFor(() => {
+      expect(screen.getByTestId('graph-viz')).toBeInTheDocument()
+    })
+    await userEvent.click(screen.getByRole('tab', { name: /schema/i }))
+    await waitFor(() => {
+      expect(screen.getByTestId('yaml-editor')).toBeInTheDocument()
+    })
+    const callsForA = fetchSpy.mock.calls.map((c) => String(c[0]))
+    expect(
+      callsForA.some((u) => u.includes('/api/graph/tx-A'))
+    ).toBe(true)
+    expect(
+      callsForA.some((u) => u.includes('/api/transform/tx-A/inferred-ontology'))
+    ).toBe(true)
+
+    // Navigate to a different transform — fresh fetches must fire.
+    rerender(<Wrapper id="tx-B" />)
+    await waitFor(() => {
+      expect(
+        (global.fetch as unknown as ReturnType<typeof vi.fn>).mock.calls
+          .map((c) => String(c[0]))
+          .some((u) => u.includes('/api/graph/tx-B'))
+      ).toBe(true)
+    })
+
+    // The Schema tab should have been reset to "first activation"
+    // state — open it on the new transform and confirm the new
+    // ontology fetch fires.
+    await userEvent.click(screen.getByRole('tab', { name: /schema/i }))
+    await waitFor(() => {
+      expect(
+        (global.fetch as unknown as ReturnType<typeof vi.fn>).mock.calls
+          .map((c) => String(c[0]))
+          .some((u) =>
+            u.includes('/api/transform/tx-B/inferred-ontology')
+          )
+      ).toBe(true)
+    })
+  })
+
   it('disables the Evidence and Export tabs as PR1-out-of-scope', async () => {
     render(<ExplorerShell transformId="tx-1" />)
+    // Wait for the graph fetch to settle before asserting — otherwise
+    // the synchronous assertions race the async state update from the
+    // mock fetch resolving, producing React act() warnings.
+    await waitFor(() => {
+      expect(screen.getByTestId('graph-viz')).toBeInTheDocument()
+    })
     // Radix Tabs renders disabled triggers as native <button disabled>,
     // so check for the disabled HTML attribute (data-disabled is also
     // set by Radix but the underlying disabled prop is the source of

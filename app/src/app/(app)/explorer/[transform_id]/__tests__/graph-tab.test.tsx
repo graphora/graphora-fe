@@ -82,4 +82,44 @@ describe('GraphTab', () => {
       '3 nodes / 2 edges'
     )
   })
+
+  it('resets default-all selection when the GraphTab is keyed by transform', async () => {
+    /**
+     * Regression for the cross-transform filter leak. The
+     * filterInitialized ref makes sense within a single Explorer
+     * lifetime — but if the Explorer shell is reused across
+     * transforms the previous selection bleeds in and can leave the
+     * new graph filtered to zero nodes. Production keys ExplorerShell
+     * by transformId in page.tsx, which propagates remount to
+     * GraphTab. Mirror that contract here: a key-swap must restore
+     * "all types selected" defaults on the new data.
+     */
+    const altFixture = {
+      nodes: [
+        { id: 'm1', label: 'Helsinki', type: 'Place', properties: {} },
+        { id: 'm2', label: 'Reagent X', type: 'Compound', properties: {} },
+      ],
+      edges: [{ id: 'g1', source: 'm1', target: 'm2', type: 'TESTED_IN' }],
+      total_nodes: 2,
+      total_edges: 1,
+    }
+
+    function Wrapper({ id, data }: { id: string; data: typeof fixture }) {
+      return <GraphTab key={id} data={data} />
+    }
+
+    const { rerender } = render(<Wrapper id="tx-A" data={fixture} />)
+    await screen.findByTestId('graph-viz')
+    await userEvent.click(screen.getByRole('button', { name: /^None$/i }))
+    expect(screen.queryByTestId('graph-viz')).not.toBeInTheDocument()
+
+    // Navigate to a different transform. Without the key, the old
+    // (empty) filter selection survives and the new graph would
+    // render zero nodes — this assertion would fail.
+    rerender(<Wrapper id="tx-B" data={altFixture} />)
+
+    expect(await screen.findByTestId('graph-viz')).toHaveTextContent(
+      '2 nodes / 1 edges'
+    )
+  })
 })

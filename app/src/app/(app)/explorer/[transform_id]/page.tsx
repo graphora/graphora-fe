@@ -22,5 +22,11 @@ export default async function ExplorerPage({
   params: Promise<{ transform_id: string }>
 }) {
   const { transform_id } = await params
-  return <ExplorerShell transformId={transform_id} />
+  // Keying by transform_id forces a fresh ExplorerShell whenever the
+  // user navigates between transforms — caches (graph data, schema
+  // ontology, filter selections) do not bleed from one transform into
+  // another. Cheaper and more reliable than resetting each piece of
+  // state via useEffect; the React idiom for "this is a new thing"
+  // is exactly the key.
+  return <ExplorerShell key={transform_id} transformId={transform_id} />
 }
