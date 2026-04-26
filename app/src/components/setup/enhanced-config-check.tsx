@@ -110,10 +110,13 @@ export function EnhancedConfigCheck({
     )
   }
 
-  // Handle error state
-  if (setupStatus.error) {
+  // Handle error state — but if the page opted into `lightweight`, let the
+  // content render anyway. `lightweight` pages like the dashboard already
+  // degrade gracefully without backend config, and blocking them here turns
+  // a transient backend hiccup into a hard wall.
+  if (setupStatus.error && !lightweight) {
     const isBackendError = setupStatus.error.includes('fetch') || setupStatus.error.includes('500')
-    
+
     return (
       <div className="min-h-screen flex items-center justify-center p-4">
         <Card className="w-full max-w-lg">

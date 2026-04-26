@@ -5,11 +5,26 @@ import { AuthProvider } from '@/providers/auth-provider'
 import { NetworkStatus } from '@/components/ui/network-status'
 import { cn } from '@/lib/utils'
 import type { Metadata } from 'next'
+import { IBM_Plex_Sans, IBM_Plex_Mono } from 'next/font/google'
 import './globals.css'
 
+const plexSans = IBM_Plex_Sans({
+  subsets: ['latin'],
+  weight: ['300', '400', '500', '600'],
+  variable: '--font-sans',
+  display: 'swap',
+})
+
+const plexMono = IBM_Plex_Mono({
+  subsets: ['latin'],
+  weight: ['400', '500'],
+  variable: '--font-mono',
+  display: 'swap',
+})
+
 export const metadata: Metadata = {
-  title: 'Graphora - Knowledge Graph Platform',
-  description: 'Transform your unstructured data into powerful knowledge graphs with AI',
+  title: 'Graphora — Knowledge Graph Platform',
+  description: 'Turn unstructured documents into queryable knowledge graphs.',
   icons: {
     icon: '/favicon.ico',
     shortcut: '/logo-light.png',
@@ -21,7 +36,7 @@ function AppContent({ children }: { children: React.ReactNode }) {
   return (
     <ThemeProvider
       attribute="class"
-      defaultTheme="system"
+      defaultTheme="dark"
       enableSystem
       disableTransitionOnChange
     >
@@ -39,8 +54,8 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body className={cn('min-h-screen font-sans')}>
+    <html lang="en" suppressHydrationWarning className={cn(plexSans.variable, plexMono.variable)}>
+      <body className={cn('min-h-screen font-sans antialiased')}>
         <AuthProvider>
           <AppContent>{children}</AppContent>
         </AuthProvider>

@@ -45,7 +45,7 @@ export function EntityList({ onLoadSample, showQuickActions = true }: EntityList
   return (
     <div className="space-y-5">
       {showQuickActions && (
-        <div className="rounded-lg bg-card p-4 shadow-soft">
+        <div className="rounded-lg bg-card p-4">
           <p className="text-xs font-semibold uppercase tracking-[0.28em] text-foreground/60">Quick Actions</p>
           <div className="mt-3 flex flex-col gap-2">
             <Button
@@ -60,7 +60,7 @@ export function EntityList({ onLoadSample, showQuickActions = true }: EntityList
         </div>
       )}
 
-      <div className="rounded-lg bg-muted/30 p-4">
+      <div className="rounded-lg bg-[color:var(--bg-deep)] p-4">
         <p className="mb-3 text-xs uppercase tracking-[0.2em] text-foreground/55">Sections</p>
         <div className="space-y-2">
           {sections.length === 0 && (
@@ -103,7 +103,7 @@ export function EntityList({ onLoadSample, showQuickActions = true }: EntityList
         </div>
       </div>
 
-      <div className="rounded-lg bg-muted/30 p-4">
+      <div className="rounded-lg bg-[color:var(--bg-deep)] p-4">
         <p className="mb-3 text-xs uppercase tracking-[0.2em] text-foreground/55">Entities</p>
         <div className="space-y-1">
           {entities.length === 0 && (

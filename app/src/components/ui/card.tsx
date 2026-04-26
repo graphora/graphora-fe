@@ -56,10 +56,18 @@ CardHeader.displayName = "CardHeader"
 const CardTitle = React.forwardRef<
   HTMLParagraphElement,
   React.HTMLAttributes<HTMLHeadingElement>
->(({ className, ...props }, ref) => (
+>(({ className, style, ...props }, ref) => (
   <h3
     ref={ref}
-    className={cn("text-heading font-semibold leading-tight", className)}
+    className={cn("leading-tight", className)}
+    style={{
+      fontSize: '13.5px',
+      fontWeight: 500,
+      color: 'var(--fg)',
+      letterSpacing: '-0.01em',
+      margin: 0,
+      ...style,
+    }}
     {...props}
   />
 ))
@@ -68,10 +76,16 @@ CardTitle.displayName = "CardTitle"
 const CardDescription = React.forwardRef<
   HTMLParagraphElement,
   React.HTMLAttributes<HTMLParagraphElement>
->(({ className, ...props }, ref) => (
+>(({ className, style, ...props }, ref) => (
   <p
     ref={ref}
-    className={cn("text-body-sm text-muted-foreground", className)}
+    className={cn(className)}
+    style={{
+      fontSize: 11.5,
+      color: 'var(--fg-muted)',
+      lineHeight: 1.5,
+      ...style,
+    }}
     {...props}
   />
 ))

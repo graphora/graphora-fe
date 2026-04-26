@@ -157,16 +157,17 @@ describe('DashboardPage', () => {
 
     render(<DashboardPage />)
 
-    await waitFor(() => expect(screen.getByText('Transforms')).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByText('Quality score')).toBeInTheDocument())
 
-    const transformsLabel = screen.getByText('Transforms')
-    expect(transformsLabel.previousElementSibling?.textContent).toBe('7')
+    expect(screen.getByText('Entities')).toBeInTheDocument()
+    expect(screen.getByText('Relations')).toBeInTheDocument()
 
-    const avgQualityLabel = screen.getByText('Avg Quality Score')
-    expect(avgQualityLabel.previousElementSibling?.textContent).toBe('92.4')
+    // Quality score tile renders `92.4` as the average score
+    const qualityLabel = screen.getByText('Quality score')
+    expect(qualityLabel.parentElement?.textContent).toContain('92.4')
 
-    expect(screen.getByText('2m 0s p50')).toBeInTheDocument()
-    expect(screen.getByText('Reason A (2)')).toBeInTheDocument()
+    // Recent reasons render as "×2 Reason A" (count + reason on separate spans)
+    expect(screen.getByText(/Reason A/i)).toBeInTheDocument()
   })
 
   it('renders empty states when no runs or quality data are available', async () => {
@@ -229,7 +230,7 @@ describe('DashboardPage', () => {
     // Wait for all API calls to complete by checking for the empty state message
     await waitFor(
       () => {
-        expect(screen.getByText(/No transforms recorded in this window/i)).toBeInTheDocument()
+        expect(screen.getByText(/No transforms in this window/i)).toBeInTheDocument()
       },
       { timeout: 5000 }
     )

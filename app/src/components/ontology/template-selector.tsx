@@ -49,12 +49,16 @@ const TEMPLATE_ICONS: Record<string, React.ReactNode> = {
   financial_analysis: <TrendingUp className="h-5 w-5" />,
 }
 
-const TEMPLATE_COLORS: Record<string, string> = {
-  company_person: 'bg-blue-500/10 text-blue-600 dark:text-blue-400',
-  product_catalog: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
-  research_papers: 'bg-purple-500/10 text-purple-600 dark:text-purple-400',
-  legal_contracts: 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
-  financial_analysis: 'bg-rose-500/10 text-rose-600 dark:text-rose-400',
+// Template category tint colors. Uses `oklch(...)` directly so each category
+// is visually distinguishable without polluting the design-token namespace.
+// Icons render at ~70% chroma with a low-alpha background of the same hue.
+type TemplateStyle = { bg: string; color: string }
+const TEMPLATE_COLORS: Record<string, TemplateStyle> = {
+  company_person:    { bg: 'color-mix(in oklch, var(--gx-accent), transparent 88%)', color: 'var(--gx-accent)' },
+  product_catalog:   { bg: 'color-mix(in oklch, var(--gx-success), transparent 88%)', color: 'var(--gx-success)' },
+  research_papers:   { bg: 'color-mix(in oklch, oklch(68% 0.15 295), transparent 88%)', color: 'oklch(68% 0.15 295)' },
+  legal_contracts:   { bg: 'color-mix(in oklch, var(--warn), transparent 88%)', color: 'var(--warn)' },
+  financial_analysis:{ bg: 'color-mix(in oklch, var(--danger), transparent 88%)', color: 'var(--danger)' },
 }
 
 export function TemplateSelector({
@@ -180,14 +184,20 @@ export function TemplateSelector({
           <TabsContent value="preview" className="mt-0 p-0">
             {selectedTemplate && (
               <div className="flex flex-col h-[500px]">
-                <div className="px-6 py-4 border-b bg-muted/30">
+                <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--line)', background: 'var(--bg-deep)' }}>
                   <div className="flex items-center gap-3">
-                    <div className={`p-2 rounded-lg ${TEMPLATE_COLORS[selectedTemplate.id] || 'bg-primary/10 text-primary'}`}>
+                    <div
+                      className="p-2 rounded-[var(--r-sm)] flex items-center justify-center"
+                      style={{
+                        background: TEMPLATE_COLORS[selectedTemplate.id]?.bg ?? 'color-mix(in oklch, var(--gx-accent), transparent 88%)',
+                        color: TEMPLATE_COLORS[selectedTemplate.id]?.color ?? 'var(--gx-accent)',
+                      }}
+                    >
                       {TEMPLATE_ICONS[selectedTemplate.id] || <FileCode className="h-5 w-5" />}
                     </div>
                     <div>
-                      <h3 className="font-semibold">{selectedTemplate.name}</h3>
-                      <p className="text-sm text-muted-foreground">{selectedTemplate.description}</p>
+                      <h3 style={{ fontSize: 14, fontWeight: 500, color: 'var(--fg)', letterSpacing: '-0.01em', margin: 0 }}>{selectedTemplate.name}</h3>
+                      <p style={{ fontSize: 12, color: 'var(--fg-muted)', marginTop: 2, lineHeight: 1.45 }}>{selectedTemplate.description}</p>
                     </div>
                   </div>
                   <div className="flex flex-wrap gap-2 mt-3">
@@ -211,7 +221,7 @@ export function TemplateSelector({
           </TabsContent>
         </Tabs>
 
-        <div className="flex items-center justify-between px-6 py-4 border-t bg-muted/30">
+        <div className="flex items-center justify-between px-6 py-4 border-t bg-[color:var(--bg-deep)]">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
@@ -237,36 +247,53 @@ interface TemplateCardProps {
 }
 
 function TemplateCard({ template, isSelected, isLoading, onSelect }: TemplateCardProps) {
-  const iconColor = TEMPLATE_COLORS[template.id] || 'bg-primary/10 text-primary'
+  const style = TEMPLATE_COLORS[template.id] ?? {
+    bg: 'color-mix(in oklch, var(--gx-accent), transparent 88%)',
+    color: 'var(--gx-accent)',
+  }
   const icon = TEMPLATE_ICONS[template.id] || <FileCode className="h-5 w-5" />
 
   return (
     <button
       onClick={onSelect}
       disabled={isLoading}
-      className={`
-        relative text-left p-4 rounded-xl border transition-all duration-200
-        hover:shadow-lg hover:-translate-y-0.5
-        ${isSelected
-          ? 'border-primary bg-primary/5 ring-2 ring-primary/20'
-          : 'border-border bg-card hover:border-primary/50'
-        }
-        ${isLoading ? 'opacity-70 cursor-wait' : 'cursor-pointer'}
-      `}
+      className="relative text-left transition-colors duration-150"
+      style={{
+        background: isSelected ? 'var(--bg-elev-2)' : 'var(--bg-elev)',
+        border: `1px solid ${isSelected ? 'var(--gx-accent)' : 'var(--line)'}`,
+        borderRadius: 'var(--r-md)',
+        padding: 14,
+        cursor: isLoading ? 'wait' : 'pointer',
+        opacity: isLoading ? 0.7 : 1,
+      }}
     >
       {isLoading && (
-        <div className="absolute inset-0 flex items-center justify-center bg-background/50 rounded-xl">
-          <Loader2 className="h-6 w-6 animate-spin text-primary" />
+        <div
+          className="absolute inset-0 flex items-center justify-center"
+          style={{ background: 'rgb(var(--background) / 0.5)', borderRadius: 'var(--r-md)' }}
+        >
+          <Loader2 className="h-5 w-5 animate-spin" style={{ color: 'var(--gx-accent)' }} />
         </div>
       )}
 
       <div className="flex items-start gap-3">
-        <div className={`p-2.5 rounded-lg ${iconColor}`}>
+        <div
+          className="flex items-center justify-center"
+          style={{
+            padding: 10,
+            borderRadius: 'var(--r-sm)',
+            background: style.bg,
+            color: style.color,
+            flexShrink: 0,
+          }}
+        >
           {icon}
         </div>
         <div className="flex-1 min-w-0">
-          <h3 className="font-semibold text-foreground truncate">{template.name}</h3>
-          <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+          <h3 className="truncate" style={{ fontSize: 13.5, fontWeight: 500, color: 'var(--fg)', letterSpacing: '-0.01em', margin: 0 }}>
+            {template.name}
+          </h3>
+          <p className="line-clamp-2" style={{ fontSize: 11.5, color: 'var(--fg-muted)', marginTop: 4, lineHeight: 1.45 }}>
             {template.description}
           </p>
         </div>

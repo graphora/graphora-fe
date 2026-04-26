@@ -14,6 +14,12 @@ export interface StatTileProps extends React.HTMLAttributes<HTMLDivElement> {
   footer?: React.ReactNode
 }
 
+/**
+ * StatTile — legacy stat card used by the dashboard's old code paths.
+ * Styled to match the Graphora design: graphora surface + kicker label +
+ * 28/500 value. Kept the API backwards-compatible (value, label,
+ * description, icon, trend, footer props all still accepted).
+ */
 export function StatTile({
   value,
   label,
@@ -27,42 +33,63 @@ export function StatTile({
 }: StatTileProps) {
   return (
     <div
-      className={cn(
-        'enhanced-card',
-        className,
-      )}
+      className={cn(className)}
+      style={{
+        background: 'var(--bg-elev)',
+        border: '1px solid var(--line)',
+        borderRadius: 'var(--r-md)',
+        padding: '16px 18px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 8,
+      }}
       {...props}
     >
-      <div className="flex flex-col gap-2 p-4">
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex items-center gap-3">
-            {icon && (
-              <IconBadge variant="primary" size="sm" {...iconBadgeProps}>
-                {icon}
-              </IconBadge>
-            )}
-            <div className="space-y-0.5">
-              <div className="text-xl font-semibold text-foreground">
-                {value}
-              </div>
-              <div className="text-xs text-muted-foreground">
-                {label}
-              </div>
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex items-center gap-3 min-w-0">
+          {icon && (
+            <IconBadge variant="primary" size="sm" {...iconBadgeProps}>
+              {icon}
+            </IconBadge>
+          )}
+          <div className="min-w-0 space-y-1">
+            <div
+              style={{
+                fontSize: 10.5,
+                fontWeight: 500,
+                letterSpacing: '0.1em',
+                textTransform: 'uppercase',
+                color: 'var(--fg-faint)',
+              }}
+            >
+              {label}
+            </div>
+            <div
+              style={{
+                fontSize: 28,
+                fontWeight: 500,
+                letterSpacing: '-0.02em',
+                color: 'var(--fg)',
+                fontVariantNumeric: 'tabular-nums',
+                lineHeight: 1.1,
+              }}
+            >
+              {value}
             </div>
           </div>
-          {trend && (
-            <div className="flex items-center text-muted-foreground">
-              {trend}
-            </div>
-          )}
         </div>
-        {description && (
-          <div className="text-xs text-muted-foreground">
-            {description}
+        {trend && (
+          <div style={{ color: 'var(--fg-muted)', display: 'flex', alignItems: 'center' }}>
+            {trend}
           </div>
         )}
-        {footer}
       </div>
+      {description && (
+        <div style={{ fontSize: 11, color: 'var(--fg-muted)' }}>
+          {description}
+        </div>
+      )}
+      {footer}
     </div>
   )
 }

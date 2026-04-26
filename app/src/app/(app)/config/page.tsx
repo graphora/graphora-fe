@@ -3,11 +3,9 @@
 import { useState, useEffect, useCallback, useRef, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useUser } from '@/hooks/useAuth'
-import { DashboardLayout } from '@/components/layouts/dashboard-layout'
 import { PageHeader } from '@/components/layouts/page-header'
 import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
@@ -25,11 +23,23 @@ const debug = (...args: unknown[]) => {
   }
 }
 
-const defaultDbConfig: DatabaseConfig = {
-  name: '',
-  uri: '',
+// Dev-stack defaults for the docker-compose setup shipped in graphora-api.
+// These match `docker-compose.dev.yml`'s `NEO4J_STAGING_PASSWORD` / `NEO4J_PROD_PASSWORD`
+// defaults and the service hostnames Neo4j is reachable on from the API container.
+// Any prod deployment will replace these values — they're here so a fresh local
+// setup shows a working starting point the user can Save + Test immediately.
+const defaultStagingDb: DatabaseConfig = {
+  name: 'neo4j',
+  uri: 'bolt://neo4j-staging:7687',
   username: 'neo4j',
-  password: '',
+  password: 'staging_password',
+}
+
+const defaultProdDb: DatabaseConfig = {
+  name: 'neo4j',
+  uri: 'bolt://neo4j-prod:7687',
+  username: 'neo4j',
+  password: 'prod_password',
 }
 
 const defaultGeminiConfig: GeminiConfigRequest = {
@@ -50,14 +60,8 @@ function ConfigPageContent() {
   // This is a user preference - they can configure DB for persistence or skip for in-memory
   const hasStagingDb = !!(config?.stagingDb?.uri)
   const isUsingMemoryStorage = !hasStagingDb
-  const [stagingDb, setStagingDb] = useState<DatabaseConfig>({
-    ...defaultDbConfig,
-    name: 'neo4j'
-  })
-  const [prodDb, setProdDb] = useState<DatabaseConfig>({
-    ...defaultDbConfig,
-    name: 'neo4j'
-  })
+  const [stagingDb, setStagingDb] = useState<DatabaseConfig>({ ...defaultStagingDb })
+  const [prodDb, setProdDb] = useState<DatabaseConfig>({ ...defaultProdDb })
   const stagingDbDirtyRef = useRef(false)
   const prodDbDirtyRef = useRef(false)
   const [error, setError] = useState<string | null>(null)
@@ -355,68 +359,81 @@ function ConfigPageContent() {
 
   if (!isLoaded) {
     return (
-      <DashboardLayout>
-        <div className="flex-1 flex items-center justify-center">
-          <Loader2 className="h-8 w-8 animate-spin" />
-        </div>
-      </DashboardLayout>
+      <div className="flex-1 flex items-center justify-center">
+        <Loader2 className="h-6 w-6 animate-spin" style={{ color: 'var(--gx-accent)' }} />
+      </div>
     )
   }
 
   if (!user) {
     return (
-      <DashboardLayout>
-        <div className="flex-1 flex items-center justify-center">
-          <div className="text-center">
-            <h2 className="text-lg font-semibold text-foreground">Authentication Required</h2>
-            <p className="text-muted-foreground">Please sign in to access configuration.</p>
-          </div>
+      <div className="flex-1 flex items-center justify-center">
+        <div className="text-center max-w-xs">
+          <div className="gx-kicker" style={{ marginBottom: 6 }}>Sign-in required</div>
+          <h2 style={{ fontSize: 20, fontWeight: 500, color: 'var(--fg)', letterSpacing: '-0.015em', margin: 0, lineHeight: 1.2 }}>
+            Authentication required
+          </h2>
+          <p style={{ color: 'var(--fg-muted)', fontSize: 13, marginTop: 6 }}>
+            Please sign in to access configuration.
+          </p>
         </div>
-      </DashboardLayout>
+      </div>
     )
   }
 
   return (
-    <DashboardLayout>
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <PageHeader
-          title="Configuration"
-          description={
-            isWorkflowRedirect 
-              ? "Set up your databases and AI providers to run workflows and manage your knowledge graphs"
-              : "Manage your database connections, AI providers, and system preferences"
-          }
-          actions={
-            returnTo && (
-              <Button variant="outline" onClick={handleBack}>
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Back
-              </Button>
-            )
-          }
-        />
+    <div className="flex-1 flex flex-col overflow-hidden">
+      <div style={{ padding: '28px 32px 0' }}>
+          <PageHeader
+            kicker={isWorkflowRedirect ? 'Setup · workflow prerequisites' : 'System · configuration'}
+            title="Configuration"
+            description={
+              isWorkflowRedirect
+                ? 'Set up your databases and AI providers to run workflows and manage your knowledge graphs.'
+                : 'Manage database connections, AI providers, and system preferences.'
+            }
+            actions={
+              returnTo && (
+                <Button variant="outline" size="sm" onClick={handleBack} className="gap-1.5">
+                  <ArrowLeft className="h-[13px] w-[13px]" />
+                  Back
+                </Button>
+              )
+            }
+          />
+        </div>
 
         <div className="flex-1 overflow-auto">
-          <div className="page-shell py-section stack-gap">
+          <div style={{ padding: '20px 32px 40px', maxWidth: 1600 }}>
           {isWorkflowRedirect && (
-            <Alert className="border-amber-200 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-800">
-              <AlertDescription className="text-amber-800 dark:text-amber-300">
-                <strong>AI Configuration Required:</strong> Configure an AI provider to run workflows.
-                Database configuration is optional - without it, data will be stored in memory temporarily.
-              </AlertDescription>
-            </Alert>
+            <div
+              style={{
+                padding: '12px 14px',
+                background: 'color-mix(in oklch, var(--warn), transparent 90%)',
+                border: '1px solid color-mix(in oklch, var(--warn), transparent 70%)',
+                borderRadius: 'var(--r-sm)',
+                fontSize: 12.5,
+                color: 'var(--fg)',
+                marginBottom: 16,
+              }}
+            >
+              <span className="gx-mono" style={{ color: 'var(--warn)', letterSpacing: '0.08em', textTransform: 'uppercase', fontSize: 10.5 }}>
+                AI configuration required
+              </span>{' '}
+              — Configure an AI provider to run workflows. Database configuration is optional; without it, data is stored in-memory temporarily.
+            </div>
           )}
 
           {error && (
-            <Alert className="border-destructive/50 bg-destructive/10" variant="destructive">
+            <Alert className="mb-4" variant="destructive">
               <AlertDescription>{error}</AlertDescription>
             </Alert>
           )}
 
-          <Tabs defaultValue={tabParam || "databases"} className="mt-8 space-y-5">
-            <TabsList className="w-full justify-start">
+          <Tabs defaultValue={tabParam || "databases"} className="space-y-5">
+            <TabsList>
               <TabsTrigger value="databases">Databases</TabsTrigger>
-              <TabsTrigger value="ai-config">AI Config</TabsTrigger>
+              <TabsTrigger value="ai-config">AI provider</TabsTrigger>
             </TabsList>
 
             <TabsContent value="databases" className="flex flex-col gap-5">
@@ -464,12 +481,34 @@ function ConfigPageContent() {
               </div>
 
               {/* Connection Examples */}
-              <div className="rounded-lg bg-muted/30 p-3">
-                <p className="text-xs font-medium text-muted-foreground mb-2">Connection examples</p>
-                <div className="flex flex-wrap gap-3 text-xs">
-                  <code className="px-2 py-1 rounded bg-muted">neo4j://localhost:7687</code>
-                  <code className="px-2 py-1 rounded bg-muted">neo4j+s://xxx.neo4j.io</code>
-                  <code className="px-2 py-1 rounded bg-muted">bolt+s://server:7687</code>
+              <div
+                style={{
+                  padding: 14,
+                  background: 'var(--bg-elev)',
+                  border: '1px solid var(--line)',
+                  borderRadius: 'var(--r-sm)',
+                }}
+              >
+                <div className="gx-sep-label" style={{ margin: '0 0 10px' }}>
+                  Connection examples
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {['neo4j://localhost:7687', 'neo4j+s://xxx.neo4j.io', 'bolt+s://server:7687'].map((ex) => (
+                    <code
+                      key={ex}
+                      className="gx-mono"
+                      style={{
+                        padding: '3px 8px',
+                        fontSize: 11,
+                        color: 'var(--fg)',
+                        background: 'var(--bg-deep)',
+                        border: '1px solid var(--line)',
+                        borderRadius: 4,
+                      }}
+                    >
+                      {ex}
+                    </code>
+                  ))}
                 </div>
               </div>
             </TabsContent>
@@ -477,81 +516,106 @@ function ConfigPageContent() {
             <TabsContent value="ai-config" className="flex flex-col gap-4">
               {/* Current Status */}
               {aiConfig && (
-                <Card className="shadow-soft">
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between mb-3">
-                      <span className="text-sm font-medium">Current Configuration</span>
-                      <Badge variant="outline" className="text-emerald-600 border-emerald-200 dark:border-emerald-800">
-                        <CheckCircle2 className="h-3 w-3 mr-1" />
-                        Active
-                      </Badge>
+                <div
+                  style={{
+                    background: 'var(--bg-elev)',
+                    border: '1px solid var(--line)',
+                    borderRadius: 'var(--r-md)',
+                    padding: 16,
+                  }}
+                >
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="gx-kicker" style={{ marginBottom: 0 }}>
+                      Current configuration
                     </div>
-                    <div className="grid gap-2 text-xs">
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Provider</span>
-                        <span>{aiConfig.provider_display_name}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">API Key</span>
-                        <code className="font-mono">{aiConfig.api_key_masked}</code>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Model</span>
-                        <span>{aiConfig.default_model_display_name}</span>
-                      </div>
+                    <span className="gx-badge success">
+                      <span className="tick" /> active
+                    </span>
+                  </div>
+                  <div className="gx-mlist">
+                    <div className="flex justify-between" style={{ padding: '3px 0' }}>
+                      <span className="k">provider   </span>
+                      <span className="v" style={{ fontFamily: 'var(--font-sans)' }}>{aiConfig.provider_display_name}</span>
                     </div>
-                  </CardContent>
-                </Card>
+                    <div className="flex justify-between" style={{ padding: '3px 0' }}>
+                      <span className="k">api_key    </span>
+                      <code className="v">{aiConfig.api_key_masked}</code>
+                    </div>
+                    <div className="flex justify-between" style={{ padding: '3px 0' }}>
+                      <span className="k">model      </span>
+                      <span className="v" style={{ fontFamily: 'var(--font-sans)' }}>{aiConfig.default_model_display_name}</span>
+                    </div>
+                  </div>
+                </div>
               )}
 
               {/* Gemini Configuration Form */}
-              <Card className="shadow-soft">
-                <CardHeader className="pb-3">
-                  <div className="flex items-center justify-between">
+              <div
+                style={{
+                  background: 'var(--bg-elev)',
+                  border: '1px solid var(--line)',
+                  borderRadius: 'var(--r-md)',
+                  overflow: 'hidden',
+                }}
+              >
+                <div style={{ padding: '14px 16px', borderBottom: '1px solid var(--line)' }}>
+                  <div className="flex items-center justify-between gap-3">
                     <div>
-                      <CardTitle className="text-sm font-medium">Google Gemini</CardTitle>
-                      <p className="text-xs text-muted-foreground mt-0.5">AI provider for document processing</p>
+                      <h3 style={{ fontSize: '13.5px', fontWeight: 500, color: 'var(--fg)', margin: 0, letterSpacing: '-0.01em' }}>
+                        Google Gemini
+                      </h3>
+                      <p style={{ fontSize: 11.5, color: 'var(--fg-muted)', marginTop: 2, lineHeight: 1.45 }}>
+                        AI provider for document processing.
+                      </p>
                     </div>
                     <Button
                       onClick={handleSaveAI}
                       disabled={savingAI || !geminiConfig.api_key || !geminiConfig.default_model_name}
-                      variant="cta"
                       size="sm"
                     >
                       {savingAI ? (
                         <>
                           <Loader2 className="h-3.5 w-3.5 mr-2 animate-spin" />
-                          Saving...
+                          Saving…
                         </>
                       ) : (
-                        (aiConfig ? 'Update' : 'Save')
+                        aiConfig ? 'Update' : 'Save'
                       )}
                     </Button>
                   </div>
-                </CardHeader>
-                <CardContent className="pt-0">
+                </div>
+                <div style={{ padding: 16 }}>
                   <GeminiConfigForm
                     config={geminiConfig}
                     onChange={handleGeminiConfigChange}
                     disabled={savingAI}
                     isExistingConfig={!!aiConfig}
                   />
-                </CardContent>
-              </Card>
+                </div>
+              </div>
             </TabsContent>
 
           </Tabs>
           </div>
         </div>
-      </div>
-    </DashboardLayout>
+    </div>
   )
 }
 
 export default function ConfigPage() {
   return (
-    <Suspense fallback={<div>Loading...</div>}>
+    <Suspense fallback={
+      <div className="flex-1 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="h-6 w-6 animate-spin mx-auto mb-3" style={{ color: 'var(--gx-accent)' }} />
+          <p className="gx-mono" style={{ color: 'var(--fg-muted)', fontSize: 11, letterSpacing: '0.08em' }}>
+            LOADING CONFIGURATION…
+          </p>
+        </div>
+      </div>
+    }>
       <ConfigPageContent />
     </Suspense>
   )
-} 
+}
+

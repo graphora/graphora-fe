@@ -84,7 +84,7 @@ export function GeminiConfigForm({ config, onChange, disabled, isExistingConfig 
   return (
     <div className="space-y-4">
       <div className="space-y-1.5">
-        <Label htmlFor="api_key" className="text-xs">API Key</Label>
+        <Label htmlFor="api_key" style={{ fontSize: 11.5, color: 'var(--fg-muted)', fontWeight: 500 }}>API key</Label>
         <div className="relative">
           <Input
             id="api_key"
@@ -121,7 +121,7 @@ export function GeminiConfigForm({ config, onChange, disabled, isExistingConfig 
       </div>
 
       <div className="space-y-1.5">
-        <Label htmlFor="default_model" className="text-xs">Default Model</Label>
+        <Label htmlFor="default_model" style={{ fontSize: 11.5, color: 'var(--fg-muted)', fontWeight: 500 }}>Default model</Label>
         <Select
           value={config.default_model_name}
           onValueChange={(value) => handleChange('default_model_name', value)}

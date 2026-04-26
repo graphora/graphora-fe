@@ -32,8 +32,18 @@ function TreeNode({ name, type, data, level = 0, expanded = false, onToggle }: T
             {expanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
           </span>
         )}
-        <span className="mr-2">{name}</span>
-        <span className="text-xs text-muted-foreground text-gray-400">{type}</span>
+        <span className="mr-2" style={{ fontSize: 12.5, color: 'var(--fg)' }}>{name}</span>
+        <span
+          className="gx-mono"
+          style={{
+            fontSize: 10,
+            color: 'var(--fg-faint)',
+            letterSpacing: '0.08em',
+            textTransform: 'uppercase',
+          }}
+        >
+          {type}
+        </span>
       </div>
 
       {expanded && data && (
@@ -50,11 +60,15 @@ function TreeNode({ name, type, data, level = 0, expanded = false, onToggle }: T
 
           {data.properties && (
             <div style={{ paddingLeft: `${indent + 20}px` }}>
-              <div className="text-sm text-muted-foreground py-1 font-semibold text-teal-700 dark:text-emerald-300">Properties:</div>
+              <div className="gx-kicker" style={{ padding: '4px 0', margin: 0 }}>
+                Properties
+              </div>
               {Object.entries(data.properties).map(([propName, propData]: [string, any]) => (
                 <div key={`prop-${name}-${propName}`} className="py-1 px-2">
-                  <span className="font-mono text-sm text-blue-800">{propName}</span>
-                  <span className="text-xs text-muted-foreground ml-2 text-gray-500">({propData.type})</span>
+                  <span className="gx-mono" style={{ fontSize: 12, color: 'var(--gx-accent)' }}>{propName}</span>
+                  <span className="gx-mono ml-2" style={{ fontSize: 10.5, color: 'var(--fg-faint)' }}>
+                    ({propData.type})
+                  </span>
                 </div>
               ))}
             </div>
@@ -62,11 +76,15 @@ function TreeNode({ name, type, data, level = 0, expanded = false, onToggle }: T
 
           {data.relationships && (
             <div style={{ paddingLeft: `${indent + 20}px` }}>
-              <div className="text-sm text-muted-foreground py-1 font-semibold text-pink-800">Relationships:</div>
+              <div className="gx-kicker" style={{ padding: '4px 0', margin: 0 }}>
+                Relationships
+              </div>
               {Object.entries(data.relationships).map(([relName, relData]: [string, any]) => (
                 <div key={`rel-${name}-${relName}`} className="py-1 px-2">
-                  <span className="font-mono text-sm text-orange-800">{relName}</span>
-                  <span className="font-mono text-sm text-orange-800"> → {(relData as any).target}</span>
+                  <span className="gx-mono" style={{ fontSize: 12, color: 'var(--edge)' }}>{relName}</span>
+                  <span className="gx-mono" style={{ fontSize: 12, color: 'var(--fg-muted)' }}>
+                    {' '}→ {(relData as any).target}
+                  </span>
                 </div>
               ))}
             </div>

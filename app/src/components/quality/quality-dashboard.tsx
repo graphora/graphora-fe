@@ -17,7 +17,6 @@ import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { QualityScoreCard } from './quality-score-card'
 import { ViolationsTable } from './violations-table'
 import { QualityMetricsPanel } from './quality-metrics-panel'
 import { QualityActionButtons } from './quality-action-buttons'
@@ -276,82 +275,181 @@ export function QualityDashboard({
     }
   };
 
+  const gateBadgeTone =
+    gateStatusKey === 'pass' ? 'success' : gateStatusKey === 'warn' ? 'warn' : 'danger'
+
+  const errorCount = qualityResults.violations.filter((v) => v.severity === 'error').length
+  const warningCount = qualityResults.violations.filter((v) => v.severity === 'warning').length
+  const score = Math.round(qualityResults.overall_score)
+  const scoreColor =
+    score >= 90 ? 'var(--gx-success)' : score >= 70 ? 'var(--warn)' : 'var(--danger)'
+
   return (
-    <div className={cn('flex flex-col gap-8', className)}>
-      {/* Header with refresh button */}
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <div className={cn('w-12 h-12 rounded-2xl flex items-center justify-center', toneStyle.iconBg)}>
-            <GateIcon className={cn('h-6 w-6', toneStyle.iconColor)} />
-          </div>
-          <div className="space-y-2">
-            <div className="flex flex-wrap items-center gap-3">
-              <h3 className="text-2xl font-semibold text-foreground tracking-tight">{gateMeta.title}</h3>
-              <Badge
-                variant="outline"
-                className={cn('uppercase tracking-wide text-[11px] px-3 py-1 border', toneStyle.badge)}
-              >
-                Quality Gate · {gateMeta.label}
-              </Badge>
+    <div className={cn('flex flex-col gap-6', className)}>
+      {/* HERO — verdict + key numbers + actions, all in one banner */}
+      <section
+        style={{
+          background: 'var(--bg-elev)',
+          border: '1px solid var(--line)',
+          borderRadius: 'var(--r-md)',
+          overflow: 'hidden',
+        }}
+      >
+        {/* Top row: verdict text + right-side toolbar */}
+        <div className="flex flex-wrap items-start justify-between gap-4" style={{ padding: '18px 20px 14px' }}>
+          <div className="min-w-0 flex-1">
+            <div className="gx-kicker" style={{ marginBottom: 6, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <GateIcon
+                className="h-[11px] w-[11px]"
+                style={{
+                  color: gateStatusKey === 'pass' ? 'var(--gx-success)' : gateStatusKey === 'warn' ? 'var(--warn)' : 'var(--danger)',
+                }}
+              />
+              Quality gate · {gateMeta.label.toUpperCase()}
             </div>
-            <p className="text-sm text-muted-foreground">
-              {headerDescription}
+            <h3
+              style={{
+                fontSize: 20,
+                fontWeight: 500,
+                color: 'var(--fg)',
+                letterSpacing: '-0.015em',
+                lineHeight: 1.2,
+                margin: 0,
+              }}
+            >
+              {gateMeta.title}
+            </h3>
+            <p
+              style={{ color: 'var(--fg-muted)', fontSize: 12.5, marginTop: 4, maxWidth: 640, lineHeight: 1.5 }}
+            >
+              {gateStatusKey === 'pass' ? gateMeta.description : gateMessage}
             </p>
           </div>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <Button
+              onClick={handleExportCsv}
+              variant="ghost"
+              size="sm"
+              disabled={exportingCsv}
+              className="gap-1.5"
+              title="Export violations as CSV"
+            >
+              <FileText className={cn('h-[13px] w-[13px]', exportingCsv && 'animate-pulse')} />
+              Export
+            </Button>
+            <Button
+              onClick={() => fetchQualityResults(true)}
+              variant="ghost"
+              size="sm"
+              disabled={refreshing}
+              className="gap-1.5"
+              title="Refresh results"
+            >
+              <RefreshCw className={cn('h-[13px] w-[13px]', refreshing && 'animate-spin')} />
+              Refresh
+            </Button>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          <Button
-            onClick={handleExportCsv}
-            variant="outline"
-            size="sm"
-            disabled={exportingCsv}
-          >
-            <FileText className={`h-4 w-4 mr-2 ${exportingCsv ? 'animate-pulse' : ''}`} />
-            Export CSV
-          </Button>
-          <Button
-            onClick={() => fetchQualityResults(true)}
-            variant="outline"
-            size="sm"
-            disabled={refreshing}
-          >
-            <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
-            Refresh
-          </Button>
-        </div>
-      </div>
 
-      {showGateAlert && (
-        <Alert
-          variant={gateStatusKey === 'fail' ? 'destructive' : 'default'}
-          className={cn('border rounded-2xl px-5 py-4 flex items-start gap-3', toneStyle.alert)}
+        {/* 4-stat row: score, error count, warning count, throughput */}
+        <div
+          className="grid"
+          style={{
+            gridTemplateColumns: 'repeat(4, 1fr)',
+            borderTop: '1px solid var(--line)',
+            background: 'var(--bg-deep)',
+          }}
         >
-          <GateIcon className={cn('h-5 w-5 mt-0.5 flex-shrink-0', toneStyle.iconColor)} />
-          <AlertDescription className="space-y-2">
-            <p className="text-sm text-foreground font-medium leading-relaxed">{gateMessage}</p>
-            {gateReasons.length > 0 && (
-              <ul className="list-disc list-inside text-sm text-muted-foreground space-y-1">
-                {gateReasons.map((reason, index) => (
-                  <li key={`${reason}-${index}`}>{reason}</li>
-                ))}
-              </ul>
-            )}
-          </AlertDescription>
-        </Alert>
-      )}
+          <HeroStat
+            label="Score"
+            value={
+              <span style={{ color: scoreColor }}>
+                {score}
+                <span style={{ color: 'var(--fg-faint)', fontSize: 18, fontWeight: 400 }}>/100</span>
+              </span>
+            }
+            sub={`Grade ${qualityResults.grade}`}
+            emphasize
+          />
+          <HeroStat
+            label="Errors"
+            value={
+              <span style={{ color: errorCount > 0 ? 'var(--danger)' : 'var(--fg-muted)' }}>
+                {errorCount}
+              </span>
+            }
+            sub={errorCount ? 'blocking' : 'none'}
+          />
+          <HeroStat
+            label="Warnings"
+            value={
+              <span style={{ color: warningCount > 0 ? 'var(--warn)' : 'var(--fg-muted)' }}>
+                {warningCount}
+              </span>
+            }
+            sub={warningCount ? 'review' : 'clear'}
+          />
+          <HeroStat
+            label="Entities · relations"
+            value={
+              <span className="gx-mono" style={{ fontSize: 22 }}>
+                {qualityResults.metrics.total_entities} · {qualityResults.metrics.total_relationships}
+              </span>
+            }
+            sub={`confidence ${(qualityResults.metrics.avg_entity_confidence * 100).toFixed(0)}%`}
+          />
+        </div>
 
-      {/* Quality Score Card */}
-      <QualityScoreCard qualityResults={qualityResults} />
+        {/* Gate reasons strip — only if there's something the user needs to know */}
+        {showGateAlert && gateReasons.length > 0 && (
+          <div
+            style={{
+              padding: '12px 20px',
+              borderTop: '1px solid var(--line)',
+              background:
+                gateStatusKey === 'fail'
+                  ? 'color-mix(in oklch, var(--danger), transparent 94%)'
+                  : 'color-mix(in oklch, var(--warn), transparent 94%)',
+            }}
+          >
+            <div
+              className="gx-mono flex items-center gap-2"
+              style={{
+                color: gateStatusKey === 'fail' ? 'var(--danger)' : 'var(--warn)',
+                fontSize: 10.5,
+                letterSpacing: '0.1em',
+                textTransform: 'uppercase',
+                marginBottom: 6,
+              }}
+            >
+              <GateIcon className="h-[11px] w-[11px]" />
+              {gateStatusKey === 'fail' ? 'Blocking issues' : 'Review before approve'}
+            </div>
+            <ul className="gx-mlist" style={{ fontSize: 11.5, color: 'var(--fg)' }}>
+              {gateReasons.map((reason, index) => (
+                <li key={`${reason}-${index}`}>· {reason}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </section>
 
-      {/* Detailed Tabs */}
-      <Tabs defaultValue="violations" className="space-y-6">
-        <TabsList className="bg-muted/40">
-          <TabsTrigger value="violations" className="gap-2">
-            <FileText className="h-4 w-4" />
+      {/* Primary decision — right here, above the fold */}
+      <QualityActionButtons
+        qualityResults={qualityResults}
+        onApprove={handleApprove}
+        onReject={handleReject}
+      />
+
+      {/* Detailed Tabs — for users who want to investigate */}
+      <Tabs defaultValue="violations" className="space-y-5">
+        <TabsList>
+          <TabsTrigger value="violations">
+            <FileText className="h-[13px] w-[13px]" />
             Issues ({qualityResults.violations.length})
           </TabsTrigger>
-          <TabsTrigger value="metrics" className="gap-2">
-            <BarChart3 className="h-4 w-4" />
+          <TabsTrigger value="metrics">
+            <BarChart3 className="h-[13px] w-[13px]" />
             Analytics
           </TabsTrigger>
         </TabsList>
@@ -370,13 +468,64 @@ export function QualityDashboard({
           />
         </TabsContent>
       </Tabs>
-
-      {/* Action Buttons */}
-      <QualityActionButtons
-        qualityResults={qualityResults}
-        onApprove={handleApprove}
-        onReject={handleReject}
-      />
     </div>
   );
+}
+
+/**
+ * HeroStat — compact tile used inside the QualityDashboard hero. Matches the
+ * StatTile pattern from the Dashboard / Usage pages (kicker label, tabular
+ * numeric value, mono sub-label) but renders inside a borderless grid cell so
+ * the four tiles read as one unified row rather than four disconnected cards.
+ */
+function HeroStat({
+  label,
+  value,
+  sub,
+  emphasize,
+}: {
+  label: string
+  value: React.ReactNode
+  sub?: string
+  emphasize?: boolean
+}) {
+  return (
+    <div
+      style={{
+        padding: '14px 20px',
+        borderRight: '1px solid var(--line)',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 4,
+      }}
+    >
+      <div className="gx-kicker" style={{ margin: 0 }}>
+        {label}
+      </div>
+      <div
+        style={{
+          fontSize: emphasize ? 28 : 22,
+          fontWeight: 500,
+          letterSpacing: '-0.02em',
+          lineHeight: 1.1,
+          color: 'var(--fg)',
+          fontVariantNumeric: 'tabular-nums',
+        }}
+      >
+        {value}
+      </div>
+      {sub && (
+        <div
+          className="gx-mono"
+          style={{
+            fontSize: 10.5,
+            color: 'var(--fg-muted)',
+            letterSpacing: '0.02em',
+          }}
+        >
+          {sub}
+        </div>
+      )}
+    </div>
+  )
 }
