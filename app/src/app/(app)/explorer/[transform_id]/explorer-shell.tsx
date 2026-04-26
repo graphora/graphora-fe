@@ -6,6 +6,8 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { type GraphData } from '@/types/graph'
 import { GraphTab } from './graph-tab'
 import { SchemaTab, type InferredOntologyResponse } from './schema-tab'
+import { EvidenceTab } from './evidence-tab'
+import { ExportTab } from './export-tab'
 import { Network, FileCode2, Quote, Download } from 'lucide-react'
 
 type TabKey = 'graph' | 'schema' | 'evidence' | 'export'
@@ -137,15 +139,13 @@ export function ExplorerShell({ transformId }: ExplorerShellProps) {
             <FileCode2 className="mr-2 h-4 w-4" />
             Schema
           </TabsTrigger>
-          <TabsTrigger value="evidence" disabled>
+          <TabsTrigger value="evidence">
             <Quote className="mr-2 h-4 w-4" />
             Evidence
-            <span className="ml-2 text-[10px] uppercase tracking-wider text-muted-foreground">soon</span>
           </TabsTrigger>
-          <TabsTrigger value="export" disabled>
+          <TabsTrigger value="export">
             <Download className="mr-2 h-4 w-4" />
             Export
-            <span className="ml-2 text-[10px] uppercase tracking-wider text-muted-foreground">soon</span>
           </TabsTrigger>
         </TabsList>
 
@@ -172,18 +172,24 @@ export function ExplorerShell({ transformId }: ExplorerShellProps) {
           />
         </TabsContent>
 
-        <TabsContent value="evidence" className="flex-1 overflow-auto">
-          <ComingSoon
-            title="Evidence panel"
-            description="Source spans, decision logs, and confidence breakdowns per node and edge. Ships in PR2."
-          />
+        <TabsContent value="evidence" className="flex-1 overflow-hidden">
+          {graphLoading ? (
+            <GraphSkeleton />
+          ) : graphError ? (
+            <ErrorPanel message={graphError} />
+          ) : (
+            <EvidenceTab data={graphData!} />
+          )}
         </TabsContent>
 
         <TabsContent value="export" className="flex-1 overflow-auto">
-          <ComingSoon
-            title="Export"
-            description="One-click download to JSON, Cypher, GraphML, JSON-LD. Ships in PR2."
-          />
+          {graphLoading ? (
+            <GraphSkeleton />
+          ) : graphError ? (
+            <ErrorPanel message={graphError} />
+          ) : (
+            <ExportTab data={graphData!} transformId={transformId} />
+          )}
         </TabsContent>
       </Tabs>
     </div>
@@ -205,17 +211,6 @@ function ErrorPanel({ message }: { message: string }) {
       <div className="max-w-md rounded-lg border border-destructive/50 bg-destructive/5 p-4 text-sm text-destructive">
         <p className="font-medium">Failed to load graph</p>
         <p className="mt-1 text-destructive/80">{message}</p>
-      </div>
-    </div>
-  )
-}
-
-function ComingSoon({ title, description }: { title: string; description: string }) {
-  return (
-    <div className="flex h-full items-center justify-center p-6">
-      <div className="max-w-md text-center">
-        <h2 className="text-lg font-semibold">{title}</h2>
-        <p className="mt-2 text-sm text-muted-foreground">{description}</p>
       </div>
     </div>
   )

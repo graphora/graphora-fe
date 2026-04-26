@@ -226,21 +226,14 @@ describe('ExplorerShell', () => {
     })
   })
 
-  it('disables the Evidence and Export tabs as PR1-out-of-scope', async () => {
+  it('Evidence and Export tabs are now interactive (shipped in PR2)', async () => {
     render(<ExplorerShell transformId="tx-1" />)
-    // Wait for the graph fetch to settle before asserting — otherwise
-    // the synchronous assertions race the async state update from the
-    // mock fetch resolving, producing React act() warnings.
     await waitFor(() => {
       expect(screen.getByTestId('graph-viz')).toBeInTheDocument()
     })
-    // Radix Tabs renders disabled triggers as native <button disabled>,
-    // so check for the disabled HTML attribute (data-disabled is also
-    // set by Radix but the underlying disabled prop is the source of
-    // truth for keyboard/click prevention).
     const evidence = screen.getByRole('tab', { name: /evidence/i })
     const exportTab = screen.getByRole('tab', { name: /export/i })
-    expect(evidence).toBeDisabled()
-    expect(exportTab).toBeDisabled()
+    expect(evidence).not.toBeDisabled()
+    expect(exportTab).not.toBeDisabled()
   })
 })
