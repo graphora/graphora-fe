@@ -80,6 +80,38 @@ describe('serializeCypher', () => {
     })
     expect(out).toContain(':RELATED_TO')
   })
+
+  it('prefixes labels and relationship types that start with a digit', () => {
+    /**
+     * Regression: Neo4j's symbolic-name grammar requires the first
+     * character to be a letter or underscore. A node type like
+     * "3DModel" must serialize to ":_3DModel" not ":3DModel" or
+     * the Cypher parser rejects the file at import time.
+     */
+    const out = serializeCypher({
+      nodes: [
+        {
+          id: 'a',
+          label: 'A',
+          type: '3DModel',
+          properties: {},
+        },
+      ],
+      edges: [
+        { id: 'e1', source: 'a', target: 'a', type: '3d-related' },
+      ],
+      total_nodes: 1,
+      total_edges: 1,
+    })
+    // Label survives PascalCase intact except for the leading
+    // underscore; relationship type is uppercased per convention,
+    // hyphen replaced with underscore, leading underscore prepended.
+    expect(out).toContain(':_3DModel')
+    expect(out).toContain(':_3D_RELATED')
+    // Sanity — the unprefixed forms must NOT appear.
+    expect(out).not.toMatch(/:3DModel\b/)
+    expect(out).not.toMatch(/:3D_RELATED\b/)
+  })
 })
 
 describe('serializeGraphML', () => {

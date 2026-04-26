@@ -255,14 +255,21 @@ function cypherIdent(id: string): string {
 }
 
 function cypherLabel(label: string): string {
-  // PascalCase'd, alphanumeric only — Neo4j label spec.
-  return label.replace(/[^a-zA-Z0-9_]/g, '_') || 'Node'
+  // Neo4j symbolic-name spec: must start with a letter or
+  // underscore; remaining chars may include digits. A type like
+  // "3DModel" would otherwise serialize to ":3DModel" which the
+  // Cypher parser rejects.
+  const sanitised = label.replace(/[^a-zA-Z0-9_]/g, '_')
+  if (!sanitised) return 'Node'
+  return /^[a-zA-Z_]/.test(sanitised) ? sanitised : `_${sanitised}`
 }
 
 function cypherRelType(type: string): string {
-  // SCREAMING_SNAKE_CASE convention — uppercase + alphanumeric +
-  // underscore.
-  return (type.toUpperCase().replace(/[^A-Z0-9_]/g, '_')) || 'RELATED_TO'
+  // Same start-with-letter-or-underscore constraint as labels;
+  // SCREAMING_SNAKE_CASE conventions on top.
+  const sanitised = type.toUpperCase().replace(/[^A-Z0-9_]/g, '_')
+  if (!sanitised) return 'RELATED_TO'
+  return /^[A-Z_]/.test(sanitised) ? sanitised : `_${sanitised}`
 }
 
 function cypherProps(props: Record<string, unknown>): string {
