@@ -1,7 +1,7 @@
 import React from 'react'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 // Mock NVL — we don't want the WebGL canvas to instantiate in jsdom.
 // graph-tab + schema-tab pull these in via dynamic(), so the mocks
@@ -44,6 +44,11 @@ const mockOntology = {
   ontology: { entities: { Person: {}, Organization: {} }, relationships: {} },
   stats: { node_count: 3, edge_count: 2, entity_types: 2, relationship_types: 1 },
 }
+
+afterEach(() => {
+  // Clear vi.stubGlobal between tests; restoreAllMocks doesn't.
+  vi.unstubAllGlobals()
+})
 
 beforeEach(() => {
   vi.restoreAllMocks()
@@ -97,12 +102,14 @@ describe('ExplorerShell', () => {
     expect(callsAfter.some((u) => u.includes('/inferred-ontology'))).toBe(true)
   })
 
-  it('shows the read-only YAML in the Schema tab', async () => {
+  it('shows the editable YAML in the Schema tab', async () => {
     render(<ExplorerShell transformId="tx-1" />)
     await userEvent.click(screen.getByRole('tab', { name: /schema/i }))
     await waitFor(() => {
       const editor = screen.getByTestId('yaml-editor')
-      expect(editor).toHaveAttribute('data-readonly', 'true')
+      // Schema tab is editable as of the finalize-yaml-body change —
+      // YAML is the user's draft, not a frozen read-only display.
+      expect(editor).toHaveAttribute('data-readonly', 'false')
       expect(editor).toHaveTextContent('Person')
     })
   })
