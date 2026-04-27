@@ -205,12 +205,16 @@ export function SchemaTab({
                 : 'The inferred YAML was persisted as-is.'}
             </p>
           </div>
-          <Button asChild variant="ghost" size="sm">
-            <Link href={`/ontology/${finalized.ontology_id}`}>
-              Open
-              <ExternalLink className="ml-1.5 h-3 w-3" />
-            </Link>
-          </Button>
+          {/* The Button component does not support asChild in this
+              codebase, so render a styled Link directly with classes
+              that match the ghost-button visual. */}
+          <Link
+            href={`/ontology/${finalized.ontology_id}`}
+            className="inline-flex h-7 items-center gap-1.5 rounded-[var(--r-sm)] border border-transparent px-2.5 text-[11.5px] font-medium text-emerald-900 hover:bg-emerald-100/40 dark:text-emerald-200 dark:hover:bg-emerald-900/40"
+          >
+            Open
+            <ExternalLink className="h-3 w-3" />
+          </Link>
         </div>
       )}
 
