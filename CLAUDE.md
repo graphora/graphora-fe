@@ -75,3 +75,28 @@ The app supports domain-specific workflows:
 **Real-time Features**: Socket.io integration for collaborative editing
 **Theming**: Dark/light mode support with next-themes
 **Responsive Design**: Tailwind CSS with shadcn/ui components
+
+### Local primitives — gotchas
+
+**`Button` does NOT support `asChild`**. Despite shadcn-style imports
+elsewhere, `src/components/ui/button.tsx` is a plain forwardRef'd
+`<button>`, not a Radix `Slot`-wrapped component. The standard
+`<Button asChild><Link href=...>...</Link></Button>` pattern from
+shadcn docs will fail `next build` with
+`Property 'asChild' does not exist on type 'ButtonProps'`.
+
+For "looks like a button, navigates like a link" cases, render a
+styled `<Link>` directly with classes that match the button visual.
+See `app/src/app/(app)/explorer/[transform_id]/schema-tab.tsx`'s
+success-banner "Open" link for the pattern.
+
+**Pre-merge verification for FE work** must include `next build` —
+`vitest` runs in jsdom and does NOT exercise TypeScript strict mode
+the way the production build does. The most common landmines:
+
+- `unknown` values from `Record<string, unknown>` leaking into JSX
+  conditionals (use `Boolean(...)` to coerce explicitly)
+- Missing imports of types that are inferred-but-not-checked locally
+
+`npm run build` (≈30s) catches these; CI catches them on `main` only,
+which is too late.
