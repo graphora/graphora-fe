@@ -6,10 +6,13 @@ import { Quote, FileText } from 'lucide-react'
 
 /**
  * Properties the extraction pipeline writes onto nodes/edges to
- * record where they came from. Matches the backend MCP server's
- * ``_EVIDENCE_KEYS`` set so the same fields surface in both surfaces.
+ * record where they came from and how they were produced. Matches
+ * the backend MCP server's ``_EVIDENCE_KEYS`` set
+ * (graphora_server/mcp/server.py) so both surfaces show the same
+ * fields. The two halves must be edited in lockstep.
  */
 const EVIDENCE_KEYS = [
+  // A1-prov source-span fields.
   'source_chunk',
   'source_chunk_id',
   'source_text',
@@ -19,6 +22,10 @@ const EVIDENCE_KEYS = [
   'chunk_offset',
   'page_number',
   'extraction_confidence',
+  // B0-prov-extend decision-trail fields (Gate 4 entry).
+  'extractor_model',
+  'prompt_version',
+  'validator_score',
 ] as const
 
 interface EvidenceTabProps {

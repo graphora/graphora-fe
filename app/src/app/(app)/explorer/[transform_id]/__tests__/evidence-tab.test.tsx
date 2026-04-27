@@ -120,4 +120,33 @@ describe('pickEvidence', () => {
     }
     expect(pickEvidence(node)).toEqual({ document_id: 'doc-7' })
   })
+
+  it('picks the B0-prov-extend decision-trail fields', () => {
+    /**
+     * Regression for the contract sync between this file and the
+     * backend ``graphora_server/mcp/server.py::_EVIDENCE_KEYS``.
+     * Both sets must include extractor_model / prompt_version /
+     * validator_score; if either side falls behind, the Evidence
+     * tab and the get_evidence MCP tool drift.
+     */
+    const node = {
+      id: 'n',
+      label: 'Alice',
+      type: 'Person',
+      properties: {
+        name: 'Alice',
+        extractor_model: 'gemini-2.5-flash',
+        prompt_version: 'v1.0.0',
+        validator_score: 0.91,
+        irrelevant_field: 'ignored',
+      },
+    }
+    const out = pickEvidence(node)
+    expect(out).toEqual({
+      extractor_model: 'gemini-2.5-flash',
+      prompt_version: 'v1.0.0',
+      validator_score: 0.91,
+    })
+    expect(out).not.toHaveProperty('irrelevant_field')
+  })
 })
