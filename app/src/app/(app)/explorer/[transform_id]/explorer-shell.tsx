@@ -165,6 +165,7 @@ export function ExplorerShell({ transformId }: ExplorerShellProps) {
               once on first activation (gated in the loadSchema effect)
               and the response survives Graph↔Schema toggling. */}
           <SchemaTab
+            transformId={transformId}
             data={schemaData}
             loading={schemaLoading}
             error={schemaError}

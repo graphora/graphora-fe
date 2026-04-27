@@ -146,7 +146,7 @@ function EvidenceDetail({ node }: { node: Node }) {
           >
             {sourceText}
           </blockquote>
-          {(evidence.document_name || evidence.document_id) && (
+          {Boolean(evidence.document_name || evidence.document_id) && (
             <p className="mt-2 text-xs text-muted-foreground">
               From{' '}
               <span className="font-medium text-foreground">
