@@ -174,7 +174,7 @@ export function UsageTrackingModal({ isOpen, onClose }: UsageTrackingModalProps)
                 <p className="text-xs uppercase tracking-[0.24em] text-foreground/55">Plan tier</p>
                 <Badge
                   variant="glass"
-                  className="w-fit border-white/25 bg-white/10 px-3 py-1 text-[0.65rem] uppercase tracking-[0.18em] text-foreground"
+                  className="w-fit border-white/15 bg-white/10 px-3 py-1 text-[0.65rem] uppercase tracking-[0.18em] text-foreground"
                 >
                   {planTier}
                 </Badge>
@@ -250,7 +250,7 @@ export function UsageTrackingModal({ isOpen, onClose }: UsageTrackingModalProps)
               </div>
             </div>
 
-            <div className="space-y-3 rounded-xl border border-white/12 bg-white/8 p-5 text-xs text-foreground/75 shadow-inner">
+            <div className="space-y-3 rounded-xl border border-white/10 bg-white/10 p-5 text-xs text-foreground/75 shadow-inner">
               {usageWarnings.length > 0 ? (
                 <>
                   <div className="flex items-center gap-2 text-warning">
@@ -306,7 +306,7 @@ export function UsageTrackingModal({ isOpen, onClose }: UsageTrackingModalProps)
                 size="sm"
                 onClick={handleRefresh}
                 disabled={summaryLoading || modelLoading}
-                className="border-white/20 text-foreground hover:bg-white/10"
+                className="border-white/15 text-foreground hover:bg-white/10"
               >
                 <RefreshCw className={cn('mr-2 h-4 w-4', (summaryLoading || modelLoading) && 'animate-spin')} />
                 Refresh
@@ -318,7 +318,7 @@ export function UsageTrackingModal({ isOpen, onClose }: UsageTrackingModalProps)
                 <TabsList className="flex w-full justify-start gap-3 bg-transparent p-0">
                   <TabsTrigger
                     value="overview"
-                    className="relative flex items-center gap-2 rounded-full border border-white/15 bg-white/8 px-4 py-2 text-sm font-medium uppercase tracking-[0.12em] text-foreground transition-colors hover:bg-white/12 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-glass"
+                    className="relative flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-sm font-medium uppercase tracking-[0.12em] text-foreground transition-colors hover:bg-white/10 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-glass"
                   >
                     <Activity className="h-4 w-4" />
                     Overview

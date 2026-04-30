@@ -107,7 +107,7 @@ export function SetupWelcomeModal({ isOpen, onClose, setupStatus, onRefresh }: S
                 </DialogDescription>
               </div>
 
-              <div className="space-y-3 rounded-xl border border-white/15 bg-white/8 p-4 shadow-inner backdrop-blur-xl">
+              <div className="space-y-3 rounded-xl border border-white/15 bg-white/10 p-4 shadow-inner backdrop-blur-xl">
                 <div className="flex items-center justify-between text-[0.7rem] font-medium uppercase tracking-[0.22em] text-foreground/60">
                   <span>Setup Progress</span>
                   <span className="text-foreground/80">
@@ -150,7 +150,7 @@ export function SetupWelcomeModal({ isOpen, onClose, setupStatus, onRefresh }: S
               </div>
             </div>
 
-            <div className="rounded-lg border border-white/10 bg-white/7 p-3 text-xs text-foreground/75">
+            <div className="rounded-lg border border-white/10 bg-white/10 p-3 text-xs text-foreground/75">
               <div className="flex items-center gap-2">
                 <Shield className="h-3.5 w-3.5 text-primary shrink-0" />
                 <p>Credentials are encrypted before leaving your browser.</p>

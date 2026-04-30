@@ -113,7 +113,7 @@ export function VisualEditor() {
           variant="ghost"
           size="sm"
           onClick={handleCollapseAll}
-          className="rounded-full px-3 text-sm text-muted-foreground hover:text-foreground hover:bg-white/20 dark:hover:bg-white/12"
+          className="rounded-full px-3 text-sm text-muted-foreground hover:text-foreground hover:bg-white/15 dark:hover:bg-white/10"
         >
           Collapse All
         </Button>

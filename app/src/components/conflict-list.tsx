@@ -362,7 +362,7 @@ export function ConflictList({
                         <Card
                           key={conflict.id}
                           className={cn(
-                            "cursor-pointer border-white/10 bg-white/5/20 hover:bg-white/10 transition-colors backdrop-blur",
+                            "cursor-pointer border-white/15 bg-white/5 hover:bg-white/10 transition-colors backdrop-blur",
                             selectedConflictForDetails?.id === conflict.id && "border-primary/70 shadow-lg shadow-primary/20"
                           )}
                           onClick={() => handleConflictClick(conflict)}

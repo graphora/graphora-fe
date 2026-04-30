@@ -24,7 +24,7 @@ const badgeVariants = cva(
         muted:
           "border-border/40 bg-muted text-muted-foreground",
         outline: "border-border/70 bg-background/60 text-foreground",
-        glass: "border-white/20 bg-white/8 text-foreground/80 shadow-glass backdrop-blur-panel",
+        glass: "border-white/15 bg-white/10 text-foreground/80 shadow-glass backdrop-blur-panel",
       },
       tone: {
         solid: "",

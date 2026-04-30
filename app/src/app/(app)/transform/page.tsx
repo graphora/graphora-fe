@@ -1876,7 +1876,7 @@ function TransformPageContent() {
                 </div>
               </div>
 
-              <div className="mt-6 flex-shrink-0 space-y-3 rounded-xl border  bg-white/8 p-5 text-xs text-foreground/75 shadow-inner">
+              <div className="mt-6 flex-shrink-0 space-y-3 rounded-xl border  bg-white/10 p-5 text-xs text-foreground/75 shadow-inner">
                 <p className="font-medium uppercase tracking-[0.16em] text-foreground/70">Recommendations</p>
                 <ul className="space-y-2 text-foreground/80">
                   <li>• Smaller chunks improve retrieval accuracy for dense documents.</li>
