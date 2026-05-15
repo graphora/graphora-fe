@@ -7,10 +7,17 @@ import { type GraphData } from '@/types/graph'
 import { GraphTab } from './graph-tab'
 import { SchemaTab, type InferredOntologyResponse } from './schema-tab'
 import { EvidenceTab } from './evidence-tab'
+import { DiffTab } from './diff-tab'
 import { ExportTab } from './export-tab'
-import { Network, FileCode2, Quote, Download } from 'lucide-react'
+import {
+  Diff as DiffIcon,
+  Download,
+  FileCode2,
+  Network,
+  Quote,
+} from 'lucide-react'
 
-type TabKey = 'graph' | 'schema' | 'evidence' | 'export'
+type TabKey = 'graph' | 'schema' | 'evidence' | 'diff' | 'export'
 
 interface ExplorerShellProps {
   transformId: string
@@ -143,6 +150,10 @@ export function ExplorerShell({ transformId }: ExplorerShellProps) {
             <Quote className="mr-2 h-4 w-4" />
             Evidence
           </TabsTrigger>
+          <TabsTrigger value="diff">
+            <DiffIcon className="mr-2 h-4 w-4" />
+            Diff
+          </TabsTrigger>
           <TabsTrigger value="export">
             <Download className="mr-2 h-4 w-4" />
             Export
@@ -181,6 +192,15 @@ export function ExplorerShell({ transformId }: ExplorerShellProps) {
           ) : (
             <EvidenceTab data={graphData!} />
           )}
+        </TabsContent>
+
+        <TabsContent value="diff" className="flex-1 overflow-hidden">
+          {/* DiffTab fetches its own data lazily (runs list +
+              on-demand /diff payload) — no dependency on the
+              shared graphData, so it loads even if the main
+              graph fetch failed. The current transformId is the
+              "compare" side; the user picks the base in the tab. */}
+          <DiffTab transformId={transformId} />
         </TabsContent>
 
         <TabsContent value="export" className="flex-1 overflow-auto">
