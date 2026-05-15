@@ -40,15 +40,31 @@ export interface EdgeDelta {
   property_changes: Record<string, PropertyChange>
 }
 
+/**
+ * Per-category change counts.
+ *
+ * Reviewer-flagged on commit 4ce2fe2: the initial DiffSummary type
+ * was flat (``nodes_added``, ``edges_added`` …), mirroring the
+ * dataclass field names in graphora_server/services/diff_service.py.
+ * But the WIRE shape — what JSON the /diff endpoint actually emits
+ * — is nested: ``summary.nodes.added`` and ``summary.edges.added``
+ * (see graphora_server/api/graph.py::_diff_to_dict). The
+ * serializer re-keys deliberately so the frontend can render a 2x4
+ * grid without per-category string parsing.
+ *
+ * Keep this type aligned with the SERVER SERIALIZER, not the
+ * server's internal dataclass — the wire is the contract.
+ */
+export interface DiffCounts {
+  added: number
+  removed: number
+  changed: number
+  unchanged: number
+}
+
 export interface DiffSummary {
-  nodes_added: number
-  nodes_removed: number
-  nodes_changed: number
-  nodes_unchanged: number
-  edges_added: number
-  edges_removed: number
-  edges_changed: number
-  edges_unchanged: number
+  nodes: DiffCounts
+  edges: DiffCounts
 }
 
 export interface GraphDiff {

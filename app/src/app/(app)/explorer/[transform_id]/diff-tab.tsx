@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   ArrowRight,
   CircleDashed,
@@ -62,6 +62,29 @@ export function DiffTab({ transformId }: DiffTabProps) {
   const [diffLoading, setDiffLoading] = useState(false)
   const [diffError, setDiffError] = useState<string | null>(null)
 
+  // Reviewer-flagged P2 on commit 4ce2fe2: rapidly switching base
+  // transforms could fire multiple overlapping fetches. Whichever
+  // resolved LAST (often a slow earlier request, not the most
+  // recently picked base) wrote into setDiff — meaning the UI
+  // could show a diff for a base the user already moved past.
+  //
+  // Two-layer guard:
+  //   1. AbortController per fetch — when a new pick supersedes
+  //      the old, the previous controller aborts the in-flight
+  //      HTTP request server-side.
+  //   2. Monotonic request id — the abort handles the network,
+  //      but the ``.json()`` parse may already be running when
+  //      abort fires. We track the latest request id in a ref
+  //      and drop any response whose id is stale before writing
+  //      to state. The ref is preferable to a state value here
+  //      because the comparison happens INSIDE the same render
+  //      cycle that issued the request; stale-closure state
+  //      reads would defeat the purpose.
+  const inFlightRef = useRef<{
+    requestId: number
+    controller: AbortController | null
+  }>({ requestId: 0, controller: null })
+
   // Load the picker options once on mount. The dashboard/runs
   // endpoint returns the current user's recent transforms — same
   // scoping the diff endpoint uses, so anything visible here is
@@ -100,12 +123,33 @@ export function DiffTab({ transformId }: DiffTabProps) {
 
   const runDiff = useCallback(
     async (baseId: string) => {
+      // Cancel the previous in-flight request before starting a new
+      // one. AbortController.abort() rejects the fetch promise with
+      // an AbortError, which our catch block ignores for stale
+      // requests. The state writes (setDiff / setDiffError /
+      // setDiffLoading) are gated by the request-id check so even
+      // if abort doesn't reach the network layer in time, the
+      // stale completion can't overwrite the latest base's result.
+      inFlightRef.current.controller?.abort()
+      const requestId = inFlightRef.current.requestId + 1
+      const controller = new AbortController()
+      inFlightRef.current = { requestId, controller }
+
       setDiffLoading(true)
       setDiffError(null)
       setDiff(null)
       try {
-        const resp = await fetch(`/api/graph/${baseId}/diff/${transformId}`)
+        const resp = await fetch(`/api/graph/${baseId}/diff/${transformId}`, {
+          signal: controller.signal,
+        })
         const text = await resp.text()
+        // Drop the response if a newer request was started while
+        // this one was in flight. Each branch below early-returns
+        // BEFORE touching state so a stale resolution can't shadow
+        // the latest base's payload.
+        if (inFlightRef.current.requestId !== requestId) {
+          return
+        }
         if (!resp.ok) {
           // The proxy passes the backend's status through; in
           // particular 413 means one of the transforms exceeds the
@@ -125,9 +169,23 @@ export function DiffTab({ transformId }: DiffTabProps) {
         const parsed = JSON.parse(text) as GraphDiff
         setDiff(parsed)
       } catch (err) {
+        // AbortError from a superseded request — not a real error,
+        // and the state for that request was already cleared by the
+        // newer call's setDiff(null). Drop silently.
+        if (err instanceof DOMException && err.name === 'AbortError') {
+          return
+        }
+        // Same stale-response guard for error paths: don't blow
+        // away a successful newer diff with an older request's
+        // error message.
+        if (inFlightRef.current.requestId !== requestId) {
+          return
+        }
         setDiffError(err instanceof Error ? err.message : String(err))
       } finally {
-        setDiffLoading(false)
+        if (inFlightRef.current.requestId === requestId) {
+          setDiffLoading(false)
+        }
       }
     },
     [transformId]
@@ -269,6 +327,11 @@ function DiffSkeleton() {
 }
 
 function SummaryCard({ summary }: { summary: GraphDiff['summary'] }) {
+  // Reviewer-flagged P2 on commit 4ce2fe2: the wire shape is
+  // nested (``summary.nodes.added``), not the flat naming used by
+  // the server's internal dataclass. Pull through ``summary.nodes``
+  // and ``summary.edges`` directly so the render survives the
+  // re-key in graphora_server/api/graph.py::_diff_to_dict.
   return (
     <Card className="p-4">
       <div className="mb-3 flex items-center gap-2 text-sm font-medium">
@@ -276,44 +339,36 @@ function SummaryCard({ summary }: { summary: GraphDiff['summary'] }) {
         Summary
       </div>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <SummaryStat
-          label="Nodes added"
-          value={summary.nodes_added}
-          tone="added"
-        />
+        <SummaryStat label="Nodes added" value={summary.nodes.added} tone="added" />
         <SummaryStat
           label="Nodes removed"
-          value={summary.nodes_removed}
+          value={summary.nodes.removed}
           tone="removed"
         />
         <SummaryStat
           label="Nodes changed"
-          value={summary.nodes_changed}
+          value={summary.nodes.changed}
           tone="changed"
         />
         <SummaryStat
           label="Nodes unchanged"
-          value={summary.nodes_unchanged}
+          value={summary.nodes.unchanged}
           tone="unchanged"
         />
-        <SummaryStat
-          label="Edges added"
-          value={summary.edges_added}
-          tone="added"
-        />
+        <SummaryStat label="Edges added" value={summary.edges.added} tone="added" />
         <SummaryStat
           label="Edges removed"
-          value={summary.edges_removed}
+          value={summary.edges.removed}
           tone="removed"
         />
         <SummaryStat
           label="Edges changed"
-          value={summary.edges_changed}
+          value={summary.edges.changed}
           tone="changed"
         />
         <SummaryStat
           label="Edges unchanged"
-          value={summary.edges_unchanged}
+          value={summary.edges.unchanged}
           tone="unchanged"
         />
       </div>
