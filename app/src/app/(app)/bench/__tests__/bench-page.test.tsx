@@ -216,6 +216,65 @@ describe('BenchPage', () => {
     ).toBeInTheDocument()
   })
 
+  it('surfaces errored_count even when scored_count is zero', async () => {
+    // Reviewer-flagged Medium on commit c304e06: pre-fix the
+    // ``scored === 0`` branch short-circuited the CoverageBadge
+    // and returned ``0 / 50`` without ever consulting
+    // errored_count. A totally-broken extractor (every entry
+    // errored) was visually indistinguishable from one with
+    // no committed outputs.
+    //
+    // The wire contract makes ``errored_count`` required-not-
+    // optional precisely so this distinction is preserved — the
+    // UI has to honor it. Fixture: scored_count: 0, errored_count
+    // matches corpus_size (every entry failed). Pin that the
+    // badge surfaces both numbers, so an operator can tell
+    // "extractor crashed on everything" from "no outputs
+    // committed yet."
+    const totallyBroken = {
+      corpus_size: 3,
+      extractor_count: 1,
+      extractors: [
+        {
+          extractor_name: 'broken_extractor',
+          total_entries: 3,
+          scored_count: 0,
+          errored_count: 3,
+          micro_node_precision: 0,
+          micro_node_recall: 0,
+          micro_node_f1: 0,
+          micro_edge_precision: 0,
+          micro_edge_recall: 0,
+          micro_edge_f1: 0,
+          macro_node_f1: 0,
+          macro_edge_f1: 0,
+          entries: [
+            _entry({
+              corpus_slug: 'alpha',
+              error: 'missing actual output at alpha.json',
+            }),
+            _entry({
+              corpus_slug: 'beta',
+              error: 'missing actual output at beta.json',
+            }),
+            _entry({
+              corpus_slug: 'gamma',
+              error: 'missing actual output at gamma.json',
+            }),
+          ],
+        },
+      ],
+    }
+    installFetchMock(() => ({ status: 200, body: totallyBroken }))
+    render(<BenchPage />)
+
+    // The badge text must include the errored count, NOT just
+    // "0 / 3". This is the load-bearing assertion: a regression
+    // that re-introduces the short-circuit would fail here.
+    await screen.findByText('broken_extractor')
+    expect(screen.getByText(/0 \/ 3 · 3 errored/)).toBeInTheDocument()
+  })
+
   it('surfaces fetch errors with the failure detail', async () => {
     installFetchMock(() => ({
       status: 500,

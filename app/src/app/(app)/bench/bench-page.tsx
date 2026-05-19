@@ -23,13 +23,28 @@ import type {
 } from '@/types/bench'
 
 /**
- * B4-bench slice 2 — public benchmark dashboard.
+ * B4-bench slice 2 — bench dashboard (operator-facing view).
  *
- * Renders the aggregated bench report from /api/bench/run. The
- * underlying endpoint is unauthenticated and the numbers come
- * from files committed under bench/results/<extractor>/ —
- * reproducibility is the load-bearing claim, not novelty of the
- * UI.
+ * Renders the aggregated bench report from /api/bench/run.
+ *
+ * Auth posture — the question the reviewer raised. Two distinct
+ * surfaces with intentionally different auth contracts:
+ *   * ``/api/v1/bench/run`` (backend) — unauthenticated. This
+ *     is the **public reproducibility surface**: anyone with the
+ *     server URL can curl the JSON and verify the numbers from
+ *     a fresh checkout. "Public benchmark" in the B4-bench plan
+ *     refers to this surface.
+ *   * ``/bench`` (this page) — sits inside the auth-gated
+ *     ``(app)/`` route group, the same shell every other
+ *     operator-facing page lives in. The page is a presentation
+ *     layer on top of the public API; an anonymous reviewer who
+ *     wants the bench data uses the API directly (or renders
+ *     their own view from it). The dashboard view is for
+ *     operators, who are already signed in.
+ *
+ * If a genuinely-public marketing-style bench page is needed
+ * later, that's a separate route outside ``(app)/`` — not part
+ * of this slice.
  *
  * Three empty states, mirroring the Contradictions tab's
  * convention so an operator's mental model from one surface
@@ -368,35 +383,56 @@ function CoverageBadge({
   errored: number
   corpusSize: number
 }) {
-  // Three visual states keyed on errored_count:
-  //  * full coverage (errored == 0) → green check
-  //  * partial coverage (some errored) → amber warning
-  //  * zero coverage (scored == 0) → red dashed circle
-  // The reviewer-flagged Medium on the API surface pinned
-  // errored_count as required-not-optional precisely so this
-  // distinction is visible; honor it in the UI by surfacing
-  // the count rather than collapsing into a single "N of M"
-  // count that hides which gap mattered.
-  if (scored === 0) {
-    return (
-      <Badge variant="outline" className="text-[10px]">
-        <CircleDashed className="mr-1 h-3 w-3" />
-        0 / {corpusSize}
-      </Badge>
+  // Four visual states. The icon picks based on coverage health,
+  // and the text ALWAYS surfaces both scored and errored counts
+  // when errored > 0 — including the zero-scored case.
+  //
+  // Reviewer-flagged Medium on commit c304e06: pre-fix the
+  // ``scored === 0`` branch ran first and returned the badge
+  // without ever consulting errored_count, so an extractor with
+  // ``scored_count: 0, errored_count: 50`` rendered just
+  // "0 / 50" — exactly the failure mode the API surface
+  // (errored_count required-not-optional) was pinned to
+  // prevent in the wire layer. The whole-pipeline-broken vs.
+  // empty-extraction distinction depends on this number being
+  // visible whenever it's non-zero.
+  //
+  // Coverage health → icon:
+  //  * scored === 0 && errored > 0 → "every entry errored" →
+  //    red AlertTriangle (totally broken extractor)
+  //  * scored === 0 && errored === 0 → "no outputs at all" →
+  //    dashed circle (empty extractor directory)
+  //  * scored > 0 && errored > 0 → "partial coverage" →
+  //    amber AlertTriangle
+  //  * scored > 0 && errored === 0 → "full coverage" →
+  //    green check
+  const allErrored = scored === 0 && errored > 0
+  const noOutputs = scored === 0 && errored === 0
+  const partial = scored > 0 && errored > 0
+
+  let icon: React.ReactNode
+  if (allErrored) {
+    icon = (
+      <AlertTriangle className="mr-1 h-3 w-3 text-red-700 dark:text-red-400" />
+    )
+  } else if (noOutputs) {
+    icon = <CircleDashed className="mr-1 h-3 w-3" />
+  } else if (partial) {
+    icon = (
+      <AlertTriangle className="mr-1 h-3 w-3 text-amber-700 dark:text-amber-400" />
+    )
+  } else {
+    icon = (
+      <CheckCircle2 className="mr-1 h-3 w-3 text-green-700 dark:text-green-400" />
     )
   }
-  if (errored > 0) {
-    return (
-      <Badge variant="outline" className="text-[10px]">
-        <AlertTriangle className="mr-1 h-3 w-3 text-amber-700 dark:text-amber-400" />
-        {scored} / {corpusSize} · {errored} errored
-      </Badge>
-    )
-  }
+
   return (
     <Badge variant="outline" className="text-[10px]">
-      <CheckCircle2 className="mr-1 h-3 w-3 text-green-700 dark:text-green-400" />
-      {scored} / {corpusSize}
+      {icon}
+      {errored > 0
+        ? `${scored} / ${corpusSize} · ${errored} errored`
+        : `${scored} / ${corpusSize}`}
     </Badge>
   )
 }
