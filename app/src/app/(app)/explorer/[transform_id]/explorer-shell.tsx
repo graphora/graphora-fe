@@ -8,8 +8,10 @@ import { GraphTab } from './graph-tab'
 import { SchemaTab, type InferredOntologyResponse } from './schema-tab'
 import { EvidenceTab } from './evidence-tab'
 import { DiffTab } from './diff-tab'
+import { ContradictionsTab } from './contradictions-tab'
 import { ExportTab } from './export-tab'
 import {
+  AlertTriangle,
   Diff as DiffIcon,
   Download,
   FileCode2,
@@ -17,7 +19,13 @@ import {
   Quote,
 } from 'lucide-react'
 
-type TabKey = 'graph' | 'schema' | 'evidence' | 'diff' | 'export'
+type TabKey =
+  | 'graph'
+  | 'schema'
+  | 'evidence'
+  | 'diff'
+  | 'contradictions'
+  | 'export'
 
 interface ExplorerShellProps {
   transformId: string
@@ -154,6 +162,10 @@ export function ExplorerShell({ transformId }: ExplorerShellProps) {
             <DiffIcon className="mr-2 h-4 w-4" />
             Diff
           </TabsTrigger>
+          <TabsTrigger value="contradictions">
+            <AlertTriangle className="mr-2 h-4 w-4" />
+            Contradictions
+          </TabsTrigger>
           <TabsTrigger value="export">
             <Download className="mr-2 h-4 w-4" />
             Export
@@ -201,6 +213,19 @@ export function ExplorerShell({ transformId }: ExplorerShellProps) {
               graph fetch failed. The current transformId is the
               "compare" side; the user picks the base in the tab. */}
           <DiffTab transformId={transformId} />
+        </TabsContent>
+
+        <TabsContent
+          value="contradictions"
+          className="flex-1 overflow-hidden"
+        >
+          {/* ContradictionsTab is self-contained — it fetches the
+              /contradictions surface on first activation and
+              doesn't depend on the shared graphData. The
+              ``total_claims_scanned`` field disambiguates the
+              three empty states (no writer yet vs. clean data
+              vs. has-contradictions). */}
+          <ContradictionsTab transformId={transformId} />
         </TabsContent>
 
         <TabsContent value="export" className="flex-1 overflow-auto">
