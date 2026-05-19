@@ -46,8 +46,24 @@ import type {
  *      state; show a positive confirmation.
  *   3. ``contradictions.length > 0`` — render the list.
  *
- * Lazy fetch: fires on first activation (same pattern as the
- * Schema tab). Manual refresh through the toolbar button.
+ * Fetch behavior: state lives inside this component, NOT
+ * hoisted to ExplorerShell. Radix's ``TabsContent`` unmounts
+ * inactive children, so the tab remounts on every activation
+ * and the mount effect re-fires the fetch. This is intentional
+ * and different from the Schema tab — Schema caches in the
+ * shell because inference is an expensive LLM round-trip;
+ * /contradictions is a cheap DB read where freshness matters
+ * (background extraction can add/remove claims while the
+ * operator is exploring, and toggling back should reflect
+ * that). The manual Refresh button is for explicit re-fetch
+ * without leaving the tab.
+ *
+ * If you find yourself wanting to hoist this state into
+ * ExplorerShell for caching, first check whether the
+ * background-extraction freshness story still holds — caching
+ * would mean an operator who toggles away during extraction
+ * and back sees stale empty/partial contradictions until they
+ * click Refresh.
  */
 interface ContradictionsTabProps {
   transformId: string

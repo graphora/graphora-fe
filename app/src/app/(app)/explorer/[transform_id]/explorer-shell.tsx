@@ -219,12 +219,16 @@ export function ExplorerShell({ transformId }: ExplorerShellProps) {
           value="contradictions"
           className="flex-1 overflow-hidden"
         >
-          {/* ContradictionsTab is self-contained — it fetches the
-              /contradictions surface on first activation and
-              doesn't depend on the shared graphData. The
-              ``total_claims_scanned`` field disambiguates the
-              three empty states (no writer yet vs. clean data
-              vs. has-contradictions). */}
+          {/* ContradictionsTab owns its own data state — NOT
+              hoisted here. Radix unmounts inactive TabsContent,
+              so this remounts on every activation and the
+              tab's mount effect re-fetches. That's intentional:
+              /contradictions is a cheap DB read where
+              freshness matters (background extraction can
+              update the underlying claims while the operator
+              is exploring). The Schema tab caches in the shell
+              precisely because inference is expensive; this
+              tab does the opposite tradeoff on purpose. */}
           <ContradictionsTab transformId={transformId} />
         </TabsContent>
 

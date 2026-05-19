@@ -1,5 +1,5 @@
 import React from 'react'
-import { render, screen, waitFor, within } from '@testing-library/react'
+import { cleanup, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -149,6 +149,46 @@ describe('ContradictionsTab', () => {
     expect(fetchSpy.mock.calls[0][0]).toBe(
       '/api/graph/tx-1/contradictions'
     )
+  })
+
+  it('refetches on remount — Radix unmounts inactive TabsContent', async () => {
+    // Reviewer-flagged Low on commit 4276587: the prior version
+    // of the inline comment claimed "first activation" caching
+    // like the Schema tab, but the state actually lives inside
+    // ContradictionsTab. Radix's ``TabsContent`` unmounts
+    // inactive children, so toggling away and back remounts
+    // this tab and re-fires the mount fetch.
+    //
+    // That re-fetch is intentional — /contradictions is a cheap
+    // DB read where freshness matters (background extraction
+    // can update claims while the operator is exploring). Pin
+    // it so a future refactor that hoists the state to
+    // ExplorerShell for "caching" doesn't silently break the
+    // freshness contract; that refactor would need to update
+    // this test AND the comments together, which makes the
+    // tradeoff visible.
+    let callCount = 0
+    installFetchMock(() => {
+      callCount += 1
+      return { status: 200, body: noClaimsResponse }
+    })
+
+    const { unmount } = render(<ContradictionsTab transformId="tx-1" />)
+    await waitFor(() => {
+      expect(callCount).toBe(1)
+    })
+
+    // Simulate Radix unmounting the inactive TabsContent when
+    // the user toggles to another tab.
+    unmount()
+    cleanup()
+
+    // ...then remounts when the user toggles back. A second
+    // fetch must fire — the state didn't survive the unmount.
+    render(<ContradictionsTab transformId="tx-1" />)
+    await waitFor(() => {
+      expect(callCount).toBe(2)
+    })
   })
 
   it('renders the no-claims state when total_claims_scanned is 0', async () => {
