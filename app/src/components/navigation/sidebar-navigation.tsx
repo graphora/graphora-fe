@@ -9,6 +9,7 @@ import {
   Database,
   Zap,
   Bot,
+  BarChart3,
   Settings,
   Sigma,
   LogOut,
@@ -59,6 +60,7 @@ const NAV_SECTIONS: NavigationSection[] = [
     label: 'Tools',
     items: [
       { id: 'schema-chat', name: 'Schema chat', path: '/schema-chat', icon: <Bot className="h-[14px] w-[14px]" />, description: 'Author schemas with AI' },
+      { id: 'bench', name: 'Benchmark', path: '/bench', icon: <BarChart3 className="h-[14px] w-[14px]" />, description: 'Reproducible scores against the golden corpus' },
     ],
   },
   {
