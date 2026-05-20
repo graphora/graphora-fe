@@ -1,24 +1,55 @@
+'use client'
+
 import Link from 'next/link'
 
+import { DashboardLayout } from '@/components/layouts/dashboard-layout'
 import { Logo } from '@/components/ui/logo'
+import { useAuth } from '@/hooks/useAuth'
 
 /**
- * Standalone layout for the public sample gallery.
+ * Adaptive layout for /samples — the gallery is unauthenticated
+ * (per Clerk middleware allowlist) but signed-in operators
+ * shouldn't lose the sidebar / topbar when they land here, and
+ * shouldn't see "Sign in / Sign up" CTAs.
  *
- * Lives OUTSIDE the ``(app)/`` route group on purpose — that
- * group's layout wraps everything in the authed-sidebar shell,
- * which is wrong for unauth visitors who haven't signed in
- * yet. Visitors hitting /samples should see a clean, simple
- * top bar with the logo + "Sign in" CTA, nothing else.
+ * Branches on auth state:
+ *   * signed-in → wrap in DashboardLayout — same sidebar + topbar
+ *     experience as every other /(app)/ page. Operators can
+ *     navigate back to /dashboard without hitting the logo.
+ *   * signed-out → simple promo top bar with Sign in / Sign up
+ *     CTAs. Stripped-down chrome for unauth visitors who haven't
+ *     committed to the product yet.
  *
- * Inherits ThemeProvider + AuthProvider + fonts from the root
- * src/app/layout.tsx.
+ * Reviewer-flagged on 0028f11: pre-fix this layout was always the
+ * promo top bar — signed-in operators landed on /samples and
+ * lost the sidebar + saw "Sign in / Sign up" buttons despite
+ * being already authenticated.
  */
 export default function SamplesLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
+  const { isLoaded, isSignedIn } = useAuth()
+
+  // ``isLoaded`` is the "did we get a definitive answer from
+  // the auth provider yet?" signal. Until it flips true,
+  // render the promo layout — if we guessed signed-in and were
+  // wrong, the brief sidebar → no-sidebar flash would be
+  // jarring; the opposite (promo → sidebar) is less disruptive
+  // because the sidebar appears as an addition.
+  if (isLoaded && isSignedIn) {
+    return <DashboardLayout>{children}</DashboardLayout>
+  }
+
+  return <PromoLayout>{children}</PromoLayout>
+}
+
+/**
+ * Stripped-down top-bar chrome for unauthenticated visitors —
+ * logo on the left, Sign in / Sign up CTAs on the right.
+ */
+function PromoLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex min-h-screen flex-col">
       <header
