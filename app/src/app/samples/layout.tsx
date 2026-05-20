@@ -26,7 +26,7 @@ export default function SamplesLayout({
         style={{ borderColor: 'var(--line)' }}
       >
         <Link href="/samples" className="flex items-center gap-2">
-          <Logo size={24} />
+          <Logo width={24} height={24} />
           <span className="font-semibold tracking-tight">Graphora</span>
           <span className="text-sm text-muted-foreground hidden sm:inline">
             · Sample gallery
