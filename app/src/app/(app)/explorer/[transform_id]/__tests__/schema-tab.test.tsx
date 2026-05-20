@@ -135,7 +135,14 @@ describe('SchemaTab — Accept flow', () => {
       />
     )
 
-    const editor = screen.getByTestId('yaml-editor') as HTMLTextAreaElement
+    // The YAMLEditor mock is dynamic-imported; sync getByTestId
+    // races with the dynamic-import resolution and fails
+    // intermittently in CI (passes locally on faster machines).
+    // Use findByTestId so we wait for the mock to mount before
+    // typing into it.
+    const editor = (await screen.findByTestId(
+      'yaml-editor'
+    )) as HTMLTextAreaElement
     await userEvent.clear(editor)
     await userEvent.type(
       editor,
@@ -174,7 +181,12 @@ describe('SchemaTab — Accept flow', () => {
       />
     )
 
-    const editor = screen.getByTestId('yaml-editor') as HTMLTextAreaElement
+    // findByTestId (async) — see the "Accept after editing"
+    // test above for why the sync version races against the
+    // YAMLEditor mock's dynamic-import resolution in CI.
+    const editor = (await screen.findByTestId(
+      'yaml-editor'
+    )) as HTMLTextAreaElement
     await userEvent.clear(editor)
     await userEvent.type(editor, 'completely different content')
     expect(screen.getByText(/edited/i)).toBeInTheDocument()
