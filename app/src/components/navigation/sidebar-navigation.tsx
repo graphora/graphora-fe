@@ -10,6 +10,7 @@ import {
   Zap,
   Bot,
   BarChart3,
+  BookOpen,
   Settings,
   Sigma,
   LogOut,
@@ -54,6 +55,7 @@ const NAV_SECTIONS: NavigationSection[] = [
       { id: 'dashboard', name: 'Dashboard', path: '/dashboard', icon: <Home className="h-[14px] w-[14px]" />, description: 'Pipeline overview and KPIs' },
       { id: 'ontologies', name: 'Ontologies', path: '/ontologies', icon: <Database className="h-[14px] w-[14px]" />, description: 'Knowledge graph schemas' },
       { id: 'run-workflow', name: 'Run workflow', path: '/ontology', icon: <Zap className="h-[14px] w-[14px]" />, description: 'Start a new graph build — Ontology → Transform → Merge' },
+      { id: 'samples', name: 'Sample gallery', path: '/samples', icon: <BookOpen className="h-[14px] w-[14px]" />, description: 'Pre-extracted example graphs across all domains' },
     ],
   },
   {

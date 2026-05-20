@@ -5,6 +5,11 @@ import type { NextRequest } from 'next/server'
 const isPublicRoute = createRouteMatcher([
   '/sign-in(.*)',
   '/sign-up(.*)',
+  // Sample gallery is unauthenticated by design — visitors see
+  // pre-extracted graphs from the golden corpus BEFORE deciding
+  // whether to sign up. Matches the same posture as
+  // ``/api/v1/samples`` on the backend.
+  '/samples(.*)',
   '/api(.*)', // Add this line to include API routes
   '/trpc(.*)' // Add this line to include TRPC routes
 ])
