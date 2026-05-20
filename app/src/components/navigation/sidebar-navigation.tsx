@@ -67,6 +67,7 @@ const NAV_SECTIONS: NavigationSection[] = [
     label: 'System',
     items: [
       { id: 'usage', name: 'Usage', path: '/usage', icon: <Sigma className="h-[14px] w-[14px]" />, description: 'LLM usage and cost' },
+      { id: 'capabilities', name: 'Capabilities', path: '/capabilities', icon: <Database className="h-[14px] w-[14px]" />, description: 'Backend feature matrix across STORAGE_TYPE options' },
       { id: 'config', name: 'Configuration', path: '/config', icon: <Settings className="h-[14px] w-[14px]" />, description: 'System settings and preferences' },
     ],
   },
