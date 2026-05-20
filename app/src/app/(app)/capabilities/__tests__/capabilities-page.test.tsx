@@ -228,6 +228,92 @@ describe('CapabilitiesPage', () => {
     ).toBeInTheDocument()
   })
 
+  it('keeps the stale matrix visible while refresh is in flight', async () => {
+    // Reviewer-flagged Low on commit b6677a8: pre-fix the
+    // ``data && !loading && !error`` render gate hid the
+    // loaded matrix whenever a refresh was running, dropping
+    // the operator back to a blank skeleton until the new
+    // response landed. The button's spinning RefreshCw icon
+    // is the loading signal; the data should stay rendered
+    // alongside it.
+    //
+    // Fixture: first fetch resolves immediately; second
+    // (clicked-Refresh) fetch hangs on a never-resolving
+    // promise. After clicking Refresh, the table must still
+    // be visible — confirms stale data survives the in-flight
+    // state.
+    let resolveSecond: (() => void) | null = null
+    let callCount = 0
+    installFetchMock(() => {
+      callCount += 1
+      if (callCount === 1) {
+        return { status: 200, body: matrixResponse }
+      }
+      // Hang the second fetch until the test releases it.
+      return new Promise(() => {
+        resolveSecond = () => {
+          /* never resolves in this test */
+        }
+      })
+    })
+    render(<CapabilitiesPage />)
+
+    await screen.findByText(/STORAGE_TYPE=neo4j/)
+
+    // Click Refresh — second fetch fires and hangs.
+    await userEvent.click(
+      screen.getByRole('button', { name: /refresh/i })
+    )
+
+    // The stale matrix MUST still be rendered. Anchor on the
+    // table-header STORAGE_TYPE chip (unique to the table
+    // header, not the detail card) so a regression that
+    // re-introduces the loading-hides-data gate fails here.
+    expect(screen.getByText(/STORAGE_TYPE=neo4j/)).toBeInTheDocument()
+    expect(screen.getByText(/STORAGE_TYPE=postgres/)).toBeInTheDocument()
+    expect(screen.getByText(/STORAGE_TYPE=memory/)).toBeInTheDocument()
+    // resolveSecond is unused — the test deliberately leaves
+    // the second request in flight. ``void`` it so the unused
+    // assignment doesn't trip a future lint.
+    void resolveSecond
+  })
+
+  it('keeps the stale matrix visible when a refresh fails', async () => {
+    // Companion to the in-flight-refresh pin: when the
+    // refresh actually fails, the error card surfaces
+    // ABOVE the stale data — not as a replacement for it.
+    // Operators get the failure diagnostic AND keep the
+    // last-known matrix to read; without this, a transient
+    // network blip during a Refresh would lose the page
+    // contents entirely.
+    let callCount = 0
+    installFetchMock(() => {
+      callCount += 1
+      if (callCount === 1) {
+        return { status: 200, body: matrixResponse }
+      }
+      return { status: 500, body: { error: 'transient blip' } }
+    })
+    render(<CapabilitiesPage />)
+
+    await screen.findByText(/STORAGE_TYPE=neo4j/)
+
+    await userEvent.click(
+      screen.getByRole('button', { name: /refresh/i })
+    )
+
+    // Error card surfaces with the failure detail.
+    await screen.findByText(/transient blip/i)
+    // The "showing last successful load below" hint surfaces
+    // so the operator knows the table they're looking at is
+    // stale.
+    expect(
+      screen.getByText(/last successful load below/i)
+    ).toBeInTheDocument()
+    // Stale matrix is STILL visible.
+    expect(screen.getByText(/STORAGE_TYPE=neo4j/)).toBeInTheDocument()
+  })
+
   it('refetches when the Refresh button is clicked', async () => {
     let callCount = 0
     installFetchMock(() => {

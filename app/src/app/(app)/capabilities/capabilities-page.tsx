@@ -110,16 +110,33 @@ export function CapabilitiesPage() {
         }
       />
 
+      {/* Skeleton only fires on the FIRST load (data still
+          null). Reviewer-flagged Low on commit b6677a8:
+          pre-fix every refresh re-collapsed the page to a
+          skeleton-or-error state because the data-render gate
+          included ``!loading``. A slow or failing refresh
+          dropped the operator back to a blank or error-only
+          view and lost the last-known matrix. Now the data
+          stays rendered during refresh — the button's
+          spinning RefreshCw icon is the only "in flight"
+          signal — and the error card surfaces ABOVE the
+          stale data instead of replacing it. */}
       {loading && data === null && <MatrixSkeleton />}
 
       {error && (
         <Card className="border-destructive/50 bg-destructive/5 p-4 text-sm text-destructive">
           <p className="font-medium">Could not load capability matrix</p>
           <p className="mt-1 text-destructive/80">{error}</p>
+          {data && (
+            <p className="mt-2 text-xs text-destructive/70">
+              Showing the last successful load below; click Refresh to
+              retry.
+            </p>
+          )}
         </Card>
       )}
 
-      {data && !loading && !error && (
+      {data && (
         <>
           <MatrixTable backends={data.backends} />
           <BackendDetail backends={data.backends} />
