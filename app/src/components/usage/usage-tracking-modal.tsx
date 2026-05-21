@@ -192,7 +192,7 @@ export function UsageTrackingModal({ isOpen, onClose }: UsageTrackingModalProps)
                     return (
                       <div
                         key={metric.label}
-                        className="flex items-center justify-between rounded-xl border border-white/15 bg-white/10 p-4 shadow-glass"
+                        className="flex items-center justify-between rounded-[var(--r-md)] border border-[var(--line)] bg-[var(--bg-elev-2)] p-4"
                       >
                         <div className="flex items-center gap-3">
                           <span
@@ -256,7 +256,7 @@ export function UsageTrackingModal({ isOpen, onClose }: UsageTrackingModalProps)
               </div>
             </div>
 
-            <div className="space-y-3 rounded-xl border border-white/10 bg-white/10 p-5 text-xs text-foreground/75 shadow-inner">
+            <div className="space-y-3 rounded-[var(--r-md)] border border-[var(--line)] bg-[var(--bg-elev-2)] p-5 text-xs text-foreground/75">
               {usageWarnings.length > 0 ? (
                 <>
                   <div className="flex items-center gap-2 text-warning">
@@ -368,7 +368,7 @@ export function UsageTrackingModal({ isOpen, onClose }: UsageTrackingModalProps)
                               return (
                                 <div
                                   key={metric.label}
-                                  className="rounded-xl border border-white/15 bg-white/10 p-4 text-center"
+                                  className="rounded-[var(--r-md)] border border-[var(--line)] bg-[var(--bg-elev-2)] p-4 text-center"
                                 >
                                   <Icon className="mx-auto mb-3 h-6 w-6 text-foreground/70" />
                                   <p className="text-display-xs text-foreground">{metric.value}</p>

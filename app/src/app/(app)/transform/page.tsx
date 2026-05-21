@@ -1540,9 +1540,9 @@ function TransformPageContent() {
                     <div
                       {...getRootProps()}
                       className={cn(
-                        "border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all duration-200",
+                        "border-2 border-dashed rounded-[var(--r-md)] p-8 text-center cursor-pointer transition-colors duration-200",
                         isDragActive
-                          ? "border-primary/60 bg-primary/5 scale-[1.02]"
+                          ? "border-primary/60 bg-primary/5"
                           : "border-border/60 hover:border-primary/40 hover:bg-muted/30",
                         error && "border-destructive/60 bg-destructive/5"
                       )}
@@ -1846,7 +1846,7 @@ function TransformPageContent() {
                     {file ? `${formattedFileSize ?? '—'} • ${file.type || 'unknown type'}` : 'Upload a document to tailor chunking.'}
                   </p>
                 </div>
-                <div className="space-y-3 rounded-xl border  bg-white/10 p-5 shadow-inner min-h-[220px]">
+                <div className="space-y-3 rounded-[var(--r-md)] border  bg-white/10 p-5 shadow-inner min-h-[220px]">
                   <p className="text-xs uppercase tracking-[0.2em] text-foreground/55">Current configuration</p>
                   {hasCustomChunking ? (
                     <div className="space-y-3 text-sm text-foreground/80">
@@ -1879,7 +1879,7 @@ function TransformPageContent() {
                 </div>
               </div>
 
-              <div className="mt-6 flex-shrink-0 space-y-3 rounded-xl border  bg-white/10 p-5 text-xs text-foreground/75 shadow-inner">
+              <div className="mt-6 flex-shrink-0 space-y-3 rounded-[var(--r-md)] border bg-[var(--bg-elev-2)] p-5 text-xs text-foreground/75">
                 <p className="font-medium uppercase tracking-[0.16em] text-foreground/70">Recommendations</p>
                 <ul className="space-y-2 text-foreground/80">
                   <li>• Smaller chunks improve retrieval accuracy for dense documents.</li>

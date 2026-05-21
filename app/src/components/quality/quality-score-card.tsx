@@ -59,7 +59,7 @@ export function QualityScoreCard({ qualityResults, className = '' }: QualityScor
         </p>
       </div>
 
-      <div className="rounded-xl p-6 bg-muted/30 shadow-soft">
+      <div className="rounded-[var(--r-md)] p-6 bg-muted/30 shadow-soft">
         <div className="flex flex-col md:flex-row items-center md:items-start gap-8">
           {/* Score Display */}
           <div className="flex flex-col items-center justify-center flex-shrink-0">

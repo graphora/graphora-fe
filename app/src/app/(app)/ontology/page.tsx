@@ -890,7 +890,7 @@ function OntologyPageContent() {
                 </div>
                 <div className="flex-1 overflow-auto">
                   {viewMode === 'split' ? (
-                    <div className="h-full w-full rounded-xl bg-card overflow-hidden ">
+                    <div className="h-full w-full rounded-[var(--r-md)] bg-card overflow-hidden">
                       <div className="grid h-full grid-cols-2">
                         <div className="relative h-full overflow-auto p-4 ">
                           <YAMLEditor
@@ -906,7 +906,7 @@ function OntologyPageContent() {
                       </div>
                     </div>
                   ) : viewMode === 'code' ? (
-                    <div className="h-full w-full rounded-xl  bg-card overflow-hidden p-4">
+                    <div className="h-full w-full rounded-[var(--r-md)]  bg-card overflow-hidden p-4">
                       <YAMLEditor
                         value={yaml}
                         onChange={(value) => {
@@ -915,7 +915,7 @@ function OntologyPageContent() {
                       />
                     </div>
                   ) : (
-                    <div className="h-full w-full rounded-xl  bg-card overflow-hidden p-4">
+                    <div className="h-full w-full rounded-[var(--r-md)]  bg-card overflow-hidden p-4">
                       <div className="h-full overflow-auto">
                         <VisualEditor />
                       </div>

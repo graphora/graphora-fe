@@ -71,7 +71,7 @@ export function ChatMessage({ message, onAction, onEdit, canEdit = false }: Chat
       )}
       
       <div className={cn(
-        "max-w-[70%] p-4 rounded-2xl relative group",
+        "max-w-[70%] p-4 rounded-[var(--r-md)] relative group",
         isUser 
           ? "bg-primary text-primary-foreground ml-auto" 
           : "bg-muted"
