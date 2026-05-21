@@ -14,13 +14,13 @@ export default function NotFound() {
           <div className="mx-auto mb-6 h-16 w-16">
             <Logo width={64} height={64} className="w-full h-full opacity-50" />
           </div>
-          <CardTitle className="text-3xl font-bold">Page Not Found</CardTitle>
+          <CardTitle className="text-3xl font-medium">Page Not Found</CardTitle>
           <CardDescription className="text-lg">
             The page you're looking for doesn't exist or has been moved.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          <div className="flex items-center justify-center text-6xl font-bold text-muted-foreground/20">
+          <div className="flex items-center justify-center text-6xl font-medium text-muted-foreground/20">
             404
           </div>
           

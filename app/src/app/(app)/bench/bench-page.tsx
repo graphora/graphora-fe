@@ -195,7 +195,7 @@ function SummaryStat({
 }) {
   return (
     <div>
-      <div className="text-xl font-semibold text-foreground">{value}</div>
+      <div className="text-xl font-medium text-foreground">{value}</div>
       <div className="text-xs text-muted-foreground">{label}</div>
     </div>
   )
@@ -343,7 +343,7 @@ function ExtractorCard({
         ) : (
           <ChevronRight className="h-4 w-4 text-muted-foreground" />
         )}
-        <span className="font-semibold">{extractor.extractor_name}</span>
+        <span className="font-medium">{extractor.extractor_name}</span>
         <CoverageBadge
           scored={extractor.scored_count}
           errored={extractor.errored_count}
@@ -450,7 +450,7 @@ function ScoreBlock({
 }) {
   return (
     <div className="flex flex-col items-end leading-tight">
-      <span className="font-mono text-lg font-semibold">
+      <span className="font-mono text-lg font-medium">
         {headline.toFixed(3)}
       </span>
       <span className="text-[10px] text-muted-foreground">

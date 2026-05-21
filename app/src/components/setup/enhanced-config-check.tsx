@@ -103,7 +103,7 @@ export function EnhancedConfigCheck({
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <h2 className="text-lg font-semibold text-foreground">Authentication Required</h2>
+          <h2 className="text-lg font-medium text-foreground">Authentication Required</h2>
           <p className="text-muted-foreground">Please sign in to access this feature.</p>
         </div>
       </div>

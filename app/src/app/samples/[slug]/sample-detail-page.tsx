@@ -102,7 +102,7 @@ export function SampleDetailPage({ slug }: { slug: string }) {
             <Badge variant="outline" className="mb-2 text-[10px]">
               {data.domain}
             </Badge>
-            <h1 className="text-2xl font-semibold tracking-tight">
+            <h1 className="text-2xl font-medium tracking-tight">
               {data.display_name}
             </h1>
             <p className="mt-1 text-sm text-muted-foreground">
@@ -205,7 +205,7 @@ function TryItCta() {
     <Card className="mt-8 p-6">
       <div className="flex flex-col items-start gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <h2 className="text-lg font-semibold">
+          <h2 className="text-lg font-medium">
             Try this on your own document
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">

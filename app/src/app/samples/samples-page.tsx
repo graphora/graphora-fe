@@ -71,7 +71,7 @@ export function SamplesGalleryPage() {
         <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
           Sample gallery
         </p>
-        <h1 className="mt-1 text-2xl font-semibold tracking-tight">
+        <h1 className="mt-1 text-2xl font-medium tracking-tight">
           See what Graphora extracts
         </h1>
         <p className="mt-2 max-w-3xl text-sm text-muted-foreground">
@@ -191,7 +191,7 @@ function SampleCard({ sample }: { sample: SampleSummary }) {
           </Badge>
           <ArrowRight className="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
         </div>
-        <h3 className="font-semibold leading-tight">
+        <h3 className="font-medium leading-tight">
           {sample.display_name}
         </h3>
         <p className="mt-2 text-xs text-muted-foreground">

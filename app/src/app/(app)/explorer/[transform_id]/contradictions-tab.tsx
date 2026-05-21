@@ -105,7 +105,7 @@ export function ContradictionsTab({ transformId }: ContradictionsTabProps) {
     <div className="flex h-full flex-col gap-4 overflow-auto p-6">
       <header className="flex flex-wrap items-center gap-4">
         <div>
-          <h2 className="text-lg font-semibold">Contradictions</h2>
+          <h2 className="text-lg font-medium">Contradictions</h2>
           <p className="text-sm text-muted-foreground">
             Per-property disagreements the extractor surfaced across
             chunks. Pipeline picked the highest-confidence value for
@@ -215,7 +215,7 @@ function SummaryStat({
 }) {
   return (
     <div>
-      <div className={`text-xl font-semibold ${TONE_STYLES[tone]}`}>
+      <div className={`text-xl font-medium ${TONE_STYLES[tone]}`}>
         {value}
       </div>
       <div className="text-xs text-muted-foreground">{label}</div>

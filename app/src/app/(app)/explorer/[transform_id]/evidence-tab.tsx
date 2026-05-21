@@ -62,7 +62,7 @@ export function EvidenceTab({ data }: EvidenceTabProps) {
       <div className="flex h-full items-center justify-center p-6">
         <div className="max-w-md text-center">
           <Quote className="mx-auto mb-3 h-8 w-8 text-muted-foreground" />
-          <h2 className="text-lg font-semibold">No provenance recorded</h2>
+          <h2 className="text-lg font-medium">No provenance recorded</h2>
           <p className="mt-2 text-sm text-muted-foreground">
             None of the extracted nodes carry source-span properties
             ({EVIDENCE_KEYS.slice(0, 3).join(', ')}…). Re-run extraction
@@ -136,7 +136,7 @@ function EvidenceDetail({ node }: { node: Node }) {
         <p className="text-xs uppercase tracking-wide text-muted-foreground">
           {node.type}
         </p>
-        <h2 className="mt-0.5 text-2xl font-semibold">
+        <h2 className="mt-0.5 text-2xl font-medium">
           {nodeDisplayName(node)}
         </h2>
       </header>

@@ -58,7 +58,7 @@ function PromoLayout({ children }: { children: React.ReactNode }) {
       >
         <Link href="/samples" className="flex items-center gap-2">
           <Logo width={24} height={24} />
-          <span className="font-semibold tracking-tight">Graphora</span>
+          <span className="font-medium tracking-tight">Graphora</span>
           <span className="text-sm text-muted-foreground hidden sm:inline">
             · Sample gallery
           </span>

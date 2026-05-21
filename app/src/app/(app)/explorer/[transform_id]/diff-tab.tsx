@@ -203,7 +203,7 @@ export function DiffTab({ transformId }: DiffTabProps) {
     <div className="flex h-full flex-col gap-4 overflow-auto p-6">
       <header className="flex flex-wrap items-center gap-4">
         <div>
-          <h2 className="text-lg font-semibold">Compare with another run</h2>
+          <h2 className="text-lg font-medium">Compare with another run</h2>
           <p className="text-sm text-muted-foreground">
             Pick an earlier transform to see what changed.
           </p>
@@ -396,7 +396,7 @@ function SummaryStat({
 }) {
   return (
     <div>
-      <div className={`text-xl font-semibold ${TONE_STYLES[tone]}`}>{value}</div>
+      <div className={`text-xl font-medium ${TONE_STYLES[tone]}`}>{value}</div>
       <div className="text-xs text-muted-foreground">{label}</div>
     </div>
   )

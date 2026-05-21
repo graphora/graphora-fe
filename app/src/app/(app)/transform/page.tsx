@@ -1321,7 +1321,7 @@ function TransformPageContent() {
             <div className="flex items-start gap-2">
               <AlertTriangle className="h-5 w-5 mt-0.5" />
               <div>
-                <p className="font-semibold text-foreground">Quality threshold not met</p>
+                <p className="font-medium text-foreground">Quality threshold not met</p>
                 <p className="text-sm text-muted-foreground leading-relaxed">
                   {qualityFailure.message}
                 </p>
@@ -1378,7 +1378,7 @@ function TransformPageContent() {
             <div className="flex items-start gap-2">
               <AlertTriangle className="h-5 w-5 mt-0.5" />
               <div>
-                <p className="font-semibold text-foreground">Quality review recommended</p>
+                <p className="font-medium text-foreground">Quality review recommended</p>
                 <p className="text-sm text-muted-foreground leading-relaxed">
                   {qualityWarning.message}
                 </p>
@@ -1415,7 +1415,7 @@ function TransformPageContent() {
         <Alert variant="destructive" className="m-4">
           <AlertDescription className="flex flex-col gap-3">
             <div className="space-y-2">
-              <p className="font-semibold text-foreground">
+              <p className="font-medium text-foreground">
                 {transformFailure?.title ?? 'Transform failed'}
               </p>
               <p className="text-sm text-muted-foreground leading-relaxed">

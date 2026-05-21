@@ -171,7 +171,7 @@ function MatrixTable({ backends }: { backends: BackendMatrixEntry[] }) {
                 key={backend.name}
                 className="pb-2 px-4 text-center text-xs font-medium"
               >
-                <div className="font-semibold text-foreground">
+                <div className="font-medium text-foreground">
                   {backend.display_name}
                 </div>
                 <div className="mt-0.5 font-mono text-[10px] text-muted-foreground">
@@ -273,7 +273,7 @@ function BackendDetail({ backends }: { backends: BackendMatrixEntry[] }) {
           >
             <div className="mb-2 flex items-center justify-between">
               <div>
-                <div className="font-semibold">{backend.display_name}</div>
+                <div className="font-medium">{backend.display_name}</div>
                 <div className="mt-0.5 font-mono text-[10px] text-muted-foreground">
                   {backend.name}
                 </div>

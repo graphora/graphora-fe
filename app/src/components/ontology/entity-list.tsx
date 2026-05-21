@@ -46,7 +46,7 @@ export function EntityList({ onLoadSample, showQuickActions = true }: EntityList
     <div className="space-y-5">
       {showQuickActions && (
         <div className="rounded-lg bg-card p-4">
-          <p className="text-xs font-semibold uppercase tracking-[0.28em] text-foreground/60">Quick Actions</p>
+          <p className="text-xs font-medium uppercase tracking-[0.28em] text-foreground/60">Quick Actions</p>
           <div className="mt-3 flex flex-col gap-2">
             <Button
               variant="cta"

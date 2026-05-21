@@ -596,13 +596,13 @@ export const MergeGraphVisualization: React.FC<MergeGraphVisualizationProps> = (
           >
             {hoveredNode && (
               <>
-                <div className="font-semibold text-foreground">{hoveredNode.displayName}</div>
+                <div className="font-medium text-foreground">{hoveredNode.displayName}</div>
                 <div className="text-muted-foreground">Type: {hoveredNode.type}</div>
               </>
             )}
             {hoveredLink && (
               <>
-                <div className="font-semibold text-foreground">{hoveredLink.caption}</div>
+                <div className="font-medium text-foreground">{hoveredLink.caption}</div>
                 <div className="text-muted-foreground">
                   {hoveredLink.from} → {hoveredLink.to}
                 </div>

@@ -132,7 +132,7 @@ export function SchemaTab({
     <div className="flex h-full flex-col gap-4 p-6">
       <div className="flex items-baseline justify-between">
         <div>
-          <h2 className="text-lg font-semibold">
+          <h2 className="text-lg font-medium">
             Inferred ontology
             {dirty && (
               <span className="ml-2 align-middle text-xs font-normal text-amber-600 dark:text-amber-400">
@@ -255,7 +255,7 @@ function StatTile({ label, value }: { label: string; value: number }) {
       style={{ borderColor: 'var(--line)' }}
     >
       <p className="text-xs uppercase tracking-wide text-muted-foreground">{label}</p>
-      <p className="mt-1 text-2xl font-semibold tabular-nums">{value}</p>
+      <p className="mt-1 text-2xl font-medium tabular-nums">{value}</p>
     </div>
   )
 }

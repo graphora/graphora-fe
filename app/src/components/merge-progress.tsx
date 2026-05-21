@@ -700,7 +700,7 @@ export function MergeProgress({ mergeId, sessionId, transformId, onViewConflicts
                   <div className="flex flex-col items-center gap-1.5">
                     <div
                       className={cn(
-                        'flex h-12 w-12 items-center justify-center rounded-full border-2 text-sm font-semibold transition-all',
+                        'flex h-12 w-12 items-center justify-center rounded-full border-2 text-sm font-medium transition-all',
                         isCompleted
                           ? 'border-emerald-500 bg-emerald-500 text-white shadow-md'
                           : isCurrent
@@ -711,7 +711,7 @@ export function MergeProgress({ mergeId, sessionId, transformId, onViewConflicts
                       {isCompleted ? (
                         <CheckCircle className="h-5 w-5" />
                       ) : isCurrent ? (
-                        <span className="text-xs font-bold">{Math.round(stage.progress)}%</span>
+                        <span className="text-xs font-medium">{Math.round(stage.progress)}%</span>
                       ) : (
                         <span className="text-xs">{stage.name.split('_').map((word) => word[0]).join('').toUpperCase()}</span>
                       )}

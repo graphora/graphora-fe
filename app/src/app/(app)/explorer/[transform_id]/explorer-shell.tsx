@@ -122,7 +122,7 @@ export function ExplorerShell({ transformId }: ExplorerShellProps) {
       <header className="border-b px-6 py-4" style={{ borderColor: 'var(--line)' }}>
         <div className="flex items-baseline justify-between">
           <div>
-            <h1 className="text-xl font-semibold">Explorer</h1>
+            <h1 className="text-xl font-medium">Explorer</h1>
             <p className="text-sm text-muted-foreground">
               Transform <code className="rounded bg-muted px-1 py-0.5 text-xs">{transformId}</code>
             </p>

@@ -74,7 +74,7 @@ export function ExportTab({ data, transformId }: ExportTabProps) {
   return (
     <div className="flex h-full flex-col gap-4 p-6">
       <header>
-        <h2 className="text-lg font-semibold">Export</h2>
+        <h2 className="text-lg font-medium">Export</h2>
         <p className="text-sm text-muted-foreground">
           Download the current graph in standard interchange formats.
           Everything is generated in your browser — no backend round-trip.
@@ -93,7 +93,7 @@ export function ExportTab({ data, transformId }: ExportTabProps) {
             >
               <div className="mb-2 flex items-center gap-2">
                 <Icon className="h-5 w-5 text-muted-foreground" />
-                <h3 className="text-base font-semibold">{def.label}</h3>
+                <h3 className="text-base font-medium">{def.label}</h3>
               </div>
               <p className="flex-1 text-sm text-muted-foreground">
                 {def.description}

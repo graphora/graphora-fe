@@ -539,13 +539,13 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({
         >
           {hoveredNode && hoveredNode.label && hoveredNode.type && (
             <>
-              <div className="font-semibold text-base text-popover-foreground">{hoveredNode.label || 'Unnamed'}</div>
+              <div className="font-medium text-base text-popover-foreground">{hoveredNode.label || 'Unnamed'}</div>
               <div className="text-muted-foreground mb-1">Type: {hoveredNode.type || 'Unknown'}</div>
             </>
           )}
           {hoveredLink && hoveredLink.caption && hoveredLink.from && hoveredLink.to && (
             <>
-              <div className="font-semibold text-base text-popover-foreground">{hoveredLink.caption || 'Relationship'}</div>
+              <div className="font-medium text-base text-popover-foreground">{hoveredLink.caption || 'Relationship'}</div>
               <div className="text-muted-foreground mb-1">
                 {hoveredLink.from} → {hoveredLink.to}
               </div>

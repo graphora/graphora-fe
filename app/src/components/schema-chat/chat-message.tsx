@@ -132,8 +132,8 @@ export function ChatMessage({ message, onAction, onEdit, canEdit = false }: Chat
               components={{
                 // Customize markdown components
                 p: ({ children }) => <p className="mb-3 last:mb-0">{children}</p>,
-                h1: ({ children }) => <h1 className="text-lg font-bold mb-2">{children}</h1>,
-                h2: ({ children }) => <h2 className="text-base font-semibold mb-2">{children}</h2>,
+                h1: ({ children }) => <h1 className="text-lg font-medium mb-2">{children}</h1>,
+                h2: ({ children }) => <h2 className="text-base font-medium mb-2">{children}</h2>,
                 h3: ({ children }) => <h3 className="text-sm font-medium mb-1">{children}</h3>,
                 ul: ({ children }) => <ul className="list-disc pl-4 mb-3 space-y-1">{children}</ul>,
                 ol: ({ children }) => <ol className="list-decimal pl-4 mb-3 space-y-1">{children}</ol>,
@@ -155,7 +155,7 @@ export function ChatMessage({ message, onAction, onEdit, canEdit = false }: Chat
                     {children}
                   </blockquote>
                 ),
-                strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
+                strong: ({ children }) => <strong className="font-medium">{children}</strong>,
                 em: ({ children }) => <em className="italic">{children}</em>
               }}
             >

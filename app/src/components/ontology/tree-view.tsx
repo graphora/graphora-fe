@@ -22,7 +22,7 @@ function TreeNode({ name, type, data, level = 0, expanded = false, onToggle }: T
       <div 
         className={cn(
           "flex items-center py-1 px-2 hover:bg-accent rounded-sm cursor-pointer",
-          type === 'section' ? 'font-semibold' : ''
+          type === 'section' ? 'font-medium' : ''
         )}
         style={{ paddingLeft: `${indent}px` }}
         onClick={onToggle}
@@ -136,7 +136,7 @@ export function TreeView({ data, expandedKeys = [], onNodeSelect, onToggleExpand
     <div className="p-2">
       {Object.keys(sections).length > 0 && (
         <div className="mb-4">
-          <div className="text-sm font-semibold mb-2">Sections</div>
+          <div className="text-sm font-medium mb-2">Sections</div>
           {Object.entries(sections).map(([sectionName, sectionData]: [string, any]) => (
             <TreeNode
               key={`section-${sectionName}`}
@@ -151,7 +151,7 @@ export function TreeView({ data, expandedKeys = [], onNodeSelect, onToggleExpand
       )}
 
       <div>
-        <div className="text-sm font-semibold mb-2">Entities</div>
+        <div className="text-sm font-medium mb-2">Entities</div>
         {Object.keys(entities).length > 0 ? (
           Object.entries(entities).map(([entityName, entityData]: [string, any]) => (
             <TreeNode

@@ -289,7 +289,7 @@ export function ChunkingConfig({ fileContent, fileName, onConfigChange, classNam
               <Settings2 className="h-4 w-4 text-blue-600 dark:text-blue-400" />
             </div>
             <div>
-              <h3 className="text-base font-semibold">Chunking Configuration</h3>
+              <h3 className="text-base font-medium">Chunking Configuration</h3>
               <p className="text-xs text-muted-foreground mt-1">
                 Configure how your document is split for processing
               </p>

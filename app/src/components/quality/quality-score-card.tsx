@@ -50,7 +50,7 @@ export function QualityScoreCard({ qualityResults, className = '' }: QualityScor
   return (
     <div className={className}>
       <div className="mb-4">
-        <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
+        <h4 className="text-sm font-medium text-foreground flex items-center gap-2">
           <Trophy className="h-4 w-4 text-primary" />
           Quality Score
         </h4>
@@ -90,7 +90,7 @@ export function QualityScoreCard({ qualityResults, className = '' }: QualityScor
               </svg>
               <div className="absolute inset-0 flex items-center justify-center">
                 <div className="text-center">
-                  <div className={`text-4xl leading-none font-bold ${getScoreColor(qualityResults.overall_score)}`}>
+                  <div className={`text-4xl leading-none font-medium ${getScoreColor(qualityResults.overall_score)}`}>
                     {Math.round(qualityResults.overall_score)}
                   </div>
                   <div className="text-xs mt-1 text-muted-foreground">out of 100</div>
@@ -111,15 +111,15 @@ export function QualityScoreCard({ qualityResults, className = '' }: QualityScor
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-xs text-muted-foreground">Entities Processed</span>
-                <span className="font-semibold text-lg text-foreground">{qualityResults.metrics.total_entities}</span>
+                <span className="font-medium text-lg text-foreground">{qualityResults.metrics.total_entities}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-xs text-muted-foreground">Relationships</span>
-                <span className="font-semibold text-lg text-foreground">{qualityResults.metrics.total_relationships}</span>
+                <span className="font-medium text-lg text-foreground">{qualityResults.metrics.total_relationships}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-xs text-muted-foreground">Total Violations</span>
-                <span className="font-semibold text-lg text-foreground">{qualityResults.violations.length}</span>
+                <span className="font-medium text-lg text-foreground">{qualityResults.violations.length}</span>
               </div>
             </div>
 
