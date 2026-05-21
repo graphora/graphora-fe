@@ -1753,7 +1753,7 @@ function TransformPageContent() {
       <AlertDialog open={showMergeConfirm} onOpenChange={setShowMergeConfirm}>
         <AlertDialogContent className="bg-card border-border text-card-foreground">
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-card-foreground">Merge to Production Database</AlertDialogTitle>
+            <AlertDialogTitle className="text-card-foreground">Merge to production database</AlertDialogTitle>
             <AlertDialogDescription className="text-muted-foreground">
               This will start the process of merging your transformed graph into the production database.
             </AlertDialogDescription>

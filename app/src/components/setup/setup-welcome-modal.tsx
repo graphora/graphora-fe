@@ -93,7 +93,7 @@ export function SetupWelcomeModal({ isOpen, onClose, setupStatus, onRefresh }: S
                   variant={setupStatus.isFullyConfigured ? 'success' : 'info'}
                   className="uppercase tracking-[0.18em] text-[0.6rem]"
                 >
-                  {setupStatus.isFullyConfigured ? 'Setup Complete' : 'Setup Incomplete'}
+                  {setupStatus.isFullyConfigured ? 'Setup complete' : 'Setup incomplete'}
                 </Badge>
                 <ThemeToggle />
               </div>
@@ -112,7 +112,7 @@ export function SetupWelcomeModal({ isOpen, onClose, setupStatus, onRefresh }: S
 
               <div className="space-y-3 rounded-[var(--r-md)] border border-[var(--line)] bg-[var(--bg-elev-2)] p-4">
                 <div className="flex items-center justify-between text-[0.7rem] font-medium uppercase tracking-[0.22em] text-foreground/60">
-                  <span>Setup Progress</span>
+                  <span>Setup progress</span>
                   <span className="text-foreground/80">
                     {completedSteps}/{totalSteps} complete
                   </span>

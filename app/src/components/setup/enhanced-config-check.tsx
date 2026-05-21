@@ -170,7 +170,7 @@ export function EnhancedConfigCheck({
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Sparkles className="h-6 w-6 text-info" />
-              AI Configuration Required
+              AI configuration required
             </CardTitle>
             <CardDescription>
               This feature requires AI configuration to work properly.

@@ -440,7 +440,7 @@ function ConfigPageContent() {
               {/* Database Configuration Forms */}
               <div className="grid gap-4 lg:grid-cols-2">
                 <DatabaseConfigForm
-                  title="Production Database"
+                  title="Production database"
                   description="Where staged data gets merged"
                   config={prodDb}
                   onChange={handleProdDbChange}
@@ -451,7 +451,7 @@ function ConfigPageContent() {
                 />
 
                 <DatabaseConfigForm
-                  title="Staging Database"
+                  title="Staging database"
                   description="Work-in-progress storage (optional)"
                   config={stagingDb}
                   onChange={handleStagingDbChange}
