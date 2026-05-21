@@ -122,12 +122,11 @@ export function QualityActionButtons({
     warning: 'text-warning',
     destructive: 'text-destructive'
   } as const;
-  const toneBorder = {
-    success: 'border-l-success',
-    info: 'border-l-info',
-    warning: 'border-l-warning',
-    destructive: 'border-l-destructive'
-  } as const;
+  // Design audit P1 fix: removed the unused ``toneBorder`` map
+  // (border-l-* accent stripes). The recommendation surface
+  // expresses tone through the icon color + badge fill — adding
+  // a colored left border on top doubled the chroma signal and
+  // matched the AI-slop "colored accent stripe" pattern.
   const gradeBadgeClasses: Record<string, string> = {
     A: 'bg-success/15 text-success border-success/30 shadow-sm',
     B: 'bg-info/15 text-info border-info/30 shadow-sm',

@@ -65,8 +65,8 @@ export function ChatMessage({ message, onAction, onEdit, canEdit = false }: Chat
       isUser ? 'justify-end' : 'justify-start'
     )}>
       {isAssistant && (
-        <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center flex-shrink-0">
-          <Bot className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+        <div className="w-8 h-8 bg-info dark:bg-info rounded-full flex items-center justify-center flex-shrink-0">
+          <Bot className="h-4 w-4 text-info dark:text-info" />
         </div>
       )}
       
@@ -151,7 +151,11 @@ export function ChatMessage({ message, onAction, onEdit, canEdit = false }: Chat
                   )
                 },
                 blockquote: ({ children }) => (
-                  <blockquote className="border-l-4 border-muted-foreground/30 pl-3 italic">
+                  // Audit P1: dropped the 4px colored left-border
+                  // accent stripe. Quote-italic + indent carries
+                  // the affordance without the accent stripe
+                  // pattern.
+                  <blockquote className="pl-3 italic text-muted-foreground">
                     {children}
                   </blockquote>
                 ),

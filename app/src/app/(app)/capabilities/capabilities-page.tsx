@@ -233,7 +233,7 @@ function CapabilityCell({
     return (
       <Tooltip content="Runtime-detected: matrix shows the conservative default; the live backend may report this as True after bootstrap.">
         <span className="inline-flex items-center gap-1 text-xs">
-          <AlertCircle className="h-3.5 w-3.5 text-amber-700 dark:text-amber-400" />
+          <AlertCircle className="h-3.5 w-3.5 text-warning dark:text-warning" />
           <span className="font-mono">
             {value ? 'true*' : 'false*'}
           </span>
@@ -244,7 +244,7 @@ function CapabilityCell({
   if (value) {
     return (
       <Check
-        className="mx-auto h-4 w-4 text-green-700 dark:text-green-400"
+        className="mx-auto h-4 w-4 text-success dark:text-success"
         aria-label="supported"
       />
     )

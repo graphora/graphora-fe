@@ -379,9 +379,9 @@ function SummaryCard({ summary }: { summary: GraphDiff['summary'] }) {
 type DiffTone = 'added' | 'removed' | 'changed' | 'unchanged'
 
 const TONE_STYLES: Record<DiffTone, string> = {
-  added: 'text-green-700 dark:text-green-400',
-  removed: 'text-red-700 dark:text-red-400',
-  changed: 'text-amber-700 dark:text-amber-400',
+  added: 'text-success dark:text-success',
+  removed: 'text-destructive dark:text-destructive',
+  changed: 'text-warning dark:text-warning',
   unchanged: 'text-muted-foreground',
 }
 
@@ -548,10 +548,10 @@ function PropertyChangeTable({
         {rows.map(([key, change]) => (
           <tr key={key} className="align-top">
             <td className="py-1 pr-2 font-mono">{key}</td>
-            <td className="py-1 pr-2 text-red-700 dark:text-red-400">
+            <td className="py-1 pr-2 text-destructive dark:text-destructive">
               {formatPropertyValue(change.base)}
             </td>
-            <td className="py-1 text-green-700 dark:text-green-400">
+            <td className="py-1 text-success dark:text-success">
               {formatPropertyValue(change.compare)}
             </td>
           </tr>

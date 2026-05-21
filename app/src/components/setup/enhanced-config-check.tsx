@@ -122,7 +122,7 @@ export function EnhancedConfigCheck({
         <Card className="w-full max-w-lg">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <AlertCircle className="h-6 w-6 text-red-600" />
+              <AlertCircle className="h-6 w-6 text-destructive" />
               Configuration Check Failed
             </CardTitle>
             <CardDescription>
@@ -169,7 +169,7 @@ export function EnhancedConfigCheck({
         <Card className="w-full max-w-lg">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Sparkles className="h-6 w-6 text-blue-600" />
+              <Sparkles className="h-6 w-6 text-info" />
               AI Configuration Required
             </CardTitle>
             <CardDescription>

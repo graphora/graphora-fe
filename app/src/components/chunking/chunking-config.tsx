@@ -257,9 +257,9 @@ export function ChunkingConfig({ fileContent, fileName, onConfigChange, classNam
   }
 
   const getConfidenceColor = (score: number) => {
-    if (score >= 0.8) return 'text-green-600 dark:text-green-400'
-    if (score >= 0.6) return 'text-yellow-600 dark:text-yellow-400'
-    return 'text-red-600 dark:text-red-400'
+    if (score >= 0.8) return 'text-success dark:text-success'
+    if (score >= 0.6) return 'text-warning dark:text-warning'
+    return 'text-destructive dark:text-destructive'
   }
 
   // Document-type → Lucide icon mapping. Design audit P0:
@@ -285,8 +285,8 @@ export function ChunkingConfig({ fileContent, fileName, onConfigChange, classNam
       <div className="pb-4 p-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center">
-              <Settings2 className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+            <div className="w-8 h-8 bg-info dark:bg-info rounded-full flex items-center justify-center">
+              <Settings2 className="h-4 w-4 text-info dark:text-info" />
             </div>
             <div>
               <h3 className="text-base font-medium">Chunking Configuration</h3>
@@ -324,7 +324,7 @@ export function ChunkingConfig({ fileContent, fileName, onConfigChange, classNam
               <span className="text-xs text-muted-foreground">Analyzing...</span>
             </div>
             <div className="flex items-center space-x-2 text-xs text-muted-foreground">
-              <div className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-pulse"></div>
+              <div className="w-1.5 h-1.5 bg-info rounded-full animate-pulse"></div>
               <span>Detecting document structure and content patterns</span>
             </div>
           </div>
@@ -372,13 +372,13 @@ export function ChunkingConfig({ fileContent, fileName, onConfigChange, classNam
               <div className="space-y-1">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Has Lists:</span>
-                  <span className={analysis.document_stats.has_lists ? 'text-green-600 dark:text-green-400' : 'text-muted-foreground'}>
+                  <span className={analysis.document_stats.has_lists ? 'text-success dark:text-success' : 'text-muted-foreground'}>
                     {analysis.document_stats.has_lists ? '✓' : '✗'}
                   </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Has Headings:</span>
-                  <span className={analysis.document_stats.has_headings ? 'text-green-600 dark:text-green-400' : 'text-muted-foreground'}>
+                  <span className={analysis.document_stats.has_headings ? 'text-success dark:text-success' : 'text-muted-foreground'}>
                     {analysis.document_stats.has_headings ? '✓' : '✗'}
                   </span>
                 </div>
@@ -391,7 +391,7 @@ export function ChunkingConfig({ fileContent, fileName, onConfigChange, classNam
 
             {/* Recommended Strategy Badge */}
             <div className="flex items-center space-x-2">
-              <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+              <Badge variant="secondary" className="bg-success text-success dark:bg-success dark:text-success">
                 <CheckCircle className="h-3 w-3 mr-1" />
                 Recommended: {STRATEGY_INFO[analysis.recommended_strategy]?.name || analysis.recommended_strategy}
               </Badge>
@@ -410,7 +410,7 @@ export function ChunkingConfig({ fileContent, fileName, onConfigChange, classNam
         {/* Configuration Toggle */}
         <div className="flex items-center justify-between p-3 bg-[color:var(--bg-deep)] rounded-lg">
           <div className="flex items-center space-x-3">
-            <div className={`w-2 h-2 rounded-full ${useCustomConfig ? 'bg-blue-500' : 'bg-gray-400'}`} />
+            <div className={`w-2 h-2 rounded-full ${useCustomConfig ? 'bg-info' : 'bg-gray-400'}`} />
             <div>
               <p className="text-sm font-medium">
                 {useCustomConfig ? 'Custom Configuration' : 'Default Configuration'}
@@ -447,7 +447,7 @@ export function ChunkingConfig({ fileContent, fileName, onConfigChange, classNam
                       <div className="flex items-center space-x-2">
                         <span>{strategy.name}</span>
                         {analysis?.recommended_strategy === strategy.value && (
-                          <Badge variant="secondary" className="text-xs bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                          <Badge variant="secondary" className="text-xs bg-success text-success dark:bg-success dark:text-success">
                             Recommended
                           </Badge>
                         )}
@@ -462,7 +462,7 @@ export function ChunkingConfig({ fileContent, fileName, onConfigChange, classNam
                 <p className="mb-2">{STRATEGY_INFO[config.strategy]?.description}</p>
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <p className="font-medium text-green-700 dark:text-green-400 mb-1">Pros:</p>
+                    <p className="font-medium text-success dark:text-success mb-1">Pros:</p>
                     <ul className="list-disc list-inside space-y-0.5">
                       {STRATEGY_INFO[config.strategy]?.pros.map((pro, index) => (
                         <li key={index}>{pro}</li>
@@ -470,7 +470,7 @@ export function ChunkingConfig({ fileContent, fileName, onConfigChange, classNam
                     </ul>
                   </div>
                   <div>
-                    <p className="font-medium text-amber-700 dark:text-amber-400 mb-1">Best for:</p>
+                    <p className="font-medium text-warning dark:text-warning mb-1">Best for:</p>
                     <ul className="list-disc list-inside space-y-0.5">
                       {STRATEGY_INFO[config.strategy]?.best_for.map((use, index) => (
                         <li key={index}>{use}</li>
@@ -672,11 +672,11 @@ export function ChunkingConfig({ fileContent, fileName, onConfigChange, classNam
 
         {/* Configuration Toggle - Always Visible */}
         {!useCustomConfig && (
-          <div className="p-3 bg-blue-50 dark:bg-blue-950 rounded-lg border border-blue-200 dark:border-blue-800">
+          <div className="p-3 bg-blue-50 dark:bg-blue-950 rounded-lg border border-info dark:border-info">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-blue-900 dark:text-blue-100">Default Chunking</p>
-                <p className="text-xs text-blue-700 dark:text-blue-300">
+                <p className="text-sm font-medium text-info dark:text-info">Default Chunking</p>
+                <p className="text-xs text-info dark:text-info">
                   {fileContent ? 'Click "Analyze Document" for recommendations' : 'Enable custom config to manually adjust settings'}
                 </p>
               </div>
@@ -684,7 +684,7 @@ export function ChunkingConfig({ fileContent, fileName, onConfigChange, classNam
                 variant="outline"
                 size="sm"
                 onClick={() => setUseCustomConfig(true)}
-                className="bg-blue-100 border-blue-300 text-blue-800 hover:bg-blue-200 dark:bg-blue-900 dark:border-blue-700 dark:text-blue-200"
+                className="bg-info border-info text-info hover:bg-info dark:bg-info dark:border-info dark:text-info"
               >
                 <Settings2 className="h-3 w-3 mr-1" />
                 Customize

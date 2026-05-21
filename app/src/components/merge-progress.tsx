@@ -525,7 +525,7 @@ export function MergeProgress({ mergeId, sessionId, transformId, onViewConflicts
 
   if (error) {
     return (
-      <Card variant="glass" className="w-full border-red-200/40">
+      <Card variant="glass" className="w-full border-destructive/40">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-heading">
             <AlertCircle className="h-5 w-5 text-destructive" />
@@ -603,7 +603,7 @@ export function MergeProgress({ mergeId, sessionId, transformId, onViewConflicts
               <Button
                 variant="warning"
                 size="sm"
-                className="bg-amber-500 text-amber-950 hover:bg-amber-400"
+                className="bg-warning text-amber-950 hover:bg-warning"
                 onClick={onViewConflicts}
               >
                 <ExternalLink className="mr-2 h-4 w-4" />
@@ -702,7 +702,7 @@ export function MergeProgress({ mergeId, sessionId, transformId, onViewConflicts
                       className={cn(
                         'flex h-12 w-12 items-center justify-center rounded-full border-2 text-sm font-medium transition-all',
                         isCompleted
-                          ? 'border-emerald-500 bg-emerald-500 text-white shadow-md'
+                          ? 'border-success bg-success text-white shadow-md'
                           : isCurrent
                             ? 'border-primary bg-primary/20 text-primary shadow-sm'
                             : 'border-muted-foreground/30 bg-muted/30 text-muted-foreground'
@@ -719,7 +719,7 @@ export function MergeProgress({ mergeId, sessionId, transformId, onViewConflicts
                     <div className="text-center max-w-[90px]">
                       <div className={cn(
                         "text-[11px] font-medium capitalize leading-tight",
-                        isCompleted ? "text-emerald-600" : isCurrent ? "text-primary" : "text-muted-foreground"
+                        isCompleted ? "text-success" : isCurrent ? "text-primary" : "text-muted-foreground"
                       )}>
                         {stage.name.replace(/_/g, ' ')}
                       </div>
@@ -729,7 +729,7 @@ export function MergeProgress({ mergeId, sessionId, transformId, onViewConflicts
                     <div className={cn(
                       "h-1 w-12 mb-6 transition-colors rounded-full",
                       isCompleted 
-                        ? "bg-emerald-500 dark:bg-emerald-400" 
+                        ? "bg-success dark:bg-success" 
                         : "bg-gray-300 dark:bg-gray-600"
                     )} />
                   )}

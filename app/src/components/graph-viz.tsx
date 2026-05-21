@@ -136,7 +136,7 @@ class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { has
     if (this.state.hasError) {
       return (
         <div className="flex items-center justify-center h-full w-full">
-          <div className="text-red-500">
+          <div className="text-destructive">
             Error rendering graph: {this.state.error?.message || 'Unknown error'}
           </div>
         </div>

@@ -184,12 +184,12 @@ function chipClass(active: boolean): string {
 function SampleCard({ sample }: { sample: SampleSummary }) {
   return (
     <Link href={`/samples/${sample.slug}`}>
-      <Card className="group h-full p-4 transition-shadow hover:shadow-medium">
+      <Card className="group h-full p-4 transition-colors hover:border-[var(--line-strong)]">
         <div className="mb-2 flex items-center justify-between">
           <Badge variant="outline" className="text-[10px]">
             {sample.domain}
           </Badge>
-          <ArrowRight className="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
+          <ArrowRight className="h-4 w-4 text-muted-foreground" />
         </div>
         <h3 className="font-medium leading-tight">
           {sample.display_name}

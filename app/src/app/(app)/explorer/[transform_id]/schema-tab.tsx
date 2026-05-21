@@ -135,7 +135,7 @@ export function SchemaTab({
           <h2 className="text-lg font-medium">
             Inferred ontology
             {dirty && (
-              <span className="ml-2 align-middle text-xs font-normal text-amber-600 dark:text-amber-400">
+              <span className="ml-2 align-middle text-xs font-normal text-warning dark:text-warning">
                 · edited
               </span>
             )}
@@ -189,17 +189,17 @@ export function SchemaTab({
 
       {finalized && (
         <div
-          className="flex items-center justify-between rounded-lg border bg-emerald-50 px-4 py-3 text-sm text-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-200"
+          className="flex items-center justify-between rounded-lg border bg-emerald-50 px-4 py-3 text-sm text-success dark:bg-emerald-950/30 dark:text-success"
           style={{ borderColor: 'var(--line)' }}
         >
           <div>
             <p className="font-medium">
               Saved as ontology{' '}
-              <code className="rounded bg-emerald-100 px-1 py-0.5 text-xs dark:bg-emerald-900/40">
+              <code className="rounded bg-success px-1 py-0.5 text-xs dark:bg-success/40">
                 {finalized.ontology_id}
               </code>
             </p>
-            <p className="mt-0.5 text-xs text-emerald-800/80 dark:text-emerald-200/70">
+            <p className="mt-0.5 text-xs text-success/80 dark:text-success/70">
               {finalized.source === 'user_edit'
                 ? 'Your edited YAML was persisted verbatim.'
                 : 'The inferred YAML was persisted as-is.'}
@@ -210,7 +210,7 @@ export function SchemaTab({
               that match the ghost-button visual. */}
           <Link
             href={`/ontology/${finalized.ontology_id}`}
-            className="inline-flex h-7 items-center gap-1.5 rounded-[var(--r-sm)] border border-transparent px-2.5 text-[11.5px] font-medium text-emerald-900 hover:bg-emerald-100/40 dark:text-emerald-200 dark:hover:bg-emerald-900/40"
+            className="inline-flex h-7 items-center gap-1.5 rounded-[var(--r-sm)] border border-transparent px-2.5 text-[11.5px] font-medium text-success hover:bg-success/40 dark:text-success dark:hover:bg-success/40"
           >
             Open
             <ExternalLink className="h-3 w-3" />

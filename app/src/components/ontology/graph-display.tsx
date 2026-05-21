@@ -355,7 +355,7 @@ export function GraphDisplay({ className = '' }: GraphDisplayProps) {
         }
         
         // Draw white background for better readability
-        ctx.font = `${graph.style['font-size'] || 12}px ${graph.style['font-family'] || 'Arial, sans-serif'}`
+        ctx.font = `${graph.style['font-size'] || 12}px ${graph.style['font-family'] || 'var(--font-mono), ui-monospace, monospace'}`
         const textMetrics = ctx.measureText(relationship.type)
         const padding = 4
         
@@ -438,7 +438,7 @@ export function GraphDisplay({ className = '' }: GraphDisplayProps) {
       if (node.caption) {
         // Use a larger font size for better readability
         const fontSize = Math.max(14, graph.style['font-size'] || 12)
-        ctx.font = `bold ${fontSize}px ${graph.style['font-family'] || 'Arial, sans-serif'}`
+        ctx.font = `bold ${fontSize}px ${graph.style['font-family'] || 'var(--font-mono), ui-monospace, monospace'}`
         ctx.textAlign = 'center'
         ctx.textBaseline = 'middle'
         ctx.fillStyle = '#ffffff'

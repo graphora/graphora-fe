@@ -89,15 +89,15 @@ export function ConfigCheck({ children, requireConfig = true }: ConfigCheckProps
       <div className="min-h-screen flex items-center justify-center p-4">
         <Card className="w-full max-w-md">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-red-600">
+            <CardTitle className="flex items-center gap-2 text-destructive">
               <AlertCircle className="h-5 w-5" />
               {isBackendError ? 'Backend Connection Error' : 'Configuration Error'}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <Alert className="border-orange-200 bg-orange-50">
-              <AlertCircle className="h-4 w-4 text-orange-600" />
-              <AlertDescription className="text-orange-800">
+            <Alert className="border-warning bg-orange-50">
+              <AlertCircle className="h-4 w-4 text-warning" />
+              <AlertDescription className="text-warning">
                 {error}
               </AlertDescription>
             </Alert>
@@ -144,7 +144,7 @@ export function ConfigCheck({ children, requireConfig = true }: ConfigCheckProps
         <Card className="w-full max-w-lg">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Database className="h-6 w-6 text-blue-600" />
+              <Database className="h-6 w-6 text-info" />
               Neo4j Database Configuration Required
             </CardTitle>
             <CardDescription>
@@ -172,8 +172,8 @@ export function ConfigCheck({ children, requireConfig = true }: ConfigCheckProps
               </div>
               
               <div className="bg-blue-50 p-3 rounded-lg text-sm">
-                <h5 className="font-medium text-blue-900 mb-1">Neo4j Connection Examples:</h5>
-                <div className="text-blue-800 space-y-1">
+                <h5 className="font-medium text-info mb-1">Neo4j Connection Examples:</h5>
+                <div className="text-info space-y-1">
                   <div><strong>Local:</strong> neo4j://localhost:7687</div>
                   <div><strong>Aura:</strong> neo4j+s://your-instance.databases.neo4j.io</div>
                   <div><strong>Bolt:</strong> bolt://localhost:7687</div>

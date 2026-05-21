@@ -198,10 +198,10 @@ function SummaryRow({ data }: { data: ContradictionsResponse }) {
 type StatTone = 'warning' | 'neutral' | 'muted' | 'good'
 
 const TONE_STYLES: Record<StatTone, string> = {
-  warning: 'text-amber-700 dark:text-amber-400',
+  warning: 'text-warning dark:text-warning',
   neutral: 'text-foreground',
   muted: 'text-muted-foreground',
-  good: 'text-green-700 dark:text-green-400',
+  good: 'text-success dark:text-success',
 }
 
 function SummaryStat({
@@ -249,7 +249,7 @@ function NoContradictionsState({ totalScanned }: { totalScanned: number }) {
   // itself across chunks.
   return (
     <Card className="flex flex-col items-center justify-center gap-3 p-12 text-center">
-      <CheckCircle2 className="h-10 w-10 text-green-700 dark:text-green-400" />
+      <CheckCircle2 className="h-10 w-10 text-success dark:text-success" />
       <div className="max-w-md">
         <p className="text-sm font-medium">All claims agree</p>
         <p className="mt-2 text-sm text-muted-foreground">
@@ -267,7 +267,7 @@ function ContradictionCard({ contradiction }: { contradiction: Contradiction }) 
   return (
     <Card className="p-4">
       <div className="mb-3 flex flex-wrap items-center gap-2">
-        <AlertTriangle className="h-4 w-4 text-amber-700 dark:text-amber-400" />
+        <AlertTriangle className="h-4 w-4 text-warning dark:text-warning" />
         <TargetIdentity
           targetKind={contradiction.target_kind}
           targetId={contradiction.target_id}
@@ -377,7 +377,7 @@ function CompetingClaimsTable({ claims }: { claims: Claim[] }) {
               <td className="py-1 pr-2">
                 {isWinner ? (
                   <Trophy
-                    className="h-3.5 w-3.5 text-amber-700 dark:text-amber-400"
+                    className="h-3.5 w-3.5 text-warning dark:text-warning"
                     aria-label="Pipeline-winning claim"
                   />
                 ) : null}

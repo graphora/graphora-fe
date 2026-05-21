@@ -413,17 +413,17 @@ function CoverageBadge({
   let icon: React.ReactNode
   if (allErrored) {
     icon = (
-      <AlertTriangle className="mr-1 h-3 w-3 text-red-700 dark:text-red-400" />
+      <AlertTriangle className="mr-1 h-3 w-3 text-destructive dark:text-destructive" />
     )
   } else if (noOutputs) {
     icon = <CircleDashed className="mr-1 h-3 w-3" />
   } else if (partial) {
     icon = (
-      <AlertTriangle className="mr-1 h-3 w-3 text-amber-700 dark:text-amber-400" />
+      <AlertTriangle className="mr-1 h-3 w-3 text-warning dark:text-warning" />
     )
   } else {
     icon = (
-      <CheckCircle2 className="mr-1 h-3 w-3 text-green-700 dark:text-green-400" />
+      <CheckCircle2 className="mr-1 h-3 w-3 text-success dark:text-success" />
     )
   }
 
@@ -487,7 +487,7 @@ function PerEntryTable({ entries }: { entries: BenchEntryScore[] }) {
           <tr
             key={entry.corpus_slug}
             className={`align-top ${
-              entry.error ? 'text-amber-700 dark:text-amber-400' : ''
+              entry.error ? 'text-warning dark:text-warning' : ''
             }`}
           >
             <td className="py-1 pr-2 font-mono">{entry.corpus_slug}</td>

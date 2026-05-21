@@ -104,7 +104,7 @@ class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { has
     if (this.state.hasError) {
       return (
         <div className="flex items-center justify-center h-full w-full">
-          <div className="text-red-500">
+          <div className="text-destructive">
             Error rendering graph: {this.state.error?.message || 'Unknown error'}
           </div>
         </div>
@@ -428,7 +428,7 @@ export const MergeGraphVisualization: React.FC<MergeGraphVisualizationProps> = (
   if (externalError) {
     return (
       <div className="w-full h-full min-h-[600px] flex items-center justify-center">
-        <div className="text-red-500">{externalError}</div>
+        <div className="text-destructive">{externalError}</div>
       </div>
     );
   }
@@ -687,9 +687,9 @@ export const MergeGraphVisualization: React.FC<MergeGraphVisualizationProps> = (
                 <div className="grid grid-cols-4 gap-2">
                   <span className="font-medium text-gray-700">Direction:</span>
                   <span className="col-span-3">
-                    <span className="text-blue-600">{selectedLink.from}</span>
+                    <span className="text-info">{selectedLink.from}</span>
                     <span className="mx-2">→</span>
-                    <span className="text-green-600">{selectedLink.to}</span>
+                    <span className="text-success">{selectedLink.to}</span>
                   </span>
                 </div>
                 <div className="mt-4">
@@ -747,7 +747,7 @@ export const MergeGraphVisualization: React.FC<MergeGraphVisualizationProps> = (
 
         {isFinalGraph && (
           <div className="absolute top-4 right-4 z-10">
-            <Badge variant="outline" className="bg-green-100 text-green-800">
+            <Badge variant="outline" className="bg-success text-success">
               Final Merged Graph
             </Badge>
           </div>

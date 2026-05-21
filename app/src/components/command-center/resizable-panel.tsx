@@ -58,8 +58,8 @@ export function ResizablePanel({
       <div
         className={cn(
           'absolute right-0 top-0 h-full w-1 cursor-col-resize',
-          'hover:bg-blue-500/50',
-          isResizing && 'bg-blue-500'
+          'hover:bg-info/50',
+          isResizing && 'bg-info'
         )}
         onMouseDown={() => setIsResizing(true)}
         onDoubleClick={() => {

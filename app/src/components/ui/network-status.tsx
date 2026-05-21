@@ -26,15 +26,15 @@ export function NetworkStatus() {
 
   return (
     <div className="fixed bottom-4 right-4 z-50 max-w-sm">
-      <Alert className={isOnline ? 'border-green-500 bg-green-50 dark:bg-green-950 dark:border-green-700' : 'border-red-500 bg-red-50 dark:bg-red-950 dark:border-red-700'}>
+      <Alert className={isOnline ? 'border-success bg-green-50 dark:bg-green-950 dark:border-success' : 'border-destructive bg-red-50 dark:bg-red-950 dark:border-destructive'}>
         <div className="flex items-center gap-2 justify-between">
           <div className="flex items-center gap-2">
             {isOnline ? (
-              <Wifi className="h-4 w-4 text-green-600 dark:text-green-400" />
+              <Wifi className="h-4 w-4 text-success dark:text-success" />
             ) : (
-              <WifiOff className="h-4 w-4 text-red-600 dark:text-red-400" />
+              <WifiOff className="h-4 w-4 text-destructive dark:text-destructive" />
             )}
-            <AlertDescription className={isOnline ? 'text-green-800 dark:text-green-200' : 'text-red-800 dark:text-red-200'}>
+            <AlertDescription className={isOnline ? 'text-success dark:text-success' : 'text-destructive dark:text-destructive'}>
               {isOnline ? 'Connection restored' : 'No internet connection'}
             </AlertDescription>
           </div>
@@ -43,9 +43,9 @@ export function NetworkStatus() {
               variant="ghost"
               size="sm"
               onClick={dismissRestored}
-              className="h-6 w-6 p-0 hover:bg-green-100 dark:hover:bg-green-900"
+              className="h-6 w-6 p-0 hover:bg-success dark:hover:bg-success"
             >
-              <X className="h-3.5 w-3.5 text-green-700 dark:text-green-300" />
+              <X className="h-3.5 w-3.5 text-success dark:text-success" />
             </Button>
           )}
         </div>

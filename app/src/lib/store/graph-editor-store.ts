@@ -116,7 +116,11 @@ const DEFAULT_STYLE = {
   'node-radius': 40,
   'border-width': 2,
   'font-size': 14,
-  'font-family': 'Arial, sans-serif',
+  // P2 audit fix: graph canvas falls back to Plex Mono via the
+  // root CSS var (set by next/font in app/layout.tsx), then
+  // ui-monospace / monospace if the font isn't loaded. Was
+  // previously Arial — broke continuity with the rest of the UI.
+  'font-family': 'var(--font-mono), ui-monospace, monospace',
   'caption-position': 'inside'
 }
 
