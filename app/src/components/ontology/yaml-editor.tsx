@@ -87,7 +87,7 @@ export function YAMLEditor({ value, onChange, readOnly = false, height }: YAMLEd
       
       {/* Error message shown at the bottom */}
       {error && (
-        <div className="p-2 bg-destructive text-destructive border-t border-destructive text-xs z-10">
+        <div className="p-2 bg-destructive/10 text-destructive border-t border-destructive/40 text-xs z-10">
           <strong>Error:</strong> {error}
         </div>
       )}

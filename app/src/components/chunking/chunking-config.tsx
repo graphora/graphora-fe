@@ -391,7 +391,7 @@ export function ChunkingConfig({ fileContent, fileName, onConfigChange, classNam
 
             {/* Recommended Strategy Badge */}
             <div className="flex items-center space-x-2">
-              <Badge variant="secondary" className="bg-success text-success dark:bg-success dark:text-success">
+              <Badge variant="secondary" className="bg-success/15 text-success border-success/30">
                 <CheckCircle className="h-3 w-3 mr-1" />
                 Recommended: {STRATEGY_INFO[analysis.recommended_strategy]?.name || analysis.recommended_strategy}
               </Badge>
@@ -447,7 +447,7 @@ export function ChunkingConfig({ fileContent, fileName, onConfigChange, classNam
                       <div className="flex items-center space-x-2">
                         <span>{strategy.name}</span>
                         {analysis?.recommended_strategy === strategy.value && (
-                          <Badge variant="secondary" className="text-xs bg-success text-success dark:bg-success dark:text-success">
+                          <Badge variant="secondary" className="text-xs bg-success/15 text-success border-success/30">
                             Recommended
                           </Badge>
                         )}
@@ -684,7 +684,7 @@ export function ChunkingConfig({ fileContent, fileName, onConfigChange, classNam
                 variant="outline"
                 size="sm"
                 onClick={() => setUseCustomConfig(true)}
-                className="bg-info border-info text-info hover:bg-info dark:bg-info dark:border-info dark:text-info"
+                className="bg-info/10 border-info/40 text-info hover:bg-info/20"
               >
                 <Settings2 className="h-3 w-3 mr-1" />
                 Customize

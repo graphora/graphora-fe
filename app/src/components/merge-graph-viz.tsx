@@ -747,8 +747,8 @@ export const MergeGraphVisualization: React.FC<MergeGraphVisualizationProps> = (
 
         {isFinalGraph && (
           <div className="absolute top-4 right-4 z-10">
-            <Badge variant="outline" className="bg-success text-success">
-              Final Merged Graph
+            <Badge variant="outline" className="bg-success/15 text-success border-success/30">
+              Final merged graph
             </Badge>
           </div>
         )}

@@ -387,7 +387,7 @@ export function ConflictList({
                                 <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
                                   <span>{new Date(conflict.created_at).toLocaleDateString()}</span>
                                   {conflict.resolution_status === 'auto-resolved' && (
-                                    <Badge className="bg-info dark:bg-blue-950/50 text-info dark:text-info border-info dark:border-info/50 rounded-full text-xs">
+                                    <Badge className="bg-info/15 text-info border-info/40 rounded-full text-xs">
                                       <Wand2 className="h-3 w-3 mr-1" />
                                       Auto
                                     </Badge>
