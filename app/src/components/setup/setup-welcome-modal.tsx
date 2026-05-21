@@ -83,7 +83,10 @@ export function SetupWelcomeModal({ isOpen, onClose, setupStatus, onRefresh }: S
     >
       <DialogContent className="glass-surface max-w-3xl max-h-[85vh] overflow-hidden border border-white/15 p-0 text-card-foreground shadow-large">
         <div className="grid gap-px bg-white/10 md:grid-cols-[1fr_1.4fr] overflow-y-auto max-h-[85vh]">
-          <aside className="relative flex flex-col justify-between gap-6 bg-gradient-to-br from-primary/25 via-background/30 to-background/65 p-6 text-left backdrop-blur-panel">
+          <aside
+            className="relative flex flex-col justify-between gap-6 p-6 text-left"
+            style={{ background: 'var(--gx-accent-glow)' }}
+          >
             <div className="space-y-6">
               <div className="flex items-start justify-between">
                 <Badge
@@ -117,7 +120,7 @@ export function SetupWelcomeModal({ isOpen, onClose, setupStatus, onRefresh }: S
                 <Progress
                   value={setupProgress}
                   className="h-2 overflow-hidden rounded-full bg-white/15"
-                  indicatorClassName="bg-gradient-to-r from-primary via-primary/90 to-info"
+                  indicatorClassName="bg-[var(--gx-accent)]"
                 />
                 <div className="space-y-3">
                   {setupChecklist.map((item) => (
@@ -170,12 +173,12 @@ export function SetupWelcomeModal({ isOpen, onClose, setupStatus, onRefresh }: S
               {/* Production Database Card - Required for merge */}
               <Card
                 variant="glass"
-                className={cn(
-                  'border-white/15 shadow-glass backdrop-blur-panel transition-all duration-200',
-                  setupStatus.hasProdDb
-                    ? 'bg-gradient-to-br from-success/15 via-background/40 to-background/10'
-                    : 'bg-gradient-to-br from-warning/20 via-background/35 to-background/10'
-                )}
+                // Design audit P0: replaced three-color glass gradients
+                // with single-color tokenized washes. Status color
+                // (success vs warning) lives on the icon/badge only —
+                // the card itself stays neutral so the surface doesn't
+                // do the AI-slop multi-hue thing.
+                className="border-[var(--line)] transition-all duration-200"
               >
                 <CardHeader className="pb-2 pt-4 px-4">
                   <CardTitle className="flex items-center justify-between text-sm">
@@ -190,7 +193,10 @@ export function SetupWelcomeModal({ isOpen, onClose, setupStatus, onRefresh }: S
                 </CardHeader>
                 <CardContent className="space-y-3 px-4 pb-4">
                   {setupStatus.hasProdDb ? (
-                    <p className="text-xs text-success">✓ Connected</p>
+                    <p className="text-xs text-success inline-flex items-center gap-1.5">
+                      <CheckCircle className="h-3.5 w-3.5" aria-hidden />
+                      Connected
+                    </p>
                   ) : (
                     <Button
                       onClick={() => handleNavigateToConfig('databases')}
@@ -209,12 +215,7 @@ export function SetupWelcomeModal({ isOpen, onClose, setupStatus, onRefresh }: S
               {/* Staging Database Card - Optional (in-memory fallback) */}
               <Card
                 variant="glass"
-                className={cn(
-                  'border-white/15 shadow-glass backdrop-blur-panel transition-all duration-200',
-                  setupStatus.hasStagingDb
-                    ? 'bg-gradient-to-br from-success/15 via-background/40 to-background/10'
-                    : 'bg-gradient-to-br from-info/15 via-background/40 to-background/10'
-                )}
+                className="border-[var(--line)] transition-all duration-200"
               >
                 <CardHeader className="pb-2 pt-4 px-4">
                   <CardTitle className="flex items-center justify-between text-sm">
@@ -233,7 +234,10 @@ export function SetupWelcomeModal({ isOpen, onClose, setupStatus, onRefresh }: S
                 </CardHeader>
                 <CardContent className="space-y-3 px-4 pb-4">
                   {setupStatus.hasStagingDb ? (
-                    <p className="text-xs text-success">✓ Connected</p>
+                    <p className="text-xs text-success inline-flex items-center gap-1.5">
+                      <CheckCircle className="h-3.5 w-3.5" aria-hidden />
+                      Connected
+                    </p>
                   ) : (
                     <Button
                       onClick={() => handleNavigateToConfig('databases')}
@@ -251,12 +255,7 @@ export function SetupWelcomeModal({ isOpen, onClose, setupStatus, onRefresh }: S
 
               <Card
                 variant="glass"
-                className={cn(
-                  'border-white/15 shadow-glass backdrop-blur-panel transition-all duration-200',
-                  setupStatus.hasAiConfig
-                    ? 'bg-gradient-to-br from-info/15 via-background/40 to-background/10'
-                    : 'bg-gradient-to-br from-info/10 via-background/35 to-background/10'
-                )}
+                className="border-[var(--line)] transition-all duration-200"
               >
                 <CardHeader className="pb-2 pt-4 px-4">
                   <CardTitle className="flex items-center justify-between text-sm">
@@ -272,7 +271,10 @@ export function SetupWelcomeModal({ isOpen, onClose, setupStatus, onRefresh }: S
                 <CardContent className="space-y-3 px-4 pb-4">
                   {setupStatus.hasAiConfig ? (
                     <div className="space-y-1 text-xs text-info">
-                      <p>✓ {setupStatus.aiConfig?.provider_display_name}</p>
+                      <p className="inline-flex items-center gap-1.5">
+                        <CheckCircle className="h-3.5 w-3.5" aria-hidden />
+                        {setupStatus.aiConfig?.provider_display_name}
+                      </p>
                       <p className="text-muted-foreground">{setupStatus.aiConfig?.default_model_display_name}</p>
                     </div>
                   ) : (

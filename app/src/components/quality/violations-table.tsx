@@ -1,15 +1,16 @@
 'use client'
 
 import React, { useState, useMemo } from 'react'
-import { 
-  AlertTriangle, 
-  XCircle, 
-  Info, 
+import {
+  AlertTriangle,
+  XCircle,
+  Info,
   Filter,
   Search,
   ChevronDown,
   ChevronRight,
-  ExternalLink
+  ExternalLink,
+  Lightbulb,
 } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
@@ -368,7 +369,10 @@ export function ViolationsTable({ violations, transformId, className = '' }: Vio
                             
                             {violation.suggestion && (
                               <div>
-                                <h4 className="text-sm font-medium mb-2">💡 Suggestion</h4>
+                                <h4 className="text-sm font-medium mb-2 inline-flex items-center gap-1.5">
+                                  <Lightbulb className="h-3.5 w-3.5" aria-hidden />
+                                  Suggestion
+                                </h4>
                                 <div
                                   className="rounded p-3"
                                   style={{

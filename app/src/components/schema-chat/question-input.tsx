@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Card, CardContent } from '@/components/ui/card'
-import { Send, Upload, X } from 'lucide-react'
+import { Send, Upload, X, Lightbulb } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface Question {
@@ -277,8 +277,9 @@ export function QuestionInput({
         </Label>
         
         {question.helpText && (
-          <p className="text-xs text-muted-foreground">
-            💡 {question.helpText}
+          <p className="text-xs text-muted-foreground inline-flex items-start gap-1.5">
+            <Lightbulb className="h-3.5 w-3.5 mt-0.5 shrink-0" aria-hidden />
+            <span>{question.helpText}</span>
           </p>
         )}
       </div>

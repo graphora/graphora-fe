@@ -3,7 +3,7 @@
 import React, { useState } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
-import { Bot, User, Edit3, Check, X } from 'lucide-react'
+import { Bot, User, Edit3, Check, X, Eye } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -185,13 +185,14 @@ export function ChatMessage({ message, onAction, onEdit, canEdit = false }: Chat
         {/* Schema preview actions */}
         {message.type === 'schema_preview' && isAssistant && (
           <div className="mt-4 pt-3 border-t border-border/50 space-y-2">
-            <Button 
-              variant="secondary" 
+            <Button
+              variant="secondary"
               size="sm"
               className="w-full"
               onClick={() => onAction?.('showPreview')}
             >
-              👁️ Show Schema Preview
+              <Eye className="mr-2 h-3.5 w-3.5" />
+              Show schema preview
             </Button>
             <Button 
               variant="outline" 

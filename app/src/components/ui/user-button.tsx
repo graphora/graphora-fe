@@ -96,7 +96,14 @@ export function UserButton({ user: propUser }: UserButtonProps) {
           <Button variant="ghost" className="relative h-9 w-9 rounded-full">
             <Avatar className="h-9 w-9">
               <AvatarImage src={userImage} alt={userName} />
-              <AvatarFallback className="bg-gradient-to-br from-sky-500 via-cyan-500 to-emerald-500 text-white text-sm font-semibold">
+              <AvatarFallback
+                className="text-sm font-medium"
+                style={{
+                  background: 'var(--gx-accent-glow)',
+                  color: 'var(--gx-accent)',
+                  border: '1px solid var(--gx-accent-dim)',
+                }}
+              >
                 {userInitials}
               </AvatarFallback>
             </Avatar>

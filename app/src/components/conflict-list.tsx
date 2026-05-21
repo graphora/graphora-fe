@@ -266,7 +266,7 @@ export function ConflictList({
     <div className={cn("h-full flex flex-col", className)}>
       <div className="flex-1 flex overflow-hidden" ref={containerRef}>
         <div
-          className="relative bg-gradient-to-b from-background/80 via-background/70 to-background border-r border-white/5"
+          className="relative bg-[var(--bg-elev)] border-r border-[var(--line)]"
           style={{ width: `${leftWidth}%` }}
         >
           <div className="h-full flex flex-col">
@@ -446,8 +446,8 @@ export function ConflictList({
           />
         </div>
 
-        <div 
-          className="bg-gradient-to-b from-background via-background/70 to-background flex-1 overflow-auto"
+        <div
+          className="bg-[var(--bg-elev)] flex-1 overflow-auto"
           style={{ width: `${100 - leftWidth}%` }}
         >
           {selectedConflictForDetails ? (

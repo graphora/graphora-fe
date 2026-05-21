@@ -11,16 +11,21 @@ import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Separator } from '@/components/ui/separator'
 import { Progress } from '@/components/ui/progress'
-import { 
-  Loader2, 
-  Brain, 
-  Settings2, 
-  CheckCircle, 
-  AlertCircle, 
+import {
+  Loader2,
+  Brain,
+  Settings2,
+  CheckCircle,
+  AlertCircle,
   Info,
   Zap,
   RefreshCw,
-  HelpCircle
+  HelpCircle,
+  ClipboardList,
+  BookOpen,
+  Cog,
+  Library,
+  FileText,
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -257,13 +262,21 @@ export function ChunkingConfig({ fileContent, fileName, onConfigChange, classNam
     return 'text-red-600 dark:text-red-400'
   }
 
+  // Document-type → Lucide icon mapping. Design audit P0:
+  // emoji removed from product UI in favor of the icon system
+  // every other surface uses.
   const getDocumentTypeIcon = (type: string) => {
     switch (type) {
-      case 'structured': return '📋'
-      case 'narrative': return '📖'
-      case 'technical': return '⚙️'
-      case 'mixed': return '📚'
-      default: return '📄'
+      case 'structured':
+        return <ClipboardList className="h-5 w-5 text-muted-foreground" />
+      case 'narrative':
+        return <BookOpen className="h-5 w-5 text-muted-foreground" />
+      case 'technical':
+        return <Cog className="h-5 w-5 text-muted-foreground" />
+      case 'mixed':
+        return <Library className="h-5 w-5 text-muted-foreground" />
+      default:
+        return <FileText className="h-5 w-5 text-muted-foreground" />
     }
   }
 
@@ -288,7 +301,6 @@ export function ChunkingConfig({ fileContent, fileName, onConfigChange, classNam
             size="sm"
             onClick={handleAnalyzeDocument}
             disabled={isAnalyzing || !fileContent}
-            className="bg-gradient-to-r from-primary to-primary/90 text-primary-foreground shadow-md hover:shadow-lg hover:scale-105 transition-all"
           >
             {isAnalyzing ? (
               <>
@@ -325,7 +337,7 @@ export function ChunkingConfig({ fileContent, fileName, onConfigChange, classNam
           <div className="space-y-4 p-4 bg-muted/50 rounded-lg border">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-3">
-                <span className="text-2xl">{getDocumentTypeIcon(analysis.document_type)}</span>
+                <span className="inline-flex">{getDocumentTypeIcon(analysis.document_type)}</span>
                 <div>
                   <h4 className="font-medium text-sm">Document Analysis</h4>
                   <p className="text-xs text-muted-foreground">

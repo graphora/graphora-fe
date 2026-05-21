@@ -168,7 +168,10 @@ export function UsageTrackingModal({ isOpen, onClose }: UsageTrackingModalProps)
     <Dialog open={isOpen} onOpenChange={handleOpenChange}>
       <DialogContent className="glass-surface max-w-6xl max-h-[90vh] overflow-hidden border border-white/15 p-0 shadow-large">
         <div className="grid h-full md:grid-cols-[320px_minmax(0,1fr)] lg:grid-cols-[360px_minmax(0,1fr)]">
-          <aside className="flex flex-col justify-between gap-8 bg-gradient-to-br from-primary/22 via-background/32 to-background/65 p-8 text-left backdrop-blur-panel">
+          <aside
+            className="flex flex-col justify-between gap-8 p-8 text-left"
+            style={{ background: 'var(--gx-accent-glow)' }}
+          >
             <div className="space-y-6">
               <div className="space-y-2">
                 <p className="text-xs uppercase tracking-[0.24em] text-foreground/55">Plan tier</p>
@@ -193,10 +196,13 @@ export function UsageTrackingModal({ isOpen, onClose }: UsageTrackingModalProps)
                       >
                         <div className="flex items-center gap-3">
                           <span
-                            className={cn(
-                              'inline-flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br text-white shadow-glass',
-                              metric.accent,
-                            )}
+                            className="inline-flex h-10 w-10 items-center justify-center"
+                            style={{
+                              background: 'var(--gx-accent-glow)',
+                              color: 'var(--gx-accent)',
+                              border: '1px solid var(--gx-accent-dim)',
+                              borderRadius: 'var(--r-md)',
+                            }}
                           >
                             <Icon className="h-5 w-5" />
                           </span>
@@ -232,7 +238,7 @@ export function UsageTrackingModal({ isOpen, onClose }: UsageTrackingModalProps)
                           <Progress
                             value={percent}
                             className="h-2 overflow-hidden rounded-full bg-white/15"
-                            indicatorClassName={cn('bg-gradient-to-r', styles.indicator)}
+                            indicatorClassName="bg-[var(--gx-accent)]"
                           />
                           <div className="flex justify-between text-[0.7rem] text-foreground/60">
                             <span>{formatNumber(item.current)} used</span>
@@ -293,7 +299,15 @@ export function UsageTrackingModal({ isOpen, onClose }: UsageTrackingModalProps)
           <div className="flex flex-col bg-background/92 backdrop-blur-panel">
             <header className="flex items-center justify-between border-b border-white/10 p-8 pb-6">
               <div className="flex items-center gap-3">
-                <span className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-sky-500 via-cyan-500 to-emerald-500 text-white shadow-glass">
+                <span
+                  className="inline-flex h-10 w-10 items-center justify-center"
+                  style={{
+                    background: 'var(--gx-accent-glow)',
+                    color: 'var(--gx-accent)',
+                    border: '1px solid var(--gx-accent-dim)',
+                    borderRadius: 'var(--r-md)',
+                  }}
+                >
                   <BarChart3 className="h-5 w-5" />
                 </span>
                 <div className="space-y-1">
@@ -395,7 +409,7 @@ export function UsageTrackingModal({ isOpen, onClose }: UsageTrackingModalProps)
                                   <Progress
                                     value={item.limit ? getUsagePercentage(item.current, item.limit) : 0}
                                     className="h-2 overflow-hidden rounded-full bg-white/15"
-                                    indicatorClassName={cn('bg-gradient-to-r', styles.indicator)}
+                                    indicatorClassName="bg-[var(--gx-accent)]"
                                   />
                                 </div>
                               )

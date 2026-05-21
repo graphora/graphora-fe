@@ -1832,7 +1832,10 @@ function TransformPageContent() {
         <DialogContent className="glass-surface max-w-5xl h-[90vh] max-h-[90vh] overflow-x-hidden overflow-y-auto border  p-0 text-card-foreground">
           <DialogTitle className="sr-only">Chunking Configuration</DialogTitle>
           <div className="grid h-full min-h-0 md:grid-cols-[320px_1fr]">
-            <aside className="flex h-full min-h-0 flex-col bg-gradient-to-br from-primary/18 via-background/30 to-background/60 p-8 text-left ">
+            <aside
+              className="flex h-full min-h-0 flex-col p-8 text-left"
+              style={{ background: 'var(--gx-accent-glow)' }}
+            >
               <div className="flex-1 min-h-0 space-y-6 overflow-y-auto pr-3">
                 <div className="space-y-2">
                   <p className="text-xs uppercase tracking-[0.24em] text-foreground/55">Document</p>
@@ -1889,7 +1892,15 @@ function TransformPageContent() {
             <div className="flex h-full min-h-0 flex-col bg-background/92  overflow-hidden">
               <header className="flex items-center justify-between border-b  p-8 pb-6 flex-shrink-0">
                 <div className="flex items-center gap-3">
-                  <span className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-primary/70 text-white">
+                  <span
+                    className="inline-flex h-10 w-10 items-center justify-center"
+                    style={{
+                      background: 'var(--gx-accent-glow)',
+                      color: 'var(--gx-accent)',
+                      border: '1px solid var(--gx-accent-dim)',
+                      borderRadius: 'var(--r-md)',
+                    }}
+                  >
                     <Settings2 className="h-5 w-5" />
                   </span>
                   <div className="space-y-1">
