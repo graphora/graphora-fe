@@ -11,9 +11,9 @@ import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 import { Loader2, ArrowLeft, HardDrive, Database, Info, AlertTriangle, CheckCircle2, GitMerge } from 'lucide-react'
 import { DatabaseConfigForm } from '@/components/config/database-config-form'
-import { GeminiConfigForm } from '@/components/config/gemini-config-form'
+import { AIConfigForm } from '@/components/config/ai-config-form'
 import { DatabaseConfig, DatabaseConfigInput, UserConfig, ConfigUpsertRequest } from '@/types/config'
-import { GeminiConfigRequest, UserAIConfigDisplay } from '@/types/ai-config'
+import { ProviderConfigRequest, ProviderName, UserAIConfigDisplay } from '@/types/ai-config'
 import { toast } from 'sonner'
 
 const isDebugEnabled = process.env.NODE_ENV !== 'production'
@@ -42,10 +42,20 @@ const defaultProdDb: DatabaseConfig = {
   password: 'prod_password',
 }
 
-const defaultGeminiConfig: GeminiConfigRequest = {
+const SUPPORTED_PROVIDERS: ReadonlySet<ProviderName> = new Set([
+  'gemini',
+  'openai',
+  'anthropic',
+  'ollama',
+])
+
+const defaultAIConfig: ProviderConfigRequest = {
   api_key: '',
-  default_model_name: '', // Will be set dynamically when models are loaded
+  default_model_name: '', // Will be set when the user picks a model from the dropdown
+  base_url: '',
 }
+
+const DEFAULT_PROVIDER: ProviderName = 'gemini'
 
 function ConfigPageContent() {
   const router = useRouter()
@@ -68,7 +78,8 @@ function ConfigPageContent() {
   
   // AI Configuration state
   const [aiConfig, setAiConfig] = useState<UserAIConfigDisplay | null>(null)
-  const [geminiConfig, setGeminiConfig] = useState<GeminiConfigRequest>(defaultGeminiConfig)
+  const [aiProvider, setAiProvider] = useState<ProviderName>(DEFAULT_PROVIDER)
+  const [aiProviderConfig, setAiProviderConfig] = useState<ProviderConfigRequest>(defaultAIConfig)
   const [savingAI, setSavingAI] = useState(false)
   const aiConfigDirtyRef = useRef(false)
 
@@ -166,9 +177,14 @@ function ConfigPageContent() {
       setAiConfig(data)
       if (data) {
         if (!aiConfigDirtyRef.current) {
-          setGeminiConfig({
+          const storedProvider = SUPPORTED_PROVIDERS.has(data.provider_name as ProviderName)
+            ? (data.provider_name as ProviderName)
+            : DEFAULT_PROVIDER
+          setAiProvider(storedProvider)
+          setAiProviderConfig({
             api_key: '', // Don't populate API key for security
-            default_model_name: data.default_model_name
+            default_model_name: data.default_model_name,
+            base_url: '', // Backend doesn't return base_url in display; user re-enters if changing
           })
           aiConfigDirtyRef.current = false
         } else {
@@ -198,9 +214,14 @@ function ConfigPageContent() {
     setProdDb(updatedConfig)
   }
 
-  const handleGeminiConfigChange = (updatedConfig: GeminiConfigRequest) => {
+  const handleAIProviderChange = (provider: ProviderName) => {
     aiConfigDirtyRef.current = true
-    setGeminiConfig(updatedConfig)
+    setAiProvider(provider)
+  }
+
+  const handleAIConfigChange = (updatedConfig: ProviderConfigRequest) => {
+    aiConfigDirtyRef.current = true
+    setAiProviderConfig(updatedConfig)
   }
 
   const handleSave = async () => {
@@ -292,7 +313,7 @@ function ConfigPageContent() {
       return
     }
 
-    if (!geminiConfig.api_key || !geminiConfig.default_model_name) {
+    if (!aiProviderConfig.api_key || !aiProviderConfig.default_model_name) {
       toast.error('Please fill in both API key and select a model')
       return
     }
@@ -305,8 +326,22 @@ function ConfigPageContent() {
       const isUpdate = aiConfig !== null
       const method = isUpdate ? 'PUT' : 'POST'
 
+      // Strip empty base_url so the backend stores it as absent rather
+      // than as an empty string (which the BAML routing layer treats
+      // as a value).
+      const payload: Record<string, unknown> = {
+        provider: aiProvider,
+        api_key: aiProviderConfig.api_key,
+        default_model_name: aiProviderConfig.default_model_name,
+      }
+      if (aiProviderConfig.base_url && aiProviderConfig.base_url.trim()) {
+        payload.base_url = aiProviderConfig.base_url.trim()
+      }
+
       debug(`${isUpdate ? 'Updating' : 'Creating'} AI configuration:`, {
-        default_model_name: geminiConfig.default_model_name
+        provider: aiProvider,
+        default_model_name: aiProviderConfig.default_model_name,
+        has_base_url: 'base_url' in payload,
       })
 
       const response = await fetch('/api/ai-config', {
@@ -314,7 +349,7 @@ function ConfigPageContent() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(geminiConfig),
+        body: JSON.stringify(payload),
       })
 
       if (!response.ok) {
@@ -324,12 +359,12 @@ function ConfigPageContent() {
 
       const savedConfig = await response.json()
       debug('AI Configuration saved successfully:', savedConfig)
-      
+
       setAiConfig(savedConfig)
       // Clear the API key field for security
-      setGeminiConfig({
-        ...geminiConfig,
-        api_key: ''
+      setAiProviderConfig({
+        ...aiProviderConfig,
+        api_key: '',
       })
       aiConfigDirtyRef.current = false
       toast.success(`AI configuration ${isUpdate ? 'updated' : 'created'} successfully`)
@@ -549,7 +584,7 @@ function ConfigPageContent() {
                 </div>
               )}
 
-              {/* Gemini Configuration Form */}
+              {/* AI Provider Configuration Form */}
               <div
                 style={{
                   background: 'var(--bg-elev)',
@@ -562,15 +597,15 @@ function ConfigPageContent() {
                   <div className="flex items-center justify-between gap-3">
                     <div>
                       <h3 style={{ fontSize: '13.5px', fontWeight: 500, color: 'var(--fg)', margin: 0, letterSpacing: '-0.01em' }}>
-                        Google Gemini
+                        AI provider
                       </h3>
                       <p style={{ fontSize: 11.5, color: 'var(--fg-muted)', marginTop: 2, lineHeight: 1.45 }}>
-                        AI provider for document processing.
+                        Choose a provider and configure its credentials. Changing provider replaces the active config.
                       </p>
                     </div>
                     <Button
                       onClick={handleSaveAI}
-                      disabled={savingAI || !geminiConfig.api_key || !geminiConfig.default_model_name}
+                      disabled={savingAI || !aiProviderConfig.api_key || !aiProviderConfig.default_model_name}
                       size="sm"
                     >
                       {savingAI ? (
@@ -585,9 +620,11 @@ function ConfigPageContent() {
                   </div>
                 </div>
                 <div style={{ padding: 16 }}>
-                  <GeminiConfigForm
-                    config={geminiConfig}
-                    onChange={handleGeminiConfigChange}
+                  <AIConfigForm
+                    provider={aiProvider}
+                    config={aiProviderConfig}
+                    onProviderChange={handleAIProviderChange}
+                    onChange={handleAIConfigChange}
                     disabled={savingAI}
                     isExistingConfig={!!aiConfig}
                   />
