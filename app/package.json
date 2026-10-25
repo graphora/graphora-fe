@@ -12,7 +12,7 @@
     "format": "prettier --write \"src/**/*.{ts,tsx,js,jsx,json,css,md}\""
   },
   "dependencies": {
-    "@clerk/nextjs": "^6.20.2",
+    "@clerk/nextjs": "^6.39.3",
     "@codemirror/lang-javascript": "^6.2.2",
     "@codemirror/lang-yaml": "^6.1.2",
     "@codemirror/legacy-modes": "^6.4.2",
@@ -52,13 +52,12 @@
     "d3": "^7.9.0",
     "dagre": "^0.8.5",
     "date-fns": "^4.1.0",
-    "echarts": "^5.6.0",
     "force-graph": "^1.51.0",
     "immer": "^10.1.1",
-    "js-yaml": "^4.1.0",
+    "js-yaml": "^4.3.2",
     "lucide-react": "^0.472.0",
     "neo4j-driver": "^5.28.1",
-    "next": "15.5.9",
+    "next": "15.5.28",
     "next-themes": "^0.4.6",
     "react": "^19.2.1",
     "react-dom": "^19.2.1",
@@ -70,16 +69,15 @@
     "react-syntax-highlighter": "^15.6.1",
     "reactflow": "^11.11.4",
     "remark-gfm": "^4.0.1",
-    "shadcn-ui": "^0.9.4",
+    "sharp": "^0.35.5",
     "socket.io": "^4.8.1",
     "socket.io-client": "^4.8.1",
     "sonner": "^2.0.3",
     "tailwind-merge": "^2.6.0",
     "tailwindcss-animate": "^1.0.7",
-    "uuid": "^11.0.5",
-    "ws": "^8.18.0",
-    "yaml": "^2.7.0",
-    "zod": "^3.24.1",
+    "uuid": "^11.1.1",
+    "ws": "^8.21.0",
+    "yaml": "^2.8.3",
     "zustand": "^5.0.3"
   },
   "devDependencies": {
@@ -97,14 +95,18 @@
     "eslint": "^9",
     "eslint-config-next": "15.1.4",
     "jsdom": "^26.0.0",
-    "postcss": "^8.5.0",
+    "postcss": "^8.5.23",
     "prettier": "^3.4.2",
     "prisma": "^6.2.1",
     "tailwindcss": "^3.4.17",
     "typescript": "^5",
-    "vitest": "^4.0.16"
+    "vitest": "^4.1.12"
   },
   "overrides": {
-    "prismjs": "^1.30.0"
+    "prismjs": "^1.30.0",
+    "lodash": "^4.18.1",
+    "next": {
+      "postcss": "8.5.23"
+    }
   }
 }
